@@ -40,6 +40,19 @@ export default function Output() {
         </div>
       )}
 
+      <div style={{ 
+        marginTop: '1rem', 
+        padding: '1rem', 
+        background: '#fff3cd', 
+        border: '1px solid #ffc107', 
+        borderRadius: '4px' 
+      }}>
+        <p style={{ margin: 0, color: '#856404' }}>
+          <strong>⚠️ Important:</strong> The patient narrative and MDM generated will not be saved online. 
+          You are responsible for copy-pasting and saving this information if desired.
+        </p>
+      </div>
+
       <details style={{ marginTop: '1rem' }}>
         <summary>Original narrative</summary>
         <pre style={{ whiteSpace: 'pre-wrap' }}>{text}</pre>
