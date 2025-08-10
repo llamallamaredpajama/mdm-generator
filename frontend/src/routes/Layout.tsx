@@ -10,7 +10,7 @@ export default function Layout() {
           <NavLink to="/settings">Settings</NavLink>
         </nav>
       </header>
-      <main style={{ padding: '1rem' }}>
+      <main>
         <Outlet />
       </main>
     </div>

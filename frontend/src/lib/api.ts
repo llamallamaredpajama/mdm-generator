@@ -12,7 +12,25 @@ export type GenerateResponse = {
   remaining?: number
 }
 
-export async function whoAmI(userIdToken: string): Promise<{ ok: boolean; uid: string; plan: string | null; usedThisPeriod: number; monthlyQuota: number; remaining: number }> {
+export async function whoAmI(userIdToken: string): Promise<{
+  ok: boolean
+  uid: string
+  email?: string
+  plan: 'free' | 'pro' | 'enterprise'
+  used: number
+  limit: number
+  remaining: number
+  percentUsed: number
+  periodKey: string
+  features: {
+    maxRequestsPerMonth: number
+    maxTokensPerRequest: number
+    priorityProcessing: boolean
+    exportFormats: string[]
+    apiAccess: boolean
+    teamMembers: number
+  }
+}> {
   const res = await fetch('http://localhost:8080/v1/whoami', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

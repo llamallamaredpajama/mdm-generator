@@ -1,8 +1,44 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell header {
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.app-shell main {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 100%;
   padding: 2rem;
-  text-align: center;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1400px) {
+  .app-shell main {
+    padding: 2rem 4rem;
+  }
+}
+
+/* Compose page responsive grid */
+@media (max-width: 768px) {
+  .compose-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 .logo {

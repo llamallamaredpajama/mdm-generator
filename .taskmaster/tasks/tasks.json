@@ -24,6 +24,50 @@
         ],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Set up Firestore user documents with subscription plans",
+        "description": "Create Firestore schema for user documents including subscription plan fields (free, pro, enterprise) with usage limits and features",
+        "details": "- Create user document structure in Firestore\n- Add subscription plan field (free/pro/enterprise)\n- Add usage tracking fields (requests_this_month, last_reset_date)\n- Add subscription metadata (start_date, end_date, features)\n- Update backend to check subscription on API calls\n- Create admin functions to manage subscriptions",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Update UI to display subscription plans and limits",
+        "description": "Add subscription plan display to the UI showing current plan, usage, and limits",
+        "details": "- Add subscription status to header/nav\n- Show current plan (Free/Pro/Enterprise)\n- Display usage counter (X/Y requests this month)\n- Add upgrade prompts when limits approached\n- Create subscription management page in Settings\n- Add plan comparison table",
+        "testStrategy": "",
+        "status": "in-progress",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Simplify preflight check to single PHI confirmation",
+        "description": "Remove token estimation and other checks, keep only PHI confirmation checkbox",
+        "details": "- Remove token estimation display\n- Remove token usage confirmation\n- Keep only PHI confirmation checkbox\n- Streamline submission flow to go directly to processing after PHI confirmation\n- Update Preflight component to be minimal\n- Ensure smooth transition to Output page",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Create modern ER-themed landing page with red/white/black design",
+        "description": "Design and implement a modern landing page with large hero section using emergency room red/white/black color scheme",
+        "details": "- Create large hero section with compelling headline\n- Use red, white, and black color scheme (emergency room theme)\n- Add modern animations and transitions\n- Include clear call-to-action buttons\n- Add sections for: Features, How it Works, Benefits for ER physicians\n- Implement responsive design for all devices\n- Add emergency medicine imagery/icons\n- Include trust indicators (HIPAA compliant, physician-designed)\n- Add smooth scroll navigation\n- Create compelling copy focused on ER workflow efficiency",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
       }
     ],
     "metadata": {
@@ -32,7 +76,7 @@
       "version": "1.0.0",
       "created": "2025-08-09T03:23:21.295Z",
       "description": "Tasks for master context",
-      "updated": "2025-08-09T03:23:44.908Z"
+      "updated": "2025-08-10T17:04:34.937Z"
     }
   }
 }

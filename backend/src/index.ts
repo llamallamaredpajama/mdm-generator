@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import express from 'express'
 import { z } from 'zod'
 import fs from 'node:fs/promises'
@@ -7,6 +8,7 @@ import { VertexAI } from '@google-cloud/vertexai'
 import { buildPrompt } from './promptBuilder'
 import { MdmSchema, renderMdmText } from './outputSchema'
 import { callGeminiFlash } from './vertex'
+import { userService } from './services/userService'
 
 const app = express()
 
@@ -34,106 +36,104 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '1mb' }))
 
 // Initialize Firebase Admin (expects GOOGLE_APPLICATION_CREDENTIALS or default creds in Cloud Run)
-try {
-  if (!admin.apps.length) {
-    const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
-    console.log('Initializing Firebase Admin with service account:', serviceAccountPath)
-    
-    if (serviceAccountPath && serviceAccountPath.includes('.json')) {
-      // Initialize with service account file
-      const serviceAccount = require(path.resolve(serviceAccountPath))
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: process.env.PROJECT_ID || 'mdm-generator'
-      })
-    } else {
-      // Initialize with default credentials
-      admin.initializeApp()
+async function initFirebase() {
+  try {
+    if (!admin.apps.length) {
+      const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      console.log('Initializing Firebase Admin with service account:', serviceAccountPath)
+      
+      if (serviceAccountPath && serviceAccountPath.includes('.json')) {
+        // Initialize with service account file
+        const serviceAccountContent = await fs.readFile(path.resolve(serviceAccountPath), 'utf8')
+        const serviceAccount = JSON.parse(serviceAccountContent)
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+          projectId: process.env.PROJECT_ID || 'mdm-generator'
+        })
+      } else {
+        // Initialize with default credentials
+        admin.initializeApp()
+      }
+      console.log('Firebase Admin initialized successfully')
     }
-    console.log('Firebase Admin initialized successfully')
+  } catch (e) {
+    console.error('Firebase Admin initialization error:', e)
+    // swallow init errors in local dev; will throw on verify if misconfigured
   }
-} catch (e) {
-  console.error('Firebase Admin initialization error:', e)
-  // swallow init errors in local dev; will throw on verify if misconfigured
 }
 
-const db = admin.firestore()
-
-const PLAN_LIMITS: Record<string, number> = {
-  basic: 250, // $10/mo
-  pro: 1000,  // $30/mo
-}
+// Initialize Firebase before starting the server
+await initFirebase()
 
 const GenerateSchema = z.object({
   narrative: z.string().min(1).max(16000),
   userIdToken: z.string().min(10),
 })
 
-function monthKey(date = new Date()) {
-  return `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1).toString().padStart(2, '0')}`
-}
-
-async function ensureAndCheckQuota(uid: string) {
-  const ref = db.collection('users').doc(uid)
-  const snap = await ref.get()
-  if (!snap.exists) {
-    // Default: no plan set => zero quota (reject) until admin assigns a plan
-    throw Object.assign(new Error('No subscription plan'), { status: 402 })
-  }
-  const data = snap.data() as any
-  const plan: string = data.plan
-  const quota = PLAN_LIMITS[plan]
-  if (!quota) throw Object.assign(new Error('Invalid plan'), { status: 402 })
-
-  const currentKey = monthKey()
-  const periodKey: string = data.periodKey || currentKey
-  let used: number = data.usedThisPeriod || 0
-
-  // Reset counter if new month
-  if (periodKey !== currentKey) {
-    used = 0
-    await ref.update({ usedThisPeriod: 0, periodKey: currentKey })
-  }
-  if (used >= quota) throw Object.assign(new Error('Quota exceeded'), { status: 402 })
-  return { ref, used, quota }
-}
-
-async function incrementUsage(ref: FirebaseFirestore.DocumentReference) {
-  await ref.update({ usedThisPeriod: admin.firestore.FieldValue.increment(1) })
-}
-
-async function getUsage(uid: string) {
-  const ref = db.collection('users').doc(uid)
-  const snap = await ref.get()
-  if (!snap.exists) return { uid, plan: null as null | string, usedThisPeriod: 0, monthlyQuota: 0, remaining: 0 }
-  const data = snap.data() as any
-  const plan: string = data.plan || null
-  const quota = plan ? PLAN_LIMITS[plan] || 0 : 0
-  const currentKey = monthKey()
-  const periodKey: string = data.periodKey || currentKey
-  let used: number = data.usedThisPeriod || 0
-  // If new month and not yet reset, compute remaining as full quota
-  const effectiveUsed = periodKey === currentKey ? used : 0
-  const remaining = Math.max(0, quota - effectiveUsed)
-  return { uid, plan, usedThisPeriod: effectiveUsed, monthlyQuota: quota, remaining }
-}
-
 app.get('/healthz', (_req, res) => res.json({ ok: true }))
+
+// Admin endpoint to set user plan (protected by admin check)
+app.post('/v1/admin/set-plan', async (req, res) => {
+  try {
+    const AdminPlanSchema = z.object({
+      adminToken: z.string().min(10),
+      targetUid: z.string().min(1),
+      plan: z.enum(['free', 'pro', 'enterprise'])
+    })
+    
+    const parsed = AdminPlanSchema.safeParse(req.body)
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid request' })
+    
+    // Verify admin token
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.adminToken)
+      // Check if user has admin custom claim
+      if (!decoded.admin) {
+        return res.status(403).json({ error: 'Admin access required' })
+      }
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid admin token' })
+    }
+    
+    // Update user plan
+    await userService.adminSetPlan(parsed.data.targetUid, parsed.data.plan)
+    
+    return res.json({ 
+      ok: true, 
+      message: `User ${parsed.data.targetUid} updated to ${parsed.data.plan} plan`
+    })
+  } catch (e: any) {
+    console.error(e)
+    return res.status(500).json({ error: e.message || 'Internal error' })
+  }
+})
 
 app.post('/v1/whoami', async (req, res) => {
   try {
     const TokenSchema = z.object({ userIdToken: z.string().min(10) })
     const parsed = TokenSchema.safeParse(req.body)
     if (!parsed.success) return res.status(400).json({ error: 'Invalid request' })
-    let uid = 'anonymous'
+    
     try {
       const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
-      uid = decoded.uid
+      const uid = decoded.uid
+      const email = decoded.email || ''
+      
+      // Ensure user exists
+      await userService.ensureUser(uid, email)
+      
+      // Get usage stats
+      const stats = await userService.getUsageStats(uid)
+      
+      return res.json({ 
+        ok: true, 
+        uid,
+        email,
+        ...stats
+      })
     } catch (e) {
       return res.status(401).json({ error: 'Unauthorized' })
     }
-    const usage = await getUsage(uid)
-    return res.json({ ok: true, ...usage })
   } catch (e) {
     console.error(e)
     return res.status(500).json({ error: 'Internal error' })
@@ -147,19 +147,41 @@ app.post('/v1/generate', async (req, res) => {
 
     // Verify Firebase ID token
     let uid = 'anonymous'
+    let email = ''
     try {
       const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
       uid = decoded.uid
+      email = decoded.email || ''
     } catch (e) {
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
     const { narrative } = parsed.data
+    
+    // Ensure user exists
+    await userService.ensureUser(uid, email)
+    
+    // Check quota
+    const quotaCheck = await userService.checkQuota(uid)
+    if (!quotaCheck.allowed) {
+      return res.status(402).json({ 
+        error: 'Monthly quota exceeded', 
+        used: quotaCheck.used,
+        limit: quotaCheck.limit,
+        remaining: 0
+      })
+    }
+    
+    // Check token limit per request based on plan
+    const stats = await userService.getUsageStats(uid)
     const tokenEstimate = Math.ceil(narrative.length / 4)
-    if (tokenEstimate > 10000) return res.status(400).json({ error: 'Input too large' })
-
-    // Enforce subscription quota
-    const { ref, used, quota } = await ensureAndCheckQuota(uid)
+    if (tokenEstimate > stats.features.maxTokensPerRequest) {
+      return res.status(400).json({ 
+        error: `Input too large for your plan. Maximum ${stats.features.maxTokensPerRequest} tokens allowed.`,
+        tokenEstimate,
+        maxAllowed: stats.features.maxTokensPerRequest
+      })
+    }
 
     // Build prompt and call model
     const prompt = await buildPrompt(narrative)
@@ -202,9 +224,21 @@ app.post('/v1/generate', async (req, res) => {
     }
 
     // Increment usage on success
-    await incrementUsage(ref)
+    await userService.incrementUsage(uid)
+    
+    // Get updated stats
+    const updatedStats = await userService.getUsageStats(uid)
 
-    return res.json({ ok: true, draft: draftText, draftJson, uid, remaining: Math.max(0, quota - (used + 1)) })
+    return res.json({ 
+      ok: true, 
+      draft: draftText, 
+      draftJson, 
+      uid, 
+      remaining: updatedStats.remaining,
+      plan: updatedStats.plan,
+      used: updatedStats.used,
+      limit: updatedStats.limit
+    })
   } catch (e: any) {
     const status = e.status || 500
     if (status !== 500) return res.status(status).json({ error: e.message })
