@@ -190,6 +190,12 @@ app.post('/v1/generate', async (req, res) => {
     let draftText = ''
     try {
       const result = await callGeminiFlash(prompt)
+      
+      // Log the raw model output for debugging
+      console.log('=== RAW MODEL OUTPUT ===')
+      console.log(result.text.substring(0, 500)) // First 500 chars
+      console.log('=== END PREVIEW ===')
+      
       // Expect model to return JSON first, then '---TEXT---' and text rendering. Try to parse.
       const [jsonPart, textPart] = result.text.split('\n---TEXT---\n')
       try {
@@ -197,7 +203,8 @@ app.post('/v1/generate', async (req, res) => {
         const mdm = MdmSchema.parse(parsed)
         draftJson = mdm
         draftText = textPart?.trim() || renderMdmText(mdm)
-      } catch {
+      } catch (parseError) {
+        console.log('JSON parsing failed:', parseError)
         // Fallback: try to coerce by searching for JSON braces
         const jsonStart = result.text.indexOf('{')
         const jsonEnd = result.text.lastIndexOf('}')
@@ -211,7 +218,7 @@ app.post('/v1/generate', async (req, res) => {
         }
       }
     } catch (e) {
-      console.warn('Model parsing failed, returning conservative stub')
+      console.warn('Model parsing failed, returning conservative stub:', e)
       draftJson = {
         differential: [],
         data_reviewed_ordered: 'Labs were considered but not indicated based on presentation; clinical monitoring prioritized.',
