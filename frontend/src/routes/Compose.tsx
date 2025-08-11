@@ -2,15 +2,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DictationGuide from '../components/DictationGuide'
 import ConfirmationModal from '../components/ConfirmationModal'
-import SubscriptionStatus from '../components/SubscriptionStatus'
 import { whoAmI } from '../lib/api'
 import { useAuthToken } from '../lib/firebase'
 
 export default function Compose() {
   const [text, setText] = useState('')
   const [remaining, setRemaining] = useState<number | null>(null)
-  const [plan, setPlan] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const navigate = useNavigate()
   const idToken = useAuthToken()
@@ -18,15 +15,11 @@ export default function Compose() {
   useEffect(() => {
     const run = async () => {
       if (!idToken) return
-      setLoading(true)
       try {
         const res = await whoAmI(idToken)
         setRemaining(res.remaining)
-        setPlan(res.plan)
       } catch {
         setRemaining(null)
-      } finally {
-        setLoading(false)
       }
     }
     run()
@@ -42,7 +35,8 @@ export default function Compose() {
 
   const handleConfirmSubmit = () => {
     setShowModal(false)
-    navigate('/preflight', { state: { text } })
+    // Skip preflight since we already confirmed PHI, go directly to generate
+    navigate('/preflight', { state: { text, skipConfirmation: true } })
   }
 
   return (
@@ -59,7 +53,6 @@ export default function Compose() {
         className="compose-grid">
         <div>
           <h2>Compose encounter narrative</h2>
-          <SubscriptionStatus />
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}

@@ -1,9 +1,99 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Require authentication for all access
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Products and prices are publicly readable (managed by Stripe Extension)
+    match /products/{product} {
+      allow read: if true;
+      allow write: if false; // Only Stripe Extension can write
+      
+      match /prices/{price} {
+        allow read: if true;
+        allow write: if false; // Only Stripe Extension can write
+      }
+    }
+    
+    // Customer data - users can only access their own data
+    match /customers/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false; // Only Stripe Extension can write customer docs
+      
+      // Users can create checkout sessions
+      match /checkout_sessions/{session} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) 
+          && request.resource.data.mode in ['subscription', 'payment']
+          && request.resource.data.success_url is string
+          && request.resource.data.cancel_url is string;
+        allow update: if false; // Only Stripe Extension can update
+        allow delete: if false; // No deletion allowed
+      }
+      
+      // Users can read but not modify their subscriptions
+      match /subscriptions/{subscription} {
+        allow read: if isOwner(userId);
+        allow write: if false; // Only Stripe Extension can write
+      }
+      
+      // Users can create portal sessions to manage billing
+      match /portal_sessions/{session} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && request.resource.data.return_url is string;
+        allow update: if false; // Only Stripe Extension can update
+        allow delete: if false; // No deletion allowed
+      }
+      
+      // Usage tracking - readable by user, writable by backend
+      match /usage/{usageDoc} {
+        allow read: if isOwner(userId);
+        allow write: if false; // Only backend service can write usage
+      }
+      
+      // Payment methods
+      match /payment_methods/{method} {
+        allow read: if isOwner(userId);
+        allow write: if false; // Only Stripe Extension can write
+      }
+      
+      // Invoices
+      match /invoices/{invoice} {
+        allow read: if isOwner(userId);
+        allow write: if false; // Only Stripe Extension can write
+      }
+    }
+    
+    // MDM generation metadata (no PHI)
+    match /mdm_metadata/{document} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.timestamp is timestamp;
+      allow update: if false; // No updates allowed
+      allow delete: if false; // No deletion allowed
+    }
+    
+    // User preferences and settings
+    match /user_settings/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['theme', 'notifications'])
+        && request.resource.data.theme in ['light', 'dark', 'system']
+        && request.resource.data.notifications is map;
+      allow delete: if false; // No deletion allowed
+    }
+    
+    // Default deny for any unmatched documents
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }

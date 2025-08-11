@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # MDM Generator - AI Assistant Instructions
 
 ## Project Overview
@@ -47,22 +51,24 @@ cd backend && pnpm dev     # Backend on :8080
 ### Frontend Commands
 ```bash
 cd frontend
-pnpm dev          # Start dev server
+pnpm dev          # Start dev server on :5173
 pnpm build        # Production build
 pnpm lint         # Run ESLint
-pnpm lint:fix     # Fix lint issues
-pnpm typecheck    # TypeScript check
-pnpm test         # Run tests
-pnpm format       # Format with Prettier
+pnpm lint:fix     # Fix lint issues automatically
+pnpm typecheck    # TypeScript type checking
+pnpm test         # Run tests once
+pnpm test:watch   # Run tests in watch mode
+pnpm format       # Format code with Prettier
 pnpm check        # Full validation (typecheck + lint + test)
+pnpm preview      # Preview production build locally
 ```
 
 ### Backend Commands
 ```bash
 cd backend
-pnpm dev          # Start dev server with hot reload
-pnpm build        # Build for production
-pnpm start        # Run production build
+pnpm dev          # Start dev server with hot reload (tsx watch)
+pnpm build        # Compile TypeScript to dist/
+pnpm start        # Run production build from dist/
 ```
 
 ## Critical Files & Patterns
@@ -116,12 +122,24 @@ const API_KEY = process.env.VERTEX_API_KEY; // Never hardcode
 
 ## Testing & Validation
 
+### Running Tests
+```bash
+# Frontend - Run all tests
+cd frontend && pnpm test
+
+# Frontend - Run tests in watch mode
+cd frontend && pnpm test:watch
+
+# Frontend - Run a single test file
+cd frontend && pnpm test src/__tests__/app.test.tsx
+```
+
 ### Before Commits
 ```bash
-# Frontend
+# Frontend - Full validation suite
 cd frontend && pnpm check  # Runs typecheck, lint, and tests
 
-# Backend
+# Backend - TypeScript compilation
 cd backend && pnpm build   # Ensures TypeScript compilation
 
 # Both
@@ -170,6 +188,16 @@ GOOGLE_APPLICATION_CREDENTIALS=  # Service account key path
 PROJECT_ID=                      # GCP project ID
 VERTEX_LOCATION=us-central1      # Vertex AI location
 ```
+
+### Stripe Configuration (.envrc - using direnv)
+This project uses [direnv](https://direnv.net/) for managing Stripe credentials securely:
+```env
+export STRIPE_SECRET_KEY="sk_test_..."      # Stripe secret key (test mode)
+export STRIPE_PUBLISHABLE_KEY="pk_test_..." # Stripe publishable key (test mode)
+export STRIPE_WEBHOOK_SECRET="whsec_..."    # Webhook endpoint secret
+```
+
+**Note**: The `.envrc` file is loaded automatically when entering the project directory if direnv is installed and allowed (`direnv allow`)
 
 ## Security Checklist
 
@@ -226,6 +254,67 @@ git commit -m "Fixed stuff"
 3. Review for PHI/security issues
 4. Update tests if logic changed
 
+## API Endpoints
+
+### Backend Endpoints
+- **GET /healthz** - Health check endpoint
+- **POST /v1/whoami** - Validate user authentication and get user info
+  - Requires: `userIdToken` (Firebase ID token)
+- **POST /v1/generate** - Generate MDM from narrative
+  - Requires: `narrative` (string), `userIdToken` (Firebase ID token)
+  - Returns: Structured MDM response
+
+### API Response Structure
+The `/v1/generate` endpoint returns MDM data structured according to `backend/src/outputSchema.ts`, including:
+- Problem classifications
+- Differential diagnoses
+- Data reviewed
+- Clinical reasoning
+- MDM complexity level
+
+## Router Configuration
+
+### Frontend Routes (React Router)
+All routes are wrapped in the `Layout` component and require authentication:
+- `/` - Start page (landing/login)
+- `/compose` - Narrative input
+- `/preflight` - Pre-submission checklist
+- `/output` - MDM display and copy
+- `/settings` - User settings and subscription
+
+## Stripe Payment Integration
+
+### Overview
+The project uses Firebase Stripe Extension for subscription management. This provides secure payment processing without handling sensitive payment data directly.
+
+### Architecture
+1. **Firebase Stripe Extension** - Installed in Firebase project (test mode)
+2. **Firestore Collections** - Managed by extension:
+   - `customers/{uid}` - Customer records linked to Stripe
+   - `customers/{uid}/checkout_sessions` - Payment session management
+   - `customers/{uid}/subscriptions` - Active subscriptions
+   - `products` - Stripe products synced from dashboard
+   - `prices` - Pricing information for products
+3. **No Direct API Calls** - Frontend only writes to Firestore; extension handles Stripe API
+
+### Subscription Tiers
+- **Free**: 10 MDMs/month, basic features
+- **Pro**: 250 MDMs/month, priority processing, export formats
+- **Enterprise**: 1000 MDMs/month, API access, team features
+
+### Payment Flow
+1. User selects plan → Creates checkout session document
+2. Extension generates Stripe checkout URL
+3. User redirected to Stripe-hosted payment page
+4. Stripe webhooks update subscription status
+5. Backend enforces usage limits based on plan
+
+### Key Files
+- `frontend/src/lib/stripe.ts` - Stripe helper functions
+- `frontend/src/hooks/useSubscription.ts` - Subscription state management
+- `frontend/src/components/PricingPlans.tsx` - Plan selection UI
+- `backend/src/services/userService.ts` - Usage tracking and plan features
+
 ## Deployment Notes
 
 - Frontend: Deploy to Firebase Hosting or similar CDN
@@ -233,6 +322,7 @@ git commit -m "Fixed stuff"
 - Use API Gateway for rate limiting and auth
 - Enable CORS for production domains only
 - Monitor token usage and costs
+- Firebase configuration in `firebase.json` for Firestore rules and indexes
 
 ## Resources
 

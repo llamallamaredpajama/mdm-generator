@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { useAuth, signInWithGoogle, signOutUser } from '../lib/firebase'
-import SubscriptionStatus from '../components/SubscriptionStatus'
+import { useAuth, signInWithGoogle } from '../lib/firebase'
+import UserAccountDropdown from '../components/UserAccountDropdown'
 import './Start.css'
 
 export default function Start() {
@@ -18,13 +18,7 @@ export default function Start() {
           </div>
           <div className="nav-actions">
             {user ? (
-              <div className="user-menu">
-                <SubscriptionStatus />
-                <span className="user-email">{user.email}</span>
-                <button onClick={() => signOutUser()} className="btn-signout">
-                  Sign Out
-                </button>
-              </div>
+              <UserAccountDropdown />
             ) : (
               <button onClick={signInWithGoogle} className="btn-signin">
                 Sign In

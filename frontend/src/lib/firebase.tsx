@@ -9,6 +9,7 @@ import {
   signOut, 
   type User 
 } from 'firebase/auth'
+import { getFirestore } from 'firebase/firestore'
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
 const firebaseConfig = {
@@ -22,6 +23,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 const auth = getAuth(app)
+export const db = getFirestore(app)
 const provider = new GoogleAuthProvider()
 
 // Try popup first, fall back to redirect if popup fails

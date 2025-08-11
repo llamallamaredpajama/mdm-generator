@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuthToken } from '../lib/firebase'
 import { whoAmI } from '../lib/api'
 import './SubscriptionStatus.css'
@@ -16,6 +17,7 @@ export default function SubscriptionStatus() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const idToken = useAuthToken()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -110,7 +112,10 @@ export default function SubscriptionStatus() {
       </div>
 
       {subscription.plan === 'free' && (
-        <button className="upgrade-button">
+        <button 
+          className="upgrade-button"
+          onClick={() => navigate('/settings')}
+        >
           Upgrade to Pro
         </button>
       )}

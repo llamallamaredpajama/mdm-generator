@@ -5,19 +5,20 @@ import { generateMDM } from '../lib/api'
 
 export default function Preflight() {
   const navigate = useNavigate()
-  const location = useLocation() as { state?: { text?: string } }
+  const location = useLocation() as { state?: { text?: string; skipConfirmation?: boolean } }
   const text = location.state?.text ?? ''
-  const [ackPHI, setAckPHI] = useState(false)
+  const skipConfirmation = location.state?.skipConfirmation ?? false
+  const [ackPHI, setAckPHI] = useState(skipConfirmation) // Auto-acknowledge if coming from modal
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const idToken = useAuthToken()
 
-  // Auto-submit when PHI is acknowledged
+  // Auto-submit when PHI is acknowledged or if coming from modal
   useEffect(() => {
-    if (ackPHI && idToken && !loading) {
+    if ((ackPHI || skipConfirmation) && idToken && !loading && !error) {
       onGenerate()
     }
-  }, [ackPHI])
+  }, [ackPHI, skipConfirmation, idToken])
 
   const onGenerate = async () => {
     if (!idToken) {
@@ -41,9 +42,9 @@ export default function Preflight() {
 
   return (
     <section style={{ maxWidth: '600px', margin: '2rem auto', padding: '2rem' }}>
-      <h2 style={{ marginBottom: '2rem', textAlign: 'center' }}>Safety Confirmation</h2>
+      {!skipConfirmation && <h2 style={{ marginBottom: '2rem', textAlign: 'center' }}>Safety Confirmation</h2>}
       
-      {!loading && !error && (
+      {!loading && !error && !skipConfirmation && (
         <div style={{ 
           background: '#f8f9fa', 
           border: '2px solid #dc3545', 
@@ -119,23 +120,25 @@ export default function Preflight() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-        <button 
-          onClick={() => navigate(-1)}
-          disabled={loading}
-          style={{
-            padding: '0.5rem 1.5rem',
-            background: '#6c757d',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            opacity: loading ? 0.5 : 1
-          }}
-        >
-          Back
-        </button>
-      </div>
+      {!skipConfirmation && (
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+          <button 
+            onClick={() => navigate(-1)}
+            disabled={loading}
+            style={{
+              padding: '0.5rem 1.5rem',
+              background: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.5 : 1
+            }}
+          >
+            Back
+          </button>
+        </div>
+      )}
     </section>
   )
 }

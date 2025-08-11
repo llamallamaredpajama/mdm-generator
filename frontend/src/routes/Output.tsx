@@ -26,15 +26,15 @@ export default function Output() {
       </div>
       {tab === 'text' ? (
         <div>
-          <div style={{ padding: '1rem', border: '1px solid #ddd', background: '#fafafa' }}>
-            <pre style={{ whiteSpace: 'pre-wrap' }}>{mdmDraft}</pre>
+          <div style={{ padding: '1rem', border: '1px solid #ddd', background: '#2d2d2d' }}>
+            <pre style={{ whiteSpace: 'pre-wrap', color: '#f0f0f0', margin: 0 }}>{mdmDraft}</pre>
           </div>
           <button onClick={() => copy(mdmDraft)} style={{ marginTop: '0.5rem' }}>Copy text</button>
         </div>
       ) : (
         <div>
-          <div style={{ padding: '1rem', border: '1px solid #ddd', background: '#fafafa' }}>
-            <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(mdmJson ?? {}, null, 2)}</pre>
+          <div style={{ padding: '1rem', border: '1px solid #ddd', background: '#2d2d2d' }}>
+            <pre style={{ whiteSpace: 'pre-wrap', color: '#f0f0f0', margin: 0 }}>{JSON.stringify(mdmJson ?? {}, null, 2)}</pre>
           </div>
           <button onClick={() => copy(JSON.stringify(mdmJson ?? {}, null, 2))} style={{ marginTop: '0.5rem' }}>Copy JSON</button>
         </div>

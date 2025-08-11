@@ -1,6 +1,7 @@
 import admin from 'firebase-admin'
 
-const db = admin.firestore()
+// Defer Firestore initialization to avoid initialization order issues
+const getDb = () => admin.firestore()
 
 export type SubscriptionPlan = 'free' | 'pro' | 'enterprise'
 
@@ -61,7 +62,9 @@ export const PLAN_FEATURES: Record<SubscriptionPlan, UserDocument['features']> =
 }
 
 export class UserService {
-  private collection = db.collection('users')
+  private get collection() {
+    return getDb().collection('users')
+  }
 
   /**
    * Get or create user document
