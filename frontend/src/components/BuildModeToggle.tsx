@@ -42,21 +42,23 @@ export default function BuildModeToggle({
         </span>
       </div>
 
-      <span className="build-mode-toggle__label">Build Mode</span>
-
-      <button
-        type="button"
-        className="build-mode-toggle__info"
-        onClick={onInfoClick}
-        aria-label="Learn about input modes"
-        title="Learn about Simple and Build modes"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="16" x2="12" y2="12" />
-          <line x1="12" y1="8" x2="12.01" y2="8" />
-        </svg>
-      </button>
+      <span className="build-mode-toggle__label">
+        Build Mode
+        <button
+          type="button"
+          className="build-mode-toggle__info"
+          onClick={onInfoClick}
+          aria-label="Learn about input modes"
+          title="Learn about Simple and Build modes"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor">
+            <circle cx="10" cy="10" r="9" fill="currentColor" opacity="0.15" />
+            <circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            <circle cx="10" cy="6" r="1.2" />
+            <rect x="8.8" y="8.5" width="2.4" height="6" rx="1" />
+          </svg>
+        </button>
+      </span>
     </div>
   )
 }
