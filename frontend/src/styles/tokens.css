@@ -51,6 +51,23 @@
   --color-info: #17a2b8;
 
   /* ─────────────────────────────────────────
+     Build Mode Colors
+     Blue-tinted theme for structured input
+     ───────────────────────────────────────── */
+  --color-build-bg: rgba(59, 130, 246, 0.03);
+  --color-build-bg-hover: rgba(59, 130, 246, 0.06);
+  --color-build-border: rgba(59, 130, 246, 0.15);
+  --color-build-border-active: rgba(59, 130, 246, 0.3);
+  --color-build-accent: #3b82f6;
+  --color-build-accent-glow: rgba(59, 130, 246, 0.3);
+  --color-build-grid: rgba(59, 130, 246, 0.04);
+
+  /* Build Mode Validation States */
+  --color-validation-empty: var(--color-text-dim);
+  --color-validation-sparse: var(--color-warning);
+  --color-validation-complete: var(--color-success);
+
+  /* ─────────────────────────────────────────
      Spacing Scale (8px base)
      ───────────────────────────────────────── */
   --space-xs: 0.25rem;   /* 4px */

@@ -1,0 +1,301 @@
+/* ===========================================
+   Guide Slide-Over Panel
+   Right-side drawer explaining input modes
+   =========================================== */
+
+/* ─────────────────────────────────────────
+   Backdrop
+   ───────────────────────────────────────── */
+.guide-slideover__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal-backdrop);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-normal), visibility var(--transition-normal);
+}
+
+.guide-slideover__backdrop--visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ─────────────────────────────────────────
+   Panel
+   ───────────────────────────────────────── */
+.guide-slideover {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  max-width: 100vw;
+  height: 100vh;
+  background: var(--color-bg-secondary);
+  border-left: 1px solid var(--color-border-subtle);
+  z-index: var(--z-modal);
+  transform: translateX(100%);
+  transition: transform var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.guide-slideover--open {
+  transform: translateX(0);
+}
+
+.guide-slideover:focus {
+  outline: none;
+}
+
+/* ─────────────────────────────────────────
+   Header
+   ───────────────────────────────────────── */
+.guide-slideover__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-tertiary);
+}
+
+.guide-slideover__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.guide-slideover__title svg {
+  width: 20px;
+  height: 20px;
+  color: var(--color-build-accent);
+}
+
+.guide-slideover__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.guide-slideover__close:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.guide-slideover__close:focus-visible {
+  outline: 2px solid var(--color-build-accent);
+  outline-offset: 2px;
+}
+
+.guide-slideover__close svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ─────────────────────────────────────────
+   Content
+   ───────────────────────────────────────── */
+.guide-slideover__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-lg);
+}
+
+/* ─────────────────────────────────────────
+   Sections
+   ───────────────────────────────────────── */
+.guide-section {
+  margin-bottom: var(--space-xl);
+}
+
+.guide-section:last-child {
+  margin-bottom: 0;
+}
+
+.guide-intro {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.guide-section__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.guide-section__title svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-warning);
+}
+
+.guide-section__text {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.guide-section__list {
+  margin: var(--space-sm) 0 0 0;
+  padding-left: var(--space-lg);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+.guide-section__list li {
+  margin-bottom: var(--space-xs);
+}
+
+/* ─────────────────────────────────────────
+   Mode Cards
+   ───────────────────────────────────────── */
+.guide-mode {
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.guide-mode--simple {
+  background: var(--color-bg-tertiary);
+}
+
+.guide-mode--build {
+  background: var(--color-build-bg);
+  border-color: var(--color-build-border);
+}
+
+.guide-mode__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.guide-mode__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: var(--radius-sm);
+}
+
+.guide-mode__badge--simple {
+  background: var(--color-bg-hover);
+  color: var(--color-text-muted);
+}
+
+.guide-mode__badge--build {
+  background: var(--color-build-accent);
+  color: white;
+}
+
+.guide-mode__title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.guide-mode__description {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.guide-mode__list {
+  margin: 0 0 var(--space-sm) 0;
+  padding-left: var(--space-lg);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-muted);
+}
+
+.guide-mode__list li {
+  margin-bottom: var(--space-xs);
+}
+
+.guide-mode__tip {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-dim);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+/* ─────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .guide-slideover {
+    width: 320px;
+  }
+
+  .guide-slideover__content {
+    padding: var(--space-md);
+  }
+
+  .guide-mode {
+    padding: var(--space-sm);
+  }
+
+  .guide-mode__list {
+    padding-left: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .guide-slideover {
+    width: 100vw;
+  }
+
+  .guide-slideover__header {
+    padding: var(--space-md);
+  }
+
+  .guide-slideover__title {
+    font-size: var(--font-size-base);
+  }
+
+  .guide-section__title {
+    font-size: var(--font-size-sm);
+  }
+
+  .guide-mode__title {
+    font-size: var(--font-size-sm);
+  }
+
+  .guide-mode__description,
+  .guide-mode__list,
+  .guide-mode__tip {
+    font-size: var(--font-size-xs);
+  }
+}

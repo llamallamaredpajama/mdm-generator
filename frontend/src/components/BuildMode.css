@@ -1,0 +1,310 @@
+/* ===========================================
+   Build Mode Component Styles
+   Structured input interface with blue theme
+   =========================================== */
+
+/* ─────────────────────────────────────────
+   Container with Grid Background
+   ───────────────────────────────────────── */
+
+.build-mode-container {
+  min-height: 450px;
+  padding: var(--space-lg);
+  background-color: var(--color-build-bg);
+  background-image:
+    linear-gradient(var(--color-build-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-build-grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+  border: 1px solid var(--color-build-border);
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  animation: buildModeFadeIn var(--transition-normal) ease-out;
+}
+
+@keyframes buildModeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Sections Wrapper
+   ───────────────────────────────────────── */
+
+.build-mode-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ─────────────────────────────────────────
+   Form Fields
+   ───────────────────────────────────────── */
+
+.build-mode-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.build-mode-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  user-select: none;
+}
+
+.build-mode-label--required::after {
+  content: ' *';
+  color: var(--color-build-accent);
+}
+
+.build-mode-input {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.build-mode-input:focus {
+  outline: none;
+  border-color: var(--color-build-accent);
+  box-shadow: 0 0 0 3px var(--color-build-accent-glow);
+}
+
+.build-mode-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.build-mode-input:hover:not(:focus) {
+  border-color: var(--color-build-border-active);
+}
+
+.build-mode-textarea {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.build-mode-textarea:focus {
+  outline: none;
+  border-color: var(--color-build-accent);
+  box-shadow: 0 0 0 3px var(--color-build-accent-glow);
+}
+
+.build-mode-textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.build-mode-textarea:hover:not(:focus) {
+  border-color: var(--color-build-border-active);
+}
+
+/* Textarea size variants */
+.build-mode-textarea--small {
+  min-height: 60px;
+}
+
+.build-mode-textarea--large {
+  min-height: 120px;
+}
+
+/* ─────────────────────────────────────────
+   Horizontal Row Layout
+   ───────────────────────────────────────── */
+
+.build-mode-row {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+}
+
+.build-mode-row > .build-mode-field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Fixed width fields for short inputs like age */
+.build-mode-field--narrow {
+  flex: 0 0 100px;
+}
+
+.build-mode-field--medium {
+  flex: 0 0 150px;
+}
+
+/* ─────────────────────────────────────────
+   Select Input
+   ───────────────────────────────────────── */
+
+.build-mode-select {
+  padding: var(--space-sm) var(--space-md);
+  padding-right: var(--space-xl);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-sm) center;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.build-mode-select:focus {
+  outline: none;
+  border-color: var(--color-build-accent);
+  box-shadow: 0 0 0 3px var(--color-build-accent-glow);
+}
+
+.build-mode-select:hover:not(:focus) {
+  border-color: var(--color-build-border-active);
+}
+
+.build-mode-select option {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+/* ─────────────────────────────────────────
+   Field Help Text
+   ───────────────────────────────────────── */
+
+.build-mode-help {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-dim);
+  margin-top: var(--space-xs);
+  line-height: var(--line-height-normal);
+}
+
+/* ─────────────────────────────────────────
+   Validation States
+   ───────────────────────────────────────── */
+
+.build-mode-input--error,
+.build-mode-textarea--error,
+.build-mode-select--error {
+  border-color: var(--color-error);
+}
+
+.build-mode-input--error:focus,
+.build-mode-textarea--error:focus,
+.build-mode-select--error:focus {
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+}
+
+.build-mode-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+  margin-top: var(--space-xs);
+}
+
+/* Success state for complete fields */
+.build-mode-input--success,
+.build-mode-textarea--success {
+  border-color: var(--color-success);
+}
+
+/* ─────────────────────────────────────────
+   Section Divider
+   ───────────────────────────────────────── */
+
+.build-mode-divider {
+  height: 1px;
+  background: var(--color-build-border);
+  margin: var(--space-sm) 0;
+}
+
+/* ─────────────────────────────────────────
+   Empty State
+   ───────────────────────────────────────── */
+
+.build-mode-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: var(--space-xl);
+  text-align: center;
+}
+
+.build-mode-empty__icon {
+  width: 48px;
+  height: 48px;
+  color: var(--color-build-accent);
+  opacity: 0.5;
+  margin-bottom: var(--space-md);
+}
+
+.build-mode-empty__text {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ─────────────────────────────────────────
+   Responsive Adjustments
+   ───────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .build-mode-container {
+    padding: var(--space-md);
+    min-height: 400px;
+  }
+
+  .build-mode-row {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .build-mode-field--narrow,
+  .build-mode-field--medium {
+    flex: 1;
+  }
+
+  .build-mode-sections {
+    gap: var(--space-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .build-mode-container {
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+  }
+
+  .build-mode-input,
+  .build-mode-textarea,
+  .build-mode-select {
+    font-size: var(--font-size-base);
+    padding: var(--space-sm);
+  }
+}

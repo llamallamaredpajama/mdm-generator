@@ -5,6 +5,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import admin from 'firebase-admin'
 import { buildPrompt } from './promptBuilder'
+import { buildParsePrompt, getEmptyParsedNarrative, type ParsedNarrative } from './parsePromptBuilder'
 import { MdmSchema, renderMdmText } from './outputSchema'
 import { callGeminiFlash } from './vertex'
 import { userService } from './services/userService'
@@ -143,6 +144,93 @@ app.post('/v1/whoami', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' })
     }
   } catch (e) {
+    console.error(e)
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// Parse narrative into structured MDM fields (Build Mode helper)
+// Does NOT count against user quota - this is a UI helper
+const ParseNarrativeSchema = z.object({
+  narrative: z.string().min(1).max(16000),
+  userIdToken: z.string().min(10),
+})
+
+app.post('/v1/parse-narrative', async (req, res) => {
+  try {
+    const parsed = ParseNarrativeSchema.safeParse(req.body)
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid request' })
+
+    // Verify Firebase ID token
+    let uid = 'anonymous'
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
+      uid = decoded.uid
+    } catch (e) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    const { narrative } = parsed.data
+
+    // Build prompt and call model
+    const prompt = buildParsePrompt(narrative)
+
+    let parsedNarrative: ParsedNarrative
+    try {
+      const result = await callGeminiFlash(prompt)
+
+      // Log the raw model output for debugging
+      console.log('=== RAW PARSE OUTPUT ===')
+      console.log(result.text.substring(0, 500)) // First 500 chars
+      console.log('=== END PREVIEW ===')
+
+      // Strip markdown code fences if present
+      let cleanedText = result.text
+        .replace(/^```json\s*/gm, '')
+        .replace(/^```\s*$/gm, '')
+        .trim()
+
+      // Try to parse the JSON response
+      try {
+        parsedNarrative = JSON.parse(cleanedText) as ParsedNarrative
+      } catch (parseError) {
+        console.log('JSON parsing failed:', parseError)
+        // Fallback: try to find JSON in the response
+        const jsonStart = cleanedText.indexOf('{')
+        const jsonEnd = cleanedText.lastIndexOf('}')
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          const jsonStr = cleanedText.slice(jsonStart, jsonEnd + 1)
+          parsedNarrative = JSON.parse(jsonStr) as ParsedNarrative
+        } else {
+          throw new Error('Invalid model output - no valid JSON found')
+        }
+      }
+
+      // Ensure required fields exist with defaults
+      if (typeof parsedNarrative.confidence !== 'number') {
+        parsedNarrative.confidence = 0.5
+      }
+      if (!Array.isArray(parsedNarrative.warnings)) {
+        parsedNarrative.warnings = []
+      }
+
+    } catch (e) {
+      console.warn('Parse model failed, returning empty structure:', e)
+      parsedNarrative = getEmptyParsedNarrative()
+    }
+
+    // Note: This endpoint does NOT increment usage - it's a UI helper
+    console.log('Parse narrative completed', { uid, confidence: parsedNarrative.confidence })
+
+    return res.json({
+      ok: true,
+      parsed: parsedNarrative,
+      confidence: parsedNarrative.confidence,
+      warnings: parsedNarrative.warnings
+    })
+  } catch (e: any) {
+    const status = e.status || 500
+    if (status !== 500) return res.status(status).json({ error: e.message })
     console.error(e)
     return res.status(500).json({ error: 'Internal error' })
   }

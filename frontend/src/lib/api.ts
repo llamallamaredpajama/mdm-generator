@@ -51,3 +51,55 @@ export async function generateMDM(body: GenerateRequest): Promise<GenerateRespon
   if (!res.ok) throw new Error(`Request failed: ${res.status}`)
   return res.json()
 }
+
+export interface ParseNarrativeResponse {
+  ok: boolean
+  parsed: {
+    chiefComplaint?: { complaint?: string; context?: string; age?: string; sex?: string }
+    problemsConsidered?: { emergent?: string[]; nonEmergent?: string[] }
+    dataReviewed?: {
+      labs?: string
+      imaging?: string
+      ekg?: string
+      externalRecords?: string
+      independentHistorian?: string
+    }
+    riskAssessment?: {
+      patientFactors?: string
+      diagnosticRisks?: string
+      treatmentRisks?: string
+      dispositionRisks?: string
+      highestRiskElement?: string
+    }
+    clinicalReasoning?: {
+      evaluationApproach?: string
+      keyDecisionPoints?: string
+      workingDiagnosis?: string
+    }
+    treatmentProcedures?: { medications?: string; procedures?: string; rationale?: string }
+    disposition?: {
+      decision?: string
+      levelOfCare?: string
+      rationale?: string
+      dischargeInstructions?: string
+      followUp?: string
+      returnPrecautions?: string
+    }
+  }
+  confidence: number
+  warnings?: string[]
+}
+
+export async function parseNarrative(
+  narrative: string,
+  userIdToken: string
+): Promise<ParseNarrativeResponse> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  const res = await fetch(`${apiBaseUrl}/v1/parse-narrative`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ narrative, userIdToken }),
+  })
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+  return res.json()
+}

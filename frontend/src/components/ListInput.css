@@ -1,0 +1,244 @@
+/* ===========================================
+   ListInput Component
+   Dynamic list input for diagnoses entry
+   Uses Build Mode color tokens
+   =========================================== */
+
+.list-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.list-input__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+/* ─────────────────────────────────────────
+   Item List
+   ───────────────────────────────────────── */
+
+.list-input__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.list-input__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  position: relative;
+}
+
+/* ─────────────────────────────────────────
+   Input Field
+   Matches .form-input but compact for lists
+   ───────────────────────────────────────── */
+
+.list-input__field {
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-build-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.list-input__field:hover {
+  border-color: var(--color-build-border-active);
+  background: var(--color-build-bg-hover);
+}
+
+.list-input__field:focus {
+  outline: none;
+  border-color: var(--color-build-accent);
+  box-shadow: 0 0 0 3px var(--color-build-accent-glow);
+  background: var(--color-bg-tertiary);
+}
+
+.list-input__field::placeholder {
+  color: var(--color-text-dim);
+}
+
+/* ─────────────────────────────────────────
+   Remove Button
+   Subtle circular button, visible on hover/focus
+   ───────────────────────────────────────── */
+
+.list-input__remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  color: var(--color-text-dim);
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--transition-fast),
+    color var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+/* Show remove button on item hover or focus-within */
+.list-input__item:hover .list-input__remove,
+.list-input__item:focus-within .list-input__remove {
+  opacity: 1;
+}
+
+.list-input__remove:hover {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border-color: var(--color-border-primary);
+}
+
+.list-input__remove:focus {
+  outline: none;
+  opacity: 1;
+  color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-glow);
+}
+
+.list-input__remove:active {
+  background: var(--color-accent-medium);
+}
+
+/* ─────────────────────────────────────────
+   Add Button
+   Subtle dashed button for adding items
+   ───────────────────────────────────────── */
+
+.list-input__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: transparent;
+  border: 1px dashed var(--color-build-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-dim);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.list-input__add:hover {
+  color: var(--color-build-accent);
+  border-color: var(--color-build-border-active);
+  background: var(--color-build-bg);
+}
+
+.list-input__add:focus {
+  outline: none;
+  color: var(--color-build-accent);
+  border-color: var(--color-build-accent);
+  box-shadow: 0 0 0 2px var(--color-build-accent-glow);
+}
+
+.list-input__add:active {
+  background: var(--color-build-bg-hover);
+}
+
+.list-input__add span:first-child {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+}
+
+.list-input__add-text {
+  font-weight: var(--font-weight-normal);
+}
+
+/* ─────────────────────────────────────────
+   Limit Message
+   Shown when max items reached
+   ───────────────────────────────────────── */
+
+.list-input__limit {
+  margin: 0;
+  padding: var(--space-xs) 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-dim);
+  text-align: center;
+}
+
+/* ─────────────────────────────────────────
+   Responsive Adjustments
+   ───────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .list-input__field {
+    padding: var(--space-sm);
+    font-size: var(--font-size-base);
+  }
+
+  .list-input__remove {
+    /* Always visible on mobile for touch targets */
+    opacity: 0.6;
+  }
+
+  .list-input__item:hover .list-input__remove,
+  .list-input__item:focus-within .list-input__remove {
+    opacity: 1;
+  }
+}
+
+/* ─────────────────────────────────────────
+   High Contrast Mode Support
+   ───────────────────────────────────────── */
+
+@media (prefers-contrast: high) {
+  .list-input__field {
+    border-width: 2px;
+  }
+
+  .list-input__remove {
+    opacity: 1;
+    border-width: 2px;
+  }
+
+  .list-input__add {
+    border-width: 2px;
+  }
+}
+
+/* ─────────────────────────────────────────
+   Reduced Motion Support
+   ───────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .list-input__field,
+  .list-input__remove,
+  .list-input__add {
+    transition: none;
+  }
+}

@@ -1,0 +1,125 @@
+/* ===========================================
+   Build Mode Toggle Component
+   Professional toggle switch with info button
+   =========================================== */
+
+.build-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.build-mode-toggle--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────
+   Toggle Switch
+   ───────────────────────────────────────── */
+.build-mode-toggle__switch {
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.build-mode-toggle__switch:focus-visible .build-mode-toggle__track {
+  outline: 2px solid var(--color-build-accent);
+  outline-offset: 2px;
+}
+
+.build-mode-toggle__track {
+  display: flex;
+  align-items: center;
+  width: 44px;
+  height: 24px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  padding: 2px;
+  transition: all var(--transition-fast);
+}
+
+.build-mode-toggle__switch:hover .build-mode-toggle__track {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-subtle);
+}
+
+.build-mode-toggle__switch--active .build-mode-toggle__track {
+  background: var(--color-build-accent);
+  border-color: var(--color-build-accent);
+}
+
+.build-mode-toggle__switch--active:hover .build-mode-toggle__track {
+  background: var(--color-build-accent);
+  filter: brightness(1.1);
+}
+
+.build-mode-toggle__thumb {
+  display: block;
+  width: 18px;
+  height: 18px;
+  background: var(--color-text-primary);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform var(--transition-fast);
+}
+
+.build-mode-toggle__switch--active .build-mode-toggle__thumb {
+  transform: translateX(20px);
+}
+
+/* ─────────────────────────────────────────
+   Label
+   ───────────────────────────────────────── */
+.build-mode-toggle__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  user-select: none;
+  min-width: 85px;
+}
+
+/* ─────────────────────────────────────────
+   Info Button
+   ───────────────────────────────────────── */
+.build-mode-toggle__info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.build-mode-toggle__info:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-build-accent);
+  color: var(--color-build-accent);
+}
+
+.build-mode-toggle__info:focus-visible {
+  outline: 2px solid var(--color-build-accent);
+  outline-offset: 2px;
+}
+
+.build-mode-toggle__info svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────── */
+@media (max-width: 480px) {
+  .build-mode-toggle__label {
+    display: none;
+  }
+}
