@@ -1,5 +1,11 @@
 {
   "projects": {},
   "targets": {},
-  "etags": {}
+  "etags": {
+    "mdm-generator": {
+      "extensionInstances": {
+        "firestore-stripe-payments": "a59815ea507893ccbf37fe627594624b63bae6650adc8a7e81148e5f04d2962b"
+      }
+    }
+  }
 }

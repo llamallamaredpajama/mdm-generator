@@ -63,22 +63,26 @@ const GENERATION_LIMITS: Record<SubscriptionTier, number> = {
 
 function determineSubscriptionTier(subscription: DocumentData | null): SubscriptionTier {
   if (!subscription) return 'free';
-  
-  // Check price ID first
-  if (subscription.price?.id && PRICE_TO_TIER_MAP[subscription.price.id]) {
-    return PRICE_TO_TIER_MAP[subscription.price.id];
+
+  // Firebase Stripe Extension stores price as a document reference,
+  // but the full price data is in items[0].price
+  const priceId = subscription.items?.[0]?.price?.id;
+  if (priceId && PRICE_TO_TIER_MAP[priceId]) {
+    return PRICE_TO_TIER_MAP[priceId];
   }
-  
-  // Check product ID as fallback
-  if (subscription.product?.id && PRODUCT_TO_TIER_MAP[subscription.product.id]) {
-    return PRODUCT_TO_TIER_MAP[subscription.product.id];
+
+  // Check product ID from items as fallback
+  const productId = subscription.items?.[0]?.price?.product?.id ||
+                    subscription.items?.[0]?.plan?.product;
+  if (productId && PRODUCT_TO_TIER_MAP[productId]) {
+    return PRODUCT_TO_TIER_MAP[productId];
   }
-  
+
   // Check metadata for tier information
   if (subscription.metadata?.tier) {
     return subscription.metadata.tier as SubscriptionTier;
   }
-  
+
   // Default to free if no tier found
   return 'free';
 }
@@ -138,6 +142,12 @@ export function useSubscription(): SubscriptionHookReturn {
             
             const tier = determineSubscriptionTier(data);
             
+            // Extract IDs from items array (Firebase Stripe Extension format)
+            const itemPrice = data.items?.[0]?.price;
+            const extractedPriceId = itemPrice?.id || null;
+            const extractedProductId = itemPrice?.product?.id ||
+                                       data.items?.[0]?.plan?.product || null;
+
             const subscriptionData: Subscription = {
               id: doc.id,
               status: data.status as SubscriptionStatus,
@@ -148,8 +158,8 @@ export function useSubscription(): SubscriptionHookReturn {
               canceledAt: convertTimestamp(data.canceled_at),
               endedAt: convertTimestamp(data.ended_at),
               trialEnd: convertTimestamp(data.trial_end),
-              priceId: data.price?.id || null,
-              productId: data.product?.id || null,
+              priceId: extractedPriceId,
+              productId: extractedProductId,
               quantity: data.quantity || 1,
               metadata: data.metadata || {},
             };

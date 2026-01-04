@@ -56,8 +56,7 @@ export async function createCheckoutSession(
     success_url: successUrl,
     cancel_url: cancelUrl,
     allow_promotion_codes: true,
-    automatic_tax: true,
-    tax_id_collection: true,
+    // automatic_tax and tax_id_collection disabled - requires Stripe Tax setup
     metadata: {
       userId: user.uid,
       userEmail: user.email || '',

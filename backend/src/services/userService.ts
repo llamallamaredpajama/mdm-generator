@@ -157,6 +157,56 @@ export class UserService {
   }
 
   /**
+   * Check Stripe subscription from Firebase Stripe Extension's customers collection
+   */
+  private async getStripeSubscriptionPlan(uid: string): Promise<SubscriptionPlan | null> {
+    try {
+      const subscriptionsRef = getDb()
+        .collection('customers')
+        .doc(uid)
+        .collection('subscriptions')
+
+      const snapshot = await subscriptionsRef
+        .where('status', 'in', ['active', 'trialing'])
+        .limit(1)
+        .get()
+
+      if (snapshot.empty) {
+        return null
+      }
+
+      const subData = snapshot.docs[0].data()
+
+      // Check price ID from items array (Firebase Stripe Extension format)
+      const priceId = subData.items?.[0]?.price?.id
+      const productId = subData.items?.[0]?.price?.product?.id ||
+                        subData.items?.[0]?.plan?.product
+
+      // Map price/product IDs to plans
+      const PRICE_TO_PLAN: Record<string, SubscriptionPlan> = {
+        'price_1SlgUUC8SiPjuMOqTC4BJ9Kf': 'pro',
+        'price_1SlgUYC8SiPjuMOqmY9saU3e': 'enterprise',
+      }
+      const PRODUCT_TO_PLAN: Record<string, SubscriptionPlan> = {
+        'prod_Tj8kp324D4WDqA': 'pro',
+        'prod_Tj8kNNUXwRIG9v': 'enterprise',
+      }
+
+      if (priceId && PRICE_TO_PLAN[priceId]) {
+        return PRICE_TO_PLAN[priceId]
+      }
+      if (productId && PRODUCT_TO_PLAN[productId]) {
+        return PRODUCT_TO_PLAN[productId]
+      }
+
+      return null
+    } catch (e) {
+      console.error('Error checking Stripe subscription:', e)
+      return null
+    }
+  }
+
+  /**
    * Get usage statistics for user
    */
   async getUsageStats(uid: string): Promise<{
@@ -169,33 +219,43 @@ export class UserService {
     features: UserDocument['features']
   }> {
     const user = await this.getUser(uid)
+
+    // Check for active Stripe subscription (takes precedence)
+    const stripePlan = await this.getStripeSubscriptionPlan(uid)
+
     if (!user) {
-      // Return default free plan stats if user doesn't exist
+      // Return Stripe plan or default free plan stats if user doesn't exist
+      const plan = stripePlan || 'free'
+      const features = PLAN_FEATURES[plan]
       return {
-        plan: 'free',
+        plan,
         used: 0,
-        limit: PLAN_FEATURES.free.maxRequestsPerMonth,
-        remaining: PLAN_FEATURES.free.maxRequestsPerMonth,
+        limit: features.maxRequestsPerMonth,
+        remaining: features.maxRequestsPerMonth,
         percentUsed: 0,
         periodKey: this.getCurrentPeriodKey(),
-        features: PLAN_FEATURES.free
+        features
       }
     }
 
+    // Use Stripe plan if active, otherwise use stored plan
+    const effectivePlan = stripePlan || user.plan
+    const features = PLAN_FEATURES[effectivePlan]
+
     const currentPeriod = this.getCurrentPeriodKey()
     const used = user.periodKey === currentPeriod ? user.usedThisPeriod : 0
-    const limit = user.features.maxRequestsPerMonth
+    const limit = features.maxRequestsPerMonth
     const remaining = Math.max(0, limit - used)
     const percentUsed = limit > 0 ? Math.round((used / limit) * 100) : 0
 
     return {
-      plan: user.plan,
+      plan: effectivePlan,
       used,
       limit,
       remaining,
       percentUsed,
       periodKey: currentPeriod,
-      features: user.features
+      features
     }
   }
 
