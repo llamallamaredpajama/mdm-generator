@@ -199,6 +199,44 @@ export STRIPE_WEBHOOK_SECRET="whsec_..."    # Webhook endpoint secret
 
 **Note**: The `.envrc` file is loaded automatically when entering the project directory if direnv is installed and allowed (`direnv allow`)
 
+### Production Secrets Management
+
+**IMPORTANT**: Never commit real credentials to the repository. Use the following approaches:
+
+#### Local Development
+1. Copy `backend/.env.example` to `backend/.env`
+2. Fill in your actual credentials
+3. Use `direnv` for Stripe keys (`.envrc`)
+4. Both files are in `.gitignore`
+
+#### Cloud Run Deployment
+Use GCP Secret Manager for production secrets:
+```bash
+# Create secrets
+gcloud secrets create firebase-sa-key --data-file=service-account.json
+gcloud secrets create stripe-secret-key --data-file=-  # paste key, Ctrl+D
+
+# Grant Cloud Run access
+gcloud secrets add-iam-policy-binding firebase-sa-key \
+  --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+
+# Deploy with secrets mounted as environment variables
+gcloud run deploy mdm-backend \
+  --set-secrets="GOOGLE_APPLICATION_CREDENTIALS_JSON=firebase-sa-key:latest" \
+  --set-secrets="STRIPE_SECRET_KEY=stripe-secret-key:latest"
+```
+
+#### Required Production Environment Variables
+| Variable | Description | Source |
+|----------|-------------|--------|
+| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | Firebase SA key (JSON string) | Secret Manager |
+| `STRIPE_SECRET_KEY` | Stripe API secret key | Secret Manager |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | Secret Manager |
+| `PROJECT_ID` | GCP project ID | Cloud Run automatic |
+| `FRONTEND_URL` | Production frontend URL for CORS | Environment variable |
+| `PORT` | Server port (default 8080) | Cloud Run automatic |
+
 ## Security Checklist
 
 - [ ] No PHI in code, comments, or logs

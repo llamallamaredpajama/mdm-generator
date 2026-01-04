@@ -4,7 +4,6 @@ import { z } from 'zod'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import admin from 'firebase-admin'
-import { VertexAI } from '@google-cloud/vertexai'
 import { buildPrompt } from './promptBuilder'
 import { MdmSchema, renderMdmText } from './outputSchema'
 import { callGeminiFlash } from './vertex'
@@ -12,16 +11,18 @@ import { userService } from './services/userService'
 
 const app = express()
 
-// CORS configuration for local development
+// CORS configuration
 const allowedOrigins = [
   'http://localhost:5173', // Vite dev server
   'http://localhost:5174', // Alternative Vite port
   'http://localhost:3000', // Alternative React port
-]
+  process.env.FRONTEND_URL, // Production frontend URL
+].filter(Boolean) as string[]
 
 app.use((req, res, next) => {
   const origin = req.headers.origin
-  if (origin && (allowedOrigins.includes(origin) || origin.startsWith('https://mdm-generator'))) {
+  // Allow listed origins or any Firebase Hosting domain for this project
+  if (origin && (allowedOrigins.includes(origin) || origin.match(/^https:\/\/mdm-generator[^.]*\.web\.app$/))) {
     res.header('Access-Control-Allow-Origin', origin)
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -35,15 +36,24 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '1mb' }))
 
-// Initialize Firebase Admin (expects GOOGLE_APPLICATION_CREDENTIALS or default creds in Cloud Run)
+// Initialize Firebase Admin (expects GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS or default creds in Cloud Run)
 async function initFirebase() {
   try {
     if (!admin.apps.length) {
+      const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
       const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
-      console.log('Initializing Firebase Admin with service account:', serviceAccountPath)
       
-      if (serviceAccountPath && serviceAccountPath.includes('.json')) {
+      if (serviceAccountJson) {
+        // Initialize with JSON content from environment variable
+        console.log('Initializing Firebase Admin with JSON credentials from environment')
+        const serviceAccount = JSON.parse(serviceAccountJson)
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+          projectId: process.env.PROJECT_ID || 'mdm-generator'
+        })
+      } else if (serviceAccountPath && serviceAccountPath.includes('.json')) {
         // Initialize with service account file
+        console.log('Initializing Firebase Admin with service account file:', serviceAccountPath)
         const serviceAccountContent = await fs.readFile(path.resolve(serviceAccountPath), 'utf8')
         const serviceAccount = JSON.parse(serviceAccountContent)
         admin.initializeApp({
@@ -52,6 +62,7 @@ async function initFirebase() {
         })
       } else {
         // Initialize with default credentials
+        console.log('Initializing Firebase Admin with default credentials')
         admin.initializeApp()
       }
       console.log('Firebase Admin initialized successfully')

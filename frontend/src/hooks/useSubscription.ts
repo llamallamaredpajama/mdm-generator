@@ -44,16 +44,14 @@ export interface SubscriptionHookReturn {
 
 // Map Stripe price IDs to tiers (these should match your Stripe configuration)
 const PRICE_TO_TIER_MAP: Record<string, SubscriptionTier> = {
-  // Add your actual Stripe price IDs here
-  // 'price_1234567890': 'pro',
-  // 'price_0987654321': 'enterprise',
+  'price_1SlgUUC8SiPjuMOqTC4BJ9Kf': 'pro',
+  'price_1SlgUYC8SiPjuMOqmY9saU3e': 'enterprise',
 };
 
 // Map product IDs to tiers as fallback
 const PRODUCT_TO_TIER_MAP: Record<string, SubscriptionTier> = {
-  // Add your actual Stripe product IDs here
-  // 'prod_1234567890': 'pro',
-  // 'prod_0987654321': 'enterprise',
+  'prod_Tj8kp324D4WDqA': 'pro',
+  'prod_Tj8kNNUXwRIG9v': 'enterprise',
 };
 
 // Generation limits per tier
