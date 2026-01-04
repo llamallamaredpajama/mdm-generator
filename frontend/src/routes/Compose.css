@@ -19,6 +19,10 @@
   gap: var(--space-lg);
   margin-bottom: var(--space-xl);
   flex-wrap: wrap;
+  /* Match narrative-panel width and centering */
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .compose-title {
@@ -277,8 +281,10 @@
     font-size: var(--font-size-2xl);
   }
 
+  .compose-header,
   .narrative-panel,
-  .compose-editor {
+  .compose-editor,
+  .compose-actions {
     max-width: none;
   }
 
@@ -352,6 +358,10 @@
   align-items: center;
   gap: var(--space-md);
   flex-wrap: wrap;
+  /* Match narrative-panel width and centering */
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .compose-submit {
