@@ -46,7 +46,7 @@
   flex: 1;
   padding: var(--space-sm) var(--space-md);
   background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-build-border);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   font-family: inherit;
@@ -60,14 +60,14 @@
 }
 
 .list-input__field:hover {
-  border-color: var(--color-build-border-active);
-  background: var(--color-build-bg-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-bg-tertiary);
 }
 
 .list-input__field:focus {
   outline: none;
-  border-color: var(--color-build-accent);
-  box-shadow: 0 0 0 3px var(--color-build-accent-glow);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
   background: var(--color-bg-tertiary);
 }
 
@@ -139,7 +139,7 @@
   width: 100%;
   padding: var(--space-sm) var(--space-md);
   background: transparent;
-  border: 1px dashed var(--color-build-border);
+  border: 1px dashed var(--color-border-subtle);
   border-radius: var(--radius-md);
   color: var(--color-text-dim);
   font-family: inherit;
@@ -152,20 +152,20 @@
 }
 
 .list-input__add:hover {
-  color: var(--color-build-accent);
-  border-color: var(--color-build-border-active);
-  background: var(--color-build-bg);
+  color: var(--color-text-secondary);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .list-input__add:focus {
   outline: none;
-  color: var(--color-build-accent);
-  border-color: var(--color-build-accent);
-  box-shadow: 0 0 0 2px var(--color-build-accent-glow);
+  color: var(--color-text-secondary);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
 
 .list-input__add:active {
-  background: var(--color-build-bg-hover);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .list-input__add span:first-child {

@@ -1,21 +1,17 @@
 /* ===========================================
    Build Mode Component Styles
-   Structured input interface with blue theme
+   Clean, professional structured input
    =========================================== */
 
 /* ─────────────────────────────────────────
-   Container with Grid Background
+   Container - Clean Professional Design
    ───────────────────────────────────────── */
 
 .build-mode-container {
   min-height: 450px;
   padding: var(--space-lg);
-  background-color: var(--color-build-bg);
-  background-image:
-    linear-gradient(var(--color-build-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-build-grid) 1px, transparent 1px);
-  background-size: 20px 20px;
-  border: 1px solid var(--color-build-border);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
   box-sizing: border-box;
   animation: buildModeFadeIn var(--transition-normal) ease-out;
@@ -61,7 +57,7 @@
 
 .build-mode-label--required::after {
   content: ' *';
-  color: var(--color-build-accent);
+  color: var(--color-accent);
 }
 
 .build-mode-input {
@@ -80,8 +76,8 @@
 
 .build-mode-input:focus {
   outline: none;
-  border-color: var(--color-build-accent);
-  box-shadow: 0 0 0 3px var(--color-build-accent-glow);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
 
 .build-mode-input::placeholder {
@@ -89,7 +85,7 @@
 }
 
 .build-mode-input:hover:not(:focus) {
-  border-color: var(--color-build-border-active);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .build-mode-textarea {
@@ -110,8 +106,8 @@
 
 .build-mode-textarea:focus {
   outline: none;
-  border-color: var(--color-build-accent);
-  box-shadow: 0 0 0 3px var(--color-build-accent-glow);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
 
 .build-mode-textarea::placeholder {
@@ -119,7 +115,7 @@
 }
 
 .build-mode-textarea:hover:not(:focus) {
-  border-color: var(--color-build-border-active);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* Textarea size variants */
@@ -181,12 +177,12 @@
 
 .build-mode-select:focus {
   outline: none;
-  border-color: var(--color-build-accent);
-  box-shadow: 0 0 0 3px var(--color-build-accent-glow);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
 
 .build-mode-select:hover:not(:focus) {
-  border-color: var(--color-build-border-active);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .build-mode-select option {
@@ -239,7 +235,7 @@
 
 .build-mode-divider {
   height: 1px;
-  background: var(--color-build-border);
+  background: var(--color-border-subtle);
   margin: var(--space-sm) 0;
 }
 
@@ -260,7 +256,7 @@
 .build-mode-empty__icon {
   width: 48px;
   height: 48px;
-  color: var(--color-build-accent);
+  color: var(--color-text-muted);
   opacity: 0.5;
   margin-bottom: var(--space-md);
 }

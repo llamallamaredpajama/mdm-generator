@@ -147,9 +147,10 @@ export default function Compose() {
   // Build mode state
   const [buildModeEnabled, setBuildModeEnabled] = useState(false)
   const [formState, setFormState] = useState<BuildModeFormState>(initialBuildModeFormState)
-  const [expandedSections, setExpandedSections] = useState<string[]>(['chiefComplaint'])
+  const [expandedSections, setExpandedSections] = useState<string[]>([])
   const [guideOpen, setGuideOpen] = useState(false)
   const [isMigrating, setIsMigrating] = useState(false)
+  const [dictationGuideVisible, setDictationGuideVisible] = useState(false)
 
   const navigate = useNavigate()
   const idToken = useAuthToken()
@@ -324,7 +325,52 @@ export default function Compose() {
           />
         </header>
 
-        <div className="compose-grid">
+        {/* Simple Mode - Narrative panel with slide-from-behind guide */}
+        {!buildModeEnabled && (
+          <div className="narrative-panel">
+            {/* Tab - appears attached to guide, hangs off left edge of narrative box */}
+            <button
+              type="button"
+              className={`narrative-panel__tab ${dictationGuideVisible ? 'narrative-panel__tab--open' : ''}`}
+              onClick={() => setDictationGuideVisible(!dictationGuideVisible)}
+              aria-expanded={dictationGuideVisible}
+              aria-label={dictationGuideVisible ? 'Close guide' : 'Open guide'}
+            >
+              <svg className="narrative-panel__tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+            </button>
+
+            {/* Guide panel - slides out from behind textarea */}
+            <aside className={`narrative-panel__guide ${dictationGuideVisible ? 'narrative-panel__guide--open' : ''}`}>
+              <DictationGuide />
+            </aside>
+
+            {/* Textarea - positioned IN FRONT */}
+            <textarea
+              className="narrative-panel__textarea"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={SIMPLE_MODE_PLACEHOLDER}
+              disabled={isMigrating}
+            />
+
+            {/* Migration loading overlay */}
+            {isMigrating && (
+              <div className="compose-migration-overlay">
+                <div className="compose-migration-spinner" />
+                <span>Parsing narrative...</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Build Mode */}
+        {buildModeEnabled && (
           <div className="compose-editor">
             {/* Migration loading overlay */}
             {isMigrating && (
@@ -334,62 +380,44 @@ export default function Compose() {
               </div>
             )}
 
-            {/* Simple Mode */}
-            {!buildModeEnabled && (
-              <textarea
-                className="compose-textarea"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={SIMPLE_MODE_PLACEHOLDER}
-                rows={20}
-                disabled={isMigrating}
-              />
-            )}
-
-            {/* Build Mode */}
-            {buildModeEnabled && (
-              <BuildModeAccordion
-                formState={formState}
-                onChange={handleFormChange}
-                expandedSections={expandedSections}
-                onToggleSection={handleToggleSection}
-                validationState={validationState}
-              />
-            )}
-
-            <div className="compose-actions">
-              <button
-                className="compose-submit"
-                disabled={!canSubmit || isMigrating}
-                title={remaining === 0 ? 'No remaining quota this month' : ''}
-                onClick={handleSubmitClick}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-                Generate MDM
-              </button>
-
-              {remaining !== null && (
-                <span className={`compose-quota ${quotaStatus ? `compose-quota--${quotaStatus}` : ''}`}>
-                  <svg className="compose-quota-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                  {remaining} generations remaining
-                </span>
-              )}
-
-              <span className="compose-char-count">
-                {currentText.length.toLocaleString()} characters
-              </span>
-            </div>
+            <BuildModeAccordion
+              formState={formState}
+              onChange={handleFormChange}
+              expandedSections={expandedSections}
+              onToggleSection={handleToggleSection}
+              validationState={validationState}
+            />
           </div>
+        )}
 
-          <aside>
-            <DictationGuide />
-          </aside>
+        {/* Actions bar - shared between modes */}
+        <div className="compose-actions">
+          <button
+            className="compose-submit"
+            disabled={!canSubmit || isMigrating}
+            title={remaining === 0 ? 'No remaining quota this month' : ''}
+            onClick={handleSubmitClick}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+            Generate MDM
+          </button>
+
+          {remaining !== null && (
+            <span className={`compose-quota ${quotaStatus ? `compose-quota--${quotaStatus}` : ''}`}>
+              <svg className="compose-quota-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              {remaining} generations remaining
+            </span>
+          )}
+
+          <span className="compose-char-count">
+            {currentText.length.toLocaleString()} characters
+          </span>
         </div>
       </div>
 

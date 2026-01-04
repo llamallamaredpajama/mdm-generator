@@ -42,9 +42,7 @@ export default function BuildModeToggle({
         </span>
       </div>
 
-      <span className="build-mode-toggle__label">
-        {enabled ? 'Build Mode' : 'Simple Mode'}
-      </span>
+      <span className="build-mode-toggle__label">Build Mode</span>
 
       <button
         type="button"

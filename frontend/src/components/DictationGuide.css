@@ -6,9 +6,13 @@
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border-secondary);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl);
-  position: sticky;
-  top: calc(70px + var(--space-xl)); /* Below navbar */
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Let container control height */
+  height: 100%;
+  box-sizing: border-box;
 }
 
 /* ─────────────────────────────────────────
@@ -16,16 +20,8 @@
    ───────────────────────────────────────── */
 
 .dictation-guide__header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-lg);
-}
-
-.dictation-guide__icon {
-  width: 24px;
-  height: 24px;
-  color: var(--color-accent);
+  margin-bottom: var(--space-sm);
+  flex-shrink: 0;
 }
 
 .dictation-guide__title {
@@ -43,7 +39,8 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-sm);
+  flex-shrink: 0;
 }
 
 .dictation-guide__description code {
@@ -56,6 +53,54 @@
 }
 
 /* ─────────────────────────────────────────
+   Sections Container
+   ───────────────────────────────────────── */
+
+.dictation-guide__sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding-right: var(--space-xs);
+}
+
+/* Scrollbar styling */
+.dictation-guide__sections::-webkit-scrollbar {
+  width: 4px;
+}
+
+.dictation-guide__sections::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dictation-guide__sections::-webkit-scrollbar-thumb {
+  background: var(--color-border-subtle);
+  border-radius: 2px;
+}
+
+.dictation-guide__sections::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-secondary);
+}
+
+.dictation-guide__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.dictation-guide__section-title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+  padding-left: var(--space-sm);
+}
+
+/* ─────────────────────────────────────────
    Checklist
    ───────────────────────────────────────── */
 
@@ -65,15 +110,15 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 2px;
 }
 
 .dictation-guide__item {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-md);
-  padding: var(--space-sm);
-  border-radius: var(--radius-md);
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
   transition: background var(--transition-fast);
 }
 
@@ -82,18 +127,18 @@
 }
 
 .dictation-guide__bullet {
-  width: 8px;
-  height: 8px;
-  background: var(--color-accent);
+  width: 5px;
+  height: 5px;
+  background: var(--color-text-dim);
   border-radius: var(--radius-full);
   margin-top: 6px;
   flex-shrink: 0;
 }
 
 .dictation-guide__item-text {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
 }
 
 /* ─────────────────────────────────────────
@@ -103,7 +148,8 @@
 .dictation-guide__divider {
   height: 1px;
   background: var(--color-border-subtle);
-  margin: var(--space-lg) 0;
+  margin: var(--space-md) 0;
+  flex-shrink: 0;
 }
 
 /* ─────────────────────────────────────────
@@ -114,10 +160,10 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-sm);
-  padding: var(--space-md);
+  padding: var(--space-sm);
   background: var(--color-accent-subtle);
   border-radius: var(--radius-md);
-  margin-top: var(--space-lg);
+  flex-shrink: 0;
 }
 
 .dictation-guide__tip-icon {
@@ -133,6 +179,27 @@
   font-size: var(--font-size-xs);
   line-height: 1.5;
   margin: 0;
+}
+
+/* ─────────────────────────────────────────
+   Footnote
+   ───────────────────────────────────────── */
+
+.dictation-guide__footnote {
+  margin: var(--space-sm) 0 0;
+  font-size: 10px;
+  color: var(--color-text-dim);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.dictation-guide__footnote code {
+  background: var(--color-bg-tertiary);
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--color-text-muted);
 }
 
 /* ─────────────────────────────────────────

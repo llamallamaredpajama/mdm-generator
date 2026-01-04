@@ -1,41 +1,62 @@
 import './DictationGuide.css'
 
-const guideItems = [
-  'Chief complaint and context',
-  'Worst-first consideration and red flags',
-  'Differential diagnoses (most dangerous first)',
-  'Data reviewed/ordered (labs, imaging, consults)',
-  'Clinical decision making and risk assessment',
-  'Disposition and follow-up plan',
+const guideSections = [
+  {
+    title: 'Chief Complaint & Context',
+    items: ['Age & sex', 'Chief complaint', 'Context / HPI'],
+  },
+  {
+    title: 'Problems Considered',
+    items: ['Emergent conditions', 'Non-emergent conditions'],
+  },
+  {
+    title: 'Data Reviewed/Ordered',
+    items: ['Labs', 'Imaging', 'EKG', 'External records', 'Independent historian'],
+  },
+  {
+    title: 'Risk Assessment',
+    items: ['Highest risk element', 'Patient factors', 'Diagnostic risks', 'Treatment risks', 'Disposition risks'],
+  },
+  {
+    title: 'Clinical Reasoning',
+    items: ['Evaluation approach', 'Key decision points', 'Working diagnosis'],
+  },
+  {
+    title: 'Treatment & Procedures',
+    items: ['Medications administered', 'Procedures performed', 'Treatment rationale'],
+  },
+  {
+    title: 'Disposition',
+    items: ['Decision & level of care', 'Rationale', 'Discharge instructions', 'Follow-up', 'Return precautions'],
+  },
 ]
 
 export default function DictationGuide() {
   return (
     <div className="dictation-guide">
       <div className="dictation-guide__header">
-        <svg className="dictation-guide__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-          <polyline points="10 9 9 9 8 9" />
-        </svg>
         <h3 className="dictation-guide__title">Dictation Guide</h3>
       </div>
 
       <p className="dictation-guide__description">
         Ensure your narrative includes these elements for a complete MDM.
-        See <code>docs/mdm-gen-guide.md</code> for detailed guidance.
       </p>
 
-      <ul className="dictation-guide__list">
-        {guideItems.map((item, index) => (
-          <li key={index} className="dictation-guide__item">
-            <span className="dictation-guide__bullet" />
-            <span className="dictation-guide__item-text">{item}</span>
-          </li>
+      <div className="dictation-guide__sections">
+        {guideSections.map((section, sectionIndex) => (
+          <div key={sectionIndex} className="dictation-guide__section">
+            <h4 className="dictation-guide__section-title">{section.title}</h4>
+            <ul className="dictation-guide__list">
+              {section.items.map((item, itemIndex) => (
+                <li key={itemIndex} className="dictation-guide__item">
+                  <span className="dictation-guide__bullet" />
+                  <span className="dictation-guide__item-text">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
 
       <div className="dictation-guide__divider" />
 
@@ -50,6 +71,10 @@ export default function DictationGuide() {
           worst-first differential diagnosis approach typical of Emergency Medicine.
         </p>
       </div>
+
+      <p className="dictation-guide__footnote">
+        See <code>docs/mdm-gen-guide.md</code> for detailed guidance.
+      </p>
     </div>
   )
 }
