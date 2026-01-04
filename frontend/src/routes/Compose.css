@@ -69,13 +69,6 @@
   margin-right: auto;
   /* Allow guide to overflow to the left */
   overflow: visible;
-  /* Use transform for guide-open shift to preserve centering */
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.narrative-panel:has(.narrative-panel__guide--open) {
-  /* Shift right to make room for guide */
-  transform: translateX(calc((320px + var(--space-lg)) / 2));
 }
 
 /* Guide Panel - Positioned BEHIND textarea (z-index: 1) */

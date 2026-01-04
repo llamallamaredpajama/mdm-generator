@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import type { ReactNode } from 'react'
 import AccordionSection from './AccordionSection'
 import { ListInput } from './ListInput'
+import { EnhancedTextarea } from './ui/EnhancedTextarea'
 import type {
   BuildModeFormState,
   SectionValidationState,
@@ -149,13 +150,17 @@ export default function BuildModeAccordion({
             />
           </div>
           <div className="build-mode-field">
-            <label className="build-mode-label">Context / HPI</label>
-            <textarea
-              className="build-mode-textarea"
-              placeholder="History of present illness, onset, duration, associated symptoms..."
+            <EnhancedTextarea
+              id="chiefComplaint-context"
+              label="Context / HPI"
+              helperText="History of present illness, onset, duration, associated symptoms"
               value={formState.chiefComplaint.context}
-              onChange={(e) => handleChange('chiefComplaint', 'context', e.target.value)}
-              rows={3}
+              onChange={(value) => handleChange('chiefComplaint', 'context', value)}
+              minHeight={80}
+              maxHeight={200}
+              maxLength={2000}
+              showCharCount
+              autoGrow
             />
           </div>
         </AccordionSection>
@@ -208,23 +213,31 @@ export default function BuildModeAccordion({
           validationStatus={validationState.dataReviewed}
         >
           <div className="build-mode-field">
-            <label className="build-mode-label">Laboratory Tests</label>
-            <textarea
-              className="build-mode-textarea build-mode-textarea--small"
-              placeholder="CBC, BMP, Troponin, BNP, D-dimer..."
+            <EnhancedTextarea
+              id="dataReviewed-labs"
+              label="Laboratory Tests"
+              helperText="CBC, BMP, Troponin, BNP, D-dimer, etc."
               value={formState.dataReviewed.labs}
-              onChange={(e) => handleChange('dataReviewed', 'labs', e.target.value)}
-              rows={2}
+              onChange={(value) => handleChange('dataReviewed', 'labs', value)}
+              minHeight={60}
+              maxHeight={150}
+              maxLength={1000}
+              showCharCount
+              autoGrow
             />
           </div>
           <div className="build-mode-field">
-            <label className="build-mode-label">Imaging Studies</label>
-            <textarea
-              className="build-mode-textarea build-mode-textarea--small"
-              placeholder="Chest X-ray, CT chest, Ultrasound..."
+            <EnhancedTextarea
+              id="dataReviewed-imaging"
+              label="Imaging Studies"
+              helperText="Chest X-ray, CT chest, Ultrasound, etc."
               value={formState.dataReviewed.imaging}
-              onChange={(e) => handleChange('dataReviewed', 'imaging', e.target.value)}
-              rows={2}
+              onChange={(value) => handleChange('dataReviewed', 'imaging', value)}
+              minHeight={60}
+              maxHeight={150}
+              maxLength={1000}
+              showCharCount
+              autoGrow
             />
           </div>
           <div className="build-mode-field">
@@ -282,45 +295,57 @@ export default function BuildModeAccordion({
           </div>
           <div className="build-mode-row">
             <div className="build-mode-field">
-              <label className="build-mode-label">Patient Factors</label>
-              <textarea
-                className="build-mode-textarea build-mode-textarea--small"
-                placeholder="Age, comorbidities, social determinants..."
+              <EnhancedTextarea
+                id="riskAssessment-patientFactors"
+                label="Patient Factors"
+                helperText="Age, comorbidities, social determinants"
                 value={formState.riskAssessment.patientFactors}
-                onChange={(e) => handleChange('riskAssessment', 'patientFactors', e.target.value)}
-                rows={2}
+                onChange={(value) => handleChange('riskAssessment', 'patientFactors', value)}
+                minHeight={60}
+                maxHeight={120}
+                maxLength={500}
+                autoGrow
               />
             </div>
             <div className="build-mode-field">
-              <label className="build-mode-label">Diagnostic Risks</label>
-              <textarea
-                className="build-mode-textarea build-mode-textarea--small"
-                placeholder="Radiation, contrast, procedures..."
+              <EnhancedTextarea
+                id="riskAssessment-diagnosticRisks"
+                label="Diagnostic Risks"
+                helperText="Radiation, contrast, procedures"
                 value={formState.riskAssessment.diagnosticRisks}
-                onChange={(e) => handleChange('riskAssessment', 'diagnosticRisks', e.target.value)}
-                rows={2}
+                onChange={(value) => handleChange('riskAssessment', 'diagnosticRisks', value)}
+                minHeight={60}
+                maxHeight={120}
+                maxLength={500}
+                autoGrow
               />
             </div>
           </div>
           <div className="build-mode-row">
             <div className="build-mode-field">
-              <label className="build-mode-label">Treatment Risks</label>
-              <textarea
-                className="build-mode-textarea build-mode-textarea--small"
-                placeholder="Medications, interventions..."
+              <EnhancedTextarea
+                id="riskAssessment-treatmentRisks"
+                label="Treatment Risks"
+                helperText="Medications, interventions"
                 value={formState.riskAssessment.treatmentRisks}
-                onChange={(e) => handleChange('riskAssessment', 'treatmentRisks', e.target.value)}
-                rows={2}
+                onChange={(value) => handleChange('riskAssessment', 'treatmentRisks', value)}
+                minHeight={60}
+                maxHeight={120}
+                maxLength={500}
+                autoGrow
               />
             </div>
             <div className="build-mode-field">
-              <label className="build-mode-label">Disposition Risks</label>
-              <textarea
-                className="build-mode-textarea build-mode-textarea--small"
-                placeholder="Risks if discharged with uncertainty..."
+              <EnhancedTextarea
+                id="riskAssessment-dispositionRisks"
+                label="Disposition Risks"
+                helperText="Risks if discharged with uncertainty"
                 value={formState.riskAssessment.dispositionRisks}
-                onChange={(e) => handleChange('riskAssessment', 'dispositionRisks', e.target.value)}
-                rows={2}
+                onChange={(value) => handleChange('riskAssessment', 'dispositionRisks', value)}
+                minHeight={60}
+                maxHeight={120}
+                maxLength={500}
+                autoGrow
               />
             </div>
           </div>
@@ -336,23 +361,31 @@ export default function BuildModeAccordion({
           validationStatus={validationState.clinicalReasoning}
         >
           <div className="build-mode-field">
-            <label className="build-mode-label">Evaluation Approach</label>
-            <textarea
-              className="build-mode-textarea"
-              placeholder="Systematic evaluation strategy, clinical decision rules used (HEART, NEXUS, Wells, etc.)..."
+            <EnhancedTextarea
+              id="clinicalReasoning-evaluationApproach"
+              label="Evaluation Approach"
+              helperText="Systematic evaluation strategy, clinical decision rules used (HEART, NEXUS, Wells, etc.)"
               value={formState.clinicalReasoning.evaluationApproach}
-              onChange={(e) => handleChange('clinicalReasoning', 'evaluationApproach', e.target.value)}
-              rows={3}
+              onChange={(value) => handleChange('clinicalReasoning', 'evaluationApproach', value)}
+              minHeight={80}
+              maxHeight={200}
+              maxLength={1500}
+              showCharCount
+              autoGrow
             />
           </div>
           <div className="build-mode-field">
-            <label className="build-mode-label">Key Decision Points</label>
-            <textarea
-              className="build-mode-textarea"
-              placeholder="Critical thinking demonstrated, why certain diagnoses were ruled out..."
+            <EnhancedTextarea
+              id="clinicalReasoning-keyDecisionPoints"
+              label="Key Decision Points"
+              helperText="Critical thinking demonstrated, why certain diagnoses were ruled out"
               value={formState.clinicalReasoning.keyDecisionPoints}
-              onChange={(e) => handleChange('clinicalReasoning', 'keyDecisionPoints', e.target.value)}
-              rows={3}
+              onChange={(value) => handleChange('clinicalReasoning', 'keyDecisionPoints', value)}
+              minHeight={80}
+              maxHeight={200}
+              maxLength={1500}
+              showCharCount
+              autoGrow
             />
           </div>
           <div className="build-mode-field">
@@ -377,33 +410,42 @@ export default function BuildModeAccordion({
           validationStatus={validationState.treatmentProcedures}
         >
           <div className="build-mode-field">
-            <label className="build-mode-label">Medications Administered</label>
-            <textarea
-              className="build-mode-textarea"
-              placeholder="Drug, dose, route, indication (or 'see MAR')..."
+            <EnhancedTextarea
+              id="treatmentProcedures-medications"
+              label="Medications Administered"
+              helperText="Drug, dose, route, indication (or 'see MAR')"
               value={formState.treatmentProcedures.medications}
-              onChange={(e) => handleChange('treatmentProcedures', 'medications', e.target.value)}
-              rows={2}
+              onChange={(value) => handleChange('treatmentProcedures', 'medications', value)}
+              minHeight={80}
+              maxHeight={150}
+              maxLength={1000}
+              autoGrow
             />
           </div>
           <div className="build-mode-field">
-            <label className="build-mode-label">Procedures Performed</label>
-            <textarea
-              className="build-mode-textarea"
-              placeholder="Type, indication, outcome (leave empty if none)..."
+            <EnhancedTextarea
+              id="treatmentProcedures-procedures"
+              label="Procedures Performed"
+              helperText="Type, indication, outcome (leave empty if none)"
               value={formState.treatmentProcedures.procedures}
-              onChange={(e) => handleChange('treatmentProcedures', 'procedures', e.target.value)}
-              rows={2}
+              onChange={(value) => handleChange('treatmentProcedures', 'procedures', value)}
+              minHeight={80}
+              maxHeight={150}
+              maxLength={1000}
+              autoGrow
             />
           </div>
           <div className="build-mode-field">
-            <label className="build-mode-label">Treatment Rationale</label>
-            <textarea
-              className="build-mode-textarea build-mode-textarea--small"
-              placeholder="Why these interventions were chosen, patient consent..."
+            <EnhancedTextarea
+              id="treatmentProcedures-rationale"
+              label="Treatment Rationale"
+              helperText="Why these interventions were chosen, patient consent"
               value={formState.treatmentProcedures.rationale}
-              onChange={(e) => handleChange('treatmentProcedures', 'rationale', e.target.value)}
-              rows={2}
+              onChange={(value) => handleChange('treatmentProcedures', 'rationale', value)}
+              minHeight={60}
+              maxHeight={120}
+              maxLength={500}
+              autoGrow
             />
           </div>
         </AccordionSection>
@@ -449,24 +491,31 @@ export default function BuildModeAccordion({
             </div>
           </div>
           <div className="build-mode-field">
-            <label className="build-mode-label">Disposition Rationale</label>
-            <textarea
-              className="build-mode-textarea build-mode-textarea--small"
-              placeholder="Clinical reasoning for disposition choice..."
+            <EnhancedTextarea
+              id="disposition-rationale"
+              label="Disposition Rationale"
+              helperText="Clinical reasoning for disposition choice"
               value={formState.disposition.rationale}
-              onChange={(e) => handleChange('disposition', 'rationale', e.target.value)}
-              rows={2}
+              onChange={(value) => handleChange('disposition', 'rationale', value)}
+              minHeight={60}
+              maxHeight={120}
+              maxLength={500}
+              autoGrow
             />
           </div>
           <div className="build-mode-divider" />
           <div className="build-mode-field">
-            <label className="build-mode-label">Discharge Instructions (if applicable)</label>
-            <textarea
-              className="build-mode-textarea"
-              placeholder="Diagnoses explained, medications prescribed, incidental findings..."
+            <EnhancedTextarea
+              id="disposition-dischargeInstructions"
+              label="Discharge Instructions (if applicable)"
+              helperText="Diagnoses explained, medications prescribed, incidental findings"
               value={formState.disposition.dischargeInstructions}
-              onChange={(e) => handleChange('disposition', 'dischargeInstructions', e.target.value)}
-              rows={3}
+              onChange={(value) => handleChange('disposition', 'dischargeInstructions', value)}
+              minHeight={80}
+              maxHeight={200}
+              maxLength={1500}
+              showCharCount
+              autoGrow
             />
           </div>
           <div className="build-mode-row">

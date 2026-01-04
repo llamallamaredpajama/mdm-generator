@@ -88,45 +88,6 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.build-mode-textarea {
-  padding: var(--space-sm) var(--space-md);
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  font-family: inherit;
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-relaxed);
-  resize: vertical;
-  min-height: 80px;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.build-mode-textarea:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
-}
-
-.build-mode-textarea::placeholder {
-  color: var(--color-text-muted);
-}
-
-.build-mode-textarea:hover:not(:focus) {
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Textarea size variants */
-.build-mode-textarea--small {
-  min-height: 60px;
-}
-
-.build-mode-textarea--large {
-  min-height: 120px;
-}
-
 /* ─────────────────────────────────────────
    Horizontal Row Layout
    ───────────────────────────────────────── */
@@ -206,13 +167,11 @@
    ───────────────────────────────────────── */
 
 .build-mode-input--error,
-.build-mode-textarea--error,
 .build-mode-select--error {
   border-color: var(--color-error);
 }
 
 .build-mode-input--error:focus,
-.build-mode-textarea--error:focus,
 .build-mode-select--error:focus {
   box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
 }
@@ -224,8 +183,7 @@
 }
 
 /* Success state for complete fields */
-.build-mode-input--success,
-.build-mode-textarea--success {
+.build-mode-input--success {
   border-color: var(--color-success);
 }
 
@@ -298,7 +256,6 @@
   }
 
   .build-mode-input,
-  .build-mode-textarea,
   .build-mode-select {
     font-size: var(--font-size-base);
     padding: var(--space-sm);

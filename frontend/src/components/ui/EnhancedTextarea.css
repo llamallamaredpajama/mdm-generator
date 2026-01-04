@@ -1,0 +1,149 @@
+/* ===========================================
+   EnhancedTextarea Component Styles
+   Uses design tokens from tokens.css
+   =========================================== */
+
+.enhanced-textarea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 100%;
+}
+
+/* ─────────────────────────────────────────
+   Label
+   ───────────────────────────────────────── */
+
+.enhanced-textarea__label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.enhanced-textarea__label--required::after {
+  content: ' *';
+  color: var(--color-build-accent);
+}
+
+/* ─────────────────────────────────────────
+   Wrapper (contains textarea + count)
+   ───────────────────────────────────────── */
+
+.enhanced-textarea__wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* ─────────────────────────────────────────
+   Textarea Input
+   ───────────────────────────────────────── */
+
+.enhanced-textarea__input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  padding-bottom: calc(var(--space-sm) + 1.25rem); /* Extra space for char count */
+
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-primary);
+
+  box-sizing: border-box;
+  overflow-y: auto;
+  transition: border-color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              height var(--transition-fast);
+}
+
+.enhanced-textarea__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Focus state */
+.enhanced-textarea__input:focus {
+  outline: none;
+  border-color: var(--color-build-border-active);
+  box-shadow: 0 0 0 3px var(--color-build-accent-glow);
+}
+
+/* Hover state (when not focused) */
+.enhanced-textarea__input:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Disabled state */
+.enhanced-textarea__input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Invalid/error state */
+.enhanced-textarea__input[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.enhanced-textarea__input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.3);
+}
+
+/* ─────────────────────────────────────────
+   Character Count
+   ───────────────────────────────────────── */
+
+.enhanced-textarea__count {
+  position: absolute;
+  bottom: var(--space-sm);
+  right: var(--space-md);
+
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-dim);
+
+  pointer-events: none;
+  transition: color var(--transition-fast);
+}
+
+.enhanced-textarea__count--warning {
+  color: var(--color-warning);
+}
+
+.enhanced-textarea__count--error {
+  color: var(--color-error);
+}
+
+/* ─────────────────────────────────────────
+   Accessibility
+   ───────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .enhanced-textarea__input {
+    transition: none;
+  }
+
+  .enhanced-textarea__count {
+    transition: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .enhanced-textarea__input {
+    border-width: 2px;
+  }
+
+  .enhanced-textarea__input:focus {
+    box-shadow: 0 0 0 2px var(--color-build-accent);
+  }
+}
+
+/* Focus visible for keyboard navigation */
+.enhanced-textarea__input:focus-visible {
+  outline: 2px solid var(--color-build-accent);
+  outline-offset: 2px;
+}
