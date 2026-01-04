@@ -1,4 +1,5 @@
 # Backend Dockerfile for Cloud Run
+# Build context should be project root, e.g.: docker build -f backend/Dockerfile .
 FROM node:20-slim
 
 # Enable Corepack to use pnpm
@@ -7,13 +8,17 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # Copy package files for dependency caching
-COPY package.json pnpm-lock.yaml ./
+COPY backend/package.json backend/pnpm-lock.yaml ./
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile || pnpm install
 
-# Copy source
-COPY . .
+# Copy backend source
+COPY backend/src ./src
+COPY backend/tsconfig.json ./
+
+# Copy docs folder (needed by promptBuilder)
+COPY docs /docs
 
 # Build TypeScript
 RUN pnpm run build

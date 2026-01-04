@@ -204,8 +204,14 @@ app.post('/v1/generate', async (req, res) => {
       console.log(result.text.substring(0, 500)) // First 500 chars
       console.log('=== END PREVIEW ===')
       
+      // Strip markdown code fences if present
+      let cleanedText = result.text
+        .replace(/^```json\s*/gm, '')
+        .replace(/^```\s*$/gm, '')
+        .trim()
+
       // Expect model to return JSON first, then '---TEXT---' and text rendering. Try to parse.
-      const [jsonPart, textPart] = result.text.split('\n---TEXT---\n')
+      const [jsonPart, textPart] = cleanedText.split('\n---TEXT---\n')
       try {
         const parsed = JSON.parse(jsonPart)
         const mdm = MdmSchema.parse(parsed)
@@ -214,10 +220,10 @@ app.post('/v1/generate', async (req, res) => {
       } catch (parseError) {
         console.log('JSON parsing failed:', parseError)
         // Fallback: try to coerce by searching for JSON braces
-        const jsonStart = result.text.indexOf('{')
-        const jsonEnd = result.text.lastIndexOf('}')
+        const jsonStart = cleanedText.indexOf('{')
+        const jsonEnd = cleanedText.lastIndexOf('}')
         if (jsonStart >= 0 && jsonEnd > jsonStart) {
-          const jsonStr = result.text.slice(jsonStart, jsonEnd + 1)
+          const jsonStr = cleanedText.slice(jsonStart, jsonEnd + 1)
           const mdm = MdmSchema.parse(JSON.parse(jsonStr))
           draftJson = mdm
           draftText = renderMdmText(mdm)

@@ -31,7 +31,8 @@ export async function whoAmI(userIdToken: string): Promise<{
     teamMembers: number
   }
 }> {
-  const res = await fetch('http://localhost:8080/v1/whoami', {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  const res = await fetch(`${apiBaseUrl}/v1/whoami`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userIdToken }),
@@ -41,7 +42,8 @@ export async function whoAmI(userIdToken: string): Promise<{
 }
 
 export async function generateMDM(body: GenerateRequest): Promise<GenerateResponse> {
-  const res = await fetch('http://localhost:8080/v1/generate', {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  const res = await fetch(`${apiBaseUrl}/v1/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

@@ -6,7 +6,7 @@ export const MdmSchema = z.object({
   decision_making: z.string(),
   risk: z.union([z.string(), z.array(z.string())]),
   disposition: z.string().optional().default(''),
-  disclaimers: z.string().optional().default('Educational draft. Physician must review. No PHI.'),
+  disclaimers: z.union([z.string(), z.array(z.string())]).optional().default('Educational draft. Physician must review. No PHI.'),
 })
 
 export type Mdm = z.infer<typeof MdmSchema>
@@ -39,7 +39,11 @@ export function renderMdmText(mdm: Mdm): string {
   }
   if (mdm.disclaimers) {
     lines.push('Notes:')
-    lines.push(mdm.disclaimers)
+    if (Array.isArray(mdm.disclaimers)) {
+      for (const d of mdm.disclaimers) lines.push(`- ${d}`)
+    } else {
+      lines.push(mdm.disclaimers)
+    }
   }
   return lines.join('\n')
 }

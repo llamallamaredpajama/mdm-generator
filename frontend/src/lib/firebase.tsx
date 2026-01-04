@@ -28,13 +28,23 @@ const provider = new GoogleAuthProvider()
 
 // Try popup first, fall back to redirect if popup fails
 export async function signInWithGoogle() {
+  console.log('Starting Google sign in...')
+  console.log('Firebase config:', {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY?.substring(0, 10) + '...',
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID
+  })
+  
   try {
     // First attempt with popup
+    console.log('Attempting popup sign in...')
     const result = await signInWithPopup(auth, provider)
     console.log('Sign in successful (popup):', result.user.email)
     return result
   } catch (error: any) {
     console.error('Popup sign in error:', error)
+    console.error('Error code:', error.code)
+    console.error('Error message:', error.message)
     
     // If popup was blocked or failed, try redirect
     if (error.code === 'auth/popup-blocked' || 
@@ -87,7 +97,8 @@ export function useAuthToken() {
   return token
 }
 
-export const AuthContext = createContext<{ user: User | null }>({ user: null })
+const AuthContext = createContext<{ user: User | null }>({ user: null })
+
 export const useAuth = () => useContext(AuthContext)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
