@@ -5,6 +5,7 @@
 .compose-page {
   max-width: var(--max-width-wide);
   margin: 0 auto;
+  padding: 0 var(--space-2xl);
 }
 
 /* ─────────────────────────────────────────
@@ -58,15 +59,19 @@
   position: relative;
   /* Taller to fill more of the viewport */
   min-height: calc(100vh - 280px);
+  /* Constrain width and center for focused editing */
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
   /* Allow guide to overflow to the left */
   overflow: visible;
-  /* Add left margin to make room for guide when open */
-  margin-left: 0;
-  transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Use transform for guide-open shift to preserve centering */
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .narrative-panel:has(.narrative-panel__guide--open) {
-  margin-left: calc(320px + var(--space-lg));
+  /* Shift right to make room for guide */
+  transform: translateX(calc((320px + var(--space-lg)) / 2));
 }
 
 /* Guide Panel - Positioned BEHIND textarea (z-index: 1) */
@@ -258,6 +263,10 @@
 }
 
 @media (max-width: 768px) {
+  .compose-page {
+    padding: 0 var(--space-md);
+  }
+
   .compose-header {
     flex-direction: column;
     align-items: flex-start;
@@ -266,6 +275,11 @@
 
   .compose-title {
     font-size: var(--font-size-2xl);
+  }
+
+  .narrative-panel,
+  .compose-editor {
+    max-width: none;
   }
 
   .compose-actions {
@@ -318,6 +332,11 @@
 .compose-editor {
   flex: 1;
   min-width: 0;
+  /* Constrain width and center for focused editing */
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
