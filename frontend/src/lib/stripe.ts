@@ -17,22 +17,20 @@ import { db } from './firebase';
 import { type User } from 'firebase/auth';
 
 // Re-export types that components need
-export type { 
-  CheckoutSession, 
-  Subscription, 
-  BillingPortalSession,
+export type {
+  CheckoutSession,
+  Subscription,
   ProductWithPrices,
   PlanTier,
-  UserSubscriptionState 
+  UserSubscriptionState
 } from '../types/stripe';
 
-import type { 
-  CheckoutSession, 
-  Subscription, 
-  BillingPortalSession,
+import type {
+  CheckoutSession,
+  Subscription,
   ProductWithPrices,
   PlanTier,
-  UserSubscriptionState 
+  UserSubscriptionState
 } from '../types/stripe';
 
 /**
@@ -162,6 +160,9 @@ export function subscribeToSubscriptionChanges(
 
 /**
  * Create a customer portal session for managing billing
+ *
+ * The Firebase Stripe Extension's createPortalLink is a callable HTTP function.
+ * It expects the Firebase callable function format with data wrapper.
  */
 export async function createCustomerPortalSession(
   user: User,
@@ -171,30 +172,41 @@ export async function createCustomerPortalSession(
     throw new Error('User must be authenticated to access customer portal');
   }
 
-  const portalSessionRef = collection(db, 'customers', user.uid, 'portal_sessions');
-  
-  const sessionData: Partial<BillingPortalSession> = {
-    return_url: returnUrl,
-  };
+  // Get the user's ID token for authentication
+  const idToken = await user.getIdToken();
 
-  const docRef = await addDoc(portalSessionRef, sessionData);
-  
-  return new Promise((resolve, reject) => {
-    const unsubscribe = onSnapshot(docRef, (snap) => {
-      const data = snap.data() as BillingPortalSession;
-      
-      if (data?.url) {
-        unsubscribe();
-        resolve(data.url);
-      }
-    });
-    
-    // Timeout after 30 seconds
-    setTimeout(() => {
-      unsubscribe();
-      reject(new Error('Portal session creation timed out'));
-    }, 30000);
+  // Call the Firebase Stripe Extension's callable function
+  // Callable functions expect { data: {...} } wrapper format
+  const functionUrl = 'https://us-central1-mdm-generator.cloudfunctions.net/ext-firestore-stripe-payments-createPortalLink';
+
+  const response = await fetch(functionUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({
+      data: {
+        returnUrl,
+      },
+    }),
   });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to create portal session: ${errorText}`);
+  }
+
+  const responseData = await response.json();
+
+  // Callable functions wrap the response in { result: {...} }
+  const url = responseData.result?.url || responseData.url;
+
+  if (!url) {
+    throw new Error('Portal session response missing URL');
+  }
+
+  return url;
 }
 
 /**
