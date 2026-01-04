@@ -1,0 +1,160 @@
+/* ===========================================
+   Compose Page Styles
+   =========================================== */
+
+.compose-page {
+  max-width: var(--max-width-wide);
+  margin: 0 auto;
+}
+
+/* ─────────────────────────────────────────
+   Header
+   ───────────────────────────────────────── */
+
+.compose-header {
+  margin-bottom: var(--space-xl);
+}
+
+.compose-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--space-sm);
+}
+
+.compose-subtitle {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+}
+
+/* ─────────────────────────────────────────
+   Grid Layout
+   ───────────────────────────────────────── */
+
+.compose-grid {
+  display: grid;
+  grid-template-columns: 1fr minmax(300px, 380px);
+  gap: var(--space-xl);
+}
+
+@media (max-width: 1024px) {
+  .compose-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─────────────────────────────────────────
+   Editor Section
+   ───────────────────────────────────────── */
+
+.compose-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.compose-textarea {
+  min-height: 450px;
+  padding: var(--space-lg);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  resize: vertical;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.compose-textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+}
+
+.compose-textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* ─────────────────────────────────────────
+   Actions Bar
+   ───────────────────────────────────────── */
+
+.compose-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.compose-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-xl);
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
+  color: var(--color-text-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.compose-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+.compose-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.compose-submit svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ─────────────────────────────────────────
+   Quota Display
+   ───────────────────────────────────────── */
+
+.compose-quota {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.compose-quota--warning {
+  color: var(--color-warning);
+}
+
+.compose-quota--danger {
+  color: var(--color-accent);
+}
+
+.compose-quota-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─────────────────────────────────────────
+   Character Count
+   ───────────────────────────────────────── */
+
+.compose-char-count {
+  margin-left: auto;
+  color: var(--color-text-dim);
+  font-size: var(--font-size-sm);
+}

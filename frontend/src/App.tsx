@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './lib/firebase'
+import { ToastProvider } from './contexts/ToastContext'
 import Layout from './routes/Layout'
 import Start from './routes/Start'
 import Compose from './routes/Compose'
@@ -12,6 +13,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ToastProvider>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Start />} />
@@ -22,6 +24,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   )

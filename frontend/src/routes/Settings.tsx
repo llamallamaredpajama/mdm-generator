@@ -2,17 +2,45 @@ import { useEffect, useState } from 'react'
 import { useAuthToken, useAuth, signOutUser } from '../lib/firebase'
 import { whoAmI } from '../lib/api'
 import { useSubscription } from '../hooks/useSubscription'
-import { 
-  createCheckoutSession, 
+import { useToast } from '../contexts/ToastContext'
+import {
+  createCheckoutSession,
   createCustomerPortalSession,
   getProducts,
   type ProductWithPrices
 } from '../lib/stripe'
+import './Settings.css'
+
+// Skeleton component for loading states
+function Skeleton({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
+  return <div className={`skeleton ${className}`} style={style} />
+}
+
+function SettingsCardSkeleton() {
+  return (
+    <div className="settings-skeleton-card">
+      <div className="settings-skeleton-header">
+        <Skeleton className="skeleton-title" style={{ width: '120px' }} />
+        <Skeleton className="skeleton-text" style={{ width: '80px' }} />
+      </div>
+      <div className="settings-skeleton-row">
+        <Skeleton className="skeleton-text" style={{ width: '100px' }} />
+        <Skeleton className="skeleton-text" style={{ width: '200px' }} />
+      </div>
+      <div className="settings-skeleton-row">
+        <Skeleton className="skeleton-text" style={{ width: '100px' }} />
+        <Skeleton className="skeleton-text" style={{ width: '150px' }} />
+      </div>
+      <Skeleton className="settings-skeleton-bar" />
+    </div>
+  )
+}
 
 export default function Settings() {
   const token = useAuthToken()
   const { user } = useAuth()
   const { subscription, tier, loading: subLoading } = useSubscription()
+  const { error: showError } = useToast()
   const [info, setInfo] = useState<{ plan: string | null; usedThisPeriod: number; monthlyQuota: number; remaining: number } | null>(null)
   const [loading, setLoading] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
@@ -49,23 +77,22 @@ export default function Settings() {
 
   const handleUpgrade = async () => {
     if (!user) return
-    
+
     try {
       setRedirecting(true)
-      
-      // Find the Pro product price ID
-      const proProduct = products.find(p => 
-        p.metadata?.tier === 'pro' || 
+
+      const proProduct = products.find(p =>
+        p.metadata?.tier === 'pro' ||
         p.name.toLowerCase() === 'pro'
       )
-      
+
       if (!proProduct || !proProduct.prices?.length) {
-        alert('Pro plan is not available yet. Please try again later.')
+        showError('Pro plan is not available yet. Please try again later.')
         setRedirecting(false)
         return
       }
 
-      const price = proProduct.prices.find((p: any) => 
+      const price = proProduct.prices.find((p: any) =>
         p.recurring?.interval === 'month'
       ) || proProduct.prices[0]
 
@@ -75,25 +102,25 @@ export default function Settings() {
         window.location.origin + '/settings?success=true',
         window.location.origin + '/settings'
       )
-      
+
       window.location.href = checkoutUrl
     } catch (error) {
       console.error('Error creating checkout session:', error)
-      alert('Unable to start checkout. Please try again.')
+      showError('Unable to start checkout. Please try again.')
       setRedirecting(false)
     }
   }
 
   const handleManageBilling = async () => {
     if (!user) return
-    
+
     try {
       setRedirecting(true)
       const portalUrl = await createCustomerPortalSession(user)
       window.location.href = portalUrl
     } catch (error) {
       console.error('Error creating portal session:', error)
-      alert('Unable to open billing portal. Please try again.')
+      showError('Unable to open billing portal. Please try again.')
       setRedirecting(false)
     }
   }
@@ -129,180 +156,265 @@ export default function Settings() {
     }
   }
 
+  const getUsagePercentage = () => {
+    if (!info) return 0
+    return Math.min(100, (info.usedThisPeriod / info.monthlyQuota) * 100)
+  }
+
+  const getProgressClass = () => {
+    const percentage = getUsagePercentage()
+    if (percentage >= 90) return 'settings-progress-fill--high'
+    if (percentage >= 70) return 'settings-progress-fill--medium'
+    return 'settings-progress-fill--low'
+  }
+
   return (
-    <section>
-      <h2>Settings</h2>
-      
+    <div className="settings-page">
+      <h1 className="settings-title">Settings</h1>
+
       {/* Account Section */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h3>Account</h3>
+      <section className="settings-section">
+        <h2 className="settings-section-title">
+          <svg className="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          Account
+        </h2>
+
         {user ? (
-          <div style={{ marginBottom: '1rem' }}>
-            <div style={{ marginBottom: '0.5rem' }}>
-              <strong>Email:</strong> {user.email}
+          <div className="settings-card">
+            <div className="settings-info-row">
+              <span className="settings-info-label">Email</span>
+              <span className="settings-info-value">{user.email}</span>
             </div>
-            <div style={{ marginBottom: '1rem' }}>
-              <strong>User ID:</strong> {user.uid}
+            <div className="settings-info-row">
+              <span className="settings-info-label">User ID</span>
+              <span className="settings-info-value" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-xs)' }}>
+                {user.uid}
+              </span>
             </div>
-            <button onClick={() => signOutUser()}>Sign out</button>
+            <div className="settings-actions">
+              <button className="settings-btn settings-btn--danger" onClick={() => signOutUser()}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Sign Out
+              </button>
+            </div>
           </div>
         ) : (
-          <div>Please sign in on the Start page.</div>
+          <div className="settings-signin">
+            <svg className="settings-signin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <p className="settings-signin-text">Please sign in on the Start page to manage your account.</p>
+          </div>
         )}
-      </div>
+      </section>
 
-      {/* Subscription Management Section */}
+      {/* Subscription Section */}
       {user && (
-        <div style={{ marginBottom: '2rem' }}>
-          <h3>Subscription Management</h3>
-          
+        <section className="settings-section">
+          <h2 className="settings-section-title">
+            <svg className="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+              <line x1="1" y1="10" x2="23" y2="10" />
+            </svg>
+            Subscription
+          </h2>
+
           {subLoading || loading ? (
-            <div>Loading subscription details...</div>
+            <SettingsCardSkeleton />
           ) : (
             <>
-              {/* Current Plan Details */}
-              <div style={{ 
-                background: '#f5f5f5', 
-                padding: '1rem', 
-                borderRadius: '8px',
-                marginBottom: '1rem'
-              }}>
-                <h4 style={{ marginTop: 0 }}>Current Plan: {getPlanDisplayName(tier)}</h4>
-                
+              {/* Current Plan */}
+              <div className="settings-card">
+                <div className="settings-card__header">
+                  <h3 className="settings-card__title">Current Plan: {getPlanDisplayName(tier)}</h3>
+                  {subscription?.status === 'active' && (
+                    <span className="settings-badge settings-badge--success">Active</span>
+                  )}
+                  {subscription?.status === 'trialing' && (
+                    <span className="settings-badge settings-badge--accent">Trial</span>
+                  )}
+                  {!subscription && (
+                    <span className="settings-badge settings-badge--accent">Free</span>
+                  )}
+                </div>
+
                 {subscription && subscription.status === 'active' ? (
                   <>
-                    <p style={{ color: '#0a0', marginBottom: '0.5rem' }}>
-                      ✓ Active Subscription
+                    <p className="settings-status settings-status--active">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      Active Subscription
                     </p>
-                    <p style={{ marginBottom: '0.5rem' }}>
-                      <strong>Status:</strong> {subscription.status}
-                    </p>
-                    <p style={{ marginBottom: '0.5rem' }}>
-                      <strong>Billing Period:</strong> {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
-                    </p>
+                    <div className="settings-info-row">
+                      <span className="settings-info-label">Billing Period</span>
+                      <span className="settings-info-value">
+                        {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
+                      </span>
+                    </div>
                     {subscription.cancelAtPeriodEnd && (
-                      <p style={{ color: '#aa0', marginBottom: '0.5rem' }}>
-                        ⚠️ Subscription will cancel at period end
+                      <p className="settings-status settings-status--warning">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                        Subscription will cancel at period end
                       </p>
                     )}
                   </>
                 ) : subscription && subscription.status === 'trialing' ? (
                   <>
-                    <p style={{ color: '#0a0', marginBottom: '0.5rem' }}>
-                      ✓ Trial Active
+                    <p className="settings-status settings-status--active">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      Trial Active
                     </p>
-                    <p style={{ marginBottom: '0.5rem' }}>
-                      <strong>Trial Ends:</strong> {formatDate(subscription.trialEnd)}
-                    </p>
+                    <div className="settings-info-row">
+                      <span className="settings-info-label">Trial Ends</span>
+                      <span className="settings-info-value">{formatDate(subscription.trialEnd)}</span>
+                    </div>
                   </>
                 ) : (
-                  <p style={{ marginBottom: '0.5rem' }}>
+                  <p className="settings-status settings-status--info">
                     You're on the free plan with basic features.
                   </p>
                 )}
-                
-                {/* Plan Features */}
-                <div style={{ marginTop: '1rem' }}>
-                  <strong>Plan Features:</strong>
-                  <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
+
+                {/* Features List */}
+                <div className="settings-features">
+                  <p className="settings-features-title">Plan Features</p>
+                  <ul className="settings-features-list">
                     {getPlanFeatures(tier).map((feature, idx) => (
-                      <li key={idx}>{feature}</li>
+                      <li key={idx} className="settings-features-item">
+                        <svg className="settings-features-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        {feature}
+                      </li>
                     ))}
                   </ul>
                 </div>
               </div>
 
-              {/* Usage Information */}
+              {/* Usage */}
               {info && (
-                <div style={{ 
-                  background: '#f9f9f9', 
-                  padding: '1rem', 
-                  borderRadius: '8px',
-                  marginBottom: '1rem'
-                }}>
-                  <h4 style={{ marginTop: 0 }}>Usage This Month</h4>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <strong>{info.usedThisPeriod}</strong> of <strong>{info.monthlyQuota}</strong> MDMs used
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <strong>{info.remaining}</strong> remaining
-                  </div>
-                  
-                  {/* Usage Progress Bar */}
-                  <div style={{ 
-                    background: '#ddd', 
-                    borderRadius: '4px', 
-                    height: '20px',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      background: info.usedThisPeriod / info.monthlyQuota > 0.8 ? '#e90' : '#0a0',
-                      width: `${Math.min(100, (info.usedThisPeriod / info.monthlyQuota) * 100)}%`,
-                      height: '100%',
-                      transition: 'width 0.3s ease'
-                    }} />
+                <div className="settings-card">
+                  <h3 className="settings-card__title">Usage This Month</h3>
+                  <div className="settings-usage">
+                    <div className="settings-usage-header">
+                      <span className="settings-usage-label">MDM Generations</span>
+                      <span className="settings-usage-value">{info.usedThisPeriod} / {info.monthlyQuota}</span>
+                    </div>
+                    <div className="settings-progress-bar">
+                      <div
+                        className={`settings-progress-fill ${getProgressClass()}`}
+                        style={{ width: `${getUsagePercentage()}%` }}
+                      />
+                    </div>
+                    <p className="settings-remaining">
+                      <strong>{info.remaining}</strong> generations remaining
+                    </p>
                   </div>
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div style={{ marginTop: '1.5rem' }}>
+              <div className="settings-actions">
                 {tier === 'free' ? (
-                  <button 
-                    onClick={handleUpgrade}
-                    disabled={redirecting}
-                    style={{
-                      background: '#007bff',
-                      color: 'white',
-                      padding: '0.75rem 1.5rem',
-                      border: 'none',
-                      borderRadius: '4px',
-                      fontSize: '1rem',
-                      cursor: redirecting ? 'not-allowed' : 'pointer',
-                      opacity: redirecting ? 0.5 : 1
-                    }}
-                  >
-                    {redirecting ? 'Redirecting...' : 'Upgrade to Pro →'}
-                  </button>
+                  <>
+                    <button
+                      className="settings-btn settings-btn--primary"
+                      onClick={handleUpgrade}
+                      disabled={redirecting}
+                    >
+                      {redirecting ? (
+                        <>
+                          <div className="spinner spinner--sm" />
+                          Redirecting...
+                        </>
+                      ) : (
+                        <>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                          </svg>
+                          Upgrade to Pro
+                        </>
+                      )}
+                    </button>
+                    <p className="settings-btn-help">
+                      Get 250 MDMs/month and priority processing
+                    </p>
+                  </>
                 ) : (
-                  <button 
-                    onClick={handleManageBilling}
-                    disabled={redirecting}
-                    style={{
-                      background: '#6c757d',
-                      color: 'white',
-                      padding: '0.75rem 1.5rem',
-                      border: 'none',
-                      borderRadius: '4px',
-                      fontSize: '1rem',
-                      cursor: redirecting ? 'not-allowed' : 'pointer',
-                      opacity: redirecting ? 0.5 : 1
-                    }}
-                  >
-                    {redirecting ? 'Redirecting...' : 'Manage Billing →'}
-                  </button>
-                )}
-                
-                {tier !== 'free' && (
-                  <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
-                    Access Stripe Customer Portal to update payment, download invoices, or cancel subscription
-                  </p>
+                  <>
+                    <button
+                      className="settings-btn settings-btn--secondary"
+                      onClick={handleManageBilling}
+                      disabled={redirecting}
+                    >
+                      {redirecting ? (
+                        <>
+                          <div className="spinner spinner--sm" />
+                          Redirecting...
+                        </>
+                      ) : (
+                        <>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                            <line x1="1" y1="10" x2="23" y2="10" />
+                          </svg>
+                          Manage Billing
+                        </>
+                      )}
+                    </button>
+                    <p className="settings-btn-help">
+                      Update payment, download invoices, or cancel subscription
+                    </p>
+                  </>
                 )}
               </div>
             </>
           )}
-        </div>
+        </section>
       )}
 
       {/* System Information */}
-      <div>
-        <h3>System Information</h3>
-        <p><strong>Model:</strong> Gemini 1.5 Flash (Vertex AI)</p>
-        <p><strong>Version:</strong> 1.0.0</p>
-        <p><strong>Environment:</strong> {import.meta.env.MODE}</p>
-      </div>
-    </section>
+      <section className="settings-section">
+        <h2 className="settings-section-title">
+          <svg className="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+          System
+        </h2>
+        <div className="settings-card settings-card--static">
+          <div className="settings-system-info">
+            <div className="settings-system-row">
+              <span className="settings-system-label">Model</span>
+              <span className="settings-system-value">Gemini 1.5 Flash</span>
+            </div>
+            <div className="settings-system-row">
+              <span className="settings-system-label">Version</span>
+              <span className="settings-system-value">1.0.0</span>
+            </div>
+            <div className="settings-system-row">
+              <span className="settings-system-label">Environment</span>
+              <span className="settings-system-value">{import.meta.env.MODE}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   )
 }
-

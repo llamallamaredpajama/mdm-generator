@@ -9,6 +9,7 @@ import Preflight from './routes/Preflight'
 import Output from './routes/Output'
 import Settings from './routes/Settings'
 import { AuthProvider } from './lib/firebase'
+import { ToastProvider } from './contexts/ToastContext'
 
 const router = createBrowserRouter([
   {
@@ -27,7 +28,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      <RouterProvider router={router} />
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
     </AuthProvider>
   </StrictMode>,
 )

@@ -1,0 +1,180 @@
+/* ===========================================
+   Layout Styles - App Shell
+   =========================================== */
+
+/* ─────────────────────────────────────────
+   App Shell
+   ───────────────────────────────────────── */
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+}
+
+/* ─────────────────────────────────────────
+   Header / Navbar
+   ───────────────────────────────────────── */
+
+.layout-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.layout-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+  padding: var(--space-md) var(--space-xl);
+  max-width: var(--max-width-wide);
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ─────────────────────────────────────────
+   Brand / Logo
+   ───────────────────────────────────────── */
+
+.layout-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+.layout-brand:hover {
+  opacity: 0.9;
+  text-decoration: none;
+}
+
+.layout-brand-icon {
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-black);
+  color: var(--color-accent);
+  text-shadow: 0 0 20px var(--color-accent-glow);
+}
+
+.layout-brand-text {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-light);
+  color: var(--color-text-primary);
+}
+
+.layout-brand-text strong {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-accent);
+}
+
+/* ─────────────────────────────────────────
+   Navigation Links
+   ───────────────────────────────────────── */
+
+.layout-nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+.layout-nav-link {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.layout-nav-link:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
+  text-decoration: none;
+}
+
+.layout-nav-link.active {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+.layout-nav-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─────────────────────────────────────────
+   Main Content Area
+   ───────────────────────────────────────── */
+
+.layout-main {
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
+  padding: var(--space-xl);
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Adjust padding for larger screens */
+@media (min-width: 1400px) {
+  .layout-main {
+    padding: var(--space-2xl) var(--space-3xl);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Responsive Adjustments
+   ───────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .layout-nav {
+    padding: var(--space-md);
+    gap: var(--space-md);
+  }
+
+  .layout-brand-text {
+    display: none;
+  }
+
+  .layout-nav-links {
+    gap: var(--space-xs);
+  }
+
+  .layout-nav-link {
+    padding: var(--space-sm);
+    font-size: var(--font-size-xs);
+  }
+
+  .layout-main {
+    padding: var(--space-md);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Page Transitions (optional)
+   ───────────────────────────────────────── */
+
+.layout-main > * {
+  animation: page-fade-in 0.3s ease;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -2,18 +2,18 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuthToken } from '../lib/firebase'
 import { generateMDM } from '../lib/api'
+import './Preflight.css'
 
 export default function Preflight() {
   const navigate = useNavigate()
   const location = useLocation() as { state?: { text?: string; skipConfirmation?: boolean } }
   const text = location.state?.text ?? ''
   const skipConfirmation = location.state?.skipConfirmation ?? false
-  const [ackPHI, setAckPHI] = useState(skipConfirmation) // Auto-acknowledge if coming from modal
+  const [ackPHI, setAckPHI] = useState(skipConfirmation)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const idToken = useAuthToken()
 
-  // Auto-submit when PHI is acknowledged or if coming from modal
   useEffect(() => {
     if ((ackPHI || skipConfirmation) && idToken && !loading && !error) {
       onGenerate()
@@ -26,10 +26,10 @@ export default function Preflight() {
       return
     }
     if (!ackPHI) return
-    
+
     setLoading(true)
     setError(null)
-    
+
     try {
       const resp = await generateMDM({ narrative: text, userIdToken: idToken })
       navigate('/output', { state: { text, draft: resp.draft } })
@@ -41,100 +41,96 @@ export default function Preflight() {
   }
 
   return (
-    <section style={{ maxWidth: '600px', margin: '2rem auto', padding: '2rem' }}>
-      {!skipConfirmation && <h2 style={{ marginBottom: '2rem', textAlign: 'center' }}>Safety Confirmation</h2>}
-      
+    <section className="preflight-page">
+      {!skipConfirmation && <h1 className="preflight-title">Safety Confirmation</h1>}
+
+      {/* Confirmation Card */}
       {!loading && !error && !skipConfirmation && (
-        <div style={{ 
-          background: '#f8f9fa', 
-          border: '2px solid #dc3545', 
-          borderRadius: '8px', 
-          padding: '2rem',
-          marginBottom: '2rem'
-        }}>
-          <h3 style={{ color: '#dc3545', marginBottom: '1rem' }}>⚠️ Important</h3>
-          <p style={{ marginBottom: '1.5rem', lineHeight: '1.6' }}>
-            This tool is for educational purposes only. Never enter real patient information.
+        <div className="preflight-warning-card">
+          <div className="preflight-warning-header">
+            <svg className="preflight-warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <h2 className="preflight-warning-title">Important</h2>
+          </div>
+
+          <p className="preflight-warning-text">
+            This tool is for <strong>educational purposes only</strong>. Never enter real patient
+            information or protected health information (PHI).
           </p>
-          
-          <label style={{ 
-            display: 'flex', 
-            alignItems: 'flex-start', 
-            cursor: 'pointer',
-            fontSize: '1.1rem',
-            fontWeight: 500
-          }}>
-            <input 
-              type="checkbox" 
-              checked={ackPHI} 
+
+          <label className="preflight-checkbox-label">
+            <input
+              type="checkbox"
+              className="preflight-checkbox"
+              checked={ackPHI}
               onChange={(e) => setAckPHI(e.target.checked)}
-              style={{ 
-                marginRight: '0.75rem', 
-                marginTop: '0.25rem',
-                width: '20px',
-                height: '20px',
-                cursor: 'pointer'
-              }}
             />
-            <span>
+            <span className="preflight-checkbox-text">
               I confirm that NO protected health information (PHI) or real patient data is being submitted
             </span>
           </label>
         </div>
       )}
 
+      {/* Loading State */}
       {loading && (
-        <div style={{ textAlign: 'center', padding: '3rem' }}>
-          <div style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Processing...</div>
-          <div style={{ color: '#666' }}>Generating your MDM documentation</div>
+        <div className="preflight-loading">
+          <div className="preflight-spinner" />
+          <h2 className="preflight-loading-title">Generating MDM</h2>
+          <p className="preflight-loading-subtitle">
+            Analyzing your encounter narrative...
+          </p>
+          <div className="preflight-loading-progress">
+            <span className="preflight-loading-dot" />
+            <span className="preflight-loading-dot" />
+            <span className="preflight-loading-dot" />
+          </div>
         </div>
       )}
 
+      {/* Error State */}
       {error && (
-        <div style={{ 
-          background: '#fee', 
-          border: '1px solid #c00', 
-          borderRadius: '8px', 
-          padding: '1.5rem',
-          marginBottom: '2rem'
-        }}>
-          <h3 style={{ color: '#c00', marginBottom: '0.5rem' }}>Error</h3>
-          <p>{error}</p>
-          <button 
+        <div className="preflight-error">
+          <div className="preflight-error-header">
+            <svg className="preflight-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+            <h3 className="preflight-error-title">Error</h3>
+          </div>
+          <p className="preflight-error-message">{error}</p>
+          <button
+            className="preflight-btn preflight-btn--primary"
             onClick={() => {
               setError(null)
               setAckPHI(false)
             }}
-            style={{
-              marginTop: '1rem',
-              padding: '0.5rem 1rem',
-              background: '#dc3545',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
           >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
             Try Again
           </button>
         </div>
       )}
 
+      {/* Back Button */}
       {!skipConfirmation && (
-        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-          <button 
+        <div className="preflight-actions">
+          <button
+            className="preflight-btn preflight-btn--secondary"
             onClick={() => navigate(-1)}
             disabled={loading}
-            style={{
-              padding: '0.5rem 1.5rem',
-              background: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.5 : 1
-            }}
           >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
             Back
           </button>
         </div>
@@ -142,4 +138,3 @@ export default function Preflight() {
     </section>
   )
 }
-

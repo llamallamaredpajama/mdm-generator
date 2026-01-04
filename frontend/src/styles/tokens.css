@@ -1,0 +1,133 @@
+/* ===========================================
+   MDM Generator Design Tokens
+   Extracted from Start.tsx design language
+   =========================================== */
+
+:root {
+  /* ─────────────────────────────────────────
+     Background Colors
+     ───────────────────────────────────────── */
+  --color-bg-primary: #000;
+  --color-bg-secondary: #0a0a0a;
+  --color-bg-tertiary: #1a1a1a;
+  --color-bg-elevated: rgba(255, 255, 255, 0.02);
+  --color-bg-hover: rgba(255, 255, 255, 0.05);
+  --color-bg-code: #2d2d2d;
+
+  /* ─────────────────────────────────────────
+     Brand / Accent Colors
+     ───────────────────────────────────────── */
+  --color-accent: #dc3545;
+  --color-accent-dark: #c82333;
+  --color-accent-glow: rgba(220, 53, 69, 0.4);
+  --color-accent-subtle: rgba(220, 53, 69, 0.1);
+  --color-accent-medium: rgba(220, 53, 69, 0.2);
+
+  /* ─────────────────────────────────────────
+     Border Colors
+     ───────────────────────────────────────── */
+  --color-border-primary: rgba(220, 53, 69, 0.3);
+  --color-border-secondary: rgba(220, 53, 69, 0.2);
+  --color-border-subtle: rgba(255, 255, 255, 0.1);
+  --color-border-muted: rgba(255, 255, 255, 0.05);
+
+  /* ─────────────────────────────────────────
+     Text Colors
+     ───────────────────────────────────────── */
+  --color-text-primary: #fff;
+  --color-text-secondary: #ccc;
+  --color-text-muted: #999;
+  --color-text-dim: #666;
+
+  /* ─────────────────────────────────────────
+     Status Colors
+     ───────────────────────────────────────── */
+  --color-success: #28a745;
+  --color-success-light: #2ecc71;
+  --color-warning: #ffc107;
+  --color-warning-light: #f39c12;
+  --color-error: #dc3545;
+  --color-error-light: #e74c3c;
+  --color-info: #17a2b8;
+
+  /* ─────────────────────────────────────────
+     Spacing Scale (8px base)
+     ───────────────────────────────────────── */
+  --space-xs: 0.25rem;   /* 4px */
+  --space-sm: 0.5rem;    /* 8px */
+  --space-md: 1rem;      /* 16px */
+  --space-lg: 1.5rem;    /* 24px */
+  --space-xl: 2rem;      /* 32px */
+  --space-2xl: 3rem;     /* 48px */
+  --space-3xl: 4rem;     /* 64px */
+
+  /* ─────────────────────────────────────────
+     Border Radius
+     ───────────────────────────────────────── */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 50%;
+
+  /* ─────────────────────────────────────────
+     Transitions
+     ───────────────────────────────────────── */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+
+  /* ─────────────────────────────────────────
+     Shadows
+     ───────────────────────────────────────── */
+  --shadow-glow: 0 10px 30px var(--color-accent-glow);
+  --shadow-glow-strong: 0 15px 40px var(--color-accent-glow);
+  --shadow-elevated: 0 20px 60px rgba(0, 0, 0, 0.8);
+  --shadow-card: 0 10px 40px rgba(0, 0, 0, 0.5);
+  --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  /* ─────────────────────────────────────────
+     Typography
+     ───────────────────────────────────────── */
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-black: 900;
+
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.25rem;   /* 20px */
+  --font-size-2xl: 1.5rem;   /* 24px */
+  --font-size-3xl: 2rem;     /* 32px */
+  --font-size-4xl: 2.5rem;   /* 40px */
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ─────────────────────────────────────────
+     Z-Index Scale
+     ───────────────────────────────────────── */
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal-backdrop: 900;
+  --z-modal: 1000;
+  --z-toast: 9999;
+
+  /* ─────────────────────────────────────────
+     Layout
+     ───────────────────────────────────────── */
+  --max-width-content: 1200px;
+  --max-width-narrow: 800px;
+  --max-width-wide: 1600px;
+  --header-height: 70px;
+}
