@@ -6,17 +6,14 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy backend manifest first to leverage Docker layer caching
-COPY backend/package.json ./backend/package.json
-# Optional: copy lockfile if present at repo root or backend folder
-COPY pnpm-lock.yaml ./pnpm-lock.yaml 2>/dev/null || true
-COPY backend/pnpm-lock.yaml ./backend/pnpm-lock.yaml 2>/dev/null || true
+# Copy package files for dependency caching
+COPY package.json pnpm-lock.yaml ./
 
-WORKDIR /app/backend
+# Install dependencies
 RUN pnpm install --frozen-lockfile || pnpm install
 
 # Copy source
-COPY backend/ /app/backend/
+COPY . .
 
 # Build TypeScript
 RUN pnpm run build

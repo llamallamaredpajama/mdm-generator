@@ -73,15 +73,12 @@ async function initFirebase() {
   }
 }
 
-// Initialize Firebase before starting the server
-await initFirebase()
-
 const GenerateSchema = z.object({
   narrative: z.string().min(1).max(16000),
   userIdToken: z.string().min(10),
 })
 
-app.get('/healthz', (_req, res) => res.json({ ok: true }))
+app.get('/health', (_req, res) => res.json({ ok: true }))
 
 // Admin endpoint to set user plan (protected by admin check)
 app.post('/v1/admin/set-plan', async (req, res) => {
@@ -265,8 +262,15 @@ app.post('/v1/generate', async (req, res) => {
   }
 })
 
-const port = process.env.PORT || 8080
-app.listen(port, () => {
-  console.log(`backend listening on :${port}`)
-})
+// Initialize Firebase and start server
+async function main() {
+  await initFirebase()
+
+  const port = process.env.PORT || 8080
+  app.listen(port, () => {
+    console.log(`backend listening on :${port}`)
+  })
+}
+
+main().catch(console.error)
 

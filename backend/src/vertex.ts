@@ -21,8 +21,9 @@ export async function callGeminiFlash(prompt: { system: string; user: string }):
       maxOutputTokens: 8192,
     },
     systemInstruction: {
+      role: 'system',
       parts: [{ text: prompt.system }]
-    },
+    } as any,
   })
 
   const contents = [
