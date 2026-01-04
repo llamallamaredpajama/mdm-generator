@@ -67,15 +67,18 @@
   align-items: center;
   gap: var(--space-sm);
   margin: 0;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  letter-spacing: -0.02em;
 }
 
 .guide-slideover__title svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   color: var(--color-build-accent);
+  flex-shrink: 0;
+  margin-top: -4px;
 }
 
 .guide-slideover__close {
@@ -282,7 +285,12 @@
   }
 
   .guide-slideover__title {
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-xl);
+  }
+
+  .guide-slideover__title svg {
+    width: 16px;
+    height: 16px;
   }
 
   .guide-section__title {

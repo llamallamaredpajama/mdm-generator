@@ -60,12 +60,13 @@ export default function GuideSlideOver({ isOpen, onClose }: GuideSlideOverProps)
         {/* Header */}
         <header className="guide-slideover__header">
           <h2 id="guide-title" className="guide-slideover__title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="16" x2="12" y2="12" />
-              <line x1="12" y1="8" x2="12.01" y2="8" />
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="12" r="10.8" fill="currentColor" opacity="0.15" />
+              <circle cx="12" cy="12" r="10.8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+              <circle cx="12" cy="7.2" r="1.44" />
+              <rect x="10.56" y="10.2" width="2.88" height="7.2" rx="1.2" />
             </svg>
-            Input Mode Guide
+            Build Mode
           </h2>
           <button
             type="button"
@@ -91,36 +92,11 @@ export default function GuideSlideOver({ isOpen, onClose }: GuideSlideOverProps)
             </p>
           </section>
 
-          {/* Simple Mode */}
-          <section className="guide-section">
-            <div className="guide-mode guide-mode--simple">
-              <div className="guide-mode__header">
-                <span className="guide-mode__badge guide-mode__badge--simple">OFF</span>
-                <h3 className="guide-mode__title">Simple Mode</h3>
-              </div>
-              <p className="guide-mode__description">
-                Best for <strong>fast, low-acuity cases</strong> or when you can confidently
-                report the encounter in a free-flow style capturing most important details.
-              </p>
-              <ul className="guide-mode__list">
-                <li>Tell the story naturally using your narrative style</li>
-                <li>Include HPI, ROS, PE, Differential, Workup, and Plan</li>
-                <li>The AI handles extraction and organization</li>
-                <li>Ideal for straightforward presentations</li>
-              </ul>
-              <div className="guide-mode__tip">
-                <strong>Best for:</strong> Simple lacerations, minor injuries, stable chronic conditions,
-                clear-cut presentations
-              </div>
-            </div>
-          </section>
-
           {/* Build Mode */}
           <section className="guide-section">
             <div className="guide-mode guide-mode--build">
               <div className="guide-mode__header">
                 <span className="guide-mode__badge guide-mode__badge--build">ON</span>
-                <h3 className="guide-mode__title">Build Mode</h3>
               </div>
               <p className="guide-mode__description">
                 Best for <strong>complex cases</strong> requiring high-complexity billing
@@ -135,6 +111,29 @@ export default function GuideSlideOver({ isOpen, onClose }: GuideSlideOverProps)
               <div className="guide-mode__tip">
                 <strong>Best for:</strong> Chest pain, AMS, polytrauma, sepsis workups,
                 diagnostic dilemmas, high-risk dispositions
+              </div>
+            </div>
+          </section>
+
+          {/* Simple Mode */}
+          <section className="guide-section">
+            <div className="guide-mode guide-mode--simple">
+              <div className="guide-mode__header">
+                <span className="guide-mode__badge guide-mode__badge--simple">OFF</span>
+              </div>
+              <p className="guide-mode__description">
+                Best for <strong>fast, low-acuity cases</strong> or when you can confidently
+                report the encounter in a free-flow style capturing most important details.
+              </p>
+              <ul className="guide-mode__list">
+                <li>Tell the story naturally using your narrative style</li>
+                <li>Include HPI, ROS, PE, Differential, Workup, and Plan</li>
+                <li>The AI handles extraction and organization</li>
+                <li>Ideal for straightforward presentations</li>
+              </ul>
+              <div className="guide-mode__tip">
+                <strong>Best for:</strong> Simple lacerations, minor injuries, stable chronic conditions,
+                clear-cut presentations
               </div>
             </div>
           </section>
