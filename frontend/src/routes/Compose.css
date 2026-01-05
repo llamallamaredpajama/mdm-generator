@@ -156,9 +156,8 @@
 
   /* Blue by default (when guide is closed/hidden) */
   background: var(--color-build-accent);
-  /* Match textarea border on top/bottom/left, no right border for seamless connection */
+  /* Border matches textarea - right border creates continuous line where tab underlaps */
   border: 1px solid var(--color-border-secondary);
-  border-right: none;
   /* Round only left corners - right edge connects flush with textarea */
   border-radius: var(--radius-md) 0 0 var(--radius-md);
   cursor: pointer;
