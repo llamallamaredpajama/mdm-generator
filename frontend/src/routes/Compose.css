@@ -99,6 +99,11 @@
   pointer-events: auto;
 }
 
+/* Square guide's top-left corner when open so tab sits flush */
+.narrative-panel__guide--open .dictation-guide {
+  border-top-left-radius: 0;
+}
+
 /* Textarea - Positioned IN FRONT (z-index: 2) */
 .narrative-panel__textarea {
   position: relative;
@@ -183,8 +188,8 @@
 
 /* When open - tab moves left with guide, grey/muted appearance */
 .narrative-panel__tab--open {
-  /* Move left by guide width, underlap guide's rounded corner (2x radius: guide's + tab's) */
-  transform: translateX(calc(-100% - 320px + var(--radius-lg) + var(--radius-lg)));
+  /* Move left by guide width, no underlap (sits flush with squared guide corner) */
+  transform: translateX(calc(-100% - 320px + var(--radius-lg)));
   background: var(--color-bg-tertiary);
 }
 
