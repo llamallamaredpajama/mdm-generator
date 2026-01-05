@@ -93,8 +93,8 @@
 }
 
 .narrative-panel__guide--open {
-  /* Slide LEFT, overlap by 1px to cover textarea's left border for seamless merge */
-  transform: translateX(calc(-100% + 1px));
+  /* Slide LEFT, underlap textarea's rounded corner */
+  transform: translateX(calc(-100% + var(--radius-lg)));
   opacity: 1;
   pointer-events: auto;
 }
@@ -110,8 +110,8 @@
   padding: var(--space-lg);
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-secondary);
-  /* Square top-left corner to seamlessly connect with tab */
-  border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg);
+  /* All corners rounded - tab underlaps to fill gap */
+  border-radius: var(--radius-lg);
   color: var(--color-text-primary);
   font-family: inherit;
   font-size: var(--font-size-base);
@@ -134,11 +134,11 @@
 /* Tab - Hangs off left edge of narrative box, moves with guide */
 .narrative-panel__tab {
   position: absolute;
-  /* Position at top left, aligned with textarea top edge */
+  /* Position at top left, underlap textarea's rounded corner */
   top: 0;
   left: 0;
-  transform: translateX(-100%);
-  z-index: 3;
+  transform: translateX(calc(-100% + var(--radius-lg)));
+  z-index: 1;
 
   /* Square-ish tab with icon */
   width: 40px;
@@ -182,8 +182,8 @@
 
 /* When open - tab moves left with guide, grey/muted appearance */
 .narrative-panel__tab--open {
-  /* Move left by guide width (1px overlap to match guide) */
-  transform: translateX(calc(-100% - 320px + 1px));
+  /* Move left by guide width, maintain underlap */
+  transform: translateX(calc(-100% - 320px + var(--radius-lg)));
   background: var(--color-bg-tertiary);
 }
 
