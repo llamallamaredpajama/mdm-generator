@@ -139,10 +139,10 @@
 /* Tab - Hangs off left edge of narrative box, moves with guide */
 .narrative-panel__tab {
   position: absolute;
-  /* Position at top left, underlap textarea's rounded corner */
+  /* Position at top left, underlap textarea's rounded corner (leave 1px for border) */
   top: 0;
   left: 0;
-  transform: translateX(calc(-100% + var(--radius-lg)));
+  transform: translateX(calc(-100% + var(--radius-lg) - 1px));
   z-index: 1;
 
   /* Tab width includes underlap portion hidden under textarea/guide */
