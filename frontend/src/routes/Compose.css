@@ -140,13 +140,14 @@
   transform: translateX(calc(-100% + var(--radius-lg)));
   z-index: 1;
 
-  /* Square-ish tab with icon */
-  width: 40px;
+  /* Tab width includes underlap portion hidden under textarea/guide */
+  width: calc(40px + var(--radius-lg));
   height: 44px;
-  padding: var(--space-sm);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-left: var(--space-sm);
+  padding-right: calc(var(--space-sm) + var(--radius-lg));
 
   /* Blue by default (when guide is closed/hidden) */
   background: var(--color-build-accent);
@@ -182,8 +183,8 @@
 
 /* When open - tab moves left with guide, grey/muted appearance */
 .narrative-panel__tab--open {
-  /* Move left by guide width, maintain underlap */
-  transform: translateX(calc(-100% - 320px + var(--radius-lg)));
+  /* Move left by guide width, underlap guide's rounded corner (2x radius: guide's + tab's) */
+  transform: translateX(calc(-100% - 320px + var(--radius-lg) + var(--radius-lg)));
   background: var(--color-bg-tertiary);
 }
 
