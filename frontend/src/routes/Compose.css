@@ -110,7 +110,8 @@
   padding: var(--space-lg);
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-secondary);
-  border-radius: var(--radius-lg);
+  /* Square top-left corner to seamlessly connect with tab */
+  border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg);
   color: var(--color-text-primary);
   font-family: inherit;
   font-size: var(--font-size-base);
@@ -149,8 +150,10 @@
 
   /* Blue by default (when guide is closed/hidden) */
   background: var(--color-build-accent);
-  border: 1px solid var(--color-build-accent);
+  /* Match textarea border on top/bottom/left, no right border for seamless connection */
+  border: 1px solid var(--color-border-secondary);
   border-right: none;
+  /* Round only left corners - right edge connects flush with textarea */
   border-radius: var(--radius-md) 0 0 var(--radius-md);
   cursor: pointer;
 
@@ -162,7 +165,6 @@
 
 .narrative-panel__tab:hover {
   background: rgba(59, 130, 246, 0.85);
-  border-color: rgba(59, 130, 246, 0.85);
 }
 
 .narrative-panel__tab:focus-visible {
@@ -183,12 +185,10 @@
   /* Move left by guide width (1px overlap to match guide) */
   transform: translateX(calc(-100% - 320px + 1px));
   background: var(--color-bg-tertiary);
-  border-color: var(--color-border-subtle);
 }
 
 .narrative-panel__tab--open:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .narrative-panel__tab--open .narrative-panel__tab-icon {
