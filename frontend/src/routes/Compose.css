@@ -133,8 +133,8 @@
 /* Tab - Hangs off left edge of narrative box, moves with guide */
 .narrative-panel__tab {
   position: absolute;
-  /* Position at upper left, hanging off the left edge */
-  top: var(--space-lg);
+  /* Position at top left, aligned with textarea top edge */
+  top: 0;
   left: 0;
   transform: translateX(-100%);
   z-index: 3;
