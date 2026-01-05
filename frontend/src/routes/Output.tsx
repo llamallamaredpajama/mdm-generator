@@ -4,7 +4,7 @@ import { useToast } from '../contexts/ToastContext'
 import './Output.css'
 
 export default function Output() {
-  const location = useLocation() as { state?: { text?: string; draft?: string; draftJson?: any } }
+  const location = useLocation() as { state?: { text?: string; draft?: string; draftJson?: Record<string, unknown> } }
   const navigate = useNavigate()
   const { success, error } = useToast()
   const text = location.state?.text ?? ''

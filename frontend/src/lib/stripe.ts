@@ -233,7 +233,7 @@ export async function getProducts(): Promise<ProductWithPrices[]> {
     product.prices = pricesSnapshot.docs.map(priceDoc => ({
       id: priceDoc.id,
       ...priceDoc.data()
-    })) as any[];
+    })) as ProductWithPrices['prices'];
     
     products.push(product);
   }

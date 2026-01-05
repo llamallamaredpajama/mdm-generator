@@ -60,7 +60,7 @@ export interface Subscription {
   items: SubscriptionItem[];
   latest_invoice?: string;
   pending_setup_intent?: string;
-  pending_update?: any;
+  pending_update?: Record<string, unknown>;
   pause_collection?: {
     behavior: 'keep_as_draft' | 'mark_uncollectible' | 'void';
     resumes_at?: Date;
@@ -231,7 +231,7 @@ export interface StripeWebhookEvent {
   type: string;
   created: Date;
   data: {
-    object: any;
-    previous_attributes?: any;
+    object: Record<string, unknown>;
+    previous_attributes?: Record<string, unknown>;
   };
 }

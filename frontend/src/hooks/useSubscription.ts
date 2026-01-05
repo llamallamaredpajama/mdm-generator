@@ -29,7 +29,7 @@ export interface Subscription {
   priceId: string | null;
   productId: string | null;
   quantity: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SubscriptionHookReturn {
@@ -87,13 +87,13 @@ function determineSubscriptionTier(subscription: DocumentData | null): Subscript
   return 'free';
 }
 
-function convertTimestamp(timestamp: any): Date | null {
+function convertTimestamp(timestamp: unknown): Date | null {
   if (!timestamp) return null;
   if (timestamp instanceof Timestamp) {
     return timestamp.toDate();
   }
-  if (timestamp.seconds) {
-    return new Date(timestamp.seconds * 1000);
+  if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp) {
+    return new Date((timestamp as { seconds: number }).seconds * 1000);
   }
   if (typeof timestamp === 'string') {
     return new Date(timestamp);

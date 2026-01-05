@@ -92,7 +92,7 @@ export default function Settings() {
         return
       }
 
-      const price = proProduct.prices.find((p: any) =>
+      const price = proProduct.prices.find((p) =>
         p.recurring?.interval === 'month'
       ) || proProduct.prices[0]
 

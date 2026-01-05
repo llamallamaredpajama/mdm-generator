@@ -23,10 +23,12 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 const auth = getAuth(app)
+// eslint-disable-next-line react-refresh/only-export-components
 export const db = getFirestore(app)
 const provider = new GoogleAuthProvider()
 
 // Try popup first, fall back to redirect if popup fails
+// eslint-disable-next-line react-refresh/only-export-components
 export async function signInWithGoogle() {
   console.log('Starting Google sign in...')
   console.log('Firebase config:', {
@@ -41,30 +43,32 @@ export async function signInWithGoogle() {
     const result = await signInWithPopup(auth, provider)
     console.log('Sign in successful (popup):', result.user.email)
     return result
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const authError = error as { code?: string; message?: string }
     console.error('Popup sign in error:', error)
-    console.error('Error code:', error.code)
-    console.error('Error message:', error.message)
+    console.error('Error code:', authError.code)
+    console.error('Error message:', authError.message)
     
     // If popup was blocked or failed, try redirect
-    if (error.code === 'auth/popup-blocked' || 
-        error.code === 'auth/operation-not-allowed' ||
-        error.code === 'auth/unauthorized-domain') {
+    if (authError.code === 'auth/popup-blocked' ||
+        authError.code === 'auth/operation-not-allowed' ||
+        authError.code === 'auth/unauthorized-domain') {
       console.log('Falling back to redirect sign in...')
       // Use redirect as fallback
       await signInWithRedirect(auth, provider)
       // This will redirect the page, so no return value
-    } else if (error.code === 'auth/popup-closed-by-user') {
+    } else if (authError.code === 'auth/popup-closed-by-user') {
       console.log('User cancelled sign in')
     } else {
       // For other errors, show alert
-      alert(`Sign in failed: ${error.message}`)
+      alert(`Sign in failed: ${authError.message}`)
       throw error
     }
   }
 }
 
 // Check for redirect result on page load
+// eslint-disable-next-line react-refresh/only-export-components
 export async function checkRedirectResult() {
   try {
     const result = await getRedirectResult(auth)
@@ -72,18 +76,21 @@ export async function checkRedirectResult() {
       console.log('Sign in successful (redirect):', result.user.email)
       return result
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const authError = error as { code?: string; message?: string }
     console.error('Redirect sign in error:', error)
-    if (error.code !== 'auth/popup-closed-by-user') {
-      alert(`Sign in failed: ${error.message}`)
+    if (authError.code !== 'auth/popup-closed-by-user') {
+      alert(`Sign in failed: ${authError.message}`)
     }
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export async function signOutUser() {
   await signOut(auth)
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuthToken() {
   const { user } = useAuth()
   const [token, setToken] = useState<string | null>(null)
@@ -99,6 +106,7 @@ export function useAuthToken() {
 
 const AuthContext = createContext<{ user: User | null }>({ user: null })
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

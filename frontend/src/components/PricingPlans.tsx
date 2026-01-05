@@ -88,6 +88,7 @@ export default function PricingPlans() {
 
   useEffect(() => {
     loadStripeData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const loadStripeData = async () => {
@@ -157,7 +158,7 @@ export default function PricingPlans() {
     }
 
     // Get the monthly price (or first available price)
-    const price = product.prices.find((p: any) => 
+    const price = product.prices.find((p) =>
       p.recurring?.interval === 'month'
     ) || product.prices[0]
 

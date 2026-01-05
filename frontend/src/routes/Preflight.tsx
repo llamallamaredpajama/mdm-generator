@@ -18,6 +18,7 @@ export default function Preflight() {
     if ((ackPHI || skipConfirmation) && idToken && !loading && !error) {
       onGenerate()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ackPHI, skipConfirmation, idToken])
 
   const onGenerate = async () => {
@@ -33,8 +34,9 @@ export default function Preflight() {
     try {
       const resp = await generateMDM({ narrative: text, userIdToken: idToken })
       navigate('/output', { state: { text, draft: resp.draft } })
-    } catch (e: any) {
-      const errorMessage = e?.response?.data?.error || e?.message || 'Generation failed'
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } }; message?: string }
+      const errorMessage = err?.response?.data?.error || err?.message || 'Generation failed'
       setError(errorMessage)
       setLoading(false)
     }
