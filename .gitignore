@@ -38,4 +38,13 @@ firebase-adminsdk*.json
 
 # Task files
 # tasks.json
-# tasks/ 
+# tasks/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Firebase local cache
+.firebase/
+
+# Playwright MCP screenshots
+.playwright-mcp/

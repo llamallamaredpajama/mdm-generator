@@ -77,7 +77,9 @@
   top: 0;
   left: 0;
   width: 320px;
-  height: 100%;
+  /* Match textarea height exactly */
+  height: calc(100vh - 280px);
+  min-height: 400px;
   z-index: 1;
 
   /* Hidden state - positioned under textarea */
@@ -91,8 +93,8 @@
 }
 
 .narrative-panel__guide--open {
-  /* Slide LEFT to emerge from behind */
-  transform: translateX(calc(-100% - var(--space-lg)));
+  /* Slide LEFT, overlap by 1px to cover textarea's left border for seamless merge */
+  transform: translateX(calc(-100% + 1px));
   opacity: 1;
   pointer-events: auto;
 }
@@ -178,8 +180,8 @@
 
 /* When open - tab moves left with guide, grey/muted appearance */
 .narrative-panel__tab--open {
-  /* Move left by guide width + gap */
-  transform: translateX(calc(-100% - 320px - var(--space-lg)));
+  /* Move left by guide width (1px overlap to match guide) */
+  transform: translateX(calc(-100% - 320px + 1px));
   background: var(--color-bg-tertiary);
   border-color: var(--color-border-subtle);
 }
