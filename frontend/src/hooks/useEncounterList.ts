@@ -1,9 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   collection,
-  query,
-  where,
-  orderBy,
   onSnapshot,
   addDoc,
   deleteDoc,
@@ -99,26 +96,19 @@ export function useEncounterList(): UseEncounterListReturn {
     setError(null)
 
     // Real-time listener for encounters collection
-    // Filter out archived encounters and sort by updatedAt descending
+    // Get all encounters and filter client-side to avoid complex composite index
     const encountersRef = collection(db, 'customers', user.uid, 'encounters')
-    const q = query(
-      encountersRef,
-      where('status', '!=', 'archived'),
-      orderBy('status'), // Required for != filter
-      orderBy('updatedAt', 'desc')
-    )
 
     const unsubscribe = onSnapshot(
-      q,
+      encountersRef,
       (snapshot: QuerySnapshot<DocumentData>) => {
         try {
-          const encounterList: EncounterDocument[] = snapshot.docs.map((doc) =>
-            convertEncounterDoc(doc.id, doc.data())
-          )
+          const encounterList: EncounterDocument[] = snapshot.docs
+            .map((doc) => convertEncounterDoc(doc.id, doc.data()))
+            // Filter out archived encounters client-side
+            .filter((encounter) => encounter.status !== 'archived')
 
           // Sort by updatedAt descending (most recent first)
-          // Firestore compound indexes with != have ordering limitations,
-          // so we sort client-side for consistency
           encounterList.sort((a, b) => {
             const aTime = a.updatedAt instanceof Timestamp ? a.updatedAt.toMillis() : 0
             const bTime = b.updatedAt instanceof Timestamp ? b.updatedAt.toMillis() : 0

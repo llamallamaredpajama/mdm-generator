@@ -40,6 +40,14 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "shiftStartedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "encounters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
