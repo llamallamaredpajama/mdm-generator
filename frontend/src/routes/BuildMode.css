@@ -1,0 +1,657 @@
+/* ===========================================
+   Build Mode Route Styles
+   Mobile-first responsive design for
+   multi-encounter MDM generation workflow
+   =========================================== */
+
+/* ─────────────────────────────────────────
+   Page Container
+   ───────────────────────────────────────── */
+
+.build-mode-page {
+  min-height: calc(100vh - var(--header-height));
+  background: var(--color-bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─────────────────────────────────────────
+   Page Header
+   ───────────────────────────────────────── */
+
+.build-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-build-border);
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.build-mode-header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.build-mode-header__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.build-mode-header__back:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-build-accent);
+  color: var(--color-build-accent);
+}
+
+.build-mode-header__back:focus-visible {
+  outline: 2px solid var(--color-build-accent);
+  outline-offset: 2px;
+}
+
+.build-mode-header__back-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.build-mode-header__title-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.build-mode-header__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.build-mode-header__title-icon {
+  color: var(--color-build-accent);
+}
+
+.build-mode-header__subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.build-mode-header__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+/* ─────────────────────────────────────────
+   Shift Timer (Header Integration)
+   ───────────────────────────────────────── */
+
+.build-mode-timer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.build-mode-timer__icon {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-muted);
+}
+
+.build-mode-timer__time {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.build-mode-timer__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* Timer warning states */
+.build-mode-timer--warning {
+  border-color: var(--color-warning);
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.build-mode-timer--warning .build-mode-timer__icon,
+.build-mode-timer--warning .build-mode-timer__time {
+  color: var(--color-warning);
+}
+
+.build-mode-timer--expired {
+  border-color: var(--color-error);
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.build-mode-timer--expired .build-mode-timer__icon,
+.build-mode-timer--expired .build-mode-timer__time {
+  color: var(--color-error);
+}
+
+/* ─────────────────────────────────────────
+   Main Content Area
+   ───────────────────────────────────────── */
+
+.build-mode-content {
+  flex: 1;
+  padding: var(--space-lg);
+  overflow-y: auto;
+}
+
+/* ─────────────────────────────────────────
+   Dashboard View
+   ───────────────────────────────────────── */
+
+.build-mode-dashboard {
+  max-width: var(--max-width-wide);
+  margin: 0 auto;
+}
+
+/* ─────────────────────────────────────────
+   Editor View
+   ───────────────────────────────────────── */
+
+.build-mode-editor {
+  max-width: var(--max-width-content);
+  margin: 0 auto;
+}
+
+.build-mode-editor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border-subtle);
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.build-mode-editor__patient-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.build-mode-editor__room {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.build-mode-editor__complaint {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+.build-mode-editor__sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ─────────────────────────────────────────
+   Urgency Colors (for Differential Preview)
+   ───────────────────────────────────────── */
+
+.urgency-emergent {
+  color: #dc3545;
+}
+
+.urgency-emergent-bg {
+  background-color: rgba(220, 53, 69, 0.1);
+  border-color: rgba(220, 53, 69, 0.3);
+}
+
+.urgency-emergent-badge {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.urgency-urgent {
+  color: #ffc107;
+}
+
+.urgency-urgent-bg {
+  background-color: rgba(255, 193, 7, 0.1);
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.urgency-urgent-badge {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.urgency-routine {
+  color: #28a745;
+}
+
+.urgency-routine-bg {
+  background-color: rgba(40, 167, 69, 0.1);
+  border-color: rgba(40, 167, 69, 0.3);
+}
+
+.urgency-routine-badge {
+  background-color: #28a745;
+  color: #ffffff;
+}
+
+/* ─────────────────────────────────────────
+   Loading State
+   ───────────────────────────────────────── */
+
+.build-mode-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: var(--space-md);
+}
+
+.build-mode-loading__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border-subtle);
+  border-top-color: var(--color-build-accent);
+  border-radius: 50%;
+  animation: build-mode-spin 1s linear infinite;
+}
+
+.build-mode-loading__text {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+@keyframes build-mode-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Error State
+   ───────────────────────────────────────── */
+
+.build-mode-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: var(--space-md);
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+.build-mode-error__icon {
+  font-size: 3rem;
+  color: var(--color-error);
+}
+
+.build-mode-error__message {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  max-width: 400px;
+}
+
+.build-mode-error__retry {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-build-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #ffffff;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.build-mode-error__retry:hover {
+  background: #2563eb;
+}
+
+/* ─────────────────────────────────────────
+   Responsive: Mobile First (< 640px)
+   ───────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .build-mode-header {
+    padding: var(--space-sm) var(--space-md);
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .build-mode-header__left {
+    justify-content: flex-start;
+  }
+
+  .build-mode-header__right {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .build-mode-header__title {
+    font-size: var(--font-size-lg);
+  }
+
+  .build-mode-content {
+    padding: var(--space-md);
+  }
+
+  .build-mode-timer {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .build-mode-editor__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .build-mode-editor__room {
+    font-size: var(--font-size-xl);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Responsive: Tablet (640px - 1024px)
+   ───────────────────────────────────────── */
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .build-mode-header {
+    padding: var(--space-md) var(--space-xl);
+  }
+
+  .build-mode-content {
+    padding: var(--space-lg) var(--space-xl);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Responsive: Desktop (> 1024px)
+   ───────────────────────────────────────── */
+
+@media (min-width: 1025px) {
+  .build-mode-header {
+    padding: var(--space-md) var(--space-2xl);
+  }
+
+  .build-mode-content {
+    padding: var(--space-xl) var(--space-2xl);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Dark Theme Overrides (for Build Mode)
+   Using the existing dark background
+   ───────────────────────────────────────── */
+
+/* Dashboard grid cards - inherit from EncounterDashboard.css but ensure dark theme */
+.build-mode-page .encounter-dashboard {
+  background: transparent;
+}
+
+.build-mode-page .encounter-dashboard__grid {
+  /* Override light theme defaults for dark mode */
+}
+
+.build-mode-page .encounter-card {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-primary);
+}
+
+.build-mode-page .encounter-card:hover {
+  border-color: var(--color-build-accent);
+  box-shadow: 0 2px 12px var(--color-build-accent-glow);
+}
+
+.build-mode-page .encounter-room {
+  color: var(--color-text-primary);
+}
+
+.build-mode-page .encounter-complaint {
+  color: var(--color-text-secondary);
+}
+
+/* Section panels - dark theme */
+.build-mode-page .section-panel {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border-subtle);
+}
+
+.build-mode-page .section-panel-expanded {
+  border-color: var(--color-build-accent);
+}
+
+.build-mode-page .section-panel-header {
+  background: var(--color-bg-secondary);
+  border-bottom-color: transparent;
+}
+
+.build-mode-page .section-panel-expanded .section-panel-header {
+  border-bottom-color: var(--color-border-subtle);
+}
+
+.build-mode-page .section-panel-header:hover {
+  background: var(--color-bg-hover);
+}
+
+.build-mode-page .section-title {
+  color: var(--color-text-primary);
+}
+
+.build-mode-page .section-number {
+  color: var(--color-text-muted);
+}
+
+.build-mode-page .section-textarea {
+  background: var(--color-bg-primary);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-primary);
+}
+
+.build-mode-page .section-textarea:focus {
+  border-color: var(--color-build-accent);
+  box-shadow: 0 0 0 3px var(--color-build-accent-glow);
+}
+
+.build-mode-page .section-textarea:disabled {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-dim);
+}
+
+.build-mode-page .guide-content {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-secondary);
+}
+
+.build-mode-page .guide-toggle-button {
+  background: transparent;
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-secondary);
+}
+
+.build-mode-page .guide-toggle-button:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-build-accent);
+  color: var(--color-build-accent);
+}
+
+.build-mode-page .submit-button {
+  background: var(--color-build-accent);
+}
+
+.build-mode-page .submit-button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.build-mode-page .submit-button:disabled {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-dim);
+}
+
+/* Preview containers - dark theme */
+.build-mode-page .preview-container {
+  border-color: var(--color-border-subtle);
+}
+
+.build-mode-page .preview-header {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+}
+
+.build-mode-page .preview-content {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+/* Form elements in dashboard - dark theme */
+.build-mode-page .encounter-dashboard__new-card {
+  border-color: var(--color-border-subtle);
+  background: transparent;
+}
+
+.build-mode-page .encounter-dashboard__new-card:hover {
+  border-color: var(--color-build-accent);
+  background: var(--color-build-bg-hover);
+}
+
+.build-mode-page .encounter-dashboard__new-icon,
+.build-mode-page .encounter-dashboard__new-label {
+  color: var(--color-text-muted);
+}
+
+.build-mode-page .encounter-dashboard__new-card:hover .encounter-dashboard__new-icon,
+.build-mode-page .encounter-dashboard__new-card:hover .encounter-dashboard__new-label {
+  color: var(--color-build-accent);
+}
+
+.build-mode-page .encounter-dashboard__new-form {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border-subtle);
+}
+
+.build-mode-page .encounter-dashboard__form-header h3 {
+  color: var(--color-text-primary);
+}
+
+.build-mode-page .encounter-dashboard__form-field label {
+  color: var(--color-text-secondary);
+}
+
+.build-mode-page .encounter-dashboard__form-field input {
+  background: var(--color-bg-primary);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-primary);
+}
+
+.build-mode-page .encounter-dashboard__form-field input:focus {
+  border-color: var(--color-build-accent);
+  box-shadow: 0 0 0 3px var(--color-build-accent-glow);
+}
+
+.build-mode-page .encounter-dashboard__form-field input::placeholder {
+  color: var(--color-text-dim);
+}
+
+.build-mode-page .encounter-dashboard__cancel-button {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-primary);
+}
+
+.build-mode-page .encounter-dashboard__cancel-button:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+
+.build-mode-page .encounter-dashboard__submit-button {
+  background: var(--color-build-accent);
+}
+
+.build-mode-page .encounter-dashboard__submit-button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+/* Status badges - keep their semantic colors */
+.build-mode-page .status-draft {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-muted);
+}
+
+/* Char count colors */
+.build-mode-page .char-count {
+  color: var(--color-text-dim);
+}
+
+.build-mode-page .char-count-warning {
+  color: var(--color-warning);
+}
+
+.build-mode-page .char-count-error {
+  color: var(--color-error);
+}
+
+/* Submission status */
+.build-mode-page .submission-status {
+  color: var(--color-text-muted);
+}
+
+.build-mode-page .submission-warning {
+  color: var(--color-warning);
+}
+
+.build-mode-page .submission-locked {
+  color: var(--color-error);
+}
+
+/* Expand icon */
+.build-mode-page .expand-icon svg {
+  color: var(--color-text-muted);
+}
+
+/* Delete button */
+.build-mode-page .delete-button {
+  color: var(--color-text-dim);
+}
+
+.build-mode-page .delete-button:hover {
+  background: rgba(220, 53, 69, 0.15);
+  color: var(--color-error);
+}
+
+/* Close button */
+.build-mode-page .encounter-dashboard__close-button {
+  color: var(--color-text-muted);
+}
+
+.build-mode-page .encounter-dashboard__close-button:hover {
+  background: var(--color-bg-hover);
+}

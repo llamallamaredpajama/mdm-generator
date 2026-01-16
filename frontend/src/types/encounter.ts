@@ -1,0 +1,314 @@
+/**
+ * Build Mode v2 - Encounter TypeScript Interfaces
+ *
+ * Defines the data structures for the multi-encounter Build Mode feature
+ * which provides a 3-section guided workflow for MDM documentation.
+ *
+ * Data Model: Firestore `customers/{uid}/encounters/{encounterId}`
+ */
+
+import type { Timestamp } from 'firebase/firestore'
+
+// ============================================================================
+// Character Limit Constants
+// ============================================================================
+
+/** Maximum characters for Section 1: Initial Evaluation */
+export const SECTION1_MAX_CHARS = 4000
+
+/** Maximum characters for Section 2: Workup & Results */
+export const SECTION2_MAX_CHARS = 3000
+
+/** Maximum characters for Section 3: Treatment & Disposition */
+export const SECTION3_MAX_CHARS = 2500
+
+/** Total approximate character limit across all sections */
+export const TOTAL_MAX_CHARS = SECTION1_MAX_CHARS + SECTION2_MAX_CHARS + SECTION3_MAX_CHARS
+
+/** Maximum submissions per section before locking */
+export const MAX_SUBMISSIONS_PER_SECTION = 2
+
+// ============================================================================
+// Status Types
+// ============================================================================
+
+/** Status of an individual section within an encounter */
+export type SectionStatus = 'pending' | 'in_progress' | 'completed'
+
+/** Overall status of an encounter document */
+export type EncounterStatus =
+  | 'draft'
+  | 'section1_done'
+  | 'section2_done'
+  | 'finalized'
+  | 'archived'
+
+/** Urgency classification for differential diagnosis items */
+export type UrgencyLevel = 'emergent' | 'urgent' | 'routine'
+
+// ============================================================================
+// LLM Response Types
+// ============================================================================
+
+/**
+ * Individual item in the generated differential diagnosis
+ * Follows worst-first approach for Emergency Medicine
+ */
+export interface DifferentialItem {
+  /** The diagnosis being considered */
+  diagnosis: string
+  /** Urgency classification: emergent, urgent, or routine */
+  urgency: UrgencyLevel
+  /** Clinical reasoning supporting this diagnosis */
+  reasoning: string
+}
+
+/**
+ * MDM preview generated after Section 2 processing
+ * Contains accumulated information from sections 1 and 2
+ */
+export interface MdmPreview {
+  /** Problems/diagnoses being addressed */
+  problems: string
+  /** Differential diagnosis summary */
+  differential: string
+  /** Data reviewed: labs, imaging, EKG, etc. */
+  dataReviewed: string
+  /** Clinical reasoning and decision-making rationale */
+  reasoning: string
+}
+
+/**
+ * Final MDM output generated after Section 3 processing
+ * Ready for copy-paste into EHR
+ */
+export interface FinalMdm {
+  /** Formatted text version for direct EHR paste */
+  text: string
+  /** Structured JSON version for programmatic use */
+  json: Record<string, unknown>
+}
+
+// ============================================================================
+// Section Data Interfaces
+// ============================================================================
+
+/**
+ * Section 1: Initial Evaluation
+ * User input: History, physical exam, initial impression
+ * LLM output: Differential diagnosis (worst-first)
+ */
+export interface Section1Data {
+  /** Status of this section */
+  status: SectionStatus
+  /** User dictation content (max 4000 chars) */
+  content: string
+  /** Number of times this section has been submitted (0, 1, or 2) */
+  submissionCount: number
+  /** Whether this section is locked (true after 2nd submission) */
+  isLocked: boolean
+  /** LLM response after processing */
+  llmResponse?: {
+    /** Generated differential diagnosis items */
+    differential: DifferentialItem[]
+    /** When the LLM processed this section */
+    processedAt: Timestamp
+  }
+}
+
+/**
+ * Section 2: Workup & Results
+ * User input: Tests, results, clinical decision rules, working diagnosis
+ * LLM output: MDM preview with accumulated context
+ */
+export interface Section2Data {
+  /** Status of this section */
+  status: SectionStatus
+  /** User dictation content (max 3000 chars) */
+  content: string
+  /** Number of times this section has been submitted (0, 1, or 2) */
+  submissionCount: number
+  /** Whether this section is locked (true after 2nd submission) */
+  isLocked: boolean
+  /** Optional working diagnosis specified by user */
+  workingDiagnosis?: string
+  /** LLM response after processing */
+  llmResponse?: {
+    /** Generated MDM preview */
+    mdmPreview: MdmPreview
+    /** When the LLM processed this section */
+    processedAt: Timestamp
+  }
+}
+
+/**
+ * Section 3: Treatment & Disposition
+ * User input: Treatments, responses, consults, disposition
+ * LLM output: Final complete MDM
+ */
+export interface Section3Data {
+  /** Status of this section */
+  status: SectionStatus
+  /** User dictation content (max 2500 chars) */
+  content: string
+  /** Number of times this section has been submitted (0, 1, or 2) */
+  submissionCount: number
+  /** Whether this section is locked (true after 2nd submission) */
+  isLocked: boolean
+  /** LLM response after processing */
+  llmResponse?: {
+    /** Final generated MDM */
+    finalMdm: FinalMdm
+    /** When the LLM processed this section */
+    processedAt: Timestamp
+  }
+}
+
+// ============================================================================
+// Main Encounter Document
+// ============================================================================
+
+/**
+ * Complete Encounter document stored in Firestore
+ * Path: customers/{uid}/encounters/{encounterId}
+ *
+ * TTL Strategy:
+ * - 0-12h: Active (editable)
+ * - 12-24h: Archived (read-only)
+ * - 24h+: Auto-deleted via Cloud Function
+ */
+export interface EncounterDocument {
+  /** Firestore document ID */
+  id: string
+  /** User ID who owns this encounter */
+  userId: string
+  /** Room identifier (e.g., "Room 5", "Bed 2A") */
+  roomNumber: string
+  /** Brief chief complaint for card display */
+  chiefComplaint: string
+  /** Overall encounter status */
+  status: EncounterStatus
+  /** Current active section (1, 2, or 3) */
+  currentSection: 1 | 2 | 3
+
+  /** Section 1: Initial Evaluation data */
+  section1: Section1Data
+  /** Section 2: Workup & Results data */
+  section2: Section2Data
+  /** Section 3: Treatment & Disposition data */
+  section3: Section3Data
+
+  /** Whether this encounter has been counted against user quota */
+  quotaCounted: boolean
+  /** When the encounter was counted against quota */
+  quotaCountedAt?: Timestamp
+
+  /** When the encounter was created */
+  createdAt: Timestamp
+  /** When the encounter was last updated */
+  updatedAt: Timestamp
+  /** Reference timestamp for 12h active window */
+  shiftStartedAt: Timestamp
+  /** When the encounter was archived (if applicable) */
+  archivedAt?: Timestamp
+}
+
+// ============================================================================
+// API Response Types
+// ============================================================================
+
+/**
+ * Response from /v1/build-mode/process-section1
+ */
+export interface Section1Response {
+  /** Generated differential diagnosis */
+  differential: DifferentialItem[]
+  /** Updated submission count for this section */
+  submissionCount: number
+  /** Whether the section is now locked */
+  isLocked: boolean
+  /** Remaining encounters in user's quota */
+  quotaRemaining: number
+}
+
+/**
+ * Response from /v1/build-mode/process-section2
+ */
+export interface Section2Response {
+  /** Generated MDM preview */
+  mdmPreview: MdmPreview
+  /** Updated submission count for this section */
+  submissionCount: number
+  /** Whether the section is now locked */
+  isLocked: boolean
+}
+
+/**
+ * Response from /v1/build-mode/finalize
+ */
+export interface FinalizeResponse {
+  /** Final generated MDM */
+  finalMdm: FinalMdm
+  /** Remaining encounters in user's quota */
+  quotaRemaining: number
+}
+
+// ============================================================================
+// Utility Types
+// ============================================================================
+
+/** Section number type for type-safe section references */
+export type SectionNumber = 1 | 2 | 3
+
+/** Map section number to its data type */
+export type SectionDataMap = {
+  1: Section1Data
+  2: Section2Data
+  3: Section3Data
+}
+
+/** Character limits by section number */
+export const SECTION_CHAR_LIMITS: Record<SectionNumber, number> = {
+  1: SECTION1_MAX_CHARS,
+  2: SECTION2_MAX_CHARS,
+  3: SECTION3_MAX_CHARS,
+}
+
+/** Section titles for display */
+export const SECTION_TITLES: Record<SectionNumber, string> = {
+  1: 'Initial Evaluation',
+  2: 'Workup & Results',
+  3: 'Treatment & Disposition',
+}
+
+// ============================================================================
+// Initial/Default Values
+// ============================================================================
+
+/**
+ * Default section data for creating new sections
+ */
+export const createDefaultSectionData = (): Omit<Section1Data, 'llmResponse'> => ({
+  status: 'pending',
+  content: '',
+  submissionCount: 0,
+  isLocked: false,
+})
+
+/**
+ * Helper to check if a section can be submitted
+ */
+export const canSubmitSection = (
+  sectionData: Section1Data | Section2Data | Section3Data
+): boolean => {
+  return !sectionData.isLocked && sectionData.submissionCount < MAX_SUBMISSIONS_PER_SECTION
+}
+
+/**
+ * Helper to get remaining submissions for a section
+ */
+export const getRemainingSubmissions = (
+  sectionData: Section1Data | Section2Data | Section3Data
+): number => {
+  return Math.max(0, MAX_SUBMISSIONS_PER_SECTION - sectionData.submissionCount)
+}

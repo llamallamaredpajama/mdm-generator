@@ -1,0 +1,145 @@
+/* FinalizeModal - Additional styles for the finalize encounter modal */
+
+.finalize-modal {
+  max-width: 520px;
+}
+
+/* Warning variants */
+.warning-critical {
+  background: rgba(220, 53, 69, 0.15);
+  border-color: rgba(220, 53, 69, 0.5);
+}
+
+.warning-critical .warning-icon {
+  color: #ff4757;
+}
+
+.warning-urgent {
+  background: rgba(255, 193, 7, 0.1);
+  border-color: rgba(255, 193, 7, 0.4);
+}
+
+.warning-urgent .warning-icon {
+  color: #ffc107;
+}
+
+.warning-incomplete {
+  background: rgba(23, 162, 184, 0.1);
+  border-color: rgba(23, 162, 184, 0.4);
+}
+
+.warning-incomplete .warning-icon {
+  color: #17a2b8;
+}
+
+/* Info section */
+.finalize-info {
+  padding: 1.25rem;
+}
+
+.finalize-info h3 {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.finalize-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.finalize-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  color: #bbb;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.finalize-list li:first-child {
+  padding-top: 0;
+}
+
+.finalize-list li:last-child {
+  padding-bottom: 0;
+}
+
+.list-icon {
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.finalize-list li .list-icon:first-child {
+  color: #28a745;
+}
+
+.finalize-list li:last-child .list-icon {
+  color: #dc3545;
+}
+
+/* Urgent button variant */
+.btn-urgent {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+  animation: pulse-urgent 2s infinite;
+}
+
+.btn-urgent:hover:not(:disabled) {
+  box-shadow: 0 5px 20px rgba(255, 107, 107, 0.5);
+}
+
+@keyframes pulse-urgent {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 107, 107, 0);
+  }
+}
+
+/* Small spinner for button */
+.spinner-small {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+  .finalize-modal {
+    padding: 1.5rem;
+  }
+
+  .finalize-info h3 {
+    font-size: 0.9rem;
+  }
+
+  .finalize-list li {
+    font-size: 0.85rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+}

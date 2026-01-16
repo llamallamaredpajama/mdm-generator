@@ -41,6 +41,119 @@
 }
 
 /* ─────────────────────────────────────────
+   Build Mode Entry Point (Shift Mode)
+   ───────────────────────────────────────── */
+
+.build-mode-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  max-width: 900px;
+  margin: 0 auto var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  transition: all var(--transition-normal);
+}
+
+.build-mode-entry:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.build-mode-entry:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.build-mode-entry__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.build-mode-entry__icon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--color-build-accent);
+}
+
+.build-mode-entry__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.build-mode-entry__title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.build-mode-entry__description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.build-mode-entry__arrow {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.build-mode-entry:hover .build-mode-entry__arrow {
+  transform: translateX(4px);
+  color: var(--color-build-accent);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .build-mode-entry {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .build-mode-entry {
+    padding: var(--space-sm) var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .build-mode-entry__icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .build-mode-entry__icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .build-mode-entry__title {
+    font-size: var(--font-size-sm);
+  }
+
+  .build-mode-entry__description {
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* ─────────────────────────────────────────
    Grid Layout
    ───────────────────────────────────────── */
 

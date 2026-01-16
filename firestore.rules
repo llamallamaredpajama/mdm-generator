@@ -69,6 +69,27 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow write: if false; // Only Stripe Extension can write
       }
+
+      // Build Mode encounters - guided 3-section MDM generation
+      match /encounters/{encounterId} {
+        // Users can read their own encounters
+        allow read: if isOwner(userId);
+
+        // Users can create encounters with required fields and draft status
+        allow create: if isOwner(userId)
+          && request.resource.data.userId == userId
+          && request.resource.data.roomNumber is string
+          && request.resource.data.chiefComplaint is string
+          && request.resource.data.status == 'draft';
+
+        // Users can update encounters unless finalized
+        allow update: if isOwner(userId)
+          && resource.data.status != 'finalized';
+
+        // Users can only delete draft or archived encounters
+        allow delete: if isOwner(userId)
+          && resource.data.status in ['archived', 'draft'];
+      }
     }
     
     // MDM generation metadata (no PHI)

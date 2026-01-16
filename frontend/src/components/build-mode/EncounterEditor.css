@@ -1,0 +1,502 @@
+/* ============================================================================
+   EncounterEditor Component Styles
+   Main editor for a single encounter with 3-section guided workflow
+   ============================================================================ */
+
+.encounter-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 1rem;
+}
+
+/* ============================================================================
+   Loading State
+   ============================================================================ */
+
+.encounter-editor__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.encounter-editor__loading p {
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.encounter-editor__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border, #e5e7eb);
+  border-top-color: var(--color-primary, #3b82f6);
+  border-radius: 50%;
+  animation: encounter-editor-spin 1s linear infinite;
+}
+
+@keyframes encounter-editor-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+   Error State
+   ============================================================================ */
+
+.encounter-editor__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.encounter-editor__error-icon {
+  font-size: 2.5rem;
+}
+
+.encounter-editor__error-message {
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 0.95rem;
+  max-width: 400px;
+  margin: 0;
+}
+
+/* ============================================================================
+   Not Found State
+   ============================================================================ */
+
+.encounter-editor__not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.encounter-editor__not-found p {
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* ============================================================================
+   Header
+   ============================================================================ */
+
+.encounter-editor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.encounter-editor__header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.encounter-editor__header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.encounter-editor__back-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 0.375rem;
+  color: var(--color-text, #374151);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.encounter-editor__back-button:hover {
+  background: var(--color-hover, #f3f4f6);
+  border-color: var(--color-primary, #3b82f6);
+  color: var(--color-primary, #3b82f6);
+}
+
+.encounter-editor__back-button:focus {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.encounter-editor__title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.encounter-editor__room {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text, #111827);
+}
+
+.encounter-editor__complaint {
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 0.95rem;
+}
+
+/* ============================================================================
+   Status Badges
+   ============================================================================ */
+
+.encounter-editor__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.encounter-editor__badge--finalized {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.encounter-editor__badge--archived {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+/* ============================================================================
+   Status Banner
+   ============================================================================ */
+
+.encounter-editor__status-banner {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.encounter-editor__status-banner--finalized {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.encounter-editor__status-banner--archived {
+  background: #e5e7eb;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+}
+
+/* ============================================================================
+   Sections Container
+   ============================================================================ */
+
+.encounter-editor__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ============================================================================
+   Section Blocked State
+   ============================================================================ */
+
+.encounter-editor__section-blocked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  background: var(--color-surface, #f9fafb);
+  border: 1px dashed var(--color-border, #d1d5db);
+  border-radius: 0.5rem;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 0.9rem;
+}
+
+.encounter-editor__blocked-icon {
+  font-size: 1.25rem;
+}
+
+/* ============================================================================
+   Working Diagnosis Input
+   ============================================================================ */
+
+.encounter-editor__working-diagnosis {
+  padding: 1rem;
+  background: var(--color-surface, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.encounter-editor__working-diagnosis label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text, #374151);
+  margin-bottom: 0.5rem;
+}
+
+.encounter-editor__working-diagnosis-hint {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-secondary, #6b7280);
+  margin-top: 0.25rem;
+}
+
+.encounter-editor__working-diagnosis-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 0.375rem;
+  font-size: 0.9rem;
+  color: var(--color-text, #111827);
+  background: var(--color-background, #ffffff);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.encounter-editor__working-diagnosis-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.encounter-editor__working-diagnosis-input::placeholder {
+  color: var(--color-text-muted, #9ca3af);
+}
+
+/* ============================================================================
+   Final MDM Output
+   ============================================================================ */
+
+.encounter-editor__final-mdm {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: var(--color-surface, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.5rem;
+}
+
+.encounter-editor__final-mdm-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text, #111827);
+}
+
+.encounter-editor__final-mdm-content {
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.375rem;
+  padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.encounter-editor__final-mdm-content pre {
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--color-text, #111827);
+}
+
+.encounter-editor__copy-button {
+  margin-top: 1rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--color-primary, #3b82f6);
+  border: none;
+  border-radius: 0.375rem;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.encounter-editor__copy-button:hover {
+  background: var(--color-primary-dark, #2563eb);
+}
+
+.encounter-editor__copy-button:focus {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   Quota Exceeded Banner
+   ============================================================================ */
+
+.encounter-editor__quota-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 0.5rem;
+  color: #92400e;
+}
+
+.encounter-editor__quota-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.encounter-editor__quota-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.encounter-editor__quota-text {
+  flex: 1;
+}
+
+.encounter-editor__quota-text strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.encounter-editor__quota-text p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.encounter-editor__quota-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.encounter-editor__upgrade-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: #f59e0b;
+  border: none;
+  border-radius: 0.375rem;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.encounter-editor__upgrade-button:hover {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.encounter-editor__quota-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  color: #92400e;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.encounter-editor__quota-dismiss:hover {
+  opacity: 1;
+  background: rgba(146, 64, 14, 0.1);
+}
+
+/* ============================================================================
+   Responsive Adjustments
+   ============================================================================ */
+
+@media (max-width: 640px) {
+  .encounter-editor {
+    padding: 0.75rem;
+  }
+
+  .encounter-editor__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .encounter-editor__header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .encounter-editor__room {
+    font-size: 1.25rem;
+  }
+
+  .encounter-editor__back-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .encounter-editor__final-mdm {
+    padding: 1rem;
+  }
+
+  .encounter-editor__final-mdm-content {
+    max-height: 300px;
+  }
+
+  .encounter-editor__copy-button {
+    width: 100%;
+  }
+
+  .encounter-editor__quota-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .encounter-editor__quota-actions {
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+  }
+
+  .encounter-editor__upgrade-button {
+    flex: 1;
+    justify-content: center;
+  }
+}

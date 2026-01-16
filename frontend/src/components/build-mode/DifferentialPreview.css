@@ -1,0 +1,318 @@
+/**
+ * DifferentialPreview Styles
+ *
+ * Urgency color scheme:
+ * - Emergent: Red tones (life-threatening)
+ * - Urgent: Yellow/amber tones (needs prompt attention)
+ * - Routine: Green tones (can be managed normally)
+ */
+
+.differential-preview {
+  background: var(--color-surface, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.differential-preview-loading,
+.differential-preview-empty {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.differential-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+.differential-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+}
+
+.differential-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.expand-collapse-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 4px;
+  color: var(--color-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.expand-collapse-btn:hover {
+  background: var(--color-surface, #f8fafc);
+  color: var(--color-text, #1e293b);
+}
+
+/* Urgency Summary */
+.urgency-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.urgency-count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+}
+
+.urgency-count.urgency-emergent {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.urgency-count.urgency-urgent {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.urgency-count.urgency-routine {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+/* Differential List */
+.differential-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Individual Items */
+.differential-item {
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease;
+}
+
+.differential-item:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Urgency-specific left border */
+.differential-item.urgency-emergent {
+  border-left: 3px solid #dc2626;
+}
+
+.differential-item.urgency-urgent {
+  border-left: 3px solid #d97706;
+}
+
+.differential-item.urgency-routine {
+  border-left: 3px solid #16a34a;
+}
+
+/* Item Header (clickable) */
+.differential-item-header {
+  width: 100%;
+  padding: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 0.5rem;
+}
+
+.differential-item-header:hover {
+  background: var(--color-surface, #f8fafc);
+}
+
+.differential-item-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.differential-rank {
+  font-weight: 600;
+  color: var(--color-text-secondary, #64748b);
+  flex-shrink: 0;
+}
+
+.differential-diagnosis {
+  font-weight: 500;
+  color: var(--color-text, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.differential-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Urgency Badge */
+.urgency-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.urgency-badge.urgency-emergent {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.urgency-badge.urgency-urgent {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.urgency-badge.urgency-routine {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+/* Expand Icon */
+.expand-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #64748b);
+  background: var(--color-surface, #f8fafc);
+  border-radius: 4px;
+  transition: transform 0.15s ease;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+/* Item Details (expanded) */
+.differential-item-details {
+  padding: 0.75rem;
+  padding-top: 0;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #f8fafc);
+}
+
+.reasoning-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #64748b);
+  margin-bottom: 0.25rem;
+}
+
+.reasoning-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text, #1e293b);
+  line-height: 1.5;
+}
+
+/* Footer */
+.differential-footer {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+}
+
+.worst-first-note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #94a3b8);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Loading State */
+.differential-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 0.75rem;
+  color: var(--color-text-secondary, #64748b);
+}
+
+.loading-spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--color-border, #e2e8f0);
+  border-top-color: var(--color-primary, #3b82f6);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Empty State */
+.differential-empty-message {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  margin: 0;
+  color: var(--color-text-secondary, #64748b);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .differential-preview {
+    padding: 0.75rem;
+    max-height: 300px;
+  }
+
+  .differential-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .differential-item-header {
+    padding: 0.5rem;
+  }
+
+  .differential-diagnosis {
+    font-size: 0.875rem;
+  }
+
+  .urgency-badge {
+    font-size: 0.5rem;
+  }
+}

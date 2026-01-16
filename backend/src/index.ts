@@ -9,6 +9,19 @@ import { buildParsePrompt, getEmptyParsedNarrative, type ParsedNarrative } from 
 import { MdmSchema, renderMdmText } from './outputSchema'
 import { callGeminiFlash } from './vertex'
 import { userService } from './services/userService'
+import {
+  Section1RequestSchema,
+  Section2RequestSchema,
+  FinalizeRequestSchema,
+  type DifferentialItem,
+  type MdmPreview,
+  type FinalMdm,
+} from './buildModeSchemas'
+import {
+  buildSection1Prompt,
+  buildSection2Prompt,
+  buildFinalizePrompt,
+} from './promptBuilderBuildMode'
 
 const app = express()
 
@@ -352,6 +365,464 @@ app.post('/v1/generate', async (req, res) => {
     const status = e.status || 500
     if (status !== 500) return res.status(status).json({ error: e.message })
     console.error(e)
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ============================================================================
+// Build Mode Endpoints
+// ============================================================================
+
+// Helper to get Firestore instance
+const getDb = () => admin.firestore()
+
+// Helper to get encounter document reference
+const getEncounterRef = (userId: string, encounterId: string) =>
+  getDb().collection('customers').doc(userId).collection('encounters').doc(encounterId)
+
+/**
+ * POST /v1/build-mode/process-section1
+ * Process initial evaluation (Section 1) and generate worst-first differential
+ */
+app.post('/v1/build-mode/process-section1', async (req, res) => {
+  try {
+    // 1. Validate request
+    const parsed = Section1RequestSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    // 2. Authenticate
+    let uid: string
+    let email = ''
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
+      uid = decoded.uid
+      email = decoded.email || ''
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    const { encounterId, content } = parsed.data
+
+    // 3. Get encounter and verify ownership
+    const encounterRef = getEncounterRef(uid, encounterId)
+    const encounterSnap = await encounterRef.get()
+
+    if (!encounterSnap.exists) {
+      return res.status(404).json({ error: 'Encounter not found' })
+    }
+
+    const encounter = encounterSnap.data()!
+
+    // 4. Check submission count (max 2 submissions per section)
+    const currentSubmissionCount = encounter.section1?.submissionCount || 0
+    if (currentSubmissionCount >= 2) {
+      return res.status(400).json({
+        error: 'Section 1 is locked after 2 submissions',
+        submissionCount: currentSubmissionCount,
+        isLocked: true,
+      })
+    }
+
+    // 5. Handle quota - only count first submission per encounter
+    let quotaRemaining: number
+    if (!encounter.quotaCounted) {
+      // Ensure user exists and check quota
+      await userService.ensureUser(uid, email)
+      const quotaCheck = await userService.checkQuota(uid)
+      if (!quotaCheck.allowed) {
+        return res.status(402).json({
+          error: 'Monthly quota exceeded',
+          used: quotaCheck.used,
+          limit: quotaCheck.limit,
+          remaining: 0,
+        })
+      }
+      // Decrement quota and mark as counted
+      await userService.incrementUsage(uid)
+      await encounterRef.update({ quotaCounted: true })
+    }
+
+    // Get updated quota
+    const stats = await userService.getUsageStats(uid)
+    quotaRemaining = stats.remaining
+
+    // 6. Build prompt and call Vertex AI
+    const systemPrompt = await fs.readFile(
+      path.join(__dirname, '../../docs/mdm-gen-guide.md'),
+      'utf8'
+    ).catch(() => '') // Fallback to empty if guide not found
+
+    const prompt = buildSection1Prompt(content, systemPrompt)
+
+    let differential: DifferentialItem[] = []
+    try {
+      const result = await callGeminiFlash(prompt)
+
+      // Parse response - expect JSON array of differential items
+      let cleanedText = result.text
+        .replace(/^```json\s*/gm, '')
+        .replace(/^```\s*$/gm, '')
+        .trim()
+
+      try {
+        differential = JSON.parse(cleanedText)
+        // Validate structure
+        if (!Array.isArray(differential)) {
+          const jsonStart = cleanedText.indexOf('[')
+          const jsonEnd = cleanedText.lastIndexOf(']')
+          if (jsonStart >= 0 && jsonEnd > jsonStart) {
+            differential = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+          } else {
+            throw new Error('Expected array of differential items')
+          }
+        }
+      } catch (parseError) {
+        console.error('Section 1 JSON parse error:', parseError)
+        // Return minimal fallback
+        differential = [
+          {
+            diagnosis: 'Unable to parse differential',
+            urgency: 'urgent' as const,
+            reasoning: 'Please review input and resubmit',
+          },
+        ]
+      }
+    } catch (modelError) {
+      console.error('Section 1 model error:', modelError)
+      return res.status(500).json({ error: 'Failed to process section 1' })
+    }
+
+    // 7. Update Firestore
+    const newSubmissionCount = currentSubmissionCount + 1
+    const isLocked = newSubmissionCount >= 2
+
+    await encounterRef.update({
+      'section1.content': content,
+      'section1.llmResponse': differential,
+      'section1.submissionCount': newSubmissionCount,
+      'section1.status': 'completed',
+      'section1.lastUpdated': admin.firestore.Timestamp.now(),
+      status: 'section1_done',
+      updatedAt: admin.firestore.Timestamp.now(),
+    })
+
+    // 8. Log action (no PHI)
+    console.log({
+      action: 'process-section1',
+      uid,
+      encounterId,
+      submissionCount: newSubmissionCount,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 9. Return response
+    return res.json({
+      ok: true,
+      differential,
+      submissionCount: newSubmissionCount,
+      isLocked,
+      quotaRemaining,
+    })
+  } catch (e: any) {
+    console.error('process-section1 error:', e)
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+/**
+ * POST /v1/build-mode/process-section2
+ * Process workup & results (Section 2) and generate MDM preview
+ */
+app.post('/v1/build-mode/process-section2', async (req, res) => {
+  try {
+    // 1. Validate request
+    const parsed = Section2RequestSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    // 2. Authenticate
+    let uid: string
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
+      uid = decoded.uid
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    const { encounterId, content, workingDiagnosis } = parsed.data
+
+    // 3. Get encounter and verify ownership
+    const encounterRef = getEncounterRef(uid, encounterId)
+    const encounterSnap = await encounterRef.get()
+
+    if (!encounterSnap.exists) {
+      return res.status(404).json({ error: 'Encounter not found' })
+    }
+
+    const encounter = encounterSnap.data()!
+
+    // 4. Verify section 1 is completed
+    if (encounter.section1?.status !== 'completed') {
+      return res.status(400).json({
+        error: 'Section 1 must be completed before processing Section 2',
+      })
+    }
+
+    // 5. Check submission count
+    const currentSubmissionCount = encounter.section2?.submissionCount || 0
+    if (currentSubmissionCount >= 2) {
+      return res.status(400).json({
+        error: 'Section 2 is locked after 2 submissions',
+        submissionCount: currentSubmissionCount,
+        isLocked: true,
+      })
+    }
+
+    // 6. Build prompt with section 1 context and call Vertex AI
+    const section1Content = encounter.section1?.content || ''
+    const section1Response = encounter.section1?.llmResponse || []
+
+    const prompt = buildSection2Prompt(section1Content, section1Response, content, workingDiagnosis)
+
+    let mdmPreview: MdmPreview
+    try {
+      const result = await callGeminiFlash(prompt)
+
+      // Parse response - expect MDM preview object
+      let cleanedText = result.text
+        .replace(/^```json\s*/gm, '')
+        .replace(/^```\s*$/gm, '')
+        .trim()
+
+      try {
+        mdmPreview = JSON.parse(cleanedText)
+        // Ensure required fields
+        if (!mdmPreview.problems) mdmPreview.problems = []
+        if (!mdmPreview.differential) mdmPreview.differential = []
+        if (!mdmPreview.dataReviewed) mdmPreview.dataReviewed = []
+        if (!mdmPreview.reasoning) mdmPreview.reasoning = ''
+      } catch (parseError) {
+        console.error('Section 2 JSON parse error:', parseError)
+        // Try to extract JSON
+        const jsonStart = cleanedText.indexOf('{')
+        const jsonEnd = cleanedText.lastIndexOf('}')
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          mdmPreview = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+        } else {
+          // Return minimal fallback
+          mdmPreview = {
+            problems: ['Unable to parse MDM preview'],
+            differential: section1Response.map((d: DifferentialItem) => d.diagnosis),
+            dataReviewed: [],
+            reasoning: 'Please review input and resubmit',
+          }
+        }
+      }
+    } catch (modelError) {
+      console.error('Section 2 model error:', modelError)
+      return res.status(500).json({ error: 'Failed to process section 2' })
+    }
+
+    // 7. Update Firestore
+    const newSubmissionCount = currentSubmissionCount + 1
+    const isLocked = newSubmissionCount >= 2
+
+    await encounterRef.update({
+      'section2.content': content,
+      'section2.llmResponse': mdmPreview,
+      'section2.submissionCount': newSubmissionCount,
+      'section2.status': 'completed',
+      'section2.lastUpdated': admin.firestore.Timestamp.now(),
+      status: 'section2_done',
+      updatedAt: admin.firestore.Timestamp.now(),
+    })
+
+    // 8. Log action (no PHI)
+    console.log({
+      action: 'process-section2',
+      uid,
+      encounterId,
+      submissionCount: newSubmissionCount,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 9. Return response
+    return res.json({
+      ok: true,
+      mdmPreview,
+      submissionCount: newSubmissionCount,
+      isLocked,
+    })
+  } catch (e: any) {
+    console.error('process-section2 error:', e)
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+/**
+ * POST /v1/build-mode/finalize
+ * Process treatment & disposition (Section 3) and generate final MDM
+ */
+app.post('/v1/build-mode/finalize', async (req, res) => {
+  try {
+    // 1. Validate request
+    const parsed = FinalizeRequestSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    // 2. Authenticate
+    let uid: string
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
+      uid = decoded.uid
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    const { encounterId, content } = parsed.data
+
+    // 3. Get encounter and verify ownership
+    const encounterRef = getEncounterRef(uid, encounterId)
+    const encounterSnap = await encounterRef.get()
+
+    if (!encounterSnap.exists) {
+      return res.status(404).json({ error: 'Encounter not found' })
+    }
+
+    const encounter = encounterSnap.data()!
+
+    // 4. Verify section 2 is completed
+    if (encounter.section2?.status !== 'completed') {
+      return res.status(400).json({
+        error: 'Section 2 must be completed before finalizing',
+      })
+    }
+
+    // 5. Check submission count
+    const currentSubmissionCount = encounter.section3?.submissionCount || 0
+    if (currentSubmissionCount >= 2) {
+      return res.status(400).json({
+        error: 'Section 3 is locked after 2 submissions',
+        submissionCount: currentSubmissionCount,
+        isLocked: true,
+      })
+    }
+
+    // 6. Build prompt with all sections and call Vertex AI
+    const section1Data = {
+      content: encounter.section1?.content || '',
+      response: { differential: encounter.section1?.llmResponse || [] },
+    }
+    const section2Data = {
+      content: encounter.section2?.content || '',
+      response: { mdmPreview: encounter.section2?.llmResponse || {} },
+      workingDiagnosis: undefined, // Could be stored in encounter if needed
+    }
+
+    const prompt = buildFinalizePrompt(section1Data, section2Data, content)
+
+    let finalMdm: FinalMdm
+    try {
+      const result = await callGeminiFlash(prompt)
+
+      // Parse response - expect text and json sections
+      let cleanedText = result.text
+        .replace(/^```json\s*/gm, '')
+        .replace(/^```\s*$/gm, '')
+        .trim()
+
+      // Try to parse as complete FinalMdm object
+      try {
+        const parsed = JSON.parse(cleanedText)
+        finalMdm = {
+          text: parsed.text || '',
+          json: {
+            problems: parsed.json?.problems || parsed.problems || [],
+            differential: parsed.json?.differential || parsed.differential || [],
+            dataReviewed: parsed.json?.dataReviewed || parsed.dataReviewed || [],
+            reasoning: parsed.json?.reasoning || parsed.reasoning || '',
+            risk: parsed.json?.risk || parsed.risk || [],
+            disposition: parsed.json?.disposition || parsed.disposition || '',
+            complexityLevel: parsed.json?.complexityLevel || parsed.complexityLevel || 'moderate',
+          },
+        }
+      } catch (parseError) {
+        console.error('Finalize JSON parse error:', parseError)
+        // Try to extract JSON
+        const jsonStart = cleanedText.indexOf('{')
+        const jsonEnd = cleanedText.lastIndexOf('}')
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          const jsonObj = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+          finalMdm = {
+            text: jsonObj.text || renderMdmText(jsonObj),
+            json: {
+              problems: jsonObj.problems || [],
+              differential: jsonObj.differential || [],
+              dataReviewed: jsonObj.dataReviewed || [],
+              reasoning: jsonObj.reasoning || '',
+              risk: jsonObj.risk || [],
+              disposition: jsonObj.disposition || '',
+              complexityLevel: jsonObj.complexityLevel || 'moderate',
+            },
+          }
+        } else {
+          // Return minimal fallback
+          finalMdm = {
+            text: 'Unable to generate final MDM. Please review and try again.',
+            json: {
+              problems: [],
+              differential: [],
+              dataReviewed: [],
+              reasoning: 'Generation failed',
+              risk: [],
+              disposition: '',
+              complexityLevel: 'moderate',
+            },
+          }
+        }
+      }
+    } catch (modelError) {
+      console.error('Finalize model error:', modelError)
+      return res.status(500).json({ error: 'Failed to finalize encounter' })
+    }
+
+    // 7. Update Firestore
+    const newSubmissionCount = currentSubmissionCount + 1
+
+    await encounterRef.update({
+      'section3.content': content,
+      'section3.llmResponse': finalMdm,
+      'section3.submissionCount': newSubmissionCount,
+      'section3.status': 'completed',
+      'section3.lastUpdated': admin.firestore.Timestamp.now(),
+      status: 'finalized',
+      updatedAt: admin.firestore.Timestamp.now(),
+    })
+
+    // 8. Get quota remaining
+    const stats = await userService.getUsageStats(uid)
+
+    // 9. Log action (no PHI)
+    console.log({
+      action: 'finalize',
+      uid,
+      encounterId,
+      submissionCount: newSubmissionCount,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 10. Return response
+    return res.json({
+      ok: true,
+      finalMdm,
+      quotaRemaining: stats.remaining,
+    })
+  } catch (e: any) {
+    console.error('finalize error:', e)
     return res.status(500).json({ error: 'Internal error' })
   }
 })
