@@ -383,6 +383,247 @@ decisions               : Key architectural choices
 
 ---
 
+### Multi-Terminal Parallel Execution
+
+#### Overview
+
+For complex multi-file operations spanning frontend and backend, use coordinated 5-terminal iTerm2 workflows. This enables true parallel execution with synchronized verification gates.
+
+**When to Use:**
+- Operations touching 10+ files across frontend/backend
+- Complex refactoring requiring coordinated changes
+- Multi-phase implementations with dependencies
+- Tasks benefiting from parallel code execution
+
+#### Terminal Setup (5 Terminals Required)
+
+1. Open iTerm2 and create exactly 5 terminal windows
+2. Name each terminal (right-click tab → Edit Session Title):
+
+| Terminal | Name | Role |
+|----------|------|------|
+| 1 | `Terminal 1` | Task executor #1 |
+| 2 | `Terminal 2` | Task executor #2 |
+| 3 | `Terminal 3` | Task executor #3 |
+| 4 | `Terminal 4` | Task executor #4 |
+| 5 | `Plan/Sync` | Phase coordinator |
+
+3. Navigate all terminals to project root: `cd /Users/jeremy/dev/proj/mdm-proj`
+
+#### Plan File Structure
+
+Create plan files at `~/.claude/plans/[descriptive-name].md`:
+
+```markdown
+# Plan: [Task Name]
+
+## Phase 1: [Phase Name]
+
+### Terminal 1
+[Specific task description with file paths]
+
+### Terminal 2
+[Specific task description with file paths]
+
+### Terminal 3
+[Specific task description with file paths]
+
+### Terminal 4
+[Specific task description with file paths]
+
+### Plan/Sync
+- [ ] Verify Terminal 1-4 completed
+- [ ] Run validation: `cd frontend && pnpm check`
+- [ ] Run validation: `cd backend && pnpm build`
+- [ ] PHI check: `git diff` for no patient data
+- [ ] Signal "Phase 1 complete" when all pass
+
+## Phase 2: [Next Phase Name]
+[Continue pattern...]
+```
+
+#### Terminal Instruction Format
+
+Each terminal receives clear, atomic instructions:
+
+```markdown
+### Terminal N
+**File**: `path/to/file.ts`
+**Task**: [Specific action]
+**Details**:
+- [Specific change 1]
+- [Specific change 2]
+**Completion Signal**: "Terminal N Phase X complete"
+```
+
+#### Execution Workflow Pattern
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     PHASE EXECUTION                          │
+├─────────────────────────────────────────────────────────────┤
+│  Terminal 1  │  Terminal 2  │  Terminal 3  │  Terminal 4   │
+│     ▼        │     ▼        │     ▼        │     ▼         │
+│  Execute     │  Execute     │  Execute     │  Execute      │
+│  Task 1      │  Task 2      │  Task 3      │  Task 4       │
+│     ▼        │     ▼        │     ▼        │     ▼         │
+│  "T1 done"   │  "T2 done"   │  "T3 done"   │  "T4 done"    │
+├─────────────────────────────────────────────────────────────┤
+│                      Plan/Sync Terminal                      │
+│  1. Verify all terminals complete                            │
+│  2. Run: cd frontend && pnpm check                           │
+│  3. Run: cd backend && pnpm build                            │
+│  4. PHI check: git diff (no patient data)                    │
+│  5. Signal: "Phase N complete - proceed to Phase N+1"        │
+├─────────────────────────────────────────────────────────────┤
+│                     NEXT PHASE BEGINS                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Plan/Sync Terminal Responsibilities
+
+The Plan/Sync terminal is the **single source of truth** for phase progression:
+
+**Before Each Phase:**
+```bash
+# Announce phase start
+echo "=== PHASE N: [Name] ==="
+echo "Terminals 1-4: Execute your tasks"
+```
+
+**After Each Phase (Verification Checklist):**
+```bash
+# 1. Confirm all terminals reported completion
+# 2. Run frontend validation
+cd frontend && pnpm check
+
+# 3. Run backend validation
+cd backend && pnpm build
+
+# 4. PHI verification (CRITICAL for this project)
+git diff  # Review for any patient data
+
+# 5. Signal completion
+echo "=== PHASE N COMPLETE ==="
+echo "Proceed to Phase N+1"
+```
+
+**Validation Commands for MDM Project:**
+
+| Check | Command | Purpose |
+|-------|---------|---------|
+| Frontend full | `cd frontend && pnpm check` | typecheck + lint + test |
+| Frontend types | `cd frontend && pnpm typecheck` | TypeScript only |
+| Frontend lint | `cd frontend && pnpm lint` | ESLint only |
+| Frontend test | `cd frontend && pnpm test` | Vitest only |
+| Backend build | `cd backend && pnpm build` | TypeScript compilation |
+| PHI check | `git diff` | Review for patient data |
+| Security | `git diff \| grep -i "patient\|ssn\|dob\|mrn"` | PHI keyword scan |
+
+#### IDLE Terminals
+
+If fewer than 4 parallel tasks exist in a phase, mark unused terminals:
+
+```markdown
+### Terminal 3
+**Status**: IDLE this phase
+
+### Terminal 4
+**Status**: IDLE this phase
+```
+
+IDLE terminals should respond: "Terminal N acknowledges IDLE for Phase X"
+
+#### Rollback Protocol
+
+If validation fails after a phase:
+
+```bash
+# 1. Plan/Sync announces failure
+echo "=== PHASE N FAILED ==="
+echo "Validation error: [specific error]"
+
+# 2. All terminals execute rollback
+git checkout -- .  # Discard all changes
+
+# 3. Review and fix plan before retry
+# 4. Re-execute phase from beginning
+```
+
+**PHI-Specific Rollback (🔴 CRITICAL):**
+If PHI is detected in any change:
+1. **STOP immediately** - Do not commit
+2. Run `git checkout -- .` to discard ALL changes
+3. Review which file contained PHI
+4. Fix the source (likely prompt or input handling)
+5. Re-execute from clean state
+
+#### Key Rules Summary
+
+| Rule | Description |
+|------|-------------|
+| **Plan/Sync is Authority** | Only Plan/Sync terminal signals phase transitions |
+| **No Cross-Talk** | Terminals don't communicate directly; all coordination through Plan/Sync |
+| **Atomic Tasks** | Each terminal task must be completable independently |
+| **Verify Before Proceed** | Never start next phase without validation passing |
+| **PHI Gate (🔴)** | Every phase must pass PHI verification before proceeding |
+| **IDLE Acknowledgment** | Unused terminals must acknowledge IDLE status |
+| **Rollback Ready** | All terminals prepared to `git checkout -- .` on failure |
+
+#### Example: Frontend/Backend Feature Implementation
+
+```markdown
+# Plan: Add Usage Analytics Dashboard
+
+## Phase 1: Backend API
+
+### Terminal 1
+**File**: `backend/src/routes/analytics.ts`
+**Task**: Create analytics endpoint
+
+### Terminal 2
+**File**: `backend/src/services/analyticsService.ts`
+**Task**: Create analytics service
+
+### Terminal 3
+**Status**: IDLE this phase
+
+### Terminal 4
+**Status**: IDLE this phase
+
+### Plan/Sync
+- [ ] T1, T2 complete
+- [ ] `cd backend && pnpm build` passes
+- [ ] `git diff` shows no PHI
+- [ ] Signal "Phase 1 complete"
+
+## Phase 2: Frontend Components
+
+### Terminal 1
+**File**: `frontend/src/components/AnalyticsDashboard.tsx`
+**Task**: Create dashboard component
+
+### Terminal 2
+**File**: `frontend/src/hooks/useAnalytics.ts`
+**Task**: Create analytics hook
+
+### Terminal 3
+**File**: `frontend/src/routes/Analytics.tsx`
+**Task**: Create analytics route
+
+### Terminal 4
+**File**: `frontend/src/lib/analytics.ts`
+**Task**: Create analytics utilities
+
+### Plan/Sync
+- [ ] T1-T4 complete
+- [ ] `cd frontend && pnpm check` passes
+- [ ] `git diff` shows no PHI
+- [ ] Signal "Phase 2 complete"
+```
+
+---
+
 ### Resource Management
 
 #### Green Zone (0-75% Context Usage)
