@@ -152,7 +152,7 @@ export default function CarouselCard({
 
           <div className="carousel-card__field">
             <label htmlFor="new-complaint" className="carousel-card__label">
-              Chief Complaint
+              Identifier
             </label>
             <input
               id="new-complaint"
@@ -160,7 +160,7 @@ export default function CarouselCard({
               className="carousel-card__input"
               value={newEncounterForm.chiefComplaint}
               onChange={(e) => newEncounterForm.onComplaintChange(e.target.value)}
-              placeholder="e.g., Chest pain"
+              placeholder="Age, Sex, Chief Complaint"
               disabled={newEncounterForm.isSubmitting}
               autoComplete="off"
             />
