@@ -1,0 +1,422 @@
+/* ============================================================================
+   CarouselCard Component Styles
+   Individual card UI for the Build Mode carousel with position-based transforms
+   ============================================================================ */
+
+/* ===== BASE CARD STYLES ===== */
+
+.carousel-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 280px;
+  height: 360px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-build-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease,
+              box-shadow 0.3s ease,
+              filter 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ===== POSITION TRANSFORMS ===== */
+
+.carousel-card--center {
+  transform: translate(-50%, -50%) rotateZ(0deg) scale(1);
+  z-index: 50;
+  opacity: 1;
+}
+
+.carousel-card--fan-left-1 {
+  transform: translate(calc(-50% - 80px), -50%) rotateZ(-10deg) scale(0.92);
+  z-index: 40;
+  opacity: 0.85;
+}
+
+.carousel-card--fan-left-2 {
+  transform: translate(calc(-50% - 140px), -50%) rotateZ(-18deg) scale(0.84);
+  z-index: 30;
+  opacity: 0.65;
+}
+
+.carousel-card--fan-right-1 {
+  transform: translate(calc(-50% + 80px), -50%) rotateZ(10deg) scale(0.92);
+  z-index: 40;
+  opacity: 0.85;
+}
+
+.carousel-card--fan-right-2 {
+  transform: translate(calc(-50% + 140px), -50%) rotateZ(18deg) scale(0.84);
+  z-index: 30;
+  opacity: 0.65;
+}
+
+.carousel-card--hidden {
+  transform: translate(-50%, -50%) scale(0.8);
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ===== CARD HEADER ===== */
+
+.carousel-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.carousel-card__room,
+.carousel-card__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+/* ===== CHIEF COMPLAINT ===== */
+
+.carousel-card__complaint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  flex-grow: 1;
+  /* Limit to 3 lines with ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ===== STATUS BADGE ===== */
+
+.carousel-card__status {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.carousel-card__status--draft {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+}
+
+.carousel-card__status--section1_done {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--color-build-accent);
+}
+
+.carousel-card__status--section2_done {
+  background: rgba(40, 167, 69, 0.15);
+  color: var(--color-success);
+}
+
+.carousel-card__status--finalized {
+  background: rgba(40, 167, 69, 0.15);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+.carousel-card__status--archived {
+  background: rgba(220, 53, 69, 0.15);
+  color: var(--color-error);
+}
+
+/* ===== SECTION INDICATORS ===== */
+
+.carousel-card__sections {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.carousel-card__section {
+  font-size: var(--font-size-base);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-card__section--complete {
+  color: var(--color-success);
+  font-weight: var(--font-weight-bold);
+}
+
+.carousel-card__section--active {
+  color: var(--color-build-accent);
+  animation: carousel-pulse 1.5s ease-in-out infinite;
+}
+
+.carousel-card__section--pending {
+  color: var(--color-text-dim);
+}
+
+@keyframes carousel-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ===== CARD FOOTER ===== */
+
+.carousel-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+/* ===== DELETE BUTTON ===== */
+
+.carousel-card__delete {
+  background: transparent;
+  border: none;
+  padding: var(--space-xs);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-dim);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-card__delete:hover {
+  background: rgba(220, 53, 69, 0.15);
+  color: var(--color-error);
+}
+
+.carousel-card__delete:focus {
+  outline: 2px solid var(--color-error);
+  outline-offset: 2px;
+}
+
+.carousel-card__delete-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* ===== HOVER STATES ===== */
+
+/* Center card hover effect */
+.carousel-card--center:hover {
+  transform: translate(-50%, calc(-50% - 8px)) scale(1.02);
+  box-shadow: 0 25px 50px rgba(59, 130, 246, 0.3);
+  border-color: var(--color-build-border-active);
+}
+
+/* Side cards hover - subtle lift */
+.carousel-card--fan-left-1:hover,
+.carousel-card--fan-right-1:hover {
+  opacity: 0.95;
+}
+
+/* ===== FOCUS STATES ===== */
+
+/* Focus visible for keyboard nav */
+.carousel-card:focus-visible {
+  outline: 2px solid var(--color-build-accent);
+  outline-offset: 4px;
+}
+
+/* ===== NEW ENCOUNTER CARD ===== */
+
+.carousel-card--new {
+  border-style: dashed;
+  border-color: var(--color-build-border-active);
+  background: var(--color-build-bg);
+}
+
+.carousel-card--new:hover {
+  background: var(--color-build-bg-hover);
+}
+
+.carousel-card__new-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-build-accent);
+  text-align: center;
+}
+
+.carousel-card__new-icon {
+  font-size: var(--font-size-3xl);
+  color: var(--color-build-accent);
+  text-align: center;
+  margin-bottom: var(--space-sm);
+}
+
+/* ===== NEW ENCOUNTER FORM ===== */
+
+.carousel-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  flex: 1;
+}
+
+.carousel-card__field,
+.carousel-card__input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.carousel-card__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.carousel-card__input {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-build-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-fast);
+}
+
+.carousel-card__input:focus {
+  outline: none;
+  border-color: var(--color-build-accent);
+}
+
+.carousel-card__input::placeholder {
+  color: var(--color-text-dim);
+}
+
+.carousel-card__textarea {
+  resize: none;
+  min-height: 80px;
+}
+
+.carousel-card__submit {
+  margin-top: auto;
+  background: var(--color-build-accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.carousel-card__submit:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.carousel-card__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== ARCHIVED STATE ===== */
+
+.carousel-card--archived {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border-muted);
+  opacity: 0.8;
+}
+
+.carousel-card--archived .carousel-card__room {
+  color: var(--color-text-muted);
+}
+
+.carousel-card--archived .carousel-card__complaint {
+  color: var(--color-text-dim);
+}
+
+/* ===== TIMESTAMPS ===== */
+
+.carousel-card__meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-dim);
+  margin-top: var(--space-xs);
+}
+
+/* ===== SELECTION ANIMATIONS ===== */
+
+/* Phase 1: Card lifts up with glow */
+@keyframes card-select-lift {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: var(--shadow-card);
+  }
+  50% {
+    transform: translate(-50%, calc(-50% - 30px)) scale(1.05);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.08);
+    box-shadow: 0 20px 60px rgba(59, 130, 246, 0.5);
+  }
+}
+
+/* Phase 2: Non-selected cards fade back */
+@keyframes cards-fade-back {
+  to {
+    opacity: 0.3;
+    filter: blur(2px);
+  }
+}
+
+/* Phase 3: Selected card expands before transition */
+@keyframes card-expand-transition {
+  0% {
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.15);
+    box-shadow: 0 30px 80px rgba(59, 130, 246, 0.6);
+  }
+}
+
+/* Animation phase classes */
+.carousel-card--selecting.carousel-card--selected {
+  animation: card-select-lift 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  z-index: 100;
+}
+
+.carousel-card--selecting:not(.carousel-card--selected) {
+  animation: cards-fade-back 0.3s ease forwards;
+}
+
+.carousel-card--transitioning.carousel-card--selected {
+  animation: card-expand-transition 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  z-index: 100;
+}
+
+.carousel-card--transitioning:not(.carousel-card--selected) {
+  opacity: 0.3;
+  filter: blur(2px);
+}
+
+/* Disabled state during animation */
+.carousel-card--selecting,
+.carousel-card--transitioning {
+  pointer-events: none;
+}

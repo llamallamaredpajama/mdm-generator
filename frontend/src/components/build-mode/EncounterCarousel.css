@@ -1,0 +1,211 @@
+/* =============================================
+   EncounterCarousel.css
+   Carousel container and navigation styles
+   ============================================= */
+
+/* 3D Perspective Container */
+.encounter-carousel {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  perspective: 1000px;
+  perspective-origin: center center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.encounter-carousel__cards {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Navigation Arrows */
+.encounter-carousel__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-build-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+  z-index: 60;
+}
+
+.encounter-carousel__nav:hover {
+  background: var(--color-build-bg-hover);
+  border-color: var(--color-build-border-active);
+  color: var(--color-text-primary);
+}
+
+.encounter-carousel__nav--prev { left: var(--space-lg); }
+.encounter-carousel__nav--next { right: var(--space-lg); }
+
+.encounter-carousel__nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Position Indicators (dots) */
+.encounter-carousel__indicators {
+  position: absolute;
+  bottom: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-sm);
+  z-index: 60;
+}
+
+.encounter-carousel__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-text-dim);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.encounter-carousel__dot--active {
+  background: var(--color-build-accent);
+  transform: scale(1.25);
+}
+
+.encounter-carousel__dot:hover:not(.encounter-carousel__dot--active) {
+  background: var(--color-text-muted);
+}
+
+/* ===== NAVIGATION ENHANCEMENTS ===== */
+
+/* Arrow icons */
+.encounter-carousel__nav svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  transition: transform var(--transition-fast);
+}
+
+/* Navigation arrow hover animation */
+.encounter-carousel__nav--prev:hover svg {
+  transform: translateX(-2px);
+}
+
+.encounter-carousel__nav--next:hover svg {
+  transform: translateX(2px);
+}
+
+/* Disabled navigation state */
+.encounter-carousel__nav:disabled svg {
+  opacity: 0.5;
+}
+
+/* ===== EMPTY STATE ===== */
+
+.encounter-carousel__empty {
+  position: absolute;
+  top: calc(50% + 60px);
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.encounter-carousel__empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-md);
+  opacity: 0.5;
+  display: block;
+}
+
+.encounter-carousel__empty-text {
+  font-size: var(--font-size-lg);
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Tablet: 640-1024px - Show 3 cards */
+@media (max-width: 1024px) {
+  .encounter-carousel {
+    height: 380px;
+  }
+
+  .carousel-card--fan-left-2,
+  .carousel-card--fan-right-2 {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .carousel-card--fan-left-1 {
+    transform: translate(calc(-50% - 60px), -50%) rotateZ(-7deg) scale(0.9);
+  }
+
+  .carousel-card--fan-right-1 {
+    transform: translate(calc(-50% + 60px), -50%) rotateZ(7deg) scale(0.9);
+  }
+}
+
+/* Mobile: <640px - Single card view */
+@media (max-width: 640px) {
+  .encounter-carousel {
+    perspective: none;
+    height: 400px;
+  }
+
+  .carousel-card {
+    width: 90%;
+    max-width: 320px;
+  }
+
+  .carousel-card--fan-left-1,
+  .carousel-card--fan-left-2,
+  .carousel-card--fan-right-1,
+  .carousel-card--fan-right-2 {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .carousel-card--center {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .encounter-carousel__nav {
+    width: 40px;
+    height: 40px;
+  }
+
+  .encounter-carousel__nav--prev { left: var(--space-sm); }
+  .encounter-carousel__nav--next { right: var(--space-sm); }
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  .carousel-card {
+    transition: opacity 0.1s ease;
+    animation: none !important;
+  }
+
+  .carousel-card--selecting.carousel-card--selected,
+  .carousel-card--transitioning.carousel-card--selected {
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 20px 60px rgba(59, 130, 246, 0.5);
+    animation: none;
+  }
+
+  .encounter-carousel__nav svg {
+    transition: none;
+  }
+}

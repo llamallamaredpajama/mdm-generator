@@ -655,3 +655,21 @@
 .build-mode-page .encounter-dashboard__close-button:hover {
   background: var(--color-bg-hover);
 }
+
+/* ─────────────────────────────────────────
+   Carousel View
+   ───────────────────────────────────────── */
+
+.build-mode__main--carousel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  overflow: hidden;
+}
+
+/* Ensure carousel has room to breathe */
+.build-mode__main--carousel .encounter-carousel {
+  max-width: 900px;
+  margin: 0 auto;
+}
