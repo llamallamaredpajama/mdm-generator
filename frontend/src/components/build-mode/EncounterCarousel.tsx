@@ -293,8 +293,8 @@ export default function EncounterCarousel({
         </div>
       )}
 
-      {/* Empty State (when only new encounter card exists) */}
-      {encounters.length === 0 && activeIndex === 0 && (
+      {/* Empty State - only show when not viewing the new encounter card */}
+      {encounters.length === 0 && activeIndex !== 0 && (
         <div className="encounter-carousel__empty">
           <span className="encounter-carousel__empty-icon" aria-hidden="true">
             📋

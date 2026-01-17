@@ -114,12 +114,13 @@
 
 .encounter-carousel__empty {
   position: absolute;
-  top: calc(50% + 60px);
+  bottom: var(--space-xl);
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   text-align: center;
   color: var(--color-text-muted);
   pointer-events: none;
+  z-index: 55;
 }
 
 .encounter-carousel__empty-icon {
