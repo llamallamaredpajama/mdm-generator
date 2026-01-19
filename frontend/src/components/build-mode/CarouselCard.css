@@ -37,25 +37,25 @@
 .carousel-card--fan-left-1 {
   transform: translate(calc(-50% - 80px), -50%) rotateZ(-10deg) scale(0.92);
   z-index: 40;
-  opacity: 0.85;
+  opacity: 1;
 }
 
 .carousel-card--fan-left-2 {
   transform: translate(calc(-50% - 140px), -50%) rotateZ(-18deg) scale(0.84);
   z-index: 30;
-  opacity: 0.65;
+  opacity: 1;
 }
 
 .carousel-card--fan-right-1 {
   transform: translate(calc(-50% + 80px), -50%) rotateZ(10deg) scale(0.92);
   z-index: 40;
-  opacity: 0.85;
+  opacity: 1;
 }
 
 .carousel-card--fan-right-2 {
   transform: translate(calc(-50% + 140px), -50%) rotateZ(18deg) scale(0.84);
   z-index: 30;
-  opacity: 0.65;
+  opacity: 1;
 }
 
 .carousel-card--hidden {
@@ -227,7 +227,7 @@
 /* Side cards hover - subtle lift */
 .carousel-card--fan-left-1:hover,
 .carousel-card--fan-right-1:hover {
-  opacity: 0.95;
+  filter: brightness(1.05);
 }
 
 /* ===== FOCUS STATES ===== */
@@ -243,11 +243,11 @@
 .carousel-card--new {
   border-style: dashed;
   border-color: var(--color-build-border-active);
-  background: var(--color-build-bg);
+  background: var(--color-bg-secondary);
 }
 
 .carousel-card--new:hover {
-  background: var(--color-build-bg-hover);
+  background: var(--color-bg-tertiary);
 }
 
 .carousel-card__new-title {
