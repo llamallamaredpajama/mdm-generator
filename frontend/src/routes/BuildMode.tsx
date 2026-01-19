@@ -128,20 +128,6 @@ export default function BuildMode() {
         </div>
       </header>
 
-      {/* Info Banner */}
-      <div className="build-mode__info-banner">
-        <div className="build-mode__info-icon" aria-hidden="true">
-          💡
-        </div>
-        <div className="build-mode__info-content">
-          <p className="build-mode__info-text">
-            <strong>Guided 3-Section Workflow:</strong> Each encounter progresses through
-            Initial Evaluation → Workup & Results → Treatment & Disposition.
-            Each section builds on the previous, creating comprehensive MDM documentation.
-          </p>
-        </div>
-      </div>
-
       {/* Main Carousel Content */}
       <main className="build-mode__main build-mode__main--carousel">
         <EncounterCarousel
@@ -151,26 +137,6 @@ export default function BuildMode() {
           onDeleteEncounter={deleteEncounter}
         />
       </main>
-
-      {/* Footer with hints */}
-      <footer className="build-mode__footer">
-        <div className="build-mode__footer-content">
-          <span className="build-mode__footer-item">
-            <span className="build-mode__footer-icon" aria-hidden="true">🕐</span>
-            12-hour shift window per encounter
-          </span>
-          <span className="build-mode__footer-divider" aria-hidden="true">•</span>
-          <span className="build-mode__footer-item">
-            <span className="build-mode__footer-icon" aria-hidden="true">🔄</span>
-            2 submissions per section
-          </span>
-          <span className="build-mode__footer-divider" aria-hidden="true">•</span>
-          <span className="build-mode__footer-item">
-            <span className="build-mode__footer-icon" aria-hidden="true">📱</span>
-            Real-time sync across devices
-          </span>
-        </div>
-      </footer>
     </div>
   )
 }

@@ -1,7 +1,11 @@
 import type { EncounterDocument, EncounterStatus, SectionStatus } from '../../types/encounter'
 import './CarouselCard.css'
 
-export type CardPosition = 'center' | 'fan-left-1' | 'fan-left-2' | 'fan-right-1' | 'fan-right-2' | 'hidden'
+export type CardPosition =
+  | 'center'
+  | 'fan-left-1' | 'fan-left-2' | 'fan-left-3'
+  | 'fan-right-1' | 'fan-right-2' | 'fan-right-3'
+  | 'hidden'
 export type AnimationPhase = 'idle' | 'selecting' | 'transitioning' | 'fading'
 
 interface CarouselCardProps {

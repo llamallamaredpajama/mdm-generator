@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import type { EncounterDocument } from '../../types/encounter'
 import CarouselCard, { type CardPosition, type AnimationPhase } from './CarouselCard'
 import './EncounterCarousel.css'
@@ -12,7 +12,7 @@ interface EncounterCarouselProps {
 
 /**
  * Calculates the visual position of a card relative to the active index
- * Supports up to 5 visible cards in a fan layout
+ * Supports up to 7 visible cards in a fan layout
  */
 const getCardPosition = (
   index: number,
@@ -21,14 +21,21 @@ const getCardPosition = (
 ): CardPosition => {
   if (totalCards === 0) return 'hidden'
 
-  const diff = index - activeIndex
+  // Calculate the shortest distance considering wraparound
+  let diff = index - activeIndex
 
-  // Handle wraparound for circular navigation
+  // Normalize diff to handle circular navigation
+  if (diff > totalCards / 2) diff -= totalCards
+  if (diff < -totalCards / 2) diff += totalCards
+
+  // Map diff to position
   if (diff === 0) return 'center'
-  if (diff === -1 || (diff === totalCards - 1 && activeIndex === 0)) return 'fan-left-1'
-  if (diff === -2 || (diff === totalCards - 2 && activeIndex <= 1)) return 'fan-left-2'
-  if (diff === 1 || (diff === -(totalCards - 1) && activeIndex === totalCards - 1)) return 'fan-right-1'
-  if (diff === 2 || (diff === -(totalCards - 2) && activeIndex >= totalCards - 2)) return 'fan-right-2'
+  if (diff === -1) return 'fan-left-1'
+  if (diff === -2) return 'fan-left-2'
+  if (diff === -3) return 'fan-left-3'
+  if (diff === 1) return 'fan-right-1'
+  if (diff === 2) return 'fan-right-2'
+  if (diff === 3) return 'fan-right-3'
 
   return 'hidden'
 }
@@ -53,6 +60,10 @@ export default function EncounterCarousel({
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [animationPhase, setAnimationPhase] = useState<AnimationPhase>('idle')
 
+  // Ref for wheel/swipe handling
+  const containerRef = useRef<HTMLDivElement>(null)
+  const lastWheelTime = useRef<number>(0)
+
   // New encounter form state
   const [newRoomNumber, setNewRoomNumber] = useState('')
   const [newChiefComplaint, setNewChiefComplaint] = useState('')
@@ -76,14 +87,6 @@ export default function EncounterCarousel({
     if (animationPhase !== 'idle') return
     setActiveIndex((prev) => (prev + 1) % totalCards)
   }, [animationPhase, totalCards])
-
-  /**
-   * Jump directly to a specific card index
-   */
-  const handleDotClick = useCallback((index: number) => {
-    if (animationPhase !== 'idle') return
-    setActiveIndex(index)
-  }, [animationPhase])
 
   /**
    * Handle card selection with animation sequence
@@ -200,6 +203,40 @@ export default function EncounterCarousel({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handlePrev, handleNext, animationPhase, activeIndex, encounters, handleCardClick])
 
+  /**
+   * Wheel/Swipe navigation handler
+   * Supports trackpad swipe (horizontal) and mouse wheel (vertical fallback)
+   */
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const handleWheel = (e: WheelEvent) => {
+      // Skip if animation in progress
+      if (animationPhase !== 'idle') return
+
+      // Use deltaX for horizontal scroll (trackpad swipe)
+      // Also support vertical scroll as fallback for regular mouse
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+
+      // Dead zone to prevent accidental scroll
+      if (Math.abs(delta) < 10) return
+
+      // Debounce to prevent rapid firing (150ms)
+      const now = Date.now()
+      if (now - lastWheelTime.current < 150) return
+      lastWheelTime.current = now
+
+      e.preventDefault()
+
+      if (delta > 0) handleNext()
+      else handlePrev()
+    }
+
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    return () => container.removeEventListener('wheel', handleWheel)
+  }, [animationPhase, handleNext, handlePrev])
+
   // Keep activeIndex in bounds if encounters change
   useEffect(() => {
     if (activeIndex >= totalCards && totalCards > 0) {
@@ -209,6 +246,7 @@ export default function EncounterCarousel({
 
   return (
     <div
+      ref={containerRef}
       className="encounter-carousel"
       role="region"
       aria-label="Patient encounters"
@@ -246,9 +284,9 @@ export default function EncounterCarousel({
         ))}
       </div>
 
-      {/* Navigation Arrows */}
+      {/* Navigation Controls - Below Carousel */}
       {totalCards > 1 && (
-        <>
+        <div className="encounter-carousel__controls">
           <button
             type="button"
             className="encounter-carousel__nav encounter-carousel__nav--prev"
@@ -256,10 +294,14 @@ export default function EncounterCarousel({
             disabled={animationPhase !== 'idle'}
             aria-label="Previous card"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <polyline points="15 18 9 12 15 6" />
+            <svg className="encounter-carousel__arrow" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 6L9 12L15 18" />
             </svg>
           </button>
+
+          <span className="encounter-carousel__counter">
+            {activeIndex + 1} / {totalCards}
+          </span>
 
           <button
             type="button"
@@ -268,42 +310,13 @@ export default function EncounterCarousel({
             disabled={animationPhase !== 'idle'}
             aria-label="Next card"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <polyline points="9 18 15 12 9 6" />
+            <svg className="encounter-carousel__arrow" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 6L15 12L9 18" />
             </svg>
           </button>
-        </>
-      )}
-
-      {/* Position Indicator Dots */}
-      {totalCards > 1 && (
-        <div className="encounter-carousel__indicators" role="tablist" aria-label="Carousel navigation">
-          {Array.from({ length: totalCards }).map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              className={`encounter-carousel__dot ${idx === activeIndex ? 'encounter-carousel__dot--active' : ''}`}
-              onClick={() => handleDotClick(idx)}
-              disabled={animationPhase !== 'idle'}
-              role="tab"
-              aria-selected={idx === activeIndex}
-              aria-label={idx === 0 ? 'New encounter' : `Encounter ${idx}`}
-            />
-          ))}
         </div>
       )}
 
-      {/* Empty State - only show when not viewing the new encounter card */}
-      {encounters.length === 0 && activeIndex !== 0 && (
-        <div className="encounter-carousel__empty">
-          <span className="encounter-carousel__empty-icon" aria-hidden="true">
-            📋
-          </span>
-          <p className="encounter-carousel__empty-text">
-            No active encounters. Create one to get started.
-          </p>
-        </div>
-      )}
     </div>
   )
 }

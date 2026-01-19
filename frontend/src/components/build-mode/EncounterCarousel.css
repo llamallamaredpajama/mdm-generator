@@ -7,96 +7,72 @@
 .encounter-carousel {
   position: relative;
   width: 100%;
-  height: 420px;
+  height: 520px;
   perspective: 1000px;
-  perspective-origin: center center;
+  perspective-origin: center 40%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
 }
 
 .encounter-carousel__cards {
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 400px;
+  flex-shrink: 0;
+}
+
+/* Navigation Controls Container - Below Cards */
+.encounter-carousel__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+  z-index: 60;
 }
 
 /* Navigation Arrows */
 .encounter-carousel__nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-full);
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-build-border);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid var(--color-text-dim);
   color: var(--color-text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition-fast);
-  z-index: 60;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.encounter-carousel__nav svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s ease;
 }
 
 .encounter-carousel__nav:hover {
-  background: var(--color-build-bg-hover);
-  border-color: var(--color-build-border-active);
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-text-secondary);
   color: var(--color-text-primary);
 }
 
-.encounter-carousel__nav--prev { left: var(--space-lg); }
-.encounter-carousel__nav--next { right: var(--space-lg); }
+.encounter-carousel__nav:active {
+  transform: scale(0.95);
+}
 
 .encounter-carousel__nav:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
 
-/* Position Indicators (dots) */
-.encounter-carousel__indicators {
-  position: absolute;
-  bottom: var(--space-md);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: var(--space-sm);
-  z-index: 60;
-}
-
-.encounter-carousel__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
-  background: var(--color-text-dim);
-  border: none;
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-.encounter-carousel__dot--active {
-  background: var(--color-build-accent);
-  transform: scale(1.25);
-}
-
-.encounter-carousel__dot:hover:not(.encounter-carousel__dot--active) {
-  background: var(--color-text-muted);
-}
-
-/* ===== NAVIGATION ENHANCEMENTS ===== */
-
-/* Arrow icons */
-.encounter-carousel__nav svg {
-  width: 24px;
-  height: 24px;
-  stroke: currentColor;
-  stroke-width: 2;
-  fill: none;
-  transition: transform var(--transition-fast);
-}
-
-/* Navigation arrow hover animation */
 .encounter-carousel__nav--prev:hover svg {
   transform: translateX(-2px);
 }
@@ -105,9 +81,35 @@
   transform: translateX(2px);
 }
 
-/* Disabled navigation state */
-.encounter-carousel__nav:disabled svg {
-  opacity: 0.5;
+/* Card Counter */
+.encounter-carousel__counter {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-dim);
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* Arrow Icons */
+.encounter-carousel__arrow {
+  width: 20px;
+  height: 20px;
+  display: block;
+  overflow: visible;
+}
+
+.encounter-carousel__arrow path {
+  fill: none;
+  stroke: #9ca3af;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.15s ease;
+}
+
+.encounter-carousel__nav:hover .encounter-carousel__arrow path {
+  stroke: #ffffff;
 }
 
 /* ===== EMPTY STATE ===== */
@@ -138,24 +140,36 @@
 
 /* ===== RESPONSIVE DESIGN ===== */
 
-/* Tablet: 640-1024px - Show 3 cards */
+/* Tablet: 640-1024px - Show 5 cards (hide fan-left-3, fan-right-3) */
 @media (max-width: 1024px) {
   .encounter-carousel {
+    height: 480px;
+  }
+
+  .encounter-carousel__cards {
     height: 380px;
   }
 
-  .carousel-card--fan-left-2,
-  .carousel-card--fan-right-2 {
+  .carousel-card--fan-left-3,
+  .carousel-card--fan-right-3 {
     opacity: 0;
     pointer-events: none;
   }
 
+  .carousel-card--fan-left-2 {
+    transform: translate(calc(-50% - 120px), -50%) rotateZ(-16deg) scale(0.84);
+  }
+
+  .carousel-card--fan-right-2 {
+    transform: translate(calc(-50% + 120px), -50%) rotateZ(16deg) scale(0.84);
+  }
+
   .carousel-card--fan-left-1 {
-    transform: translate(calc(-50% - 60px), -50%) rotateZ(-7deg) scale(0.9);
+    transform: translate(calc(-50% - 60px), -50%) rotateZ(-8deg) scale(0.92);
   }
 
   .carousel-card--fan-right-1 {
-    transform: translate(calc(-50% + 60px), -50%) rotateZ(7deg) scale(0.9);
+    transform: translate(calc(-50% + 60px), -50%) rotateZ(8deg) scale(0.92);
   }
 }
 
@@ -163,7 +177,11 @@
 @media (max-width: 640px) {
   .encounter-carousel {
     perspective: none;
-    height: 400px;
+    height: 460px;
+  }
+
+  .encounter-carousel__cards {
+    height: 380px;
   }
 
   .carousel-card {
@@ -173,8 +191,10 @@
 
   .carousel-card--fan-left-1,
   .carousel-card--fan-left-2,
+  .carousel-card--fan-left-3,
   .carousel-card--fan-right-1,
-  .carousel-card--fan-right-2 {
+  .carousel-card--fan-right-2,
+  .carousel-card--fan-right-3 {
     opacity: 0;
     pointer-events: none;
   }
@@ -183,13 +203,14 @@
     transform: translate(-50%, -50%) scale(1);
   }
 
+  .encounter-carousel__controls {
+    gap: var(--space-md);
+  }
+
   .encounter-carousel__nav {
     width: 40px;
     height: 40px;
   }
-
-  .encounter-carousel__nav--prev { left: var(--space-sm); }
-  .encounter-carousel__nav--next { right: var(--space-sm); }
 }
 
 /* ===== REDUCED MOTION ===== */
