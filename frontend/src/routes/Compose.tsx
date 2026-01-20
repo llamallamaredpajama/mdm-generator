@@ -29,7 +29,7 @@ function ModeToggle({
   disabled?: boolean
 }) {
   return (
-    <div className="compose-mode-toggle" role="tablist" aria-label="Compose mode">
+    <div className="compose-mode-toggle" role="tablist" aria-label="Compose mode" data-mode={mode}>
       <button
         type="button"
         role="tab"
