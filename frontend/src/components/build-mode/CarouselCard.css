@@ -32,13 +32,13 @@
   transform: translate(-50%, -50%) rotateZ(0deg) scale(1);
   z-index: 50;
   opacity: 1;
-  /* Prominent deep red glow matching MDM brand */
+  /* Build Mode blue glow - reduced idle intensity */
   box-shadow:
-    0 0 25px rgba(185, 28, 28, 0.8),
-    0 0 50px rgba(185, 28, 28, 0.6),
-    0 0 80px rgba(185, 28, 28, 0.4),
-    0 0 120px rgba(153, 27, 27, 0.3);
-  border: 2px solid #dc3545;
+    0 0 25px rgba(59, 130, 246, 0.5),
+    0 0 50px rgba(59, 130, 246, 0.35),
+    0 0 80px rgba(37, 99, 235, 0.25),
+    0 0 120px rgba(29, 78, 216, 0.15);
+  border: 2px solid #3b82f6;
 }
 
 .carousel-card--fan-left-1 {
@@ -236,22 +236,32 @@
 
 /* ===== HOVER STATES ===== */
 
-/* Center card hover effect - intensified deep red glow */
+/* Center card hover effect - intensified blue glow */
 .carousel-card--center:hover {
   transform: translate(-50%, calc(-50% - 8px)) scale(1.02);
   box-shadow:
-    0 0 35px rgba(185, 28, 28, 0.9),
-    0 0 70px rgba(185, 28, 28, 0.7),
-    0 0 100px rgba(153, 27, 27, 0.5),
-    0 0 150px rgba(127, 29, 29, 0.3),
-    0 25px 50px rgba(153, 27, 27, 0.5);
-  border-color: #dc3545;
+    0 0 35px rgba(59, 130, 246, 0.9),
+    0 0 70px rgba(59, 130, 246, 0.7),
+    0 0 100px rgba(37, 99, 235, 0.5),
+    0 0 150px rgba(29, 78, 216, 0.3),
+    0 25px 50px rgba(37, 99, 235, 0.5);
+  border-color: #3b82f6;
 }
 
 /* Side cards hover - subtle lift */
 .carousel-card--fan-left-1:hover,
 .carousel-card--fan-right-1:hover {
   filter: brightness(1.05);
+}
+
+/* Bring hovered side cards to front */
+.carousel-card--fan-left-1:hover,
+.carousel-card--fan-right-1:hover,
+.carousel-card--fan-left-2:hover,
+.carousel-card--fan-right-2:hover,
+.carousel-card--fan-left-3:hover,
+.carousel-card--fan-right-3:hover {
+  z-index: 55;
 }
 
 /* ===== FOCUS STATES ===== */
@@ -266,7 +276,7 @@
 
 .carousel-card--new {
   border-style: solid;
-  border-color: #dc3545;
+  border-color: #3b82f6;
   background: #ffffff;
 }
 
@@ -339,7 +349,7 @@
 
 .carousel-card__submit {
   margin-top: auto;
-  background: #b91c1c;
+  background: #3b82f6;
   color: #fff;
   border: none;
   border-radius: var(--radius-md);
@@ -348,12 +358,12 @@
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 0 15px rgba(153, 27, 27, 0.6);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
 }
 
 .carousel-card__submit:hover:not(:disabled) {
-  background: #991b1b;
-  box-shadow: 0 0 25px rgba(127, 29, 29, 0.8);
+  background: #2563eb;
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.7);
 }
 
 .carousel-card__submit:disabled {
@@ -392,9 +402,9 @@
   0% {
     transform: translate(-50%, -50%) scale(1);
     box-shadow:
-      0 0 25px rgba(185, 28, 28, 0.8),
-      0 0 50px rgba(185, 28, 28, 0.6),
-      0 0 80px rgba(185, 28, 28, 0.4);
+      0 0 25px rgba(59, 130, 246, 0.8),
+      0 0 50px rgba(59, 130, 246, 0.6),
+      0 0 80px rgba(37, 99, 235, 0.4);
   }
   50% {
     transform: translate(-50%, calc(-50% - 30px)) scale(1.05);
@@ -402,9 +412,9 @@
   100% {
     transform: translate(-50%, -50%) scale(1.08);
     box-shadow:
-      0 0 40px rgba(185, 28, 28, 0.9),
-      0 0 80px rgba(153, 27, 27, 0.7),
-      0 20px 60px rgba(127, 29, 29, 0.5);
+      0 0 40px rgba(59, 130, 246, 0.9),
+      0 0 80px rgba(37, 99, 235, 0.7),
+      0 20px 60px rgba(29, 78, 216, 0.5);
   }
 }
 
@@ -424,9 +434,9 @@
   100% {
     transform: translate(-50%, -50%) scale(1.15);
     box-shadow:
-      0 0 50px rgba(185, 28, 28, 1),
-      0 0 100px rgba(153, 27, 27, 0.8),
-      0 30px 80px rgba(127, 29, 29, 0.6);
+      0 0 50px rgba(59, 130, 246, 1),
+      0 0 100px rgba(37, 99, 235, 0.8),
+      0 30px 80px rgba(29, 78, 216, 0.6);
   }
 }
 
@@ -458,28 +468,29 @@
 
 /* ===== QUICK MODE STYLES ===== */
 
-/* Quick mode card styling - lightning bolt accent */
+/* Quick mode card styling - MDM red accent */
 .carousel-card--mode-quick {
-  border-color: #f59e0b; /* Amber accent for quick mode */
+  border-color: #dc3545; /* MDM red for quick mode */
 }
 
 .carousel-card--mode-quick.carousel-card--center {
+  /* Quick Compose red glow - reduced idle intensity */
   box-shadow:
-    0 0 25px rgba(245, 158, 11, 0.8),
-    0 0 50px rgba(245, 158, 11, 0.6),
-    0 0 80px rgba(217, 119, 6, 0.4),
-    0 0 120px rgba(180, 83, 9, 0.3);
-  border: 2px solid #f59e0b;
+    0 0 25px rgba(185, 28, 28, 0.5),
+    0 0 50px rgba(185, 28, 28, 0.35),
+    0 0 80px rgba(153, 27, 27, 0.25),
+    0 0 120px rgba(127, 29, 29, 0.15);
+  border: 2px solid #dc3545;
 }
 
 .carousel-card--mode-quick.carousel-card--center:hover {
   box-shadow:
-    0 0 35px rgba(245, 158, 11, 0.9),
-    0 0 70px rgba(245, 158, 11, 0.7),
-    0 0 100px rgba(217, 119, 6, 0.5),
-    0 0 150px rgba(180, 83, 9, 0.3),
-    0 25px 50px rgba(180, 83, 9, 0.5);
-  border-color: #f59e0b;
+    0 0 35px rgba(185, 28, 28, 0.9),
+    0 0 70px rgba(185, 28, 28, 0.7),
+    0 0 100px rgba(153, 27, 27, 0.5),
+    0 0 150px rgba(127, 29, 29, 0.3),
+    0 25px 50px rgba(153, 27, 27, 0.5);
+  border-color: #dc3545;
 }
 
 /* Quick mode indicator */
@@ -489,7 +500,7 @@
   right: var(--space-md);
   width: 20px;
   height: 20px;
-  color: #f59e0b;
+  color: #dc3545;
   opacity: 0.7;
 }
 
@@ -544,15 +555,15 @@
 
 /* Quick mode new card styling */
 .carousel-card--new.carousel-card--mode-quick {
-  border-color: #f59e0b;
+  border-color: #dc3545;
 }
 
 .carousel-card--new.carousel-card--mode-quick .carousel-card__submit {
-  background: #d97706;
-  box-shadow: 0 0 15px rgba(217, 119, 6, 0.6);
+  background: #dc3545;
+  box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
 }
 
 .carousel-card--new.carousel-card--mode-quick .carousel-card__submit:hover:not(:disabled) {
-  background: #b45309;
-  box-shadow: 0 0 25px rgba(180, 83, 9, 0.8);
+  background: #c82333;
+  box-shadow: 0 0 25px rgba(220, 53, 69, 0.8);
 }
