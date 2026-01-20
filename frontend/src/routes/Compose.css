@@ -1,580 +1,254 @@
-/* ===========================================
+/* ============================================================================
    Compose Page Styles
-   =========================================== */
+   Unified compose route with Quick Compose / Build Mode toggle
+   ============================================================================ */
+
+/* ===== PAGE LAYOUT ===== */
 
 .compose-page {
-  max-width: var(--max-width-wide);
-  margin: 0 auto;
-  padding: 0 var(--space-2xl);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-bg-secondary);
 }
 
-/* ─────────────────────────────────────────
-   Header
-   ───────────────────────────────────────── */
+.compose-page--carousel {
+  padding: var(--space-lg) var(--space-xl);
+}
+
+.compose-page--editor {
+  padding: 0;
+}
+
+/* ===== HEADER ===== */
 
 .compose-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-lg);
-  margin-bottom: var(--space-xl);
-  flex-wrap: wrap;
-  /* Match narrative-panel width and centering */
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
+  max-width: 1200px;
+  margin: 0 auto var(--space-md);
+  width: 100%;
 }
 
 .compose-title {
-  font-size: var(--font-size-3xl);
+  margin: 0;
+  font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
-  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-accent) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: var(--space-sm);
-}
-
-.compose-subtitle {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-base);
-}
-
-/* ─────────────────────────────────────────
-   Build Mode Entry Point (Shift Mode)
-   ───────────────────────────────────────── */
-
-.build-mode-entry {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  max-width: 900px;
-  margin: 0 auto var(--space-lg);
-  padding: var(--space-md) var(--space-lg);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: var(--radius-lg);
-  text-decoration: none;
-  transition: all var(--transition-normal);
-}
-
-.build-mode-entry:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
-  border-color: rgba(59, 130, 246, 0.5);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-}
-
-.build-mode-entry:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-}
-
-.build-mode-entry__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  background: rgba(59, 130, 246, 0.2);
-  border-radius: var(--radius-md);
-  flex-shrink: 0;
-}
-
-.build-mode-entry__icon svg {
-  width: 24px;
-  height: 24px;
-  color: var(--color-build-accent);
-}
-
-.build-mode-entry__content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  flex: 1;
-  min-width: 0;
-}
-
-.build-mode-entry__title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 
-.build-mode-entry__description {
+/* ===== MODE TOGGLE ===== */
+
+.compose-mode-toggle {
+  display: flex;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xs);
+  gap: var(--space-xs);
+}
+
+.compose-mode-toggle__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.compose-mode-toggle__btn:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.compose-mode-toggle__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.compose-mode-toggle__btn--active {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+.compose-mode-toggle__btn--active:hover:not(:disabled) {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+.compose-mode-toggle__icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ===== MODE DESCRIPTION ===== */
+
+.compose-mode-description {
+  margin: 0 auto var(--space-lg);
+  max-width: 1200px;
+  width: 100%;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+  text-align: center;
 }
 
-.build-mode-entry__arrow {
-  width: 20px;
-  height: 20px;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-  transition: transform var(--transition-fast);
-}
+/* ===== MAIN CONTENT ===== */
 
-.build-mode-entry:hover .build-mode-entry__arrow {
-  transform: translateX(4px);
-  color: var(--color-build-accent);
-}
-
-/* Mobile responsive */
-@media (max-width: 768px) {
-  .build-mode-entry {
-    margin-left: 0;
-    margin-right: 0;
-    max-width: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .build-mode-entry {
-    padding: var(--space-sm) var(--space-md);
-    gap: var(--space-sm);
-  }
-
-  .build-mode-entry__icon {
-    width: 36px;
-    height: 36px;
-  }
-
-  .build-mode-entry__icon svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .build-mode-entry__title {
-    font-size: var(--font-size-sm);
-  }
-
-  .build-mode-entry__description {
-    font-size: var(--font-size-xs);
-  }
-}
-
-/* ─────────────────────────────────────────
-   Grid Layout
-   ───────────────────────────────────────── */
-
-.compose-grid {
+.compose-main {
+  flex: 1;
   display: flex;
-  gap: var(--space-xl);
-  position: relative;
+  flex-direction: column;
 }
 
-.compose-grid--build-mode {
+.compose-main--carousel {
+  /* Center carousel content vertically */
+  justify-content: center;
+  min-height: 500px;
+}
+
+/* ===== LOADING STATE ===== */
+
+.compose-loading {
   display: flex;
-}
-
-/* ─────────────────────────────────────────
-   Narrative Panel - Stacked Layout
-   Guide slides out from BEHIND textarea
-   ───────────────────────────────────────── */
-
-.narrative-panel {
-  position: relative;
-  /* Taller to fill more of the viewport */
-  min-height: calc(100vh - 280px);
-  /* Constrain width and center for focused editing */
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
-  /* Allow guide to overflow to the left */
-  overflow: visible;
-}
-
-/* Guide Panel - Positioned BEHIND textarea (z-index: 1) */
-.narrative-panel__guide {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 320px;
-  /* Match textarea height exactly */
-  height: calc(100vh - 280px);
-  min-height: 400px;
-  z-index: 1;
-
-  /* Hidden state - positioned under textarea */
-  transform: translateX(0);
-  opacity: 0;
-  pointer-events: none;
-
-  transition:
-    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.narrative-panel__guide--open {
-  /* Slide LEFT, underlap textarea's rounded corner */
-  transform: translateX(calc(-100% + var(--radius-lg)));
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Square guide's top-left corner when open so tab sits flush */
-.narrative-panel__guide--open .dictation-guide {
-  border-top-left-radius: 0;
-}
-
-/* Textarea - Positioned IN FRONT (z-index: 2) */
-.narrative-panel__textarea {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  /* Taller to fill more of the viewport */
-  height: calc(100vh - 280px);
-  min-height: 400px;
-  padding: var(--space-lg);
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border-secondary);
-  /* All corners rounded - tab underlaps to fill gap */
-  border-radius: var(--radius-lg);
-  color: var(--color-text-primary);
-  font-family: inherit;
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-relaxed);
-  resize: vertical;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-  box-sizing: border-box;
-}
-
-.narrative-panel__textarea:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-subtle);
-}
-
-.narrative-panel__textarea::placeholder {
-  color: var(--color-text-muted);
-}
-
-/* Tab - Hangs off left edge of narrative box, moves with guide */
-.narrative-panel__tab {
-  position: absolute;
-  /* Position at top left, underlap textarea's rounded corner (leave 1px for border) */
-  top: 0;
-  left: 0;
-  transform: translateX(calc(-100% + var(--radius-lg) - 1px));
-  z-index: 1;
-
-  /* Tab width includes underlap portion hidden under textarea/guide */
-  width: calc(40px + var(--radius-lg));
-  height: 44px;
-  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding-left: var(--space-sm);
-  padding-right: calc(var(--space-sm) + var(--radius-lg));
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-3xl);
+  color: var(--color-text-secondary);
+}
 
-  /* Blue by default (when guide is closed/hidden) */
-  background: var(--color-build-accent);
-  /* Match textarea border on top/bottom/left, no right border for seamless connection */
-  border: 1px solid var(--color-border-secondary);
-  border-right: none;
-  /* Round only left corners - right edge connects flush with textarea */
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
+.compose-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e0e0e0;
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: compose-spin 0.8s linear infinite;
+}
+
+@keyframes compose-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== ERROR STATE ===== */
+
+.compose-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-3xl);
+  text-align: center;
+}
+
+.compose-error-icon {
+  font-size: var(--font-size-3xl);
+}
+
+.compose-error-message {
+  margin: 0;
+  color: var(--color-error);
+  font-size: var(--font-size-base);
+}
+
+.compose-retry-button {
+  background: var(--color-accent);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-
-  transition:
-    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-    background var(--transition-fast),
-    border-color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
-.narrative-panel__tab:hover {
-  background: rgba(59, 130, 246, 0.85);
+.compose-retry-button:hover {
+  background: var(--color-accent-dark);
 }
 
-.narrative-panel__tab:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+/* ===== FOOTER ===== */
+
+.compose-footer {
+  padding: var(--space-lg) 0;
+  text-align: center;
+  border-top: 1px solid var(--color-border);
+  margin-top: auto;
 }
 
-/* Tab icon - white on blue background when closed */
-.narrative-panel__tab-icon {
-  width: 22px;
-  height: 22px;
-  color: white;
-  flex-shrink: 0;
-}
-
-/* When open - tab moves left with guide, grey/muted appearance */
-.narrative-panel__tab--open {
-  /* Move left by guide width, no underlap (sits flush with squared guide corner) */
-  transform: translateX(calc(-100% - 320px + var(--radius-lg)));
-  background: var(--color-bg-tertiary);
-}
-
-.narrative-panel__tab--open:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.narrative-panel__tab--open .narrative-panel__tab-icon {
+.compose-disclaimer {
+  margin: 0;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
-/* Responsive - Mobile behavior */
+/* ===== RESPONSIVE ===== */
+
 @media (max-width: 1024px) {
-  .narrative-panel {
-    overflow: visible;
-  }
-
-  .narrative-panel__guide {
-    position: static;
-    width: 100%;
-    height: auto;
-    max-height: 0;
-    overflow: hidden;
-    transform: none;
-    opacity: 0;
-    margin-bottom: 0;
-    transition:
-      max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      margin-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .narrative-panel__guide--open {
-    max-height: 350px;
-    opacity: 1;
-    margin-bottom: var(--space-md);
-    transform: none;
-  }
-
-  .narrative-panel__textarea {
-    height: 350px;
-    min-height: 350px;
-  }
-
-  .narrative-panel__tab {
-    position: static;
-    width: 100%;
-    height: auto;
-    padding: var(--space-sm) var(--space-md);
-    border: 1px solid var(--color-build-accent);
-    border-radius: var(--radius-md);
-    margin-bottom: var(--space-sm);
-    transform: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-sm);
-  }
-
-  .narrative-panel__tab--open {
-    transform: none;
-    border-color: var(--color-border-subtle);
-  }
-
-  /* Add "Guide" label on mobile next to icon */
-  .narrative-panel__tab::after {
-    content: 'Guide';
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    color: white;
-  }
-
-  .narrative-panel__tab--open::after {
-    color: var(--color-text-muted);
-  }
-}
-
-@media (max-width: 768px) {
-  .compose-page {
-    padding: 0 var(--space-md);
+  .compose-page--carousel {
+    padding: var(--space-md) var(--space-lg);
   }
 
   .compose-header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-md);
-  }
-
-  .compose-title {
-    font-size: var(--font-size-2xl);
-  }
-
-  .compose-header,
-  .narrative-panel,
-  .compose-editor,
-  .compose-actions {
-    max-width: none;
-  }
-
-  .compose-actions {
-    flex-direction: column;
     align-items: stretch;
-  }
-
-  .compose-submit {
-    justify-content: center;
-  }
-
-  .compose-quota {
-    justify-content: center;
-  }
-
-  .compose-char-count {
-    margin-left: 0;
+    gap: var(--space-md);
     text-align: center;
+  }
+
+  .compose-mode-toggle {
+    justify-content: center;
   }
 }
 
-@media (max-width: 480px) {
-  .compose-page {
-    padding: 0 var(--space-sm);
+@media (max-width: 768px) {
+  .compose-page--carousel {
+    padding: var(--space-md);
   }
 
   .compose-title {
     font-size: var(--font-size-xl);
   }
 
-  .narrative-panel__textarea {
-    min-height: 300px;
-    padding: var(--space-md);
+  .compose-mode-toggle {
+    width: 100%;
   }
 
-  .compose-migration-overlay {
-    font-size: var(--font-size-sm);
+  .compose-mode-toggle__btn {
+    flex: 1;
+    justify-content: center;
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-xs);
   }
 
-  .compose-migration-spinner {
-    width: 32px;
-    height: 32px;
+  .compose-mode-description {
+    font-size: var(--font-size-xs);
   }
 }
 
-/* ─────────────────────────────────────────
-   Editor Section
-   ───────────────────────────────────────── */
+@media (max-width: 480px) {
+  .compose-mode-toggle__btn {
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-sm);
+  }
 
-.compose-editor {
-  flex: 1;
-  min-width: 0;
-  /* Constrain width and center for focused editing */
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  position: relative;
-}
-
-/* ─────────────────────────────────────────
-   Actions Bar
-   ───────────────────────────────────────── */
-
-.compose-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  flex-wrap: wrap;
-  /* Match narrative-panel width and centering */
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.compose-submit {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-md) var(--space-xl);
-  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
-  color: var(--color-text-primary);
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.compose-submit:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-glow);
-}
-
-.compose-submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.compose-submit svg {
-  width: 18px;
-  height: 18px;
-}
-
-/* ─────────────────────────────────────────
-   Quota Display
-   ───────────────────────────────────────── */
-
-.compose-quota {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.compose-quota--warning {
-  color: var(--color-warning);
-}
-
-.compose-quota--danger {
-  color: var(--color-accent);
-}
-
-.compose-quota-icon {
-  width: 16px;
-  height: 16px;
-}
-
-/* ─────────────────────────────────────────
-   Character Count
-   ───────────────────────────────────────── */
-
-.compose-char-count {
-  margin-left: auto;
-  color: var(--color-text-dim);
-  font-size: var(--font-size-sm);
-}
-
-/* ─────────────────────────────────────────
-   Migration Overlay
-   ───────────────────────────────────────── */
-
-.compose-migration-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-md);
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(4px);
-  border-radius: var(--radius-lg);
-  z-index: 10;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-base);
-}
-
-.compose-migration-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--color-border-subtle);
-  border-top-color: var(--color-build-accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+  .compose-mode-toggle__icon {
+    width: 20px;
+    height: 20px;
   }
 }

@@ -99,6 +99,10 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               chiefComplaint: data.chiefComplaint,
               status: data.status,
               currentSection: data.currentSection,
+              // Mode defaults to 'build' for backward compatibility
+              mode: data.mode || 'build',
+              // Quick mode data (only present for quick mode encounters)
+              quickModeData: data.quickModeData,
               section1: data.section1,
               section2: data.section2,
               section3: data.section3,

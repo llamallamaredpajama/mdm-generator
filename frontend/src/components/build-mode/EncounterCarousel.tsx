@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import type { EncounterDocument } from '../../types/encounter'
+import type { EncounterDocument, EncounterMode } from '../../types/encounter'
 import CarouselCard, { type CardPosition, type AnimationPhase } from './CarouselCard'
 import './EncounterCarousel.css'
 
@@ -8,6 +8,8 @@ interface EncounterCarouselProps {
   onSelectEncounter: (id: string) => void
   onCreateEncounter: (roomNumber: string, chiefComplaint: string) => Promise<string>
   onDeleteEncounter: (id: string) => Promise<void>
+  /** Mode context for the carousel - affects card styling and new encounter form */
+  mode?: EncounterMode
 }
 
 /**
@@ -53,7 +55,8 @@ export default function EncounterCarousel({
   encounters,
   onSelectEncounter,
   onCreateEncounter,
-  onDeleteEncounter
+  onDeleteEncounter,
+  mode = 'build'
 }: EncounterCarouselProps) {
   // Carousel navigation state
   const [activeIndex, setActiveIndex] = useState(0)
@@ -118,13 +121,18 @@ export default function EncounterCarousel({
 
   /**
    * Handle new encounter creation
+   * Quick mode only requires room number - chief complaint is auto-extracted
    */
   const handleCreateEncounter = useCallback(async () => {
-    if (isCreating || !newRoomNumber.trim() || !newChiefComplaint.trim()) return
+    // Quick mode only needs room number; build mode needs both
+    const needsComplaint = mode === 'build'
+    if (isCreating || !newRoomNumber.trim() || (needsComplaint && !newChiefComplaint.trim())) return
 
     setIsCreating(true)
     try {
-      const encounterId = await onCreateEncounter(newRoomNumber.trim(), newChiefComplaint.trim())
+      // For quick mode, use placeholder chief complaint (will be updated after AI processing)
+      const complaint = mode === 'quick' ? 'Quick Encounter' : newChiefComplaint.trim()
+      const encounterId = await onCreateEncounter(newRoomNumber.trim(), complaint)
 
       // Reset form
       setNewRoomNumber('')
@@ -138,7 +146,7 @@ export default function EncounterCarousel({
     } finally {
       setIsCreating(false)
     }
-  }, [isCreating, newRoomNumber, newChiefComplaint, onCreateEncounter, onSelectEncounter])
+  }, [isCreating, newRoomNumber, newChiefComplaint, onCreateEncounter, onSelectEncounter, mode])
 
   /**
    * Handle encounter deletion
@@ -260,6 +268,7 @@ export default function EncounterCarousel({
           animationPhase={animationPhase}
           isSelected={false}
           isNewCard
+          mode={mode}
           newEncounterForm={{
             roomNumber: newRoomNumber,
             chiefComplaint: newChiefComplaint,
@@ -278,6 +287,7 @@ export default function EncounterCarousel({
             position={getCardPosition(idx + 1, activeIndex, totalCards)}
             animationPhase={animationPhase}
             isSelected={selectedCardId === encounter.id}
+            mode={mode}
             onClick={() => handleCardClick(encounter.id)}
             onDelete={() => handleDeleteEncounter(encounter.id)}
           />

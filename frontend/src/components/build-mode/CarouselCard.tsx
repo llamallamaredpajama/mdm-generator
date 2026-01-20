@@ -1,4 +1,11 @@
-import type { EncounterDocument, EncounterStatus, SectionStatus } from '../../types/encounter'
+import type {
+  EncounterDocument,
+  EncounterStatus,
+  SectionStatus,
+  EncounterMode,
+  QuickModeStatus,
+} from '../../types/encounter'
+import { getQuickModeCardLabel, getEncounterMode } from '../../types/encounter'
 import './CarouselCard.css'
 
 export type CardPosition =
@@ -16,6 +23,8 @@ interface CarouselCardProps {
   isNewCard?: boolean
   onClick?: () => void
   onDelete?: () => void
+  /** Mode context for the carousel (quick or build) */
+  mode?: EncounterMode
   // For new encounter form
   newEncounterForm?: {
     roomNumber: string
@@ -56,7 +65,7 @@ function SectionIndicators({ encounter }: { encounter: EncounterDocument }) {
 }
 
 /**
- * Status badge showing overall encounter status
+ * Status badge showing overall encounter status (Build Mode)
  */
 function StatusBadge({ status }: { status: EncounterStatus }) {
   const getStatusLabel = (status: EncounterStatus): string => {
@@ -84,8 +93,76 @@ function StatusBadge({ status }: { status: EncounterStatus }) {
 }
 
 /**
+ * Quick mode status badge with appropriate styling
+ */
+function QuickModeStatusBadge({ status }: { status: QuickModeStatus }) {
+  const getStatusConfig = (status: QuickModeStatus): { label: string; className: string } => {
+    switch (status) {
+      case 'draft':
+        return { label: 'Draft', className: 'draft' }
+      case 'processing':
+        return { label: 'Processing...', className: 'processing' }
+      case 'completed':
+        return { label: 'Done', className: 'finalized' }
+      case 'error':
+        return { label: 'Error', className: 'error' }
+      default:
+        return { label: status, className: 'draft' }
+    }
+  }
+
+  const config = getStatusConfig(status)
+
+  return (
+    <span className={`carousel-card__status carousel-card__status--${config.className}`}>
+      {status === 'processing' && (
+        <span className="carousel-card__spinner" aria-hidden="true" />
+      )}
+      {config.label}
+    </span>
+  )
+}
+
+/**
+ * Quick mode card content - simplified display without section indicators
+ */
+function QuickModeCardContent({ encounter }: { encounter: EncounterDocument }) {
+  const quickStatus = encounter.quickModeData?.status || 'draft'
+  const displayLabel = getQuickModeCardLabel(encounter)
+
+  return (
+    <>
+      <div className="carousel-card__header">
+        <h3 className="carousel-card__room">{encounter.roomNumber}</h3>
+        <QuickModeStatusBadge status={quickStatus} />
+      </div>
+
+      <p className="carousel-card__complaint carousel-card__complaint--quick">
+        {quickStatus === 'completed' ? displayLabel : encounter.chiefComplaint || 'Quick Encounter'}
+      </p>
+
+      {/* Quick mode indicator icon */}
+      <div className="carousel-card__mode-indicator" title="Quick Compose">
+        <svg
+          className="carousel-card__mode-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      </div>
+    </>
+  )
+}
+
+/**
  * CarouselCard - Individual card in the encounter carousel
  * Supports both existing encounters and new encounter creation form
+ * Mode-aware: renders differently for quick vs build mode encounters
  */
 export default function CarouselCard({
   encounter,
@@ -95,9 +172,11 @@ export default function CarouselCard({
   isNewCard,
   onClick,
   onDelete,
+  mode = 'build',
   newEncounterForm
 }: CarouselCardProps) {
   const canDelete = encounter && (encounter.status === 'draft' || encounter.status === 'archived')
+  const encounterMode = encounter ? getEncounterMode(encounter) : mode
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -121,12 +200,15 @@ export default function CarouselCard({
     'carousel-card',
     `carousel-card--${position}`,
     `carousel-card--${animationPhase}`,
+    `carousel-card--mode-${encounterMode}`,
     isSelected && 'carousel-card--selected',
     isNewCard && 'carousel-card--new'
   ].filter(Boolean).join(' ')
 
   // New Encounter Form Card
   if (isNewCard && newEncounterForm) {
+    const isQuickMode = mode === 'quick'
+
     return (
       <div
         className={classNames}
@@ -154,21 +236,31 @@ export default function CarouselCard({
             />
           </div>
 
-          <div className="carousel-card__field">
-            <label htmlFor="new-complaint" className="carousel-card__label">
-              Identifier
-            </label>
-            <input
-              id="new-complaint"
-              type="text"
-              className="carousel-card__input"
-              value={newEncounterForm.chiefComplaint}
-              onChange={(e) => newEncounterForm.onComplaintChange(e.target.value)}
-              placeholder="Age, Sex, Chief Complaint"
-              disabled={newEncounterForm.isSubmitting}
-              autoComplete="off"
-            />
-          </div>
+          {/* Only show identifier field in build mode - quick mode auto-extracts it */}
+          {!isQuickMode && (
+            <div className="carousel-card__field">
+              <label htmlFor="new-complaint" className="carousel-card__label">
+                Identifier
+              </label>
+              <input
+                id="new-complaint"
+                type="text"
+                className="carousel-card__input"
+                value={newEncounterForm.chiefComplaint}
+                onChange={(e) => newEncounterForm.onComplaintChange(e.target.value)}
+                placeholder="Age, Sex, Chief Complaint"
+                disabled={newEncounterForm.isSubmitting}
+                autoComplete="off"
+              />
+            </div>
+          )}
+
+          {/* Quick mode hint */}
+          {isQuickMode && (
+            <p className="carousel-card__hint">
+              Patient info will be extracted from your narrative
+            </p>
+          )}
 
           <button
             type="submit"
@@ -176,10 +268,15 @@ export default function CarouselCard({
             disabled={
               newEncounterForm.isSubmitting ||
               !newEncounterForm.roomNumber.trim() ||
-              !newEncounterForm.chiefComplaint.trim()
+              // Only require chief complaint for build mode
+              (!isQuickMode && !newEncounterForm.chiefComplaint.trim())
             }
           >
-            {newEncounterForm.isSubmitting ? 'Creating...' : 'Create Encounter'}
+            {newEncounterForm.isSubmitting
+              ? 'Creating...'
+              : isQuickMode
+                ? 'Start Quick Encounter'
+                : 'Create Encounter'}
           </button>
         </form>
       </div>
@@ -188,6 +285,11 @@ export default function CarouselCard({
 
   // Existing Encounter Card
   if (encounter) {
+    const isQuickModeEncounter = encounterMode === 'quick'
+    const cardLabel = isQuickModeEncounter
+      ? getQuickModeCardLabel(encounter)
+      : encounter.chiefComplaint
+
     return (
       <div
         className={classNames}
@@ -195,18 +297,27 @@ export default function CarouselCard({
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={position === 'hidden' ? -1 : 0}
-        aria-label={`${encounter.roomNumber}: ${encounter.chiefComplaint}`}
+        aria-label={`${encounter.roomNumber}: ${cardLabel}`}
         aria-hidden={position === 'hidden'}
       >
-        <div className="carousel-card__header">
-          <h3 className="carousel-card__room">{encounter.roomNumber}</h3>
-          <StatusBadge status={encounter.status} />
-        </div>
+        {/* Quick Mode Card Content */}
+        {isQuickModeEncounter ? (
+          <QuickModeCardContent encounter={encounter} />
+        ) : (
+          /* Build Mode Card Content */
+          <>
+            <div className="carousel-card__header">
+              <h3 className="carousel-card__room">{encounter.roomNumber}</h3>
+              <StatusBadge status={encounter.status} />
+            </div>
 
-        <p className="carousel-card__complaint">{encounter.chiefComplaint}</p>
+            <p className="carousel-card__complaint">{encounter.chiefComplaint}</p>
+          </>
+        )}
 
         <div className="carousel-card__footer">
-          <SectionIndicators encounter={encounter} />
+          {/* Section indicators only for build mode */}
+          {!isQuickModeEncounter && <SectionIndicators encounter={encounter} />}
 
           {canDelete && (
             <button

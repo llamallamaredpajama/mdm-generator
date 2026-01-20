@@ -29,6 +29,47 @@ export const TOTAL_MAX_CHARS = SECTION1_MAX_CHARS + SECTION2_MAX_CHARS + SECTION
 export const MAX_SUBMISSIONS_PER_SECTION = 2
 
 // ============================================================================
+// Mode Types
+// ============================================================================
+
+/** Encounter mode: quick (one-shot) vs build (3-section workflow) */
+export type EncounterMode = 'quick' | 'build'
+
+/** Status of a quick mode encounter */
+export type QuickModeStatus = 'draft' | 'processing' | 'completed' | 'error'
+
+/** Patient identifier extracted by AI from quick mode narrative */
+export interface PatientIdentifier {
+  /** Patient age (e.g., "45 y/o", "elderly") */
+  age?: string
+  /** Patient sex (e.g., "male", "female") */
+  sex?: string
+  /** Brief chief complaint (e.g., "chest pain") */
+  chiefComplaint?: string
+}
+
+/** Quick mode specific data stored in encounter */
+export interface QuickModeData {
+  /** User's narrative input */
+  narrative: string
+  /** AI-extracted patient identifier (populated after processing) */
+  patientIdentifier?: PatientIdentifier
+  /** Current status of the quick mode encounter */
+  status: QuickModeStatus
+  /** Generated MDM output (populated after processing) */
+  mdmOutput?: {
+    /** Formatted text version for direct EHR paste */
+    text: string
+    /** Structured JSON version for programmatic use */
+    json: Record<string, unknown>
+  }
+  /** Error message if status is 'error' */
+  errorMessage?: string
+  /** When the AI processed this encounter */
+  processedAt?: import('firebase/firestore').Timestamp
+}
+
+// ============================================================================
 // Status Types
 // ============================================================================
 
@@ -176,6 +217,10 @@ export interface Section3Data {
  * - 0-12h: Active (editable)
  * - 12-24h: Archived (read-only)
  * - 24h+: Auto-deleted via Cloud Function
+ *
+ * Mode Strategy:
+ * - 'quick': One-shot AI processing, single narrative input
+ * - 'build': 3-section guided workflow (default for backward compatibility)
  */
 export interface EncounterDocument {
   /** Firestore document ID */
@@ -184,18 +229,24 @@ export interface EncounterDocument {
   userId: string
   /** Room identifier (e.g., "Room 5", "Bed 2A") */
   roomNumber: string
-  /** Brief chief complaint for card display */
+  /** Brief chief complaint for card display (build mode) or auto-populated from AI (quick mode) */
   chiefComplaint: string
   /** Overall encounter status */
   status: EncounterStatus
-  /** Current active section (1, 2, or 3) */
+  /** Current active section (1, 2, or 3) - only used in build mode */
   currentSection: 1 | 2 | 3
 
-  /** Section 1: Initial Evaluation data */
+  /** Encounter mode: 'quick' or 'build' (defaults to 'build' for backward compatibility) */
+  mode: EncounterMode
+
+  /** Quick mode specific data - only populated when mode is 'quick' */
+  quickModeData?: QuickModeData
+
+  /** Section 1: Initial Evaluation data (build mode) */
   section1: Section1Data
-  /** Section 2: Workup & Results data */
+  /** Section 2: Workup & Results data (build mode) */
   section2: Section2Data
-  /** Section 3: Treatment & Disposition data */
+  /** Section 3: Treatment & Disposition data (build mode) */
   section3: Section3Data
 
   /** Whether this encounter has been counted against user quota */
@@ -311,4 +362,63 @@ export const getRemainingSubmissions = (
   sectionData: Section1Data | Section2Data | Section3Data
 ): number => {
   return Math.max(0, MAX_SUBMISSIONS_PER_SECTION - sectionData.submissionCount)
+}
+
+/**
+ * Helper to format patient identifier for display (e.g., "45M Chest Pain")
+ */
+export const formatPatientIdentifier = (identifier?: PatientIdentifier): string => {
+  if (!identifier) return ''
+
+  const parts: string[] = []
+
+  // Combine age and sex (e.g., "45M" or "elderly F")
+  if (identifier.age || identifier.sex) {
+    const age = identifier.age?.replace(/\s*(y\/o|years?(\s+old)?|yo)\s*/gi, '').trim() || ''
+    const sex = identifier.sex?.charAt(0).toUpperCase() || '' // First letter (M/F)
+    parts.push(`${age}${sex}`.trim())
+  }
+
+  // Add chief complaint
+  if (identifier.chiefComplaint) {
+    // Capitalize first letter and keep it brief
+    const cc = identifier.chiefComplaint.charAt(0).toUpperCase() + identifier.chiefComplaint.slice(1)
+    // Truncate if too long
+    parts.push(cc.length > 20 ? cc.substring(0, 20) + '...' : cc)
+  }
+
+  return parts.join(' ').trim()
+}
+
+/**
+ * Helper to get the display label for a quick mode encounter card
+ * Returns formatted patient identifier if available, otherwise status
+ */
+export const getQuickModeCardLabel = (encounter: EncounterDocument): string => {
+  if (encounter.mode !== 'quick' || !encounter.quickModeData) {
+    return encounter.chiefComplaint
+  }
+
+  const { status, patientIdentifier } = encounter.quickModeData
+
+  switch (status) {
+    case 'draft':
+      return 'Draft'
+    case 'processing':
+      return 'Processing...'
+    case 'error':
+      return 'Error'
+    case 'completed':
+      return formatPatientIdentifier(patientIdentifier) || 'Completed'
+    default:
+      return encounter.chiefComplaint
+  }
+}
+
+/**
+ * Helper to get encounter mode with backward compatibility
+ * Existing encounters without mode field default to 'build'
+ */
+export const getEncounterMode = (encounter: EncounterDocument): EncounterMode => {
+  return encounter.mode || 'build'
 }

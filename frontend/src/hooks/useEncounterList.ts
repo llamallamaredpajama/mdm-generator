@@ -11,7 +11,13 @@ import {
   Timestamp,
 } from 'firebase/firestore'
 import { db, useAuth } from '../lib/firebase'
-import type { EncounterDocument, EncounterStatus, SectionStatus } from '../types/encounter'
+import type {
+  EncounterDocument,
+  EncounterStatus,
+  EncounterMode,
+  SectionStatus,
+  QuickModeStatus,
+} from '../types/encounter'
 
 /**
  * Converts Firestore data to EncounterDocument type
@@ -24,15 +30,28 @@ function convertEncounterDoc(docId: string, data: DocumentData): EncounterDocume
     chiefComplaint: data.chiefComplaint,
     status: data.status as EncounterStatus,
     currentSection: data.currentSection || 1,
+    // Mode defaults to 'build' for backward compatibility
+    mode: (data.mode as EncounterMode) || 'build',
+    // Quick mode data (only present for quick mode encounters)
+    quickModeData: data.quickModeData
+      ? {
+          narrative: data.quickModeData.narrative || '',
+          patientIdentifier: data.quickModeData.patientIdentifier,
+          status: (data.quickModeData.status as QuickModeStatus) || 'draft',
+          mdmOutput: data.quickModeData.mdmOutput,
+          errorMessage: data.quickModeData.errorMessage,
+          processedAt: data.quickModeData.processedAt,
+        }
+      : undefined,
     section1: {
-      status: data.section1?.status as SectionStatus || 'pending',
+      status: (data.section1?.status as SectionStatus) || 'pending',
       content: data.section1?.content || '',
       submissionCount: data.section1?.submissionCount || 0,
       isLocked: data.section1?.isLocked || false,
       llmResponse: data.section1?.llmResponse,
     },
     section2: {
-      status: data.section2?.status as SectionStatus || 'pending',
+      status: (data.section2?.status as SectionStatus) || 'pending',
       content: data.section2?.content || '',
       submissionCount: data.section2?.submissionCount || 0,
       isLocked: data.section2?.isLocked || false,
@@ -40,7 +59,7 @@ function convertEncounterDoc(docId: string, data: DocumentData): EncounterDocume
       llmResponse: data.section2?.llmResponse,
     },
     section3: {
-      status: data.section3?.status as SectionStatus || 'pending',
+      status: (data.section3?.status as SectionStatus) || 'pending',
       content: data.section3?.content || '',
       submissionCount: data.section3?.submissionCount || 0,
       isLocked: data.section3?.isLocked || false,
@@ -56,7 +75,7 @@ function convertEncounterDoc(docId: string, data: DocumentData): EncounterDocume
 }
 
 export interface UseEncounterListReturn {
-  /** List of active (non-archived) encounters */
+  /** List of active (non-archived) encounters filtered by mode */
   encounters: EncounterDocument[]
   /** Loading state while fetching encounters */
   loading: boolean
@@ -73,12 +92,15 @@ export interface UseEncounterListReturn {
  * Provides real-time updates via Firestore onSnapshot listener.
  *
  * Features:
+ * - Filters encounters by mode (quick or build)
  * - Filters out archived encounters for the active list
  * - Sorts by updatedAt descending (most recent first)
  * - Creates new encounters with default section structure
  * - Deletes encounters (only draft/archived allowed by rules)
+ *
+ * @param mode - The encounter mode to filter by ('quick' or 'build')
  */
-export function useEncounterList(): UseEncounterListReturn {
+export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterListReturn {
   const { user } = useAuth()
   const [encounters, setEncounters] = useState<EncounterDocument[]>([])
   const [loading, setLoading] = useState(true)
@@ -105,8 +127,14 @@ export function useEncounterList(): UseEncounterListReturn {
         try {
           const encounterList: EncounterDocument[] = snapshot.docs
             .map((doc) => convertEncounterDoc(doc.id, doc.data()))
-            // Filter out archived encounters client-side
-            .filter((encounter) => encounter.status !== 'archived')
+            // Filter out archived encounters and filter by mode
+            .filter((encounter) => {
+              // Exclude archived encounters
+              if (encounter.status === 'archived') return false
+              // Filter by mode (default to 'build' for encounters without mode field)
+              const encounterMode = encounter.mode || 'build'
+              return encounterMode === mode
+            })
 
           // Sort by updatedAt descending (most recent first)
           encounterList.sort((a, b) => {
@@ -133,11 +161,13 @@ export function useEncounterList(): UseEncounterListReturn {
     return () => {
       unsubscribe()
     }
-  }, [user])
+  }, [user, mode])
 
   /**
    * Creates a new encounter with the given room number and chief complaint.
-   * Initializes all sections with default pending state.
+   * Initializes based on the current mode:
+   * - Quick mode: Sets up quickModeData with draft status
+   * - Build mode: Sets up all three sections with pending state
    * Returns the new encounter's document ID.
    */
   const createEncounter = useCallback(
@@ -150,7 +180,8 @@ export function useEncounterList(): UseEncounterListReturn {
         throw new Error('Room number is required')
       }
 
-      if (!chiefComplaint.trim()) {
+      // Chief complaint required for build mode, optional for quick mode
+      if (mode === 'build' && !chiefComplaint.trim()) {
         throw new Error('Chief complaint is required')
       }
 
@@ -163,25 +194,50 @@ export function useEncounterList(): UseEncounterListReturn {
         isLocked: false,
       }
 
-      const newEncounter = {
+      // Base encounter data common to both modes
+      const baseEncounter = {
         userId: user.uid,
         roomNumber: roomNumber.trim(),
         chiefComplaint: chiefComplaint.trim(),
         status: 'draft' as EncounterStatus,
-        currentSection: 1,
-        section1: { ...defaultSectionData },
-        section2: { ...defaultSectionData },
-        section3: { ...defaultSectionData },
+        mode: mode,
         quotaCounted: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         shiftStartedAt: serverTimestamp(),
       }
 
+      // Mode-specific data
+      const modeSpecificData =
+        mode === 'quick'
+          ? {
+              // Quick mode: initialize quickModeData, sections are not used
+              quickModeData: {
+                narrative: '',
+                status: 'draft' as QuickModeStatus,
+              },
+              currentSection: 1,
+              section1: { ...defaultSectionData },
+              section2: { ...defaultSectionData },
+              section3: { ...defaultSectionData },
+            }
+          : {
+              // Build mode: initialize all sections
+              currentSection: 1,
+              section1: { ...defaultSectionData },
+              section2: { ...defaultSectionData },
+              section3: { ...defaultSectionData },
+            }
+
+      const newEncounter = {
+        ...baseEncounter,
+        ...modeSpecificData,
+      }
+
       const docRef = await addDoc(encountersRef, newEncounter)
       return docRef.id
     },
-    [user]
+    [user, mode]
   )
 
   /**

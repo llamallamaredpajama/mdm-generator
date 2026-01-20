@@ -22,6 +22,12 @@ import {
   buildSection2Prompt,
   buildFinalizePrompt,
 } from './promptBuilderBuildMode'
+import {
+  buildQuickModePrompt,
+  parseQuickModeResponse,
+  getQuickModeFallback,
+  type QuickModeGenerationResult,
+} from './promptBuilderQuickMode'
 
 const app = express()
 
@@ -823,6 +829,155 @@ app.post('/v1/build-mode/finalize', async (req, res) => {
     })
   } catch (e: any) {
     console.error('finalize error:', e)
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ============================================================================
+// Quick Mode Endpoints
+// ============================================================================
+
+const QuickModeGenerateSchema = z.object({
+  encounterId: z.string().min(1),
+  narrative: z.string().min(1).max(16000),
+  userIdToken: z.string().min(10),
+})
+
+/**
+ * POST /v1/quick-mode/generate
+ * One-shot MDM generation for Quick Mode encounters
+ * Extracts patient identifier and generates complete MDM in a single call
+ */
+app.post('/v1/quick-mode/generate', async (req, res) => {
+  try {
+    // 1. Validate request
+    const parsed = QuickModeGenerateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    // 2. Authenticate
+    let uid: string
+    let email = ''
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
+      uid = decoded.uid
+      email = decoded.email || ''
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    const { encounterId, narrative } = parsed.data
+
+    // 3. Get encounter and verify ownership
+    const encounterRef = getEncounterRef(uid, encounterId)
+    const encounterSnap = await encounterRef.get()
+
+    if (!encounterSnap.exists) {
+      return res.status(404).json({ error: 'Encounter not found' })
+    }
+
+    const encounter = encounterSnap.data()!
+
+    // 4. Verify this is a quick mode encounter
+    if (encounter.mode !== 'quick') {
+      return res.status(400).json({
+        error: 'This endpoint is for quick mode encounters only',
+        mode: encounter.mode,
+      })
+    }
+
+    // 5. Check if already processed
+    if (encounter.quickModeData?.status === 'completed') {
+      return res.status(400).json({
+        error: 'Encounter already processed',
+        status: 'completed',
+      })
+    }
+
+    // 6. Handle quota - only count if not already counted
+    let quotaRemaining: number
+    if (!encounter.quotaCounted) {
+      await userService.ensureUser(uid, email)
+      const quotaCheck = await userService.checkQuota(uid)
+      if (!quotaCheck.allowed) {
+        return res.status(402).json({
+          error: 'Monthly quota exceeded',
+          used: quotaCheck.used,
+          limit: quotaCheck.limit,
+          remaining: 0,
+        })
+      }
+      // Increment quota
+      await userService.incrementUsage(uid)
+      await encounterRef.update({
+        quotaCounted: true,
+        quotaCountedAt: admin.firestore.Timestamp.now(),
+      })
+    }
+
+    // Get updated quota
+    const stats = await userService.getUsageStats(uid)
+    quotaRemaining = stats.remaining
+
+    // 7. Mark as processing
+    await encounterRef.update({
+      'quickModeData.status': 'processing',
+      'quickModeData.narrative': narrative,
+      updatedAt: admin.firestore.Timestamp.now(),
+    })
+
+    // 8. Build prompt and call Vertex AI
+    let result: QuickModeGenerationResult
+    try {
+      const prompt = await buildQuickModePrompt(narrative)
+      const modelResponse = await callGeminiFlash(prompt)
+      result = parseQuickModeResponse(modelResponse.text)
+    } catch (modelError) {
+      console.error('Quick mode model error:', modelError)
+      result = getQuickModeFallback()
+    }
+
+    // 9. Update Firestore with results
+    await encounterRef.update({
+      'quickModeData.status': 'completed',
+      'quickModeData.narrative': narrative,
+      'quickModeData.patientIdentifier': result.patientIdentifier,
+      'quickModeData.mdmOutput': {
+        text: result.text,
+        json: result.json,
+      },
+      'quickModeData.processedAt': admin.firestore.Timestamp.now(),
+      // Update chief complaint with extracted identifier for card display
+      chiefComplaint: [
+        result.patientIdentifier.age,
+        result.patientIdentifier.sex?.charAt(0).toUpperCase(),
+        result.patientIdentifier.chiefComplaint,
+      ].filter(Boolean).join(' ').trim() || encounter.chiefComplaint,
+      status: 'finalized',
+      updatedAt: admin.firestore.Timestamp.now(),
+    })
+
+    // 10. Log action (no PHI)
+    console.log({
+      action: 'quick-mode-generate',
+      uid,
+      encounterId,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 11. Return response
+    return res.json({
+      ok: true,
+      mdm: {
+        text: result.text,
+        json: result.json,
+      },
+      patientIdentifier: result.patientIdentifier,
+      quotaRemaining,
+    })
+  } catch (e: any) {
+    console.error('quick-mode/generate error:', e)
     return res.status(500).json({ error: 'Internal error' })
   }
 })

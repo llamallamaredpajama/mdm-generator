@@ -341,3 +341,43 @@ export async function finalizeEncounter(
     'Encounter finalization'
   )
 }
+
+// =============================================================================
+// Quick Mode API Types & Functions
+// =============================================================================
+
+export interface PatientIdentifier {
+  age?: string
+  sex?: string
+  chiefComplaint?: string
+}
+
+export interface QuickModeResponse {
+  ok: boolean
+  mdm: {
+    text: string
+    json: Record<string, unknown>
+  }
+  patientIdentifier: PatientIdentifier
+  quotaRemaining: number
+}
+
+/**
+ * Generate MDM in Quick Mode - one-shot processing with patient identifier extraction
+ */
+export async function generateQuickMode(
+  encounterId: string,
+  narrative: string,
+  userIdToken: string
+): Promise<QuickModeResponse> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/quick-mode/generate`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encounterId, narrative, userIdToken }),
+    },
+    'Quick mode MDM generation'
+  )
+}
