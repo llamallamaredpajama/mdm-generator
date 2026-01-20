@@ -85,6 +85,17 @@
   color: #ffffff;
 }
 
+/* Build Mode button uses blue to match Build Mode card glow */
+.compose-mode-toggle__btn--active-build {
+  background: var(--color-build-accent);
+  color: #ffffff;
+}
+
+.compose-mode-toggle__btn--active-build:hover:not(:disabled) {
+  background: #2563eb;
+  color: #ffffff;
+}
+
 .compose-mode-toggle__icon {
   width: 16px;
   height: 16px;

@@ -53,7 +53,7 @@ function ModeToggle({
       <button
         type="button"
         role="tab"
-        className={`compose-mode-toggle__btn ${mode === 'build' ? 'compose-mode-toggle__btn--active' : ''}`}
+        className={`compose-mode-toggle__btn ${mode === 'build' ? 'compose-mode-toggle__btn--active compose-mode-toggle__btn--active-build' : ''}`}
         onClick={() => onModeChange('build')}
         disabled={disabled}
         aria-selected={mode === 'build'}
