@@ -182,7 +182,7 @@ What type of task?
 │  └─ Need official patterns → Context7 MCP
 │
 ├─ Code GENERATION/EDITING?
-│  ├─ UI components → Magic MCP
+│  ├─ UI components/pages → /frontend-design FIRST, then implement + Playwright confirm
 │  ├─ Multi-file pattern (>3 files) → Morphllm MCP
 │  ├─ Single/few files → Native Edit
 │  └─ Framework-specific → Context7 first
@@ -379,6 +379,182 @@ decisions               : Key architectural choices
 2. SEARCH (Serena) - Find implementations, trace paths
 3. REFERENCE (Context7) - Check patterns, best practices
 4. VALIDATE (Playwright) - Test fix works
+```
+
+---
+
+### UI/UX Development Workflow (🔴 MANDATORY)
+
+#### Overview
+
+All UI/UX development in this project **MUST** follow a three-phase workflow using specialized tools. This ensures high-quality, visually verified implementations.
+
+**Required Tools:**
+| Tool | Purpose | Phase |
+|------|---------|-------|
+| `/frontend-design` skill | Design planning, component generation | PLAN + EXECUTE |
+| Playwright MCP | Visual validation, interaction testing | CONFIRM |
+
+#### Activation Triggers
+
+This workflow is **MANDATORY** when:
+- Creating new UI components or pages
+- Modifying existing UI (layout, styling, interactions)
+- Implementing design changes or enhancements
+- Adding responsive or accessibility features
+- Any visual change visible to end users
+
+#### Three-Phase Workflow
+
+```
+PLAN (frontend-design) → EXECUTE (implementation) → CONFIRM (Playwright)
+```
+
+##### Phase 1: PLAN - Design with Frontend Design Skill
+
+**Always start UI work by invoking `/frontend-design`**
+
+```bash
+# Invoke the skill for any UI task
+/frontend-design
+```
+
+The frontend-design skill:
+- Generates distinctive, production-grade UI specifications
+- Avoids generic AI aesthetics
+- Provides component architecture and styling approach
+- Considers accessibility and responsiveness from the start
+
+**Provide context:**
+- Target component/page location
+- Existing design patterns in the project
+- User requirements and constraints
+- Integration points with existing components
+
+##### Phase 2: EXECUTE - Implement the Design
+
+After receiving frontend-design output:
+1. Implement components following the generated specifications
+2. Use project conventions (React 19, TypeScript, existing component patterns)
+3. Integrate with existing styling system
+4. Ensure proper TypeScript types
+
+**Implementation Checklist:**
+- [ ] Component follows frontend-design specifications
+- [ ] TypeScript types are complete
+- [ ] Follows existing project patterns
+- [ ] Accessibility attributes included (aria-*, roles)
+- [ ] Responsive breakpoints considered
+
+##### Phase 3: CONFIRM - Validate with Playwright
+
+**No UI task is complete without Playwright validation**
+
+Required validation steps:
+
+```
+1. Start dev server: cd frontend && pnpm dev
+2. Navigate to the page/component
+3. Capture visual state with Playwright
+4. Verify interactions work correctly
+5. Check responsive behavior
+6. Validate accessibility basics
+```
+
+**Playwright Commands:**
+
+| Validation Type | Playwright Tool | Usage |
+|----------------|-----------------|-------|
+| Visual snapshot | `browser_snapshot` | Capture accessibility tree of current page |
+| Screenshot | `browser_take_screenshot` | Visual capture for review |
+| Interaction | `browser_click`, `browser_type` | Test user interactions |
+| Navigation | `browser_navigate` | Verify routing works |
+| Form testing | `browser_fill_form` | Test form submissions |
+| Responsive | `browser_resize` | Test at different viewports |
+
+**Minimum Validation Checklist:**
+- [ ] `browser_snapshot` captured and reviewed
+- [ ] Interactive elements tested (buttons, links, forms)
+- [ ] No console errors (`browser_console_messages`)
+- [ ] Responsive check at mobile (375px) and desktop (1280px)
+
+#### Tool Selection for UI Tasks
+
+```
+UI/UX Task?
+├─ New component/page → /frontend-design FIRST
+├─ Design enhancement → /frontend-design FIRST
+├─ Styling changes → /frontend-design for significant, direct edit for minor
+├─ Bug fix (visual) → Playwright to reproduce → fix → Playwright to confirm
+├─ Accessibility improvement → /frontend-design + Playwright validation
+└─ ALL UI changes → Playwright confirmation REQUIRED
+```
+
+#### Anti-Patterns (🔴 NEVER DO)
+
+| Anti-Pattern | Why It's Wrong | Correct Approach |
+|--------------|----------------|------------------|
+| Building UI without `/frontend-design` | Produces generic, inconsistent designs | Always invoke skill first |
+| Skipping Playwright validation | Can't verify visual correctness | Always validate with browser |
+| "It looks fine" without browser check | Assumptions aren't verification | Run Playwright snapshot |
+| Implementing without dev server running | Can't see changes | Start server, validate live |
+| Marking UI complete without screenshots | No visual proof | Capture and review screenshot |
+
+#### Example Workflow
+
+**Task: Add a new settings toggle component**
+
+```
+1. PLAN
+   > /frontend-design
+   > "Create a toggle switch component for the Settings page
+      that matches our existing UI patterns. Should support
+      disabled state and have proper accessibility."
+
+   [Receive component specification]
+
+2. EXECUTE
+   > Create frontend/src/components/ToggleSwitch.tsx
+   > Implement per specification
+   > Add TypeScript types
+   > Integrate into Settings.tsx
+
+3. CONFIRM
+   > cd frontend && pnpm dev
+   > browser_navigate to http://localhost:5173/settings
+   > browser_snapshot - verify component renders
+   > browser_click on toggle - verify it switches
+   > browser_resize to 375x667 - verify mobile layout
+   > browser_console_messages - verify no errors
+
+   ✅ All validations pass → Task complete
+```
+
+#### Integration with Quality Gates
+
+UI tasks have additional quality requirements:
+
+**Pre-Commit for UI Changes:**
+```bash
+# Standard checks
+cd frontend && pnpm check
+
+# PLUS: Playwright validation must have been performed
+# Document which validations were run in commit message
+```
+
+**Commit Message for UI Changes:**
+```
+feat: Add toggle switch component to Settings
+
+- Created ToggleSwitch component with accessibility support
+- Integrated into Settings page
+
+Validated with Playwright:
+- Visual snapshot confirmed
+- Click interactions tested
+- Responsive at 375px and 1280px
+- No console errors
 ```
 
 ---
@@ -664,7 +840,7 @@ If PHI is detected in any change:
 | 3+ files | Batch operations |
 | Pattern across files | Morphllm |
 | Symbol operations | Serena |
-| UI components | Magic |
+| UI components/pages | /frontend-design → implement → Playwright confirm |
 | Complex analysis | Sequential |
 | Browser testing | Playwright |
 | Framework docs | Context7 |
@@ -677,6 +853,8 @@ If PHI is detected in any change:
 - [ ] Parallelization planned
 - [ ] Tools selected
 - [ ] **PHI check: no patient data**
+- [ ] **For UI tasks: /frontend-design invoked**
+- [ ] **For UI tasks: Playwright validation planned**
 
 ---
 
