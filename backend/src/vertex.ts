@@ -7,7 +7,7 @@ export async function callGeminiFlash(prompt: { system: string; user: string }):
   const location = process.env.VERTEX_LOCATION || process.env.GOOGLE_CLOUD_REGION || 'us-central1'
   const vertex = new VertexAI({ project, location })
   const model = vertex.getGenerativeModel({
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-2.5-pro-preview-05-06',
     safetySettings: [
       // conservative defaults; can be tuned later
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
