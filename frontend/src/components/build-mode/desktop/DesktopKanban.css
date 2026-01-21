@@ -1,0 +1,432 @@
+/* Desktop Kanban Layout - Flex-wrap grid with centered cards */
+
+/* ===== Container ===== */
+.desktop-kanban {
+  display: flex;
+  flex-wrap: wrap;              /* Wrap cards to new rows */
+  justify-content: center;      /* Center cards horizontally */
+  align-content: flex-start;    /* Stack rows at top */
+  gap: 1.5rem;
+  width: 100%;
+  padding: 1rem;
+  overflow-x: visible;          /* No horizontal scroll */
+  overflow-y: auto;             /* Vertical scroll if needed */
+  min-height: 400px;
+}
+
+/* ===== Flippable Card Container ===== */
+.flippable-card {
+  position: relative;
+  width: 280px;
+  height: 360px;
+  flex-shrink: 0;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+/* ===== Card Inner (3D Transform Container) ===== */
+.flippable-card__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Flipped State ===== */
+.flippable-card--flipped .flippable-card__inner {
+  transform: rotateY(180deg);
+}
+
+/* ===== Card Faces (Front & Back) ===== */
+.flippable-card__front,
+.flippable-card__back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+}
+
+.flippable-card__front {
+  background: #ffffff;
+  border: 1px solid var(--color-accent, #3b82f6);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-lg, 1.5rem);
+  gap: var(--space-md, 1rem);
+}
+
+.flippable-card__back {
+  background: var(--color-accent, #3b82f6);
+  color: #ffffff;
+  transform: rotateY(180deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-semibold, 600);
+  font-size: var(--font-size-lg, 1.125rem);
+}
+
+/* ===== Hover Effects ===== */
+.flippable-card:hover:not(.flippable-card--flipped) .flippable-card__front {
+  transform: translateY(-8px);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.15),
+    0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+.flippable-card__front {
+  transition:
+    transform 300ms ease-out,
+    box-shadow 300ms ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Build Mode Styling ===== */
+.desktop-kanban--build-mode .flippable-card__front {
+  border-color: var(--color-build-accent, #3b82f6);
+}
+
+.desktop-kanban--build-mode .flippable-card__back {
+  background: var(--color-build-accent, #3b82f6);
+}
+
+/* ===== Quick Mode Styling ===== */
+.desktop-kanban--quick-mode .flippable-card__front {
+  border-color: var(--color-quick-accent, #dc3545);
+}
+
+.desktop-kanban--quick-mode .flippable-card__back {
+  background: var(--color-quick-accent, #dc3545);
+}
+
+.desktop-kanban--quick-mode .flippable-card:hover:not(.flippable-card--flipped) .flippable-card__front {
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.15),
+    0 0 20px rgba(220, 53, 69, 0.3);
+}
+
+/* ===== Card Content ===== */
+.flippable-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm, 0.5rem);
+}
+
+.flippable-card__room {
+  margin: 0;
+  font-size: var(--font-size-xl, 1.25rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: #1a1a1a;
+}
+
+.flippable-card__complaint {
+  margin: 0;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: #666666;
+  line-height: var(--line-height-relaxed, 1.625);
+  flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.flippable-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+/* ===== Delete Button ===== */
+.flippable-card__delete {
+  background: transparent;
+  border: none;
+  padding: var(--space-xs, 0.25rem);
+  cursor: pointer;
+  border-radius: var(--radius-sm, 4px);
+  color: #999999;
+  transition: all 150ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flippable-card__delete:hover {
+  background: rgba(220, 53, 69, 0.15);
+  color: var(--color-error, #dc3545);
+}
+
+.flippable-card__delete:focus-visible {
+  outline: 2px solid var(--color-error, #dc3545);
+  outline-offset: 2px;
+}
+
+.flippable-card__delete-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* ===== Focus States ===== */
+.flippable-card:focus-visible {
+  outline: 2px solid var(--color-accent, #3b82f6);
+  outline-offset: 4px;
+  border-radius: var(--radius-lg, 12px);
+}
+
+/* ===== Fullscreen Overlay ===== */
+.fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: overlay-fade-in 200ms ease-out;
+}
+
+.fullscreen-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+}
+
+.fullscreen-overlay__content {
+  position: relative;
+  background: #ffffff;
+  border-radius: var(--radius-xl, 16px);
+  width: 90%;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: var(--space-xl, 2rem);
+  box-shadow:
+    0 25px 50px rgba(0, 0, 0, 0.25),
+    0 0 40px rgba(59, 130, 246, 0.15);
+  animation: overlay-expand 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-expand {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Closing animation */
+.fullscreen-overlay--closing {
+  animation: overlay-fade-out 200ms ease-in forwards;
+}
+
+.fullscreen-overlay--closing .fullscreen-overlay__content {
+  animation: overlay-collapse 200ms ease-in forwards;
+}
+
+@keyframes overlay-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes overlay-collapse {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+}
+
+/* ===== Fullscreen Close Button ===== */
+.fullscreen-overlay__close {
+  position: absolute;
+  top: var(--space-md, 1rem);
+  right: var(--space-md, 1rem);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #666666;
+  transition: all 150ms ease;
+}
+
+.fullscreen-overlay__close:hover {
+  background: #e5e5e5;
+  color: #1a1a1a;
+}
+
+.fullscreen-overlay__close:focus-visible {
+  outline: 2px solid var(--focus-ring, #3b82f6);
+  outline-offset: 2px;
+}
+
+.fullscreen-overlay__close-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* ===== Fullscreen Content Header ===== */
+.fullscreen-overlay__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-lg, 1.5rem);
+  padding-right: var(--space-xl, 2rem); /* Space for close button */
+}
+
+.fullscreen-overlay__room {
+  margin: 0;
+  font-size: var(--font-size-2xl, 1.5rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: #1a1a1a;
+}
+
+/* ===== Fullscreen Complaint ===== */
+.fullscreen-overlay__complaint {
+  font-size: var(--font-size-base, 1rem);
+  color: #444444;
+  line-height: var(--line-height-relaxed, 1.625);
+  margin-bottom: var(--space-lg, 1.5rem);
+}
+
+/* ===== Fullscreen Actions ===== */
+.fullscreen-overlay__actions {
+  display: flex;
+  gap: var(--space-md, 1rem);
+  padding-top: var(--space-lg, 1.5rem);
+  border-top: 1px solid #e5e5e5;
+}
+
+.fullscreen-overlay__action-btn {
+  flex: 1;
+  padding: var(--space-md, 1rem) var(--space-lg, 1.5rem);
+  border-radius: var(--radius-md, 8px);
+  border: none;
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  font-size: var(--font-size-base, 1rem);
+  transition: all 150ms ease;
+}
+
+.fullscreen-overlay__action-btn--select {
+  background: var(--color-accent, #3b82f6);
+  color: #ffffff;
+}
+
+.fullscreen-overlay__action-btn--select:hover {
+  background: var(--color-accent-hover, #2563eb);
+}
+
+.fullscreen-overlay__action-btn--delete {
+  background: transparent;
+  border: 1px solid var(--color-error, #dc3545);
+  color: var(--color-error, #dc3545);
+}
+
+.fullscreen-overlay__action-btn--delete:hover {
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.fullscreen-overlay__action-btn:focus-visible {
+  outline: 2px solid var(--focus-ring, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* ===== Quick Mode Fullscreen ===== */
+.fullscreen-overlay--quick-mode .fullscreen-overlay__content {
+  box-shadow:
+    0 25px 50px rgba(0, 0, 0, 0.25),
+    0 0 40px rgba(220, 53, 69, 0.2);
+}
+
+.fullscreen-overlay--quick-mode .fullscreen-overlay__action-btn--select {
+  background: var(--color-quick-accent, #dc3545);
+}
+
+.fullscreen-overlay--quick-mode .fullscreen-overlay__action-btn--select:hover {
+  background: #c82333;
+}
+
+/* ===== Empty State ===== */
+.desktop-kanban--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  color: var(--text-secondary, #666666);
+}
+
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  .flippable-card__inner {
+    transition: none;
+  }
+
+  .flippable-card__front {
+    transition: none;
+  }
+
+  .flippable-card:hover:not(.flippable-card--flipped) .flippable-card__front {
+    transform: none;
+  }
+
+  .fullscreen-overlay {
+    animation: none;
+  }
+
+  .fullscreen-overlay__content {
+    animation: none;
+  }
+
+  .fullscreen-overlay--closing {
+    animation: none;
+  }
+
+  .fullscreen-overlay--closing .fullscreen-overlay__content {
+    animation: none;
+  }
+
+  /* Still allow opacity changes for accessibility */
+  .fullscreen-overlay,
+  .fullscreen-overlay__content {
+    transition: opacity 100ms ease-out;
+  }
+}
+
+/* ===== Focus Trap Indicator (Accessibility) ===== */
+.fullscreen-overlay:focus {
+  outline: none;
+}
+
+/* Visible focus indicator for keyboard navigation inside overlay */
+.fullscreen-overlay__content:focus-within {
+  /* No visual change needed, but ensures focus is trapped */
+}

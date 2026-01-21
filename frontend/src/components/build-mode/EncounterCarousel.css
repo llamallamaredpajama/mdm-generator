@@ -1,115 +1,61 @@
 /* =============================================
    EncounterCarousel.css
-   Carousel container and navigation styles
+   Responsive carousel orchestrator - routes to mobile/desktop layouts
    ============================================= */
 
-/* 3D Perspective Container */
+/* ===== MAIN CONTAINER ===== */
+
 .encounter-carousel {
   position: relative;
   width: 100%;
-  height: 520px;
-  perspective: 1000px;
-  perspective-origin: center 40%;
+  min-height: 400px;
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
+
+/* Desktop: horizontal layout wrapper (≥768px) */
+@media (min-width: 768px) {
+  .encounter-carousel {
+    min-height: 520px;
+  }
+}
+
+/* ===== CARDS CONTAINER ===== */
 
 .encounter-carousel__cards {
   position: relative;
   width: 100%;
-  height: 400px;
-  flex-shrink: 0;
-}
-
-/* Navigation Controls Container - Below Cards */
-.encounter-carousel__controls {
+  flex: 1;
   display: flex;
-  align-items: center;
-  gap: var(--space-lg);
-  margin-top: var(--space-lg);
-  z-index: 60;
 }
 
-/* Navigation Arrows */
-.encounter-carousel__nav {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-md);
-  background: transparent;
-  border: 1px solid var(--color-text-dim);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
+/* Mobile: vertical stack container */
+@media (max-width: 767px) {
+  .encounter-carousel__cards {
+    flex-direction: column;
+    padding: var(--space-md);
+    gap: var(--space-sm);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
 }
 
-.encounter-carousel__nav svg {
-  width: 20px;
-  height: 20px;
-  stroke: currentColor;
-  stroke-width: 2;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform 0.15s ease;
-}
+/* Desktop: horizontal scroll container */
+@media (min-width: 768px) {
+  .encounter-carousel__cards {
+    flex-direction: row;
+    align-items: flex-start;
+    padding: var(--space-lg);
+    gap: var(--space-lg);
+    overflow-x: auto;
+    overflow-y: visible;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 
-.encounter-carousel__nav:hover {
-  background: var(--color-bg-tertiary);
-  border-color: var(--color-text-secondary);
-  color: var(--color-text-primary);
-}
-
-.encounter-carousel__nav:active {
-  transform: scale(0.95);
-}
-
-.encounter-carousel__nav:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.encounter-carousel__nav--prev:hover svg {
-  transform: translateX(-2px);
-}
-
-.encounter-carousel__nav--next:hover svg {
-  transform: translateX(2px);
-}
-
-/* Card Counter */
-.encounter-carousel__counter {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-dim);
-  font-variant-numeric: tabular-nums;
-  min-width: 60px;
-  text-align: center;
-}
-
-/* Arrow Icons */
-.encounter-carousel__arrow {
-  width: 20px;
-  height: 20px;
-  display: block;
-  overflow: visible;
-}
-
-.encounter-carousel__arrow path {
-  fill: none;
-  stroke: #9ca3af;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: stroke 0.15s ease;
-}
-
-.encounter-carousel__nav:hover .encounter-carousel__arrow path {
-  stroke: #ffffff;
+  .encounter-carousel__cards::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* ===== CLEAR DECK BUTTON ===== */
@@ -147,6 +93,21 @@
 .encounter-carousel__clear-icon {
   width: 16px;
   height: 16px;
+}
+
+/* Mobile: adjust clear deck position */
+@media (max-width: 767px) {
+  .encounter-carousel__clear-deck {
+    bottom: var(--space-sm);
+    right: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-xs);
+  }
+
+  .encounter-carousel__clear-icon {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 /* ===== CLEAR DECK MODAL ===== */
@@ -247,125 +208,11 @@
   cursor: not-allowed;
 }
 
-/* ===== EMPTY STATE ===== */
-
-.encounter-carousel__empty {
-  position: absolute;
-  bottom: var(--space-xl);
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  color: var(--color-text-muted);
-  pointer-events: none;
-  z-index: 55;
-}
-
-.encounter-carousel__empty-icon {
-  font-size: 48px;
-  margin-bottom: var(--space-md);
-  opacity: 0.5;
-  display: block;
-}
-
-.encounter-carousel__empty-text {
-  font-size: var(--font-size-lg);
-  max-width: 280px;
-  line-height: 1.5;
-}
-
-/* ===== RESPONSIVE DESIGN ===== */
-
-/* Tablet: 640-1024px - Show 5 cards (hide fan-left-3, fan-right-3) */
-@media (max-width: 1024px) {
-  .encounter-carousel {
-    height: 480px;
-  }
-
-  .encounter-carousel__cards {
-    height: 380px;
-  }
-
-  .carousel-card--fan-left-3,
-  .carousel-card--fan-right-3 {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .carousel-card--fan-left-2 {
-    transform: translate(calc(-50% - 120px), -50%) rotateZ(-16deg) scale(0.84);
-  }
-
-  .carousel-card--fan-right-2 {
-    transform: translate(calc(-50% + 120px), -50%) rotateZ(16deg) scale(0.84);
-  }
-
-  .carousel-card--fan-left-1 {
-    transform: translate(calc(-50% - 60px), -50%) rotateZ(-8deg) scale(0.92);
-  }
-
-  .carousel-card--fan-right-1 {
-    transform: translate(calc(-50% + 60px), -50%) rotateZ(8deg) scale(0.92);
-  }
-}
-
-/* Mobile: <640px - Single card view */
-@media (max-width: 640px) {
-  .encounter-carousel {
-    perspective: none;
-    height: 460px;
-  }
-
-  .encounter-carousel__cards {
-    height: 380px;
-  }
-
-  .carousel-card {
-    width: 90%;
-    max-width: 320px;
-  }
-
-  .carousel-card--fan-left-1,
-  .carousel-card--fan-left-2,
-  .carousel-card--fan-left-3,
-  .carousel-card--fan-right-1,
-  .carousel-card--fan-right-2,
-  .carousel-card--fan-right-3 {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .carousel-card--center {
-    transform: translate(-50%, -50%) scale(1);
-  }
-
-  .encounter-carousel__controls {
-    gap: var(--space-md);
-  }
-
-  .encounter-carousel__nav {
-    width: 40px;
-    height: 40px;
-  }
-}
-
 /* ===== REDUCED MOTION ===== */
+
 @media (prefers-reduced-motion: reduce) {
-  .carousel-card {
-    transition: opacity 0.1s ease;
-    animation: none !important;
-  }
-
-  .carousel-card--selecting.carousel-card--selected,
-  .carousel-card--transitioning.carousel-card--selected {
-    transform: translate(-50%, -50%) scale(1.05);
-    box-shadow:
-      0 0 40px rgba(185, 28, 28, 0.9),
-      0 0 80px rgba(153, 27, 27, 0.7),
-      0 20px 60px rgba(127, 29, 29, 0.5);
+  .encounter-carousel__modal-overlay,
+  .encounter-carousel__modal {
     animation: none;
-  }
-
-  .encounter-carousel__nav svg {
-    transition: none;
   }
 }

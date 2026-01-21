@@ -1,0 +1,175 @@
+/* ============================================================================
+   NewEncounterCard Component Styles
+   Form card for creating new encounters - layout agnostic
+   ============================================================================ */
+
+/* ===== BASE CARD STYLES ===== */
+
+.new-encounter-card {
+  width: 280px;
+  height: 360px;              /* Match flippable-card height */
+  flex-shrink: 0;
+  background: #ffffff;
+  border: 2px solid #3b82f6;
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.new-encounter-card:hover {
+  background: #fafafa;
+}
+
+/* ===== CARD HEADER ===== */
+
+.new-encounter-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.new-encounter-card__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-build-accent, #3b82f6);
+}
+
+/* ===== FORM STYLES ===== */
+
+.new-encounter-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  flex: 1;
+}
+
+.new-encounter-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.new-encounter-card__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.new-encounter-card__input {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-base);
+  color: #1a1a1a;
+  transition: border-color var(--transition-fast);
+}
+
+.new-encounter-card__input:focus {
+  outline: none;
+  border-color: var(--color-build-accent, #3b82f6);
+}
+
+.new-encounter-card__input::placeholder {
+  color: #999999;
+}
+
+.new-encounter-card__input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== HINT TEXT ===== */
+
+.new-encounter-card__hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: #888888;
+  font-style: italic;
+  text-align: center;
+}
+
+/* ===== SUBMIT BUTTON ===== */
+
+.new-encounter-card__submit {
+  margin-top: auto;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+}
+
+.new-encounter-card__submit:hover:not(:disabled) {
+  background: #2563eb;
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.7);
+}
+
+.new-encounter-card__submit:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.new-encounter-card__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== QUICK MODE VARIANT ===== */
+
+.new-encounter-card--mode-quick {
+  border-color: #dc3545;
+}
+
+.new-encounter-card--mode-quick .new-encounter-card__title {
+  color: #dc3545;
+}
+
+.new-encounter-card--mode-quick .new-encounter-card__input:focus {
+  border-color: #dc3545;
+}
+
+.new-encounter-card--mode-quick .new-encounter-card__submit {
+  background: #dc3545;
+  box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
+}
+
+.new-encounter-card--mode-quick .new-encounter-card__submit:hover:not(:disabled) {
+  background: #c82333;
+  box-shadow: 0 0 25px rgba(220, 53, 69, 0.8);
+}
+
+.new-encounter-card--mode-quick .new-encounter-card__submit:focus-visible {
+  outline-color: #dc3545;
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+
+/* Mobile: full width to match other cards */
+@media (max-width: 767px) {
+  .new-encounter-card {
+    width: 100%;
+    height: auto;             /* Allow flexible height on mobile */
+    min-height: 200px;
+    padding: var(--space-md);
+  }
+}
+
+/* ===== REDUCED MOTION ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .new-encounter-card__submit {
+    transition: none;
+  }
+}

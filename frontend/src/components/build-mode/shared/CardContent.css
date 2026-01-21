@@ -1,0 +1,228 @@
+/* ============================================================================
+   CardContent Component Styles
+   Reusable card body - layout agnostic (no positioning)
+   ============================================================================ */
+
+/* ===== BASE CONTENT CONTAINER ===== */
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+  height: 100%;
+}
+
+.card-content--compact {
+  gap: var(--space-sm);
+}
+
+/* ===== HEADER ===== */
+
+.card-content__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.card-content__room {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: #1a1a1a;
+}
+
+.card-content--compact .card-content__room {
+  font-size: var(--font-size-lg);
+}
+
+/* ===== STATUS BADGE ===== */
+
+.card-content__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.card-content__status--draft {
+  background: #f0f0f0;
+  color: #666666;
+}
+
+.card-content__status--section1_done {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--color-build-accent);
+}
+
+.card-content__status--section2_done {
+  background: rgba(40, 167, 69, 0.15);
+  color: var(--color-success);
+}
+
+.card-content__status--finalized {
+  background: rgba(40, 167, 69, 0.15);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+.card-content__status--archived {
+  background: rgba(220, 53, 69, 0.15);
+  color: var(--color-error);
+}
+
+/* Quick mode status variants */
+.card-content__status--processing {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.card-content__status--error {
+  background: rgba(220, 53, 69, 0.15);
+  color: var(--color-error);
+}
+
+/* ===== PROCESSING SPINNER ===== */
+
+.card-content__spinner {
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: card-content-spin 0.8s linear infinite;
+}
+
+@keyframes card-content-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== CHIEF COMPLAINT / BODY TEXT ===== */
+
+.card-content__complaint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: #666666;
+  line-height: var(--line-height-relaxed);
+  flex-grow: 1;
+  /* Line clamp for overflow */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-content__complaint--quick {
+  font-weight: var(--font-weight-medium);
+  color: #444444;
+}
+
+.card-content__complaint--compact {
+  -webkit-line-clamp: 2;
+  font-size: var(--font-size-xs);
+}
+
+/* ===== FOOTER ===== */
+
+.card-content__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+/* ===== SECTION INDICATORS ===== */
+
+.card-content__sections {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.card-content__section {
+  font-size: var(--font-size-base);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-content__section--complete {
+  color: var(--color-success);
+  font-weight: var(--font-weight-bold);
+}
+
+.card-content__section--active {
+  color: var(--color-accent);
+  animation: card-content-pulse 1.5s ease-in-out infinite;
+}
+
+.card-content__section--pending {
+  color: #999999;
+}
+
+@keyframes card-content-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Compact section indicators */
+.card-content--compact .card-content__section {
+  width: 18px;
+  height: 18px;
+  font-size: var(--font-size-sm);
+}
+
+/* ===== QUICK MODE INDICATOR ===== */
+
+.card-content__mode-indicator {
+  width: 20px;
+  height: 20px;
+  color: #dc3545;
+  opacity: 0.7;
+  margin-left: auto;
+}
+
+.card-content__mode-icon {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== MODE VARIANTS ===== */
+
+/* Quick mode styling */
+.card-content--mode-quick .card-content__room {
+  color: #1a1a1a;
+}
+
+/* ===== REDUCED MOTION ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .card-content__spinner {
+    animation: none;
+    border-top-color: currentColor;
+    opacity: 0.5;
+  }
+
+  .card-content__section--active {
+    animation: none;
+  }
+}

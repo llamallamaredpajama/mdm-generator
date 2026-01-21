@@ -9,7 +9,6 @@ import {
   writeBatch,
   type QuerySnapshot,
   type DocumentData,
-  Timestamp,
 } from 'firebase/firestore'
 import { db, useAuth } from '../lib/firebase'
 import type {
@@ -73,6 +72,42 @@ function convertEncounterDoc(docId: string, data: DocumentData): EncounterDocume
     shiftStartedAt: data.shiftStartedAt,
     archivedAt: data.archivedAt,
   }
+}
+
+/**
+ * Parses a room number string into structured parts for sorting
+ */
+function parseRoomNumber(room: string): { type: 'word' | 'compound' | 'numeric'; word: string; num: number } {
+  const trimmed = room.trim().toLowerCase()
+  const numericMatch = trimmed.match(/^(\d+)/)
+  if (numericMatch) {
+    return { type: 'numeric', word: '', num: parseInt(numericMatch[1], 10) }
+  }
+  const compoundMatch = trimmed.match(/^([a-z]+)\s*(\d+)/)
+  if (compoundMatch) {
+    return { type: 'compound', word: compoundMatch[1], num: parseInt(compoundMatch[2], 10) }
+  }
+  return { type: 'word', word: trimmed, num: 0 }
+}
+
+/**
+ * Compares two room numbers for sorting
+ * Priority: word-only < compound (word+num) < pure numeric
+ * Within types: alphabetical for words, numerical for numbers
+ */
+function compareRooms(a: string, b: string): number {
+  const parsedA = parseRoomNumber(a)
+  const parsedB = parseRoomNumber(b)
+  const typePriority = { word: 0, compound: 1, numeric: 2 }
+  if (typePriority[parsedA.type] !== typePriority[parsedB.type]) {
+    return typePriority[parsedA.type] - typePriority[parsedB.type]
+  }
+  if (parsedA.type === 'numeric') {
+    return parsedA.num - parsedB.num
+  }
+  const wordCompare = parsedA.word.localeCompare(parsedB.word)
+  if (wordCompare !== 0) return wordCompare
+  return parsedA.num - parsedB.num
 }
 
 export interface UseEncounterListReturn {
@@ -139,12 +174,8 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
               return encounterMode === mode
             })
 
-          // Sort by updatedAt descending (most recent first)
-          encounterList.sort((a, b) => {
-            const aTime = a.updatedAt instanceof Timestamp ? a.updatedAt.toMillis() : 0
-            const bTime = b.updatedAt instanceof Timestamp ? b.updatedAt.toMillis() : 0
-            return bTime - aTime
-          })
+          // Sort by room number (word-only < compound < numeric)
+          encounterList.sort((a, b) => compareRooms(a.roomNumber, b.roomNumber))
 
           setEncounters(encounterList)
           setLoading(false)

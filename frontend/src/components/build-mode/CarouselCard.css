@@ -8,7 +8,7 @@
 .carousel-card {
   position: absolute;
   top: 50%;
-  left: 50%;
+  transform: translateY(-50%);
   width: 280px;
   height: 360px;
   background: #ffffff;
@@ -16,73 +16,20 @@
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   cursor: pointer;
-  transform-style: preserve-3d;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
               opacity 0.3s ease,
               box-shadow 0.3s ease,
-              filter 0.3s ease;
+              z-index 0s;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
 }
 
-/* ===== POSITION TRANSFORMS ===== */
-
-.carousel-card--center {
-  transform: translate(-50%, -50%) rotateZ(0deg) scale(1);
-  z-index: 50;
-  opacity: 1;
-  /* Build Mode blue glow - reduced idle intensity */
-  box-shadow:
-    0 0 25px rgba(59, 130, 246, 0.5),
-    0 0 50px rgba(59, 130, 246, 0.35),
-    0 0 80px rgba(37, 99, 235, 0.25),
-    0 0 120px rgba(29, 78, 216, 0.15);
-  border: 2px solid #3b82f6;
+.carousel-card:hover {
+  transform: translateY(calc(-50% - 8px));
+  z-index: 60 !important;
 }
 
-.carousel-card--fan-left-1 {
-  transform: translate(calc(-50% - 80px), -50%) rotateZ(-10deg) scale(0.92);
-  z-index: 40;
-  opacity: 1;
-}
-
-.carousel-card--fan-left-2 {
-  transform: translate(calc(-50% - 140px), -50%) rotateZ(-18deg) scale(0.84);
-  z-index: 30;
-  opacity: 1;
-}
-
-.carousel-card--fan-right-1 {
-  transform: translate(calc(-50% + 80px), -50%) rotateZ(10deg) scale(0.92);
-  z-index: 40;
-  opacity: 1;
-}
-
-.carousel-card--fan-right-2 {
-  transform: translate(calc(-50% + 140px), -50%) rotateZ(18deg) scale(0.84);
-  z-index: 30;
-  opacity: 1;
-}
-
-.carousel-card--fan-left-3 {
-  transform: translate(calc(-50% - 195px), -50%) rotateZ(-24deg) scale(0.76);
-  z-index: 20;
-  opacity: 0.9;
-}
-
-.carousel-card--fan-right-3 {
-  transform: translate(calc(-50% + 195px), -50%) rotateZ(24deg) scale(0.76);
-  z-index: 20;
-  opacity: 0.9;
-}
-
-.carousel-card--hidden {
-  transform: translate(-50%, -50%) scale(0.8);
-  z-index: 10;
-  opacity: 0;
-  pointer-events: none;
-}
 
 /* ===== CARD HEADER ===== */
 
@@ -234,35 +181,6 @@
   height: 18px;
 }
 
-/* ===== HOVER STATES ===== */
-
-/* Center card hover effect - intensified blue glow */
-.carousel-card--center:hover {
-  transform: translate(-50%, calc(-50% - 8px)) scale(1.02);
-  box-shadow:
-    0 0 35px rgba(59, 130, 246, 0.9),
-    0 0 70px rgba(59, 130, 246, 0.7),
-    0 0 100px rgba(37, 99, 235, 0.5),
-    0 0 150px rgba(29, 78, 216, 0.3),
-    0 25px 50px rgba(37, 99, 235, 0.5);
-  border-color: #3b82f6;
-}
-
-/* Side cards hover - subtle lift */
-.carousel-card--fan-left-1:hover,
-.carousel-card--fan-right-1:hover {
-  filter: brightness(1.05);
-}
-
-/* Bring hovered side cards to front */
-.carousel-card--fan-left-1:hover,
-.carousel-card--fan-right-1:hover,
-.carousel-card--fan-left-2:hover,
-.carousel-card--fan-right-2:hover,
-.carousel-card--fan-left-3:hover,
-.carousel-card--fan-right-3:hover {
-  z-index: 55;
-}
 
 /* ===== FOCUS STATES ===== */
 
@@ -473,17 +391,7 @@
   border-color: #dc3545; /* MDM red for quick mode */
 }
 
-.carousel-card--mode-quick.carousel-card--center {
-  /* Quick Compose red glow - reduced idle intensity */
-  box-shadow:
-    0 0 25px rgba(185, 28, 28, 0.5),
-    0 0 50px rgba(185, 28, 28, 0.35),
-    0 0 80px rgba(153, 27, 27, 0.25),
-    0 0 120px rgba(127, 29, 29, 0.15);
-  border: 2px solid #dc3545;
-}
-
-.carousel-card--mode-quick.carousel-card--center:hover {
+.carousel-card--mode-quick:hover {
   box-shadow:
     0 0 35px rgba(185, 28, 28, 0.9),
     0 0 70px rgba(185, 28, 28, 0.7),

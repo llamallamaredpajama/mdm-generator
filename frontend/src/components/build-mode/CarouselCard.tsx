@@ -1,3 +1,14 @@
+/**
+ * @deprecated This file is deprecated as of Phase 4 responsive refactor.
+ *
+ * Use instead:
+ * - NewEncounterCard: For the new encounter form
+ * - CardContent (shared/CardContent.tsx): For encounter display
+ * - MobileWalletStack / DesktopKanban: For layout containers
+ *
+ * This file will be removed once EncounterCarousel.tsx is updated.
+ */
+
 import type {
   EncounterDocument,
   EncounterStatus,
@@ -17,7 +28,7 @@ export type AnimationPhase = 'idle' | 'selecting' | 'transitioning' | 'fading'
 
 interface CarouselCardProps {
   encounter?: EncounterDocument
-  position: CardPosition
+  position?: CardPosition  // Optional - now using inline styles via getStackStyle()
   animationPhase: AnimationPhase
   isSelected: boolean
   isNewCard?: boolean
@@ -25,6 +36,10 @@ interface CarouselCardProps {
   onDelete?: () => void
   /** Mode context for the carousel (quick or build) */
   mode?: EncounterMode
+  /** Position in sorted stack (0 = top/left) */
+  stackIndex: number
+  /** Whether stack is in fanned state (on hover) */
+  isStackFanned: boolean
   // For new encounter form
   newEncounterForm?: {
     roomNumber: string
@@ -166,17 +181,43 @@ function QuickModeCardContent({ encounter }: { encounter: EncounterDocument }) {
  */
 export default function CarouselCard({
   encounter,
-  position,
+  position,  // Optional - legacy prop, positioning now via getStackStyle()
   animationPhase,
   isSelected,
   isNewCard,
   onClick,
   onDelete,
   mode = 'build',
+  stackIndex,
+  isStackFanned,
   newEncounterForm
 }: CarouselCardProps) {
   const canDelete = encounter && (encounter.status === 'draft' || encounter.status === 'archived')
   const encounterMode = encounter ? getEncounterMode(encounter) : mode
+
+  /**
+   * Calculate inline positioning styles for stacked deck layout
+   * When fanned: cards spread horizontally with gaps
+   * When stacked: cards overlap with small offset
+   */
+  const getStackStyle = (): React.CSSProperties => {
+    const CARD_WIDTH = 280
+    const STACK_OFFSET = 8
+    const FAN_GAP = 20
+
+    if (isStackFanned) {
+      return {
+        left: `${60 + stackIndex * (CARD_WIDTH + FAN_GAP)}px`,
+        zIndex: 50 - stackIndex,
+        opacity: 1,
+      }
+    }
+    return {
+      left: `${60 + stackIndex * STACK_OFFSET}px`,
+      zIndex: 50 - stackIndex,
+      opacity: stackIndex < 5 ? 1 : 0,
+    }
+  }
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -198,7 +239,7 @@ export default function CarouselCard({
   // Build className string
   const classNames = [
     'carousel-card',
-    `carousel-card--${position}`,
+    position && `carousel-card--${position}`,
     `carousel-card--${animationPhase}`,
     `carousel-card--mode-${encounterMode}`,
     isSelected && 'carousel-card--selected',
@@ -212,6 +253,7 @@ export default function CarouselCard({
     return (
       <div
         className={classNames}
+        style={getStackStyle()}
         role="region"
         aria-label="Create new encounter"
       >
@@ -293,12 +335,13 @@ export default function CarouselCard({
     return (
       <div
         className={classNames}
+        style={getStackStyle()}
         onClick={onClick}
         onKeyDown={handleKeyDown}
         role="button"
-        tabIndex={position === 'hidden' ? -1 : 0}
+        tabIndex={stackIndex >= 5 ? -1 : 0}
         aria-label={`${encounter.roomNumber}: ${cardLabel}`}
-        aria-hidden={position === 'hidden'}
+        aria-hidden={stackIndex >= 5}
       >
         {/* Quick Mode Card Content */}
         {isQuickModeEncounter ? (
@@ -347,7 +390,7 @@ export default function CarouselCard({
 
   // Fallback empty card
   return (
-    <div className={classNames} aria-hidden="true">
+    <div className={classNames} style={getStackStyle()} aria-hidden="true">
       <div className="carousel-card__empty">No encounter data</div>
     </div>
   )
