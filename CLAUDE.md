@@ -1,1326 +1,179 @@
-# CLAUDE.md
+# CLAUDE.md - MDM Generator
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> For workflow patterns, tool selection, parallelization, git safety, and MCP server guidance, see `~/.claude/` (SuperClaude framework).
 
-# MDM Generator - AI Assistant Instructions
+## What This Is
 
-## Project Overview
+MDM Generator transforms Emergency Medicine physician narratives into compliant, high-complexity Medical Decision Making documentation using an EM-specific "worst-first" approach.
 
-MDM Generator is an **educational tool** for Emergency Medicine physicians to generate Medical Decision Making (MDM) documentation from natural language input. It transforms physician narratives into compliant, high-complexity MDM drafts using an EM-specific "worst-first" approach.
-
-**CRITICAL CONSTRAINTS:**
+**CRITICAL CONSTRAINTS (Non-Negotiable):**
+- **NO PHI EVER** - Protected Health Information must never appear in code, logs, comments, or outputs
 - **Educational use only** - No real patient data
-- **No PHI (Protected Health Information)** - Ever
-- **No long-term storage** of medical content
-- All outputs require physician review before use
+- **No long-term medical storage** - Client-side only for content
+- **Physician review required** - All outputs need human verification
 
-## Project Architecture
+## Architecture
 
-### Frontend (React + Vite + TypeScript)
-- **Location**: `/frontend`
-- **Stack**: React 19, Vite, TypeScript, React Router, Firebase Auth
-- **Key Routes**: Start → Compose → Preflight → Output → Settings
-- **State**: Client-side only for medical content
-
-### Backend (Express + Vertex AI)
-- **Location**: `/backend`
-- **Stack**: Express, TypeScript, Vertex AI (Gemini), Firebase Admin
-- **Purpose**: Validate auth, call LLM, return structured MDM
-- **No PHI storage** - Metadata logging only
-
----
-
-## Development Workflow Framework
-
-### Core Workflow Pattern
-
-**Base Execution Pattern (Apply to ALL Tasks):**
 ```
-Understand → Plan (parallelization analysis) → TodoWrite(3+ tasks) → Execute → Track → Validate
+/frontend          React 19 + Vite + TypeScript + Firebase Auth
+/backend           Express + TypeScript + Vertex AI (Gemini) + Firebase Admin
 ```
 
-**Mandatory Rules:**
-- Batch operations ALWAYS parallel by default; sequential ONLY for dependencies
-- Validation gates: validate before execution, verify after completion
-- Quality checks: run `pnpm check` (frontend) or `pnpm build` (backend) before marking tasks complete
-- Context retention: maintain ≥90% understanding across operations
-- Evidence-based: all claims verifiable through testing or documentation
-- Discovery first: complete project-wide analysis before systematic changes
+| Layer | Stack | Purpose |
+|-------|-------|---------|
+| Frontend | React 19, Vite, React Router | UI with client-side-only medical content |
+| Backend | Express, Vertex AI Gemini | Auth validation, LLM calls, structured MDM |
+| Auth | Firebase Auth (Google) | User authentication |
+| Payments | Firebase Stripe Extension | Subscription management |
 
----
+### Routes
+`/` Start | `/compose` Input | `/preflight` PHI check | `/output` MDM display | `/settings` User prefs
 
-### Task Management (TodoWrite)
+### API Endpoints
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/healthz` | GET | Health check |
+| `/v1/whoami` | POST | Auth validation + user info |
+| `/v1/generate` | POST | Generate MDM from narrative |
 
-#### When to Use TodoWrite
+## Commands
 
-| Condition | Action |
-|-----------|--------|
-| 3+ steps required | TodoWrite mandatory |
-| 2+ directories affected (frontend + backend) | TodoWrite mandatory |
-| 3+ files modified | TodoWrite mandatory |
-| Quality improvement (polish, refine, enhance) | TodoWrite mandatory |
-| Simple single-step task | Skip TodoWrite |
-
-#### TodoWrite Format
-```
-Todo Structure:
-├─ content: Imperative form ("Run tests", "Fix auth bug")
-├─ activeForm: Present continuous ("Running tests", "Fixing auth bug")
-└─ status: pending | in_progress | completed
-```
-
-#### Execution Rules
-1. **ONE task in_progress at a time** - never multiple
-2. **Mark complete IMMEDIATELY** after finishing - no batching
-3. **Keep as in_progress** if blocked, errors, or incomplete
-4. **Create new task** for blockers that need resolution
-5. **Remove irrelevant tasks** entirely from list
-
-#### Completion Requirements (All Must Be True)
-- [ ] Feature fully functional
-- [ ] All dependencies implemented
-- [ ] Tests passing (if applicable)
-- [ ] No partial implementations
-- [ ] No unresolved errors
-
----
-
-### Planning Efficiency
-
-#### Pre-Execution Planning Requirements
-
-Before ANY multi-step execution:
-1. **Identify parallelizable operations** - which can run concurrently?
-2. **Map dependencies** - which must be sequential?
-3. **Plan tool combinations** - optimal MCP server selection
-4. **Estimate efficiency gains** - "3 parallel ops = 60% time saving"
-
-#### Planning Template
-```
-Phase 1: [Parallel]
-├─ Read frontend/src/routes/*.tsx (simultaneous)
-├─ Read backend/src/*.ts
-└─ Context7 lookup for React/Express patterns
-
-Phase 2: [Sequential - depends on Phase 1]
-├─ Analyze findings
-└─ Design transformation strategy
-
-Phase 3: [Parallel]
-├─ Edit frontend files (batch or simultaneous)
-├─ Edit backend files
-└─ Update tests
-```
-
-#### Anti-Pattern (NEVER DO THIS)
-```
-❌ Read file1 → Read file2 → Read file3 → analyze → edit file1 → edit file2
-```
-
----
-
-### Parallelization Strategy
-
-#### Auto-Parallel Triggers
-
-| Condition | Action |
-|-----------|--------|
-| 3+ files to read | Batch Read calls |
-| Independent operations | Run in parallel |
-| Multi-directory scope (frontend + backend) | Enable delegation |
-| Different tool types | Execute simultaneously |
-
-#### Tool Parallelization Matrix
-
-| Operation Type | Parallel Approach |
-|---------------|-------------------|
-| File reads | Single call with multiple paths |
-| Grep searches | Batch multiple patterns |
-| Multi-file edits | MultiEdit or Morphllm batch |
-| Analysis + Documentation | Sequential + Context7 simultaneously |
-| UI + API generation | Magic + native Edit simultaneously |
-
-#### Sequential-Only Conditions
-- Output of operation A is input to operation B
-- State must be verified before proceeding
-- Results determine next operation
-- Rollback capability required between steps
-
----
-
-### Tool Selection Framework
-
-#### Selection Hierarchy
-```
-MCP Servers > Native Tools > Basic Tools
-```
-
-#### MCP Server Selection Matrix
-
-| Task Type | Primary Tool | Triggers | Alternative |
-|-----------|-------------|----------|-------------|
-| UI Components | Magic MCP | /ui, /21, button, form, modal | Manual coding |
-| Library Docs | Context7 MCP | import, require, framework questions | Native knowledge |
-| Pattern Edits | Morphllm MCP | Multi-file style enforcement, bulk replace | Individual Edits |
-| Symbol Operations | Serena MCP | Rename everywhere, find references | Manual search |
-| Complex Analysis | Sequential MCP | Root cause, architecture, 3+ components | Native reasoning |
-| Browser Testing | Playwright MCP | E2E, user flows, visual validation | Unit tests |
-| Firebase/Firestore | Firebase MCP | Firestore queries, auth users, environment | Firebase Console |
-
-#### Tool Selection Decision Tree
-```
-What type of task?
-│
-├─ Code SEARCH/NAVIGATION?
-│  ├─ Symbol operations → Serena MCP
-│  ├─ Text patterns → Grep tool
-│  └─ File patterns → Glob tool
-│
-├─ Code ANALYSIS/DESIGN?
-│  ├─ Simple explanation → Native Claude
-│  ├─ Complex/multi-component → Sequential MCP
-│  ├─ Architecture/system design → Sequential MCP
-│  └─ Need official patterns → Context7 MCP
-│
-├─ Code GENERATION/EDITING?
-│  ├─ UI components/pages → /frontend-design FIRST, then implement + Playwright confirm
-│  ├─ Multi-file pattern (>3 files) → Morphllm MCP
-│  ├─ Single/few files → Native Edit
-│  └─ Framework-specific → Context7 first
-│
-├─ TESTING/VALIDATION?
-│  ├─ E2E/browser → Playwright MCP
-│  ├─ Unit/integration → pnpm test
-│  └─ Visual/accessibility → Playwright MCP
-│
-├─ SESSION MANAGEMENT?
-│  ├─ Load/save context → Serena MCP
-│  └─ Symbol understanding → Serena MCP
-│
-└─ FIREBASE/FIRESTORE OPERATIONS?
-   ├─ Read documents → Firebase MCP (firestore_get_documents)
-   ├─ Query collections → Firebase MCP (firestore_query_collection)
-   ├─ Auth user management → Firebase MCP (auth_get_users, auth_update_user)
-   ├─ Environment info → Firebase MCP (firebase_get_environment)
-   └─ Write/update documents → Admin SDK script (MCP lacks write tool)
-```
-
----
-
-### Implementation Completeness
-
-#### Non-Negotiable Rules
-
-| Rule | Description |
-|------|-------------|
-| No Partial Features | If you start, you MUST complete to working state |
-| No TODO Comments | Never leave TODO for core functionality |
-| No Mock Objects | No placeholders, fake data, or stubs |
-| No Incomplete Functions | Every function must work as specified |
-| Real Code Only | All code must be production-ready |
-
-#### Before Marking Complete Checklist
-- [ ] Feature fully functional
-- [ ] All edge cases handled
-- [ ] Error handling implemented
-- [ ] Tests written and passing
-- [ ] No TODO comments in new code
-- [ ] Lint/typecheck passing (`pnpm check`)
-
----
-
-### Scope Discipline
-
-#### Build ONLY What's Asked
-
-| Do | Don't |
-|----|-------|
-| MVP first, iterate on feedback | Add features beyond requirements |
-| Single responsibility per component | Build "just in case" functionality |
-| Simple solutions that can evolve | Over-engineer for hypotheticals |
-| Match explicit requirements | Add auth, deployment, monitoring unless asked |
-
-#### Scope Decision Flow
-```
-New feature request?
-├─ Scope clear? → NO → Ask clarifying questions first
-├─ >3 steps? → YES → TodoWrite required
-├─ Patterns exist? → YES → Follow exactly
-└─ Build ONLY the requirement, nothing more
-```
-
----
-
-### File Organization
-
-#### Placement Rules
-
-| File Type | Location |
-|-----------|----------|
-| Frontend tests | `frontend/src/__tests__/` |
-| Backend tests | `backend/src/__tests__/` (if created) |
-| Test fixtures | `frontend/src/__fixtures__/` |
-| Scripts | `scripts/` |
-| Documentation | `docs/` |
-| Claude reports/analysis | `claudedocs/` |
-| Configuration | Project root |
-
-#### Anti-Patterns (NEVER)
-- Don't scatter test files randomly in source tree
-- Don't create scripts in random locations
-- Don't leave temporary files after completion
-- Don't mix configuration file types
-
----
-
-### Quality Gates
-
-#### Pre-Commit Validation
 ```bash
 # Frontend
-cd frontend && pnpm check     # typecheck + lint + test
+cd frontend && pnpm dev          # Dev server :5173
+cd frontend && pnpm check        # typecheck + lint + test (REQUIRED before commits)
+cd frontend && pnpm build        # Production build
 
 # Backend
-cd backend && pnpm build      # TypeScript compilation
-
-# Review
-git diff                      # Review for PHI/security issues
+cd backend && pnpm dev           # Dev server :8080
+cd backend && pnpm build         # TypeScript compilation (REQUIRED before commits)
 ```
 
-#### Before Marking Task Complete
-1. All new code linted
-2. Type checking passes
-3. Relevant tests pass
-4. No console.log/debug statements left
-5. No TODO comments in new code
-6. Error handling in place
-7. **No PHI in code, comments, or logs**
-
----
-
-### Workspace Hygiene
-
-#### Clean After Every Operation
-- Remove temporary files, scripts, directories
-- Delete build artifacts and logs
-- Clean debugging outputs
-- Remove unused files before session end
-
-#### Session End Checklist
-- [ ] Temporary files removed
-- [ ] No debug statements in code
-- [ ] Git status clean (or intentionally staged)
-- [ ] Session state saved (if using Serena)
-
----
-
-### Failure Investigation
-
-#### When Errors Occur (CRITICAL)
-
-| Do | Don't |
-|----|-------|
-| Investigate root cause | Skip to workaround |
-| Debug systematically | Disable failing tests |
-| Fix underlying issue | Comment out validation |
-| Verify fix works | Assume fix worked |
-
-#### Investigation Pattern
-```
-Error occurs?
-├─ Read error message carefully
-├─ Understand what failed and why
-├─ Identify root cause (not just symptom)
-├─ Fix the underlying issue
-├─ Verify fix with test
-└─ Document if pattern might recur
-```
-
----
-
-### Session Lifecycle
-
-#### Checkpoint Pattern
-```
-/sc:load → Work → Checkpoint (30min) → /sc:save
-```
-
-#### Checkpoint Triggers
-- Task completion
-- 30-minute intervals
-- Before risky operations
-- State should be preserved
-
-#### Memory Schema (if using Serena)
-```
-plan_[timestamp]         : Overall goal statement
-phase_[1-5]             : Major milestone descriptions
-task_[phase].[number]   : Specific deliverable status
-checkpoint_[timestamp]  : Current state snapshot
-blockers                : Active impediments
-decisions               : Key architectural choices
-```
-
----
-
-### MCP Tool Chaining Workflows
-
-#### UI Feature Implementation
-```
-1. DESIGN (Sequential) - Analyze requirements, plan components
-2. BUILD (Magic) - Generate UI from patterns
-3. INTEGRATE (Context7) - Verify React/framework patterns
-4. TEST (Playwright) - Validate behavior and accessibility
-```
-
-#### Bulk Code Transformation
-```
-1. ANALYZE (Serena) - Map symbols, track dependencies
-2. PLAN (Sequential) - Design transformation strategy
-3. EXECUTE (Morphllm) - Apply bulk pattern edits
-4. VALIDATE (Sequential) - Verify completeness
-```
-
-#### Complex Bug Investigation
-```
-1. ANALYZE (Sequential) - Decompose, hypothesize, test
-2. SEARCH (Serena) - Find implementations, trace paths
-3. REFERENCE (Context7) - Check patterns, best practices
-4. VALIDATE (Playwright) - Test fix works
-```
-
-#### Firebase Data Operations
-```
-1. QUERY (Firebase MCP) - Read documents, query collections
-2. ANALYZE - Process data, identify changes needed
-3. MODIFY (Admin SDK script) - For writes, create temp script in backend/
-4. VERIFY (Firebase MCP) - Re-read to confirm changes
-```
-
-**Note**: Firebase MCP supports reads but not writes. For write operations, create a temporary Admin SDK script.
-
----
-
-### UI/UX Development Workflow (🔴 MANDATORY)
-
-#### Overview
-
-All UI/UX development in this project **MUST** follow a three-phase workflow using specialized tools. This ensures high-quality, visually verified implementations.
-
-**Required Tools:**
-| Tool | Purpose | Phase |
-|------|---------|-------|
-| `/frontend-design` skill | Design planning, component generation | PLAN + EXECUTE |
-| Playwright MCP | Visual validation, interaction testing | CONFIRM |
-
-#### Activation Triggers
-
-This workflow is **MANDATORY** when:
-- Creating new UI components or pages
-- Modifying existing UI (layout, styling, interactions)
-- Implementing design changes or enhancements
-- Adding responsive or accessibility features
-- Any visual change visible to end users
-
-#### Three-Phase Workflow
-
-```
-PLAN (frontend-design) → EXECUTE (implementation) → CONFIRM (Playwright)
-```
-
-##### Phase 1: PLAN - Design with Frontend Design Skill
-
-**Always start UI work by invoking `/frontend-design`**
-
-```bash
-# Invoke the skill for any UI task
-/frontend-design
-```
-
-The frontend-design skill:
-- Generates distinctive, production-grade UI specifications
-- Avoids generic AI aesthetics
-- Provides component architecture and styling approach
-- Considers accessibility and responsiveness from the start
-
-**Provide context:**
-- Target component/page location
-- Existing design patterns in the project
-- User requirements and constraints
-- Integration points with existing components
-
-##### Phase 2: EXECUTE - Implement the Design
-
-After receiving frontend-design output:
-1. Implement components following the generated specifications
-2. Use project conventions (React 19, TypeScript, existing component patterns)
-3. Integrate with existing styling system
-4. Ensure proper TypeScript types
-
-**Implementation Checklist:**
-- [ ] Component follows frontend-design specifications
-- [ ] TypeScript types are complete
-- [ ] Follows existing project patterns
-- [ ] Accessibility attributes included (aria-*, roles)
-- [ ] Responsive breakpoints considered
-
-##### Phase 3: CONFIRM - Validate with Playwright
-
-**No UI task is complete without Playwright validation**
-
-Required validation steps:
-
-```
-1. Start dev server: cd frontend && pnpm dev
-2. Navigate to the page/component
-3. Capture visual state with Playwright
-4. Verify interactions work correctly
-5. Check responsive behavior
-6. Validate accessibility basics
-```
-
-**Playwright Commands:**
-
-| Validation Type | Playwright Tool | Usage |
-|----------------|-----------------|-------|
-| Visual snapshot | `browser_snapshot` | Capture accessibility tree of current page |
-| Screenshot | `browser_take_screenshot` | Visual capture for review |
-| Interaction | `browser_click`, `browser_type` | Test user interactions |
-| Navigation | `browser_navigate` | Verify routing works |
-| Form testing | `browser_fill_form` | Test form submissions |
-| Responsive | `browser_resize` | Test at different viewports |
-
-**Minimum Validation Checklist:**
-- [ ] `browser_snapshot` captured and reviewed
-- [ ] Interactive elements tested (buttons, links, forms)
-- [ ] No console errors (`browser_console_messages`)
-- [ ] Responsive check at mobile (375px) and desktop (1280px)
-
-#### Tool Selection for UI Tasks
-
-```
-UI/UX Task?
-├─ New component/page → /frontend-design FIRST
-├─ Design enhancement → /frontend-design FIRST
-├─ Styling changes → /frontend-design for significant, direct edit for minor
-├─ Bug fix (visual) → Playwright to reproduce → fix → Playwright to confirm
-├─ Accessibility improvement → /frontend-design + Playwright validation
-└─ ALL UI changes → Playwright confirmation REQUIRED
-```
-
-#### Anti-Patterns (🔴 NEVER DO)
-
-| Anti-Pattern | Why It's Wrong | Correct Approach |
-|--------------|----------------|------------------|
-| Building UI without `/frontend-design` | Produces generic, inconsistent designs | Always invoke skill first |
-| Skipping Playwright validation | Can't verify visual correctness | Always validate with browser |
-| "It looks fine" without browser check | Assumptions aren't verification | Run Playwright snapshot |
-| Implementing without dev server running | Can't see changes | Start server, validate live |
-| Marking UI complete without screenshots | No visual proof | Capture and review screenshot |
-
-#### Example Workflow
-
-**Task: Add a new settings toggle component**
-
-```
-1. PLAN
-   > /frontend-design
-   > "Create a toggle switch component for the Settings page
-      that matches our existing UI patterns. Should support
-      disabled state and have proper accessibility."
-
-   [Receive component specification]
-
-2. EXECUTE
-   > Create frontend/src/components/ToggleSwitch.tsx
-   > Implement per specification
-   > Add TypeScript types
-   > Integrate into Settings.tsx
-
-3. CONFIRM
-   > cd frontend && pnpm dev
-   > browser_navigate to http://localhost:5173/settings
-   > browser_snapshot - verify component renders
-   > browser_click on toggle - verify it switches
-   > browser_resize to 375x667 - verify mobile layout
-   > browser_console_messages - verify no errors
-
-   ✅ All validations pass → Task complete
-```
-
-#### Integration with Quality Gates
-
-UI tasks have additional quality requirements:
-
-**Pre-Commit for UI Changes:**
-```bash
-# Standard checks
-cd frontend && pnpm check
-
-# PLUS: Playwright validation must have been performed
-# Document which validations were run in commit message
-```
-
-**Commit Message for UI Changes:**
-```
-feat: Add toggle switch component to Settings
-
-- Created ToggleSwitch component with accessibility support
-- Integrated into Settings page
-
-Validated with Playwright:
-- Visual snapshot confirmed
-- Click interactions tested
-- Responsive at 375px and 1280px
-- No console errors
-```
-
----
-
-### Multi-Terminal Parallel Execution
-
-#### Overview
-
-For complex multi-file operations spanning frontend and backend, use coordinated 5-terminal iTerm2 workflows. This enables true parallel execution with synchronized verification gates.
-
-**When to Use:**
-- Operations touching 10+ files across frontend/backend
-- Complex refactoring requiring coordinated changes
-- Multi-phase implementations with dependencies
-- Tasks benefiting from parallel code execution
-
-#### Terminal Setup (5 Terminals Required)
-
-1. Open iTerm2 and create exactly 5 terminal windows
-2. Name each terminal (right-click tab → Edit Session Title):
-
-| Terminal | Name | Role |
-|----------|------|------|
-| 1 | `Terminal 1` | Task executor #1 |
-| 2 | `Terminal 2` | Task executor #2 |
-| 3 | `Terminal 3` | Task executor #3 |
-| 4 | `Terminal 4` | Task executor #4 |
-| 5 | `Plan/Sync` | Phase coordinator |
-
-3. Navigate all terminals to project root: `cd /Users/jeremy/dev/proj/mdm-proj`
-
-#### Plan File Structure
-
-Create plan files at `~/.claude/plans/[descriptive-name].md`:
-
-```markdown
-# Plan: [Task Name]
-
-## Phase 1: [Phase Name]
-
-### Terminal 1
-[Specific task description with file paths]
-
-### Terminal 2
-[Specific task description with file paths]
-
-### Terminal 3
-[Specific task description with file paths]
-
-### Terminal 4
-[Specific task description with file paths]
-
-### Plan/Sync
-- [ ] Verify Terminal 1-4 completed
-- [ ] Run validation: `cd frontend && pnpm check`
-- [ ] Run validation: `cd backend && pnpm build`
-- [ ] PHI check: `git diff` for no patient data
-- [ ] Signal "Phase 1 complete" when all pass
-
-## Phase 2: [Next Phase Name]
-[Continue pattern...]
-```
-
-#### Terminal Instruction Format
-
-Each terminal receives clear, atomic instructions:
-
-```markdown
-### Terminal N
-**File**: `path/to/file.ts`
-**Task**: [Specific action]
-**Details**:
-- [Specific change 1]
-- [Specific change 2]
-**Completion Signal**: "Terminal N Phase X complete"
-```
-
-#### Execution Workflow Pattern
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     PHASE EXECUTION                          │
-├─────────────────────────────────────────────────────────────┤
-│  Terminal 1  │  Terminal 2  │  Terminal 3  │  Terminal 4   │
-│     ▼        │     ▼        │     ▼        │     ▼         │
-│  Execute     │  Execute     │  Execute     │  Execute      │
-│  Task 1      │  Task 2      │  Task 3      │  Task 4       │
-│     ▼        │     ▼        │     ▼        │     ▼         │
-│  "T1 done"   │  "T2 done"   │  "T3 done"   │  "T4 done"    │
-├─────────────────────────────────────────────────────────────┤
-│                      Plan/Sync Terminal                      │
-│  1. Verify all terminals complete                            │
-│  2. Run: cd frontend && pnpm check                           │
-│  3. Run: cd backend && pnpm build                            │
-│  4. PHI check: git diff (no patient data)                    │
-│  5. Signal: "Phase N complete - proceed to Phase N+1"        │
-├─────────────────────────────────────────────────────────────┤
-│                     NEXT PHASE BEGINS                        │
-└─────────────────────────────────────────────────────────────┘
-```
-
-#### Plan/Sync Terminal Responsibilities
-
-The Plan/Sync terminal is the **single source of truth** for phase progression:
-
-**Before Each Phase:**
-```bash
-# Announce phase start
-echo "=== PHASE N: [Name] ==="
-echo "Terminals 1-4: Execute your tasks"
-```
-
-**After Each Phase (Verification Checklist):**
-```bash
-# 1. Confirm all terminals reported completion
-# 2. Run frontend validation
-cd frontend && pnpm check
-
-# 3. Run backend validation
-cd backend && pnpm build
-
-# 4. PHI verification (CRITICAL for this project)
-git diff  # Review for any patient data
-
-# 5. Signal completion
-echo "=== PHASE N COMPLETE ==="
-echo "Proceed to Phase N+1"
-```
-
-**Validation Commands for MDM Project:**
-
-| Check | Command | Purpose |
-|-------|---------|---------|
-| Frontend full | `cd frontend && pnpm check` | typecheck + lint + test |
-| Frontend types | `cd frontend && pnpm typecheck` | TypeScript only |
-| Frontend lint | `cd frontend && pnpm lint` | ESLint only |
-| Frontend test | `cd frontend && pnpm test` | Vitest only |
-| Backend build | `cd backend && pnpm build` | TypeScript compilation |
-| PHI check | `git diff` | Review for patient data |
-| Security | `git diff \| grep -i "patient\|ssn\|dob\|mrn"` | PHI keyword scan |
-
-#### IDLE Terminals
-
-If fewer than 4 parallel tasks exist in a phase, mark unused terminals:
-
-```markdown
-### Terminal 3
-**Status**: IDLE this phase
-
-### Terminal 4
-**Status**: IDLE this phase
-```
-
-IDLE terminals should respond: "Terminal N acknowledges IDLE for Phase X"
-
-#### Rollback Protocol
-
-If validation fails after a phase:
-
-```bash
-# 1. Plan/Sync announces failure
-echo "=== PHASE N FAILED ==="
-echo "Validation error: [specific error]"
-
-# 2. All terminals execute rollback
-git checkout -- .  # Discard all changes
-
-# 3. Review and fix plan before retry
-# 4. Re-execute phase from beginning
-```
-
-**PHI-Specific Rollback (🔴 CRITICAL):**
-If PHI is detected in any change:
-1. **STOP immediately** - Do not commit
-2. Run `git checkout -- .` to discard ALL changes
-3. Review which file contained PHI
-4. Fix the source (likely prompt or input handling)
-5. Re-execute from clean state
-
-#### Key Rules Summary
-
-| Rule | Description |
-|------|-------------|
-| **Plan/Sync is Authority** | Only Plan/Sync terminal signals phase transitions |
-| **No Cross-Talk** | Terminals don't communicate directly; all coordination through Plan/Sync |
-| **Atomic Tasks** | Each terminal task must be completable independently |
-| **Verify Before Proceed** | Never start next phase without validation passing |
-| **PHI Gate (🔴)** | Every phase must pass PHI verification before proceeding |
-| **IDLE Acknowledgment** | Unused terminals must acknowledge IDLE status |
-| **Rollback Ready** | All terminals prepared to `git checkout -- .` on failure |
-
-#### Example: Frontend/Backend Feature Implementation
-
-```markdown
-# Plan: Add Usage Analytics Dashboard
-
-## Phase 1: Backend API
-
-### Terminal 1
-**File**: `backend/src/routes/analytics.ts`
-**Task**: Create analytics endpoint
-
-### Terminal 2
-**File**: `backend/src/services/analyticsService.ts`
-**Task**: Create analytics service
-
-### Terminal 3
-**Status**: IDLE this phase
-
-### Terminal 4
-**Status**: IDLE this phase
-
-### Plan/Sync
-- [ ] T1, T2 complete
-- [ ] `cd backend && pnpm build` passes
-- [ ] `git diff` shows no PHI
-- [ ] Signal "Phase 1 complete"
-
-## Phase 2: Frontend Components
-
-### Terminal 1
-**File**: `frontend/src/components/AnalyticsDashboard.tsx`
-**Task**: Create dashboard component
-
-### Terminal 2
-**File**: `frontend/src/hooks/useAnalytics.ts`
-**Task**: Create analytics hook
-
-### Terminal 3
-**File**: `frontend/src/routes/Analytics.tsx`
-**Task**: Create analytics route
-
-### Terminal 4
-**File**: `frontend/src/lib/analytics.ts`
-**Task**: Create analytics utilities
-
-### Plan/Sync
-- [ ] T1-T4 complete
-- [ ] `cd frontend && pnpm check` passes
-- [ ] `git diff` shows no PHI
-- [ ] Signal "Phase 2 complete"
-```
-
----
-
-### Resource Management
-
-#### Green Zone (0-75% Context Usage)
-- Full MCP access
-- Parallel execution (3+ concurrent)
-- Deep analysis available
-- Large batch operations OK
-
-#### Yellow Zone (75-85%)
-- High-priority operations only
-- Reduced verbosity
-- Defer non-critical tasks
-- Focus on critical path
-
-#### Red Zone (85%+)
-- Essential operations only
-- Minimal output
-- Sequential execution
-- Checkpoint before continuing
-
----
-
-### Quick Reference Card
-
-#### Rule Priority
-
-| Priority | Type | Examples |
-|----------|------|----------|
-| 🔴 CRITICAL | Never compromise | Git safety, root cause analysis, security, **no PHI** |
-| 🟡 IMPORTANT | Strong preference | TodoWrite, completeness, scope discipline |
-| 🟢 RECOMMENDED | When practical | Parallelization, tool optimization |
-
-#### Common Workflow Triggers
-
-| Condition | Action |
-|-----------|--------|
-| 3+ steps | TodoWrite + planning |
-| 3+ files | Batch operations |
-| Pattern across files | Morphllm |
-| Symbol operations | Serena |
-| UI components/pages | /frontend-design → implement → Playwright confirm |
-| Complex analysis | Sequential |
-| Browser testing | Playwright |
-| Framework docs | Context7 |
-
-#### Pre-Action Checklist
-- [ ] Git status checked
-- [ ] Branch is feature/* (not main)
-- [ ] Scope is clear
-- [ ] TodoWrite created (if 3+ steps)
-- [ ] Parallelization planned
-- [ ] Tools selected
-- [ ] **PHI check: no patient data**
-- [ ] **For UI tasks: /frontend-design invoked**
-- [ ] **For UI tasks: Playwright validation planned**
-
----
-
-## Development Setup
-
-### Prerequisites
-- Node.js 18+ and pnpm
-- Firebase project configured
-- Google Cloud project with Vertex AI enabled
-
-### Quick Start
-```bash
-# Install dependencies
-cd frontend && pnpm install
-cd ../backend && pnpm install
-
-# Run development servers
-cd frontend && pnpm dev    # Frontend on :5173
-cd backend && pnpm dev     # Backend on :8080
-```
-
-## Key Commands
-
-### Frontend Commands
-```bash
-cd frontend
-pnpm dev          # Start dev server on :5173
-pnpm build        # Production build
-pnpm lint         # Run ESLint
-pnpm lint:fix     # Fix lint issues automatically
-pnpm typecheck    # TypeScript type checking
-pnpm test         # Run tests once
-pnpm test:watch   # Run tests in watch mode
-pnpm format       # Format code with Prettier
-pnpm check        # Full validation (typecheck + lint + test)
-pnpm preview      # Preview production build locally
-```
-
-### Backend Commands
-```bash
-cd backend
-pnpm dev          # Start dev server with hot reload (tsx watch)
-pnpm build        # Compile TypeScript to dist/
-pnpm start        # Run production build from dist/
-```
-
-## Critical Files & Patterns
-
-### Medical Logic
-- **Dictation Guide**: `docs/mdm-gen-guide.md` - Core prompting logic
-- **PRD**: `docs/prd.md` - Product requirements and constraints
-- **Prompt Builder**: `backend/src/promptBuilder.ts` - LLM prompt construction
-- **Output Schema**: `backend/src/outputSchema.ts` - MDM structure validation
-
-### Components
-- **DictationGuide**: Shows inline guidance for physicians
-- **Checklist**: Pre-submission PHI verification
-- **Output**: Formatted MDM display with copy functionality
-
-### Security Patterns
+## Critical Files
+
+### Medical Logic (Read Before Modifying MDM Behavior)
+| File | Purpose |
+|------|---------|
+| `docs/mdm-gen-guide.md` | Core prompting logic and MDM template |
+| `docs/prd.md` | Product requirements and constraints |
+| `backend/src/promptBuilder.ts` | LLM prompt construction |
+| `backend/src/outputSchema.ts` | MDM structure validation |
+
+### Key Components
+- `frontend/src/components/DictationGuide.tsx` - Inline physician guidance
+- `frontend/src/components/Checklist.tsx` - Pre-submission PHI verification
+- `frontend/src/routes/Output.tsx` - MDM display with copy functionality
+
+## Security Patterns
+
+### API Route Template (6-Step Pattern)
+Every backend route MUST follow:
 ```typescript
-// Always validate auth tokens
-const idToken = req.headers.authorization?.split('Bearer ')[1];
-const decodedToken = await admin.auth().verifyIdToken(idToken);
-
-// Never log medical content
-console.log('Request processed', { userId, timestamp }); // OK
-console.log('MDM content', mdmText); // NEVER DO THIS
-
-// Environment variables only
-const API_KEY = process.env.VERTEX_API_KEY; // Never hardcode
-```
-
-### API Route Pattern (Security-First Template)
-
-Every Express API route MUST follow this 6-step pattern:
-
-```typescript
-router.post('/v1/endpoint', async (req: Request, res: Response) => {
+router.post('/v1/endpoint', async (req, res) => {
   try {
-    // 1. AUTHENTICATE - Require valid Firebase token
+    // 1. AUTHENTICATE
     const idToken = req.headers.authorization?.split('Bearer ')[1];
     if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const userId = decodedToken.uid;
+    const decoded = await admin.auth().verifyIdToken(idToken);
 
-    // 2. VALIDATE - Parse and validate request body
-    const { narrative } = req.body;
-    if (!narrative || typeof narrative !== 'string') {
-      return res.status(400).json({ error: 'Invalid request body' });
-    }
+    // 2. VALIDATE request body
+    // 3. AUTHORIZE (check subscription/permissions)
+    // 4. EXECUTE core operation
+    // 5. AUDIT - log metadata only (NEVER log medical content)
+    console.log({ userId, timestamp, action }); // OK
+    // console.log({ narrative, mdmText }); // NEVER
 
-    // 3. AUTHORIZE - Verify user permissions/subscription
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) return res.status(403).json({ error: 'User not found' });
-
-    // 4. EXECUTE - Perform the core operation
-    const result = await performOperation(narrative);
-
-    // 5. AUDIT - Log action (NEVER log PHI/medical content!)
-    console.log({ userId, timestamp: new Date().toISOString(), action: 'operation' });
-
-    // 6. RESPOND - Return the result
-    return res.status(200).json(result);
+    // 6. RESPOND
+    return res.json(result);
   } catch (error) {
-    console.error('API error', { error: error.message, timestamp: new Date().toISOString() });
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal error' });
   }
 });
 ```
 
-#### Error Handling Matrix
-
-| Error Type | HTTP Status | When to Use |
-|-----------|-------------|------------|
-| AuthError | 401 | Missing or invalid Firebase token |
-| ForbiddenError | 403 | User lacks permission or subscription |
-| NotFoundError | 404 | Resource doesn't exist |
-| ValidationError | 400 | Invalid request data |
-| RateLimitError | 429 | Too many requests |
-
-#### Error Message Rules (🔴 CRITICAL)
-
-Error messages must NEVER include:
-- Stack traces in production
-- Database query details
-- Medical/PHI content
-- Internal system paths
+### Error Messages
+Never include: stack traces, database queries, medical/PHI content, internal paths
 
 ## MDM-Specific Requirements
 
-### Differential Diagnosis Approach
-- **Worst-first mentality**: Always consider life-threatening conditions first
-- **EM-specific**: Tailored to Emergency Medicine practice patterns
-- **Classification system**: Use proper problem classification (see guide)
+### Differential Diagnosis
+- **Worst-first mentality**: Life-threatening conditions first (EM standard)
+- **Problem classification**: Use classes from `docs/mdm-gen-guide.md`
+- **Risk stratification tools**: HEART, PERC, Wells, PECARN, etc.
 
-### Output Format
-- Must be **copy-pastable** without formatting issues
-- Include all required MDM sections
+### Output Requirements
+- **Copy-pastable** without formatting issues
+- All required MDM sections present
 - Explicit defaults for missing information
-- Clear review warnings
-
-### Input Handling
-```typescript
-// Pre-submission checks
-- Confirm no PHI checkbox
-- Token estimation
-- Subscription validation
-- Size/rate limiting
-```
-
-## Testing & Validation
-
-### Running Tests
-```bash
-# Frontend - Run all tests
-cd frontend && pnpm test
-
-# Frontend - Run tests in watch mode
-cd frontend && pnpm test:watch
-
-# Frontend - Run a single test file
-cd frontend && pnpm test src/__tests__/app.test.tsx
-```
-
-### Before Commits
-```bash
-# Frontend - Full validation suite
-cd frontend && pnpm check  # Runs typecheck, lint, and tests
-
-# Backend - TypeScript compilation
-cd backend && pnpm build   # Ensures TypeScript compilation
-
-# Both
-git diff  # Review all changes for PHI/security issues
-```
-
-### Test Patterns
-- Component tests in `frontend/src/__tests__/`
-- Use existing test patterns (React Testing Library)
-- Mock Firebase services in tests
-- Never use real medical data in tests
-
-## Common Tasks
-
-### Adding a New Route
-1. Create component in `frontend/src/routes/`
-2. Add to router configuration
-3. Follow existing route patterns (Layout wrapper)
-
-### Modifying MDM Output
-1. Update `backend/src/outputSchema.ts` for structure
-2. Modify `backend/src/promptBuilder.ts` for generation
-3. Update frontend display in `Output.tsx`
-
-### Updating Dependencies
-```bash
-# Use pnpm for consistency
-cd frontend && pnpm update
-cd backend && pnpm update
-```
+- "Physician must review" disclaimer always included
 
 ## Environment Variables
 
-### Frontend (.env)
+### Frontend (`frontend/.env`)
 ```env
 VITE_FIREBASE_API_KEY=
 VITE_FIREBASE_AUTH_DOMAIN=
 VITE_FIREBASE_PROJECT_ID=
-VITE_API_BASE_URL=http://localhost:8080  # Backend URL
+VITE_API_BASE_URL=http://localhost:8080
 ```
 
-### Backend (.env)
+### Backend (`backend/.env`)
 ```env
 PORT=8080
-GOOGLE_APPLICATION_CREDENTIALS=  # Service account key path
-PROJECT_ID=                      # GCP project ID
-VERTEX_LOCATION=us-central1      # Vertex AI location
+GOOGLE_APPLICATION_CREDENTIALS=
+PROJECT_ID=
+VERTEX_LOCATION=us-central1
 ```
 
-### Stripe Configuration (.envrc - using direnv)
-This project uses [direnv](https://direnv.net/) for managing Stripe credentials securely:
+### Stripe (`.envrc` via direnv)
 ```env
-export STRIPE_SECRET_KEY="sk_test_..."      # Stripe secret key (test mode)
-export STRIPE_PUBLISHABLE_KEY="pk_test_..." # Stripe publishable key (test mode)
-export STRIPE_WEBHOOK_SECRET="whsec_..."    # Webhook endpoint secret
+export STRIPE_SECRET_KEY="sk_test_..."
+export STRIPE_WEBHOOK_SECRET="whsec_..."
 ```
 
-**Note**: The `.envrc` file is loaded automatically when entering the project directory if direnv is installed and allowed (`direnv allow`)
+## Stripe Integration
 
-### Production Secrets Management
+Firebase Stripe Extension manages subscriptions via Firestore:
+- `customers/{uid}/checkout_sessions` - Payment sessions
+- `customers/{uid}/subscriptions` - Active subscriptions
+- `products` / `prices` - Synced from Stripe dashboard
 
-**IMPORTANT**: Never commit real credentials to the repository. Use the following approaches:
+**Tiers**: Free (10/mo) | Pro (250/mo) | Enterprise (1000/mo)
 
-#### Local Development
-1. Copy `backend/.env.example` to `backend/.env`
-2. Fill in your actual credentials
-3. Use `direnv` for Stripe keys (`.envrc`)
-4. Both files are in `.gitignore`
+## Project-Specific Quality Gates
 
-#### Cloud Run Deployment
-Use GCP Secret Manager for production secrets:
-```bash
-# Create secrets
-gcloud secrets create firebase-sa-key --data-file=service-account.json
-gcloud secrets create stripe-secret-key --data-file=-  # paste key, Ctrl+D
+### Pre-Commit Checklist
+- [ ] `cd frontend && pnpm check` passes
+- [ ] `cd backend && pnpm build` passes
+- [ ] `git diff` reviewed - **NO PHI in any changes**
+- [ ] No medical content in logs or console statements
 
-# Grant Cloud Run access
-gcloud secrets add-iam-policy-binding firebase-sa-key \
-  --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
+### PHI Detection Keywords
+If `git diff` shows any of these, STOP and review:
+`patient`, `ssn`, `dob`, `mrn`, `name`, `address`, `phone`, specific ages, dates of birth
 
-# Deploy with secrets mounted as environment variables
-gcloud run deploy mdm-backend \
-  --set-secrets="GOOGLE_APPLICATION_CREDENTIALS_JSON=firebase-sa-key:latest" \
-  --set-secrets="STRIPE_SECRET_KEY=stripe-secret-key:latest"
-```
+## File Organization
 
-#### Required Production Environment Variables
-| Variable | Description | Source |
-|----------|-------------|--------|
-| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | Firebase SA key (JSON string) | Secret Manager |
-| `STRIPE_SECRET_KEY` | Stripe API secret key | Secret Manager |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | Secret Manager |
-| `PROJECT_ID` | GCP project ID | Cloud Run automatic |
-| `FRONTEND_URL` | Production frontend URL for CORS | Environment variable |
-| `PORT` | Server port (default 8080) | Cloud Run automatic |
+| Type | Location |
+|------|----------|
+| Frontend tests | `frontend/src/__tests__/` |
+| Test fixtures | `frontend/src/__fixtures__/` |
+| Backend services | `backend/src/services/` |
+| Documentation | `docs/` |
+| Scripts | `scripts/` |
 
-## Security Checklist
+## Common Tasks
 
-- [ ] No PHI in code, comments, or logs
-- [ ] All API keys in environment variables
-- [ ] Firebase Auth token validation on all API calls
-- [ ] Input sanitization and size limits
-- [ ] No medical content persistence
-- [ ] HTTPS only in production
-- [ ] Rate limiting implemented
-
-## Error Handling
-
-### User-Facing Errors
-```typescript
-// Provide helpful, non-technical messages
-throw new Error('Unable to generate MDM. Please try again.');
-// Not: "Vertex AI API call failed with 503"
-```
-
-### Logging
-```typescript
-// Log technical details for debugging
-console.error('Vertex API error', { 
-  error: error.message,
-  userId,
-  timestamp,
-  // Never include: patientData, mdmContent, narrative
-});
-```
-
-## Git Workflow
-
-### Session Start (ALWAYS - First Command Every Session)
-```bash
-git status && git branch
-```
-
-### Git Safety Rules (🔴 CRITICAL)
-1. **NEVER** work directly on main/master
-2. **ALWAYS** `git diff` before committing
-3. **CREATE** restore points before risky operations
-4. **VERIFY** `.gitignore` includes sensitive patterns
-5. **CHECK** `git status` before every commit
-6. **ASK** if unsure whether file is safe to commit (especially for PHI concerns)
-
-### Branch Strategy
-```
-main                    # Production - never work directly here
-└── feature/*           # All development work
-    └── fix/*           # Bug fixes
-    └── docs/*          # Documentation only
-    └── refactor/*      # Code refactoring
-```
-
-### Feature Branch Workflow
-```bash
-# 1. Start from main
-git checkout main
-git pull origin main
-
-# 2. Create feature branch
-git checkout -b feature/my-feature
-
-# 3. Code, commit, test
-
-# 4. Merge back (solo developer)
-git checkout main
-git merge feature/my-feature
-git push origin main
-
-# 5. Cleanup
-git branch -d feature/my-feature
-```
-
-### Commit Messages
-```bash
-# Good - descriptive, references context
-git commit -m "Add PHI detection to preflight check"
-git commit -m "Fix token counting for long narratives"
-
-# Bad - vague, no context
-git commit -m "Updates"
-git commit -m "Fixed stuff"
-```
-
-### Pre-Push Checklist
-1. Run `pnpm check` in frontend
-2. Run `pnpm build` in backend
-3. Review for PHI/security issues (`git diff`)
-4. Update tests if logic changed
-5. Verify no sensitive data in commits
-
-## API Endpoints
-
-### Backend Endpoints
-- **GET /healthz** - Health check endpoint
-- **POST /v1/whoami** - Validate user authentication and get user info
-  - Requires: `userIdToken` (Firebase ID token)
-- **POST /v1/generate** - Generate MDM from narrative
-  - Requires: `narrative` (string), `userIdToken` (Firebase ID token)
-  - Returns: Structured MDM response
-
-### API Response Structure
-The `/v1/generate` endpoint returns MDM data structured according to `backend/src/outputSchema.ts`, including:
-- Problem classifications
-- Differential diagnoses
-- Data reviewed
-- Clinical reasoning
-- MDM complexity level
-
-## Router Configuration
-
-### Frontend Routes (React Router)
-All routes are wrapped in the `Layout` component and require authentication:
-- `/` - Start page (landing/login)
-- `/compose` - Narrative input
-- `/preflight` - Pre-submission checklist
-- `/output` - MDM display and copy
-- `/settings` - User settings and subscription
-
-## Stripe Payment Integration
-
-### Overview
-The project uses Firebase Stripe Extension for subscription management. This provides secure payment processing without handling sensitive payment data directly.
-
-### Architecture
-1. **Firebase Stripe Extension** - Installed in Firebase project (test mode)
-2. **Firestore Collections** - Managed by extension:
-   - `customers/{uid}` - Customer records linked to Stripe
-   - `customers/{uid}/checkout_sessions` - Payment session management
-   - `customers/{uid}/subscriptions` - Active subscriptions
-   - `products` - Stripe products synced from dashboard
-   - `prices` - Pricing information for products
-3. **No Direct API Calls** - Frontend only writes to Firestore; extension handles Stripe API
-
-### Subscription Tiers
-- **Free**: 10 MDMs/month, basic features
-- **Pro**: 250 MDMs/month, priority processing, export formats
-- **Enterprise**: 1000 MDMs/month, API access, team features
-
-### Payment Flow
-1. User selects plan → Creates checkout session document
-2. Extension generates Stripe checkout URL
-3. User redirected to Stripe-hosted payment page
-4. Stripe webhooks update subscription status
-5. Backend enforces usage limits based on plan
-
-### Key Files
-- `frontend/src/lib/stripe.ts` - Stripe helper functions
-- `frontend/src/hooks/useSubscription.ts` - Subscription state management
-- `frontend/src/components/PricingPlans.tsx` - Plan selection UI
-- `backend/src/services/userService.ts` - Usage tracking and plan features
-
-## Deployment Notes
-
-- Frontend: Deploy to Firebase Hosting or similar CDN
-- Backend: Cloud Run with proper secrets management
-- Use API Gateway for rate limiting and auth
-- Enable CORS for production domains only
-- Monitor token usage and costs
-- Firebase configuration in `firebase.json` for Firestore rules and indexes
-
-## Resources
-
-- [Vertex AI Documentation](https://cloud.google.com/vertex-ai/docs)
-- [Firebase Auth Setup](https://firebase.google.com/docs/auth)
-- [EM Documentation Standards](docs/mdm-gen-guide.md)
-- [Product Requirements](docs/prd.md)
+| Task | Action |
+|------|--------|
+| Add route | Create in `frontend/src/routes/`, add to router |
+| Modify MDM output | Update `outputSchema.ts` → `promptBuilder.ts` → `Output.tsx` |
+| Change prompting | Edit `docs/mdm-gen-guide.md` |
 
 ## Important Reminders
 
-1. **This is a medical tool** - Accuracy and safety are paramount
-2. **No PHI ever** - This is non-negotiable
+1. **Medical tool** - Accuracy and safety are paramount
+2. **NO PHI** - This is non-negotiable, check every diff
 3. **Educational only** - Always display appropriate disclaimers
-4. **Physician review required** - Never suggest automated clinical decisions
+4. **Physician review** - Never suggest automated clinical decisions
 5. **EM-specific** - Maintain worst-first differential approach
-
-## Support & Questions
-
-For questions about:
-- Medical logic: Review `docs/mdm-gen-guide.md`
-- Product features: Check `docs/prd.md`
-- Technical implementation: Follow existing patterns in codebase
