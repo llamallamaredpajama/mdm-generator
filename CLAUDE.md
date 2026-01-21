@@ -165,6 +165,7 @@ MCP Servers > Native Tools > Basic Tools
 | Symbol Operations | Serena MCP | Rename everywhere, find references | Manual search |
 | Complex Analysis | Sequential MCP | Root cause, architecture, 3+ components | Native reasoning |
 | Browser Testing | Playwright MCP | E2E, user flows, visual validation | Unit tests |
+| Firebase/Firestore | Firebase MCP | Firestore queries, auth users, environment | Firebase Console |
 
 #### Tool Selection Decision Tree
 ```
@@ -192,9 +193,16 @@ What type of task?
 │  ├─ Unit/integration → pnpm test
 │  └─ Visual/accessibility → Playwright MCP
 │
-└─ SESSION MANAGEMENT?
-   ├─ Load/save context → Serena MCP
-   └─ Symbol understanding → Serena MCP
+├─ SESSION MANAGEMENT?
+│  ├─ Load/save context → Serena MCP
+│  └─ Symbol understanding → Serena MCP
+│
+└─ FIREBASE/FIRESTORE OPERATIONS?
+   ├─ Read documents → Firebase MCP (firestore_get_documents)
+   ├─ Query collections → Firebase MCP (firestore_query_collection)
+   ├─ Auth user management → Firebase MCP (auth_get_users, auth_update_user)
+   ├─ Environment info → Firebase MCP (firebase_get_environment)
+   └─ Write/update documents → Admin SDK script (MCP lacks write tool)
 ```
 
 ---
@@ -380,6 +388,16 @@ decisions               : Key architectural choices
 3. REFERENCE (Context7) - Check patterns, best practices
 4. VALIDATE (Playwright) - Test fix works
 ```
+
+#### Firebase Data Operations
+```
+1. QUERY (Firebase MCP) - Read documents, query collections
+2. ANALYZE - Process data, identify changes needed
+3. MODIFY (Admin SDK script) - For writes, create temp script in backend/
+4. VERIFY (Firebase MCP) - Re-read to confirm changes
+```
+
+**Note**: Firebase MCP supports reads but not writes. For write operations, create a temporary Admin SDK script.
 
 ---
 

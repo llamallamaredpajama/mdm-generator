@@ -3,7 +3,7 @@ import admin from 'firebase-admin'
 // Defer Firestore initialization to avoid initialization order issues
 const getDb = () => admin.firestore()
 
-export type SubscriptionPlan = 'free' | 'pro' | 'enterprise'
+export type SubscriptionPlan = 'free' | 'pro' | 'enterprise' | 'admin'
 
 export interface UserDocument {
   uid: string
@@ -54,6 +54,14 @@ export const PLAN_FEATURES: Record<SubscriptionPlan, UserDocument['features']> =
   enterprise: {
     maxRequestsPerMonth: 1000,
     maxTokensPerRequest: 16000,
+    priorityProcessing: true,
+    exportFormats: ['text', 'pdf', 'docx', 'json', 'hl7'],
+    apiAccess: true,
+    teamMembers: -1 // unlimited
+  },
+  admin: {
+    maxRequestsPerMonth: Number.MAX_SAFE_INTEGER, // Effectively unlimited
+    maxTokensPerRequest: 32000,
     priorityProcessing: true,
     exportFormats: ['text', 'pdf', 'docx', 'json', 'hl7'],
     apiAccess: true,

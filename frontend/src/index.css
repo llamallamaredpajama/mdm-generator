@@ -141,6 +141,15 @@ textarea,
 select {
   font-family: inherit;
   font-size: var(--font-size-base);
+  /* Explicit dark text on light background for form inputs */
+  /* Components can override for dark-themed sections */
+  color: #1a1a1a;
+  background-color: #ffffff;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #999999;
 }
 
 /* ─────────────────────────────────────────
