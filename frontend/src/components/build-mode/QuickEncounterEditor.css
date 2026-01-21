@@ -198,7 +198,7 @@
   font-family: inherit;
   font-size: var(--font-size-base);
   line-height: var(--line-height-relaxed);
-  color: var(--color-text-primary);
+  color: #1a1a1a;
   resize: none;
   transition: border-color var(--transition-fast);
 }
