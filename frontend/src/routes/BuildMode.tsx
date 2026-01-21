@@ -32,7 +32,7 @@ export default function BuildMode() {
   const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null)
 
   // Fetch encounters from Firestore
-  const { encounters, loading, error, createEncounter, deleteEncounter } = useEncounterList()
+  const { encounters, loading, error, createEncounter, deleteEncounter, clearAllEncounters } = useEncounterList()
 
   /**
    * Handle encounter selection from carousel
@@ -135,6 +135,7 @@ export default function BuildMode() {
           onSelectEncounter={handleSelectEncounter}
           onCreateEncounter={createEncounter}
           onDeleteEncounter={deleteEncounter}
+          onClearAllEncounters={clearAllEncounters}
         />
       </main>
     </div>

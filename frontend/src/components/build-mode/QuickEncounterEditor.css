@@ -289,7 +289,7 @@
   margin: 0;
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  color: #1a1a1a;
 }
 
 .quick-editor__copy-btn {
@@ -334,7 +334,7 @@
   font-family: inherit;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
-  color: var(--color-text-primary);
+  color: #1a1a1a;
   white-space: pre-wrap;
   word-wrap: break-word;
 }

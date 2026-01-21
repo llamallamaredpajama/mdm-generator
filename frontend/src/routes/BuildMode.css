@@ -474,7 +474,7 @@
 .build-mode-page .section-textarea {
   background: var(--color-bg-primary);
   border-color: var(--color-border-subtle);
-  color: var(--color-text-primary);
+  color: #212529;
 }
 
 .build-mode-page .section-textarea:focus {

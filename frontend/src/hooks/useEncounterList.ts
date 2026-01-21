@@ -6,6 +6,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  writeBatch,
   type QuerySnapshot,
   type DocumentData,
   Timestamp,
@@ -85,6 +86,8 @@ export interface UseEncounterListReturn {
   createEncounter: (roomNumber: string, chiefComplaint: string) => Promise<string>
   /** Delete an encounter (only allowed for draft/archived status) */
   deleteEncounter: (encounterId: string) => Promise<void>
+  /** Delete all encounters in the current mode (batch delete) */
+  clearAllEncounters: () => Promise<void>
 }
 
 /**
@@ -256,11 +259,35 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
     [user]
   )
 
+  /**
+   * Deletes all encounters in the current mode using a batch operation.
+   * Only deletes encounters visible in the current list (filtered by mode).
+   */
+  const clearAllEncounters = useCallback(async (): Promise<void> => {
+    if (!user) {
+      throw new Error('User must be authenticated to clear encounters')
+    }
+
+    if (encounters.length === 0) {
+      return // Nothing to delete
+    }
+
+    const batch = writeBatch(db)
+
+    encounters.forEach((enc) => {
+      const docRef = doc(db, 'customers', user.uid, 'encounters', enc.id)
+      batch.delete(docRef)
+    })
+
+    await batch.commit()
+  }, [user, encounters])
+
   return {
     encounters,
     loading,
     error,
     createEncounter,
     deleteEncounter,
+    clearAllEncounters,
   }
 }

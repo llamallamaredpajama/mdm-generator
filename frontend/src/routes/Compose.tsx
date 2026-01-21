@@ -100,7 +100,7 @@ export default function Compose() {
   const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null)
 
   // Fetch encounters from Firestore, filtered by mode
-  const { encounters, loading, error, createEncounter, deleteEncounter } = useEncounterList(mode)
+  const { encounters, loading, error, createEncounter, deleteEncounter, clearAllEncounters } = useEncounterList(mode)
 
   /**
    * Handle encounter selection from carousel
@@ -212,6 +212,7 @@ export default function Compose() {
           onSelectEncounter={handleSelectEncounter}
           onCreateEncounter={createEncounter}
           onDeleteEncounter={deleteEncounter}
+          onClearAllEncounters={clearAllEncounters}
           mode={mode}
         />
       </main>

@@ -150,7 +150,7 @@
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-secondary);
   border-radius: var(--radius-md);
-  color: var(--color-text-primary);
+  color: #212529;
   font-family: inherit;
   font-size: var(--font-size-base);
   line-height: var(--line-height-relaxed);
