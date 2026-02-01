@@ -312,3 +312,42 @@
     margin: 0 auto;
   }
 }
+
+@media (max-width: 480px) {
+  .output-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .output-code {
+    padding: var(--space-md);
+  }
+
+  .output-code pre {
+    font-size: var(--font-size-xs);
+  }
+
+  .output-notice {
+    padding: var(--space-md);
+  }
+
+  .output-collapsible summary {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .output-collapsible-content {
+    padding: var(--space-md);
+  }
+
+  .output-empty {
+    padding: var(--space-xl);
+  }
+
+  .output-tabs {
+    gap: 0;
+  }
+
+  .output-tab {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+  }
+}

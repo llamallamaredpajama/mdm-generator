@@ -1,12 +1,51 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, signInWithGoogle } from '../lib/firebase'
 import UserAccountDropdown from '../components/UserAccountDropdown'
 import './Start.css'
 
+function useScrollDots(itemCount: number, childSelector?: string) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
+
+  useEffect(() => {
+    const container = scrollRef.current
+    if (!container) return
+    const handleScroll = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = container
+      const maxScroll = scrollWidth - clientWidth
+      if (maxScroll <= 0) return setActiveIndex(0)
+      const index = Math.round((scrollLeft / maxScroll) * (itemCount - 1))
+      setActiveIndex(index)
+    }
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [itemCount])
+
+  const scrollTo = useCallback((index: number) => {
+    const container = scrollRef.current
+    if (!container) return
+    const children = childSelector
+      ? Array.from(container.querySelectorAll(childSelector))
+      : Array.from(container.children)
+    const child = children[index] as HTMLElement
+    if (child) {
+      container.scrollTo({
+        left: child.offsetLeft - container.offsetLeft,
+        behavior: 'smooth',
+      })
+    }
+  }, [childSelector])
+
+  return { scrollRef, activeIndex, scrollTo }
+}
+
 export default function Start() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  
+  const { scrollRef: featuresRef, activeIndex: featuresActive, scrollTo: featuresScrollTo } = useScrollDots(4)
+  const { scrollRef: stepsRef, activeIndex: stepsActive, scrollTo: stepsScrollTo } = useScrollDots(3, '.step')
+
   return (
     <div className="landing-page">
       {/* Navigation Bar */}
@@ -94,43 +133,58 @@ export default function Start() {
       <section className="features">
         <div className="container">
           <h2 className="section-title">Built for Emergency Medicine</h2>
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+          <div className="scroll-section">
+            <div className="features-grid" ref={featuresRef}>
+              <div className="feature-card">
+                <div className="feature-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3>Rapid Documentation</h3>
+                <p>Generate comprehensive MDM documentation in seconds, not minutes</p>
               </div>
-              <h3>Rapid Documentation</h3>
-              <p>Generate comprehensive MDM documentation in seconds, not minutes</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+              <div className="feature-card">
+                <div className="feature-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3>Worst-First Approach</h3>
+                <p>Automatically prioritizes life-threatening differentials for EM practice</p>
               </div>
-              <h3>Worst-First Approach</h3>
-              <p>Automatically prioritizes life-threatening differentials for EM practice</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+              <div className="feature-card">
+                <div className="feature-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h3>PHI Protected</h3>
+                <p>Educational tool with no PHI storage - your data never leaves your browser</p>
               </div>
-              <h3>PHI Protected</h3>
-              <p>Educational tool with no PHI storage - your data never leaves your browser</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+              <div className="feature-card">
+                <div className="feature-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h3>AI-Powered</h3>
+                <p>Leverages advanced LLM technology trained on EM documentation standards</p>
               </div>
-              <h3>AI-Powered</h3>
-              <p>Leverages advanced LLM technology trained on EM documentation standards</p>
             </div>
+            <div className="scroll-dots">
+              {[0, 1, 2, 3].map((i) => (
+                <button
+                  key={i}
+                  className={`scroll-dot${featuresActive === i ? ' active' : ''}`}
+                  onClick={() => featuresScrollTo(i)}
+                  aria-label={`Go to feature ${i + 1}`}
+                />
+              ))}
+            </div>
+            <span className="scroll-hint">
+              Swipe <span className="scroll-hint-arrow">&rarr;</span>
+            </span>
           </div>
         </div>
       </section>
@@ -139,24 +193,39 @@ export default function Start() {
       <section className="how-it-works">
         <div className="container">
           <h2 className="section-title">Simple Three-Step Process</h2>
-          <div className="steps">
-            <div className="step">
-              <div className="step-number">1</div>
-              <h3>Dictate Your Narrative</h3>
-              <p>Enter your clinical encounter in natural language</p>
+          <div className="scroll-section">
+            <div className="steps" ref={stepsRef}>
+              <div className="step">
+                <div className="step-number">1</div>
+                <h3>Dictate Your Narrative</h3>
+                <p>Enter your clinical encounter in natural language</p>
+              </div>
+              <div className="step-connector"></div>
+              <div className="step">
+                <div className="step-number">2</div>
+                <h3>Confirm Safety</h3>
+                <p>Verify no PHI is included</p>
+              </div>
+              <div className="step-connector"></div>
+              <div className="step">
+                <div className="step-number">3</div>
+                <h3>Review & Copy</h3>
+                <p>Get formatted MDM ready for your EMR</p>
+              </div>
             </div>
-            <div className="step-connector"></div>
-            <div className="step">
-              <div className="step-number">2</div>
-              <h3>Confirm Safety</h3>
-              <p>Verify no PHI is included</p>
+            <div className="scroll-dots">
+              {[0, 1, 2].map((i) => (
+                <button
+                  key={i}
+                  className={`scroll-dot${stepsActive === i ? ' active' : ''}`}
+                  onClick={() => stepsScrollTo(i)}
+                  aria-label={`Go to step ${i + 1}`}
+                />
+              ))}
             </div>
-            <div className="step-connector"></div>
-            <div className="step">
-              <div className="step-number">3</div>
-              <h3>Review & Copy</h3>
-              <p>Get formatted MDM ready for your EMR</p>
-            </div>
+            <span className="scroll-hint">
+              Swipe <span className="scroll-hint-arrow">&rarr;</span>
+            </span>
           </div>
         </div>
       </section>

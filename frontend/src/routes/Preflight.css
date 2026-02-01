@@ -272,3 +272,73 @@
   width: 18px;
   height: 18px;
 }
+
+/* ─────────────────────────────────────────
+   Responsive Styles
+   ───────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .preflight-page {
+    padding: var(--space-lg);
+  }
+
+  .preflight-title {
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--space-xl);
+  }
+
+  .preflight-warning-card {
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+  }
+
+  .preflight-warning-text {
+    margin-bottom: var(--space-lg);
+  }
+
+  .preflight-actions {
+    flex-direction: column;
+  }
+
+  .preflight-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .preflight-page {
+    padding: var(--space-md);
+  }
+
+  .preflight-title {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-lg);
+  }
+
+  .preflight-warning-card {
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+  }
+
+  .preflight-warning-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .preflight-checkbox-label {
+    padding: var(--space-sm);
+    gap: var(--space-sm);
+  }
+
+  .preflight-checkbox-text {
+    font-size: var(--font-size-base);
+  }
+
+  .preflight-loading {
+    padding: var(--space-xl);
+  }
+
+  .preflight-error {
+    padding: var(--space-md);
+  }
+}
