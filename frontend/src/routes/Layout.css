@@ -160,6 +160,22 @@
   }
 }
 
+@media (max-width: 480px) {
+  .layout-nav {
+    padding: var(--space-sm);
+    gap: var(--space-sm);
+  }
+
+  .layout-nav-link {
+    padding: var(--space-xs);
+    font-size: 0.7rem;
+  }
+
+  .layout-main {
+    padding: var(--space-sm);
+  }
+}
+
 /* ─────────────────────────────────────────
    Page Transitions (optional)
    ───────────────────────────────────────── */

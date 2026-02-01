@@ -451,3 +451,32 @@
     min-width: auto;
   }
 }
+
+@media (max-width: 480px) {
+  .settings-title {
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--space-lg);
+  }
+
+  .settings-section-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .settings-card {
+    padding: var(--space-md);
+  }
+
+  .settings-skeleton-card {
+    padding: var(--space-md);
+  }
+
+  .settings-usage-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+  }
+
+  .settings-signin {
+    padding: var(--space-lg);
+  }
+}
