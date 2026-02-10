@@ -14,13 +14,13 @@ import type { Timestamp } from 'firebase/firestore'
 // ============================================================================
 
 /** Maximum characters for Section 1: Initial Evaluation */
-export const SECTION1_MAX_CHARS = 4000
+export const SECTION1_MAX_CHARS = 2000
 
 /** Maximum characters for Section 2: Workup & Results */
-export const SECTION2_MAX_CHARS = 3000
+export const SECTION2_MAX_CHARS = 2000
 
 /** Maximum characters for Section 3: Treatment & Disposition */
-export const SECTION3_MAX_CHARS = 2500
+export const SECTION3_MAX_CHARS = 2000
 
 /** Total approximate character limit across all sections */
 export const TOTAL_MAX_CHARS = SECTION1_MAX_CHARS + SECTION2_MAX_CHARS + SECTION3_MAX_CHARS

@@ -3,56 +3,47 @@ import type { SectionStatus, SectionNumber } from '../../types/encounter'
 import { MAX_SUBMISSIONS_PER_SECTION } from '../../types/encounter'
 import './SectionPanel.css'
 
+/** Custom placeholder text per section */
+const SECTION_PLACEHOLDERS: Record<SectionNumber, string> = {
+  1: 'Enter pertinent H&P, initial impressions, concerns...',
+  2: 'Enter workup orders, results, and interpretations...',
+  3: 'Enter working diagnosis, treatments, and disposition...',
+}
+
 interface SectionPanelProps {
-  /** Section number (1, 2, or 3) */
   sectionNumber: SectionNumber
-  /** Display title for the section */
   title: string
-  /** Current status of the section */
   status: SectionStatus
-  /** User input content */
   content: string
-  /** Maximum allowed characters */
   maxChars: number
-  /** Whether the section is locked (no more edits allowed) */
   isLocked: boolean
-  /** Number of times this section has been submitted */
   submissionCount: number
-  /** Guide component to render in collapsible area */
   guide: ReactNode
-  /** Preview component for LLM response */
   preview?: ReactNode
-  /** Callback when content changes */
   onContentChange: (content: string) => void
-  /** Callback when user submits section */
   onSubmit: () => void
-  /** Whether submission is in progress */
   isSubmitting: boolean
-  /** Error message from failed submission */
   submissionError?: string | null
-  /** Whether the error is retryable */
   isErrorRetryable?: boolean
-  /** Callback to dismiss error */
   onDismissError?: () => void
 }
 
 /**
- * Section status indicator
+ * Numbered circle indicator that reflects section status
  */
-function SectionStatusIndicator({ status }: { status: SectionStatus }) {
-  const getIndicator = () => {
-    switch (status) {
-      case 'completed':
-        return <span className="section-status-icon section-status-complete" title="Completed">✓</span>
-      case 'in_progress':
-        return <span className="section-status-icon section-status-active" title="In Progress">●</span>
-      case 'pending':
-      default:
-        return <span className="section-status-icon section-status-pending" title="Pending">○</span>
-    }
-  }
+function SectionNumberCircle({ number, status }: { number: SectionNumber; status: SectionStatus }) {
+  const statusClass =
+    status === 'completed'
+      ? 'section-circle--complete'
+      : status === 'in_progress'
+        ? 'section-circle--active'
+        : 'section-circle--pending'
 
-  return getIndicator()
+  return (
+    <span className={`section-circle ${statusClass}`}>
+      {status === 'completed' ? '✓' : number}
+    </span>
+  )
 }
 
 /**
@@ -67,7 +58,7 @@ function CharacterCount({ current, max }: { current: number; max: number }) {
     <span
       className={`char-count ${isWarning ? 'char-count-warning' : ''} ${isOverLimit ? 'char-count-error' : ''}`}
     >
-      {current.toLocaleString()} / {max.toLocaleString()}
+      {current.toLocaleString()}/{max.toLocaleString()} characters
     </span>
   )
 }
@@ -104,7 +95,7 @@ function SubmissionStatus({
   }
 
   if (submissionCount === 0) {
-    return null // Don't show anything on first submission
+    return null
   }
 
   return (
@@ -114,17 +105,6 @@ function SubmissionStatus({
   )
 }
 
-/**
- * Collapsible section panel for the 3-section Build Mode workflow
- *
- * Each panel includes:
- * - Collapsible header with status indicator
- * - Character count display
- * - Textarea for user input
- * - Toggleable guide with prompts
- * - Preview area for LLM response
- * - Submit button with submission limits
- */
 export default function SectionPanel({
   sectionNumber,
   title,
@@ -152,7 +132,8 @@ export default function SectionPanel({
     setIsExpanded(!isExpanded)
   }
 
-  const handleGuideToggle = () => {
+  const handleGuideToggle = (e: React.MouseEvent) => {
+    e.stopPropagation()
     setIsGuideVisible(!isGuideVisible)
   }
 
@@ -175,7 +156,7 @@ export default function SectionPanel({
 
   return (
     <section className={`section-panel ${isExpanded ? 'section-panel-expanded' : 'section-panel-collapsed'}`}>
-      {/* Collapsible Header */}
+      {/* Header */}
       <header
         className="section-panel-header"
         onClick={handleToggle}
@@ -186,13 +167,25 @@ export default function SectionPanel({
         aria-controls={`section-content-${sectionNumber}`}
       >
         <div className="section-header-left">
-          <span className="section-number">Section {sectionNumber}</span>
-          <SectionStatusIndicator status={status} />
+          <SectionNumberCircle number={sectionNumber} status={status} />
           <h3 className="section-title">{title}</h3>
         </div>
 
         <div className="section-header-right">
-          <CharacterCount current={content.length} max={maxChars} />
+          <button
+            type="button"
+            className={`section-guide-btn ${isGuideVisible ? 'section-guide-btn--active' : ''}`}
+            onClick={handleGuideToggle}
+            aria-expanded={isGuideVisible}
+            aria-controls={`section-guide-${sectionNumber}`}
+            aria-label={isGuideVisible ? 'Hide guide' : 'Show guide'}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </button>
           <span className={`expand-icon ${isExpanded ? 'expand-icon-open' : ''}`}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <polyline points="6 9 12 15 18 9" />
@@ -207,24 +200,6 @@ export default function SectionPanel({
         className="section-panel-content"
         hidden={!isExpanded}
       >
-        {/* Guide Toggle */}
-        <div className="guide-toggle-container">
-          <button
-            type="button"
-            className="guide-toggle-button"
-            onClick={handleGuideToggle}
-            aria-expanded={isGuideVisible}
-            aria-controls={`section-guide-${sectionNumber}`}
-          >
-            <svg className="guide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-            {isGuideVisible ? 'Hide Guide' : 'Show Guide'}
-          </button>
-        </div>
-
         {/* Guide Content */}
         {isGuideVisible && (
           <div id={`section-guide-${sectionNumber}`} className="guide-content">
@@ -238,49 +213,50 @@ export default function SectionPanel({
             className={`section-textarea ${isOverLimit ? 'textarea-error' : ''}`}
             value={content}
             onChange={handleContentChange}
+            maxLength={maxChars}
             disabled={isLocked}
-            placeholder={isLocked ? 'This section is locked' : `Enter your ${title.toLowerCase()} notes...`}
+            placeholder={isLocked ? 'This section is locked' : SECTION_PLACEHOLDERS[sectionNumber]}
             aria-label={`Section ${sectionNumber}: ${title}`}
             aria-describedby={`section-status-${sectionNumber}`}
           />
 
           {/* Error Display */}
-        {submissionError && (
-          <div className={`section-error ${isErrorRetryable ? 'section-error-retryable' : ''}`} role="alert">
-            <div className="section-error-content">
-              <svg className="section-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span className="section-error-message">{submissionError}</span>
+          {submissionError && (
+            <div className={`section-error ${isErrorRetryable ? 'section-error-retryable' : ''}`} role="alert">
+              <div className="section-error-content">
+                <svg className="section-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <span className="section-error-message">{submissionError}</span>
+              </div>
+              <div className="section-error-actions">
+                {isErrorRetryable && (
+                  <button
+                    type="button"
+                    className="section-error-retry"
+                    onClick={onSubmit}
+                    disabled={isSubmitting}
+                  >
+                    Try Again
+                  </button>
+                )}
+                {onDismissError && (
+                  <button
+                    type="button"
+                    className="section-error-dismiss"
+                    onClick={onDismissError}
+                    aria-label="Dismiss error"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="section-error-actions">
-              {isErrorRetryable && (
-                <button
-                  type="button"
-                  className="section-error-retry"
-                  onClick={onSubmit}
-                  disabled={isSubmitting}
-                >
-                  Try Again
-                </button>
-              )}
-              {onDismissError && (
-                <button
-                  type="button"
-                  className="section-error-dismiss"
-                  onClick={onDismissError}
-                  aria-label="Dismiss error"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+          )}
 
-        <div id={`section-status-${sectionNumber}`} className="input-footer">
+          <div id={`section-status-${sectionNumber}`} className="input-footer">
             <SubmissionStatus submissionCount={submissionCount} isLocked={isLocked} />
 
             <div className="submit-area">
@@ -307,6 +283,7 @@ export default function SectionPanel({
                   </>
                 )}
               </button>
+              <CharacterCount current={content.length} max={maxChars} />
             </div>
           </div>
         </div>

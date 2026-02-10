@@ -11,6 +11,7 @@
 
 import { useState, useCallback } from 'react'
 import { useQuickEncounter } from '../../hooks/useQuickEncounter'
+import { formatRoomDisplay, formatPatientIdentifier } from '../../types/encounter'
 import DictationGuide from '../DictationGuide'
 import { useToast } from '../../contexts/ToastContext'
 import './QuickEncounterEditor.css'
@@ -115,55 +116,44 @@ export default function QuickEncounterEditor({
     <div className="quick-editor">
       {/* Header */}
       <header className="quick-editor__header">
-        <button
-          type="button"
-          className="quick-editor__back-btn"
-          onClick={onBack}
-          disabled={isProcessing}
-        >
-          <svg
-            className="quick-editor__back-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Back
-        </button>
-
-        <div className="quick-editor__title-group">
-          <h2 className="quick-editor__room">{encounter.roomNumber}</h2>
-          {quickStatus && (
-            <span className={`quick-editor__status quick-editor__status--${quickStatus}`}>
-              {quickStatus === 'draft' && 'Draft'}
-              {quickStatus === 'processing' && 'Processing...'}
-              {quickStatus === 'completed' && 'Completed'}
-              {quickStatus === 'error' && 'Error'}
+        <div className="quick-editor__header-left">
+          <h2 className="quick-editor__room">{formatRoomDisplay(encounter.roomNumber)}</h2>
+          {encounter.quickModeData?.patientIdentifier && (
+            <span className="quick-editor__age-sex">
+              {formatPatientIdentifier(encounter.quickModeData.patientIdentifier)}
             </span>
           )}
         </div>
 
-        <button
-          type="button"
-          className={`quick-editor__guide-toggle ${showGuide ? 'quick-editor__guide-toggle--active' : ''}`}
-          onClick={() => setShowGuide(!showGuide)}
-          aria-expanded={showGuide}
-          aria-label={showGuide ? 'Hide guide' : 'Show guide'}
-        >
-          <svg
-            className="quick-editor__guide-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
+        <div className="quick-editor__header-right">
+          {quickStatus && (
+            <span className={`quick-editor__status quick-editor__status--${quickStatus}`}>
+              {quickStatus === 'draft' && 'Draft'}
+              {quickStatus === 'processing' && 'Processing...'}
+              {quickStatus === 'completed' && 'Done'}
+              {quickStatus === 'error' && 'Error'}
+            </span>
+          )}
+          <button
+            type="button"
+            className={`quick-editor__guide-toggle ${showGuide ? 'quick-editor__guide-toggle--active' : ''}`}
+            onClick={() => setShowGuide(!showGuide)}
+            aria-expanded={showGuide}
+            aria-label={showGuide ? 'Hide guide' : 'Show guide'}
           >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-        </button>
+            <svg
+              className="quick-editor__guide-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       {/* Main Content */}
@@ -181,6 +171,7 @@ export default function QuickEncounterEditor({
                 className="quick-editor__textarea"
                 value={narrative}
                 onChange={(e) => setNarrative(e.target.value)}
+                maxLength={3000}
                 placeholder="Dictate or type your description of the patient encounter here. Use your natural narrative style (e.g., HPI, ROS, PE, Differential, Workup, Interpretation of results, Impression, and Plan).
 
 Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal, radiating to left arm, associated with diaphoresis. History of HTN, DM..."
@@ -188,8 +179,8 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
               />
 
               <div className="quick-editor__input-footer">
-                <span className="quick-editor__char-count">
-                  {narrative.length.toLocaleString()} characters
+                <span className={`quick-editor__char-count ${narrative.length >= 2700 ? 'quick-editor__char-count--warning' : ''} ${narrative.length >= 3000 ? 'quick-editor__char-count--limit' : ''}`}>
+                  {narrative.length.toLocaleString()}/3,000 characters
                 </span>
 
                 <button

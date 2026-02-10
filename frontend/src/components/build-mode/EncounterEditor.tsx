@@ -17,7 +17,8 @@ import Section3Guide from './Section3Guide'
 import DifferentialPreview from './DifferentialPreview'
 import MdmPreviewPanel from './MdmPreviewPanel'
 import type { SectionNumber, EncounterDocument, SectionStatus } from '../../types/encounter'
-import { SECTION_TITLES, SECTION_CHAR_LIMITS } from '../../types/encounter'
+import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
+import { BuildModeStatusCircles } from './shared/CardContent'
 import { ApiError } from '../../lib/api'
 import './EncounterEditor.css'
 
@@ -236,32 +237,10 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     <div className="encounter-editor">
       {/* Header */}
       <header className="encounter-editor__header">
-        <div className="encounter-editor__header-left">
-          <button
-            type="button"
-            className="encounter-editor__back-button"
-            onClick={onBack}
-            aria-label="Back to dashboard"
-          >
-            ← Back
-          </button>
-          <div className="encounter-editor__title">
-            <h1 className="encounter-editor__room">{encounter.roomNumber}</h1>
-            <span className="encounter-editor__complaint">{encounter.chiefComplaint}</span>
-          </div>
-        </div>
+        <h1 className="encounter-editor__room">{formatRoomDisplay(encounter.roomNumber)}</h1>
+        <span className="encounter-editor__complaint">{encounter.chiefComplaint}</span>
         <div className="encounter-editor__header-right">
-          <ShiftTimer shiftStartedAt={encounter.shiftStartedAt} status={encounter.status} />
-          {isFinalized && (
-            <span className="encounter-editor__badge encounter-editor__badge--finalized">
-              Finalized
-            </span>
-          )}
-          {isArchived && (
-            <span className="encounter-editor__badge encounter-editor__badge--archived">
-              Archived
-            </span>
-          )}
+          <BuildModeStatusCircles encounter={encounter} />
         </div>
       </header>
 
@@ -297,11 +276,19 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           onDismissError={() => dismissError(1)}
         />
 
-        {/* Section 2: Workup & Results */}
+        {/* Section 2: Workup & Results (blocked) */}
         {!isSection1Complete && !isFinalized && !isArchived && (
           <div className="encounter-editor__section-blocked">
-            <span className="encounter-editor__blocked-icon">🔒</span>
-            <p>Complete Section 1 to unlock Section 2: {SECTION_TITLES[2]}</p>
+            <span className="encounter-editor__blocked-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </span>
+            <div className="encounter-editor__blocked-text">
+              <h4 className="encounter-editor__blocked-title">Workup and Results</h4>
+              <p className="encounter-editor__blocked-subtitle">Dictate when your workup is complete and you are reviewing your results</p>
+            </div>
           </div>
         )}
         {(isSection1Complete || isFinalized || isArchived) && (
@@ -345,11 +332,19 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           </>
         )}
 
-        {/* Section 3: Treatment & Disposition */}
+        {/* Section 3: Treatment & Disposition (blocked) */}
         {!isSection2Complete && !isFinalized && !isArchived && (
           <div className="encounter-editor__section-blocked">
-            <span className="encounter-editor__blocked-icon">🔒</span>
-            <p>Complete Section 2 to unlock Section 3: {SECTION_TITLES[3]}</p>
+            <span className="encounter-editor__blocked-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </span>
+            <div className="encounter-editor__blocked-text">
+              <h4 className="encounter-editor__blocked-title">Working Diagnosis, Treatment and Disposition</h4>
+              <p className="encounter-editor__blocked-subtitle">Dictate what you think the problem really is, what you did about it and what you're going to do... let our AI worry about the why</p>
+            </div>
           </div>
         )}
         {(isSection2Complete || isFinalized || isArchived) && (
@@ -427,6 +422,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           </button>
         </div>
       )}
+
+      {/* Timer at bottom */}
+      <footer className="encounter-editor__footer">
+        <ShiftTimer shiftStartedAt={encounter.shiftStartedAt} status={encounter.status} />
+      </footer>
     </div>
   )
 }

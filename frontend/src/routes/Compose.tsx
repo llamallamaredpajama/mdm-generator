@@ -8,7 +8,7 @@
  * Both modes use the same carousel-based UI for managing encounters.
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useEncounterList } from '../hooks/useEncounterList'
 import EncounterCarousel from '../components/build-mode/EncounterCarousel'
 import EncounterEditor from '../components/build-mode/EncounterEditor'
@@ -103,10 +103,12 @@ export default function Compose() {
   const { encounters, loading, error, createEncounter, deleteEncounter, clearAllEncounters } = useEncounterList(mode)
 
   /**
-   * Handle encounter selection from carousel
+   * Handle encounter selection from carousel.
+   * Pushes a history entry so the browser back button returns to the carousel.
    */
   const handleSelectEncounter = useCallback((id: string) => {
     setSelectedEncounterId(id)
+    window.history.pushState({ encounterEditor: true }, '')
   }, [])
 
   /**
@@ -115,6 +117,19 @@ export default function Compose() {
   const handleBack = useCallback(() => {
     setSelectedEncounterId(null)
   }, [])
+
+  /**
+   * Listen for browser back button (popstate) to return to carousel
+   */
+  useEffect(() => {
+    const handlePopState = () => {
+      if (selectedEncounterId) {
+        setSelectedEncounterId(null)
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [selectedEncounterId])
 
   /**
    * Handle mode change

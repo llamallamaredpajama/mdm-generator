@@ -1,6 +1,7 @@
 import { useRef, useCallback, useLayoutEffect, useState } from 'react'
 import type { EncounterDocument, EncounterMode } from '../../../types/encounter'
 import { getEncounterMode } from '../../../types/encounter'
+import { useToast } from '../../../contexts/ToastContext'
 import type { UseCardExpansionReturn } from '../../../hooks/useCardExpansion'
 import type { NewEncounterFormData } from '../NewEncounterCard'
 import NewEncounterCard from '../NewEncounterCard'
@@ -21,6 +22,49 @@ export interface MobileWalletStackProps {
   onDeleteEncounter: (id: string) => Promise<void>
   /** New encounter form data and handlers */
   newEncounterForm: NewEncounterFormData
+}
+
+/**
+ * Get the first sentence snippet from an encounter's input text.
+ * Returns truncated text like "45 yo male with chest pain..." or empty string.
+ */
+function getInputSnippet(encounter: EncounterDocument): string {
+  const mode = getEncounterMode(encounter)
+  let text = ''
+
+  if (mode === 'quick') {
+    text = encounter.quickModeData?.narrative || ''
+  } else {
+    // Build mode: use first non-empty section content
+    text = encounter.section1.content || encounter.section2.content || encounter.section3.content || ''
+  }
+
+  if (!text.trim()) return ''
+
+  // Get first sentence or first 80 chars
+  const firstSentence = text.split(/[.!?\n]/)[0]?.trim() || ''
+  if (firstSentence.length <= 60) return firstSentence + '...'
+  return firstSentence.slice(0, 60) + '...'
+}
+
+/**
+ * Get the copyable output text from a completed encounter.
+ * Returns the MDM text or empty string if not yet processed.
+ */
+function getCopyableOutput(encounter: EncounterDocument): string {
+  const mode = getEncounterMode(encounter)
+
+  if (mode === 'quick') {
+    if (encounter.quickModeData?.status === 'completed') {
+      return encounter.quickModeData.mdmOutput?.text || ''
+    }
+  } else {
+    if (encounter.status === 'finalized' && encounter.section3.llmResponse?.finalMdm?.text) {
+      return encounter.section3.llmResponse.finalMdm.text
+    }
+  }
+
+  return ''
 }
 
 /** Height of the always-visible card header peek */
@@ -52,6 +96,7 @@ export default function MobileWalletStack({
   newEncounterForm,
 }: MobileWalletStackProps) {
   const { expandedCardId, collapse, toggle, isExpanded } = expansion
+  const { success: showSuccess, error: showError } = useToast()
 
   // Ref to measure actual expanded card height for accurate positioning
   const expandedCardRef = useRef<HTMLDivElement | null>(null)
@@ -73,7 +118,7 @@ export default function MobileWalletStack({
     if (!expandedCardId && newEncounterRef.current) {
       setNewEncounterHeight(newEncounterRef.current.scrollHeight)
     }
-  }, [expandedCardId])
+  }, [expandedCardId, encounters.length])
 
   // Total items: 1 (NewEncounterCard) + encounters
   const totalItems = 1 + encounters.length
@@ -163,7 +208,7 @@ export default function MobileWalletStack({
       // Idle: same gap formula as expanded state so spacing is consistent
       const necHeight = newEncounterHeight || HEADER_HEIGHT
       const encounterCount = encounters.length
-      if (encounterCount === 0) return necHeight
+      if (encounterCount === 0) return necHeight + CLEAR_DECK_RESERVE
       const stackHeight = encounterCount > 0
         ? (encounterCount - 1) * STACK_SPACING + HEADER_HEIGHT
         : 0
@@ -284,22 +329,59 @@ export default function MobileWalletStack({
             {/* Body — visible when expanded */}
             <div className="mobile-card__body" aria-hidden={!cardExpanded}>
               <div className="mobile-card__divider" />
-              <CardContent
-                encounter={encounter}
-                showSectionIndicators={getEncounterMode(encounter) === 'build'}
-                compact={false}
-                hideHeader
-              />
 
-              {/* Action button to go to editor */}
+              {/* Input snippet preview */}
+              {(() => {
+                const snippet = getInputSnippet(encounter)
+                return snippet ? (
+                  <p className="mobile-card__snippet">{snippet}</p>
+                ) : (
+                  <CardContent
+                    encounter={encounter}
+                    showSectionIndicators={getEncounterMode(encounter) === 'build'}
+                    compact={false}
+                    hideHeader
+                  />
+                )
+              })()}
+
+              {/* Action buttons */}
               {cardExpanded && (
-                <button
-                  type="button"
-                  className="mobile-card__action"
-                  onClick={() => onSelectEncounter(encounter.id)}
-                >
-                  {getEncounterMode(encounter) === 'quick' ? 'Open' : 'Continue'}
-                </button>
+                <div className="mobile-card__action-row">
+                  {/* Copy button — only when output is ready */}
+                  {(() => {
+                    const copyText = getCopyableOutput(encounter)
+                    return copyText ? (
+                      <button
+                        type="button"
+                        className="mobile-card__copy-btn"
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          try {
+                            await navigator.clipboard.writeText(copyText)
+                            showSuccess('MDM copied to clipboard')
+                          } catch {
+                            showError('Failed to copy')
+                          }
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                        Copy MDM
+                      </button>
+                    ) : null
+                  })()}
+
+                  <button
+                    type="button"
+                    className="mobile-card__action"
+                    onClick={() => onSelectEncounter(encounter.id)}
+                  >
+                    {getEncounterMode(encounter) === 'quick' ? 'Open' : 'Continue'}
+                  </button>
+                </div>
               )}
             </div>
           </div>

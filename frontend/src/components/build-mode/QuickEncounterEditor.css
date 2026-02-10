@@ -50,45 +50,30 @@
 .quick-editor__header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-lg);
   padding-bottom: var(--space-md);
   border-bottom: 1px solid var(--color-border);
 }
 
-.quick-editor__back-btn {
+.quick-editor__header-left {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.quick-editor__header-right {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-sm) var(--space-md);
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.quick-editor__age-sex {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.quick-editor__back-btn:hover:not(:disabled) {
-  background: var(--color-bg-hover);
-  border-color: var(--color-text-secondary);
-}
-
-.quick-editor__back-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.quick-editor__back-icon {
-  width: 16px;
-  height: 16px;
-}
-
-.quick-editor__title-group {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  flex: 1;
+  font-weight: var(--font-weight-medium);
 }
 
 .quick-editor__room {
@@ -190,7 +175,7 @@
 
 .quick-editor__textarea {
   flex: 1;
-  min-height: 300px;
+  min-height: 200px;
   padding: var(--space-lg);
   background: #ffffff;
   border: 1px solid var(--color-border);
@@ -228,6 +213,15 @@
 .quick-editor__char-count {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+}
+
+.quick-editor__char-count--warning {
+  color: #d97706;
+}
+
+.quick-editor__char-count--limit {
+  color: var(--color-error);
+  font-weight: var(--font-weight-medium);
 }
 
 .quick-editor__generate-btn {
@@ -472,12 +466,6 @@
 
   .quick-editor__header {
     flex-wrap: wrap;
-  }
-
-  .quick-editor__title-group {
-    order: -1;
-    width: 100%;
-    margin-bottom: var(--space-sm);
   }
 
   .quick-editor__input-footer {

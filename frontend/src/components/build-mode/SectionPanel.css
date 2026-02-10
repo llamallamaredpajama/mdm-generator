@@ -55,17 +55,9 @@
   gap: 8px;
 }
 
-.section-number {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: #6c757d;
-  letter-spacing: 0.025em;
-}
-
 .section-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: #212529;
 }
@@ -77,38 +69,47 @@
 }
 
 /* ============================================================================
-   Status Indicators
+   Section Number Circle
    ============================================================================ */
 
-.section-status-icon {
-  font-size: 1rem;
-  width: 20px;
-  height: 20px;
+.section-circle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
 
-.section-status-complete {
-  color: #28a745;
-  font-weight: bold;
-}
-
-.section-status-active {
-  color: #007bff;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-.section-status-pending {
+.section-circle--pending {
+  background: #3a3a3a;
   color: #adb5bd;
+  border: 1.5px solid #555;
 }
 
-@keyframes pulse {
+.section-circle--active {
+  background: rgba(0, 123, 255, 0.15);
+  color: #4da3ff;
+  border: 1.5px solid #007bff;
+  animation: circle-pulse 1.5s ease-in-out infinite;
+}
+
+.section-circle--complete {
+  background: rgba(40, 167, 69, 0.15);
+  color: #28a745;
+  border: 1.5px solid #28a745;
+}
+
+@keyframes circle-pulse {
   0%, 100% {
-    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.3);
   }
   50% {
-    opacity: 0.5;
+    box-shadow: 0 0 0 4px rgba(0, 123, 255, 0);
   }
 }
 
@@ -168,41 +169,39 @@
 }
 
 /* ============================================================================
-   Guide Toggle
+   Guide Icon Button (in header)
    ============================================================================ */
 
-.guide-toggle-container {
-  margin-bottom: 12px;
-}
-
-.guide-toggle-button {
-  display: inline-flex;
+.section-guide-btn {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   background: transparent;
   border: 1px solid #dee2e6;
-  border-radius: 4px;
-  color: #495057;
-  font-size: 0.875rem;
+  border-radius: 6px;
+  color: #6c757d;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.guide-toggle-button:hover {
-  background: #f8f9fa;
+.section-guide-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.section-guide-btn:hover {
+  background: rgba(0, 123, 255, 0.1);
   border-color: #007bff;
   color: #007bff;
 }
 
-.guide-toggle-button:focus {
-  outline: 2px solid #007bff;
-  outline-offset: 2px;
-}
-
-.guide-icon {
-  width: 16px;
-  height: 16px;
+.section-guide-btn--active {
+  background: rgba(0, 123, 255, 0.15);
+  border-color: #007bff;
+  color: #007bff;
 }
 
 /* ============================================================================
@@ -310,8 +309,9 @@
 
 .submit-area {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
   margin-left: auto;
 }
 
@@ -539,7 +539,6 @@
   }
 
   .submit-area {
-    flex-direction: column;
     align-items: stretch;
     margin-left: 0;
   }
