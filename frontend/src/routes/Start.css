@@ -110,6 +110,7 @@
   position: relative;
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 2rem 2rem 2rem;
@@ -151,12 +152,29 @@
   line-height: 1.2;
 }
 
-.title-main {
-  display: block;
+/* Emergency Medicine title section */
+.em-title-section {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.em-title-wrapper {
+  display: inline-block;
+  position: relative;
+}
+
+.em-title {
   font-size: clamp(2.5rem, 7vw, 4rem);
   font-weight: 300;
   color: #fff;
-  margin-bottom: 0.5rem;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.ekg-underline {
+  display: none;
 }
 
 .title-accent {
@@ -301,10 +319,7 @@
   }
 }
 
-/* EKG Animation (mobile only - replaces pulse circles) */
-.ekg-container {
-  display: none;
-}
+/* EKG underline animation styles in mobile media query */
 
 /* Features Section */
 .features {
@@ -527,37 +542,41 @@
   .hero {
     flex-direction: column;
     align-items: stretch;
-    justify-content: flex-start;
+    justify-content: center;
     padding: 0;
-    padding-top: 80px;
+    padding-top: 60px;
     padding-bottom: 2rem;
+    margin-top: 0;
   }
 
-  .hero-content {
-    padding: 0 1rem;
-  }
-
-  .title-main {
-    font-size: 10.5vw;
-    white-space: nowrap;
-  }
-
-  .ekg-container {
-    display: block;
-    position: relative;
+  .em-title-section {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    padding-top: 1.5rem;
+    margin-bottom: 0;
     z-index: 1;
+  }
+
+  .em-title {
+    font-size: 10vw;
+  }
+
+  .ekg-underline {
+    display: block;
     width: 100%;
-    height: 40px;
+    height: 65px;
     overflow: hidden;
-    margin-bottom: var(--space-sm);
-    opacity: 0.6;
+    opacity: 0.7;
+    margin-top: -35px;
   }
 
   .ekg-track {
     display: flex;
     width: 200%;
     height: 100%;
-    animation: ekg-scroll 3s linear infinite;
+    animation: ekg-scroll 6s linear infinite;
   }
 
   .ekg-svg {
@@ -565,6 +584,10 @@
     height: 100%;
     flex-shrink: 0;
     filter: drop-shadow(0 0 6px rgba(220, 53, 69, 0.6));
+  }
+
+  .hero-content {
+    padding: 0 1rem;
   }
 
   .hero-subtitle {
@@ -754,12 +777,16 @@
   }
 
   .hero {
-    padding: 1.5rem 0.75rem 1.5rem;
-    padding-top: 70px;
+    padding: 0 0 1.5rem;
+    padding-top: 50px;
+  }
+
+  .em-title-section {
+    padding-top: 1rem;
   }
 
   .hero-content {
-    padding: 0;
+    padding: 0 0.75rem;
   }
 
   .hero-subtitle {
