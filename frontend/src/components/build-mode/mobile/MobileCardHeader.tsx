@@ -1,6 +1,26 @@
 import type { EncounterDocument, EncounterMode } from '../../../types/encounter'
-import { getEncounterMode, getQuickModeCardLabel } from '../../../types/encounter'
+import { getEncounterMode } from '../../../types/encounter'
 import { StatusBadge, QuickModeStatusBadge } from '../shared/CardContent'
+
+/**
+ * Extract age/sex label from encounter data for header display.
+ * Quick mode: uses structured patientIdentifier (e.g., "24F")
+ * Build mode: uses chiefComplaint as-is (user-entered identifier)
+ */
+function getAgeSexLabel(encounter: EncounterDocument, isQuickMode: boolean): string {
+  if (isQuickMode) {
+    // Quick mode: only show age/sex if AI has extracted it
+    if (encounter.quickModeData?.patientIdentifier) {
+      const { age, sex } = encounter.quickModeData.patientIdentifier
+      const ageStr = age?.replace(/\s*(y\/o|years?(\s+old)?|yo)\s*/gi, '').trim() || ''
+      const sexStr = sex?.charAt(0).toUpperCase() || ''
+      return `${ageStr}${sexStr}`.trim()
+    }
+    return ''
+  }
+  // Build mode: chiefComplaint is user-entered identifier
+  return encounter.chiefComplaint || ''
+}
 
 export interface MobileCardHeaderProps {
   /** The encounter to display */
@@ -65,19 +85,18 @@ export default function MobileCardHeader({
       aria-expanded={isExpanded}
       aria-label={`${encounter.roomNumber}: ${isQuickMode ? 'Quick encounter' : encounter.chiefComplaint || 'Encounter'}. ${isExpanded ? 'Collapse' : 'Expand'}`}
     >
-      {/* Room + complaint peek - left side */}
+      {/* Room + age/gender - left side */}
       <div className="mobile-card__header-left">
         <h3 className="mobile-card__room">{encounter.roomNumber}</h3>
-        {!isExpanded && (
-          <span className="mobile-card__complaint-peek">
-            {isQuickMode
-              ? getQuickModeCardLabel(encounter) || 'Quick Encounter'
-              : encounter.chiefComplaint || 'No chief complaint'}
-          </span>
-        )}
+        {(() => {
+          const label = getAgeSexLabel(encounter, isQuickMode)
+          return label ? (
+            <span className="mobile-card__age-sex">{label}</span>
+          ) : null
+        })()}
       </div>
 
-      {/* Status badge, delete, and chevron - right side */}
+      {/* Status badge and delete - right side */}
       <div className="mobile-card__status">
         {isQuickMode ? (
           <QuickModeStatusBadge status={quickStatus} />
@@ -110,20 +129,6 @@ export default function MobileCardHeader({
             </svg>
           </button>
         )}
-
-        {/* Chevron indicator */}
-        <svg
-          className="mobile-card__expand-indicator"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
       </div>
     </div>
   )

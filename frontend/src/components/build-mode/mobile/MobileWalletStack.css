@@ -1,4 +1,4 @@
-/* Mobile Wallet Stack Layout - Apple Wallet-style absolute positioning */
+/* Mobile Wallet Stack Layout - Apple Wallet-style card stack */
 
 /* ===== Container ===== */
 .mobile-wallet-stack {
@@ -15,11 +15,14 @@
   right: 1rem;
   background: var(--card-bg, #ffffff);
   border-radius: 14px;
+  /* Visible border for distinct card edges */
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  /* Layered shadow for depth */
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.08),
     0 4px 12px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  transition: top 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: top 500ms ease, box-shadow 350ms ease-out;
   will-change: top;
   /* Left accent border for card identity */
   border-left: 3px solid var(--color-accent, #dc3545);
@@ -38,30 +41,44 @@
   border-left: none;
 }
 
-/* ===== Collapsed State ===== */
+/* ===== Collapsed State - Card header peek ===== */
 .mobile-card--collapsed {
   height: 60px;
-  overflow: hidden;
-  /* Subtle top edge line so stacked peek headers look separate */
+  overflow: visible;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-left: 3px solid var(--color-accent, #dc3545);
+  /* Subtle shadow — depth comes from overlap, not effects */
   box-shadow:
-    0 -1px 0 rgba(255, 255, 255, 0.08),
-    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.1),
     0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
+/* Preserve accent colors in collapsed state */
+.mobile-card--collapsed:nth-child(2) { border-left-color: #3b82f6; }
+.mobile-card--collapsed:nth-child(3) { border-left-color: #10b981; }
+.mobile-card--collapsed:nth-child(4) { border-left-color: #f59e0b; }
+.mobile-card--collapsed:nth-child(5) { border-left-color: #8b5cf6; }
+.mobile-card--collapsed:nth-child(6) { border-left-color: #ec4899; }
+.mobile-card--collapsed:nth-child(n+7) { border-left-color: #6366f1; }
+
+/* NewEncounterCard collapsed - matches other cards, no left accent */
+.mobile-card--new-encounter.mobile-card--collapsed {
+  border-left: 1px solid rgba(0, 0, 0, 0.15);
+}
+
 .mobile-card--collapsed .mobile-card__body {
-  opacity: 0;
-  visibility: hidden;
+  display: none;
 }
 
 /* ===== Expanded State ===== */
 .mobile-card--expanded {
   height: auto;
   min-height: 200px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  /* Elevated shadow — selected card lifts above the stack */
   box-shadow:
-    0 8px 30px rgba(0, 0, 0, 0.18),
-    0 2px 8px rgba(0, 0, 0, 0.1);
-  /* Slightly larger radius when expanded for prominence */
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 12px 28px rgba(0, 0, 0, 0.12);
   border-radius: 16px;
 }
 
@@ -76,6 +93,7 @@
   height: auto;
   overflow: visible;
   border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.08),
     0 4px 12px rgba(0, 0, 0, 0.06);
@@ -86,7 +104,7 @@
   overflow: hidden;
 }
 
-/* NewEncounterCard collapsed peek header */
+/* NewEncounterCard collapsed peek header - solid card style, not dashed */
 .mobile-card__new-encounter-peek {
   display: flex;
   align-items: center;
@@ -95,16 +113,26 @@
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  border: 2px dashed rgba(59, 130, 246, 0.4);
-  border-radius: 14px;
+  /* No inner border - card wrapper provides the border */
+  border: none;
+  border-radius: 0;
   color: var(--primary-bg, #3b82f6);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 1rem;
-  background: rgba(59, 130, 246, 0.04);
+  background: transparent;
 }
 
 .mobile-card__new-encounter-peek:active {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+/* Quick mode: new encounter peek text is red */
+.mobile-wallet-stack--quick-mode .mobile-card__new-encounter-peek {
+  color: #dc3545;
+}
+
+.mobile-wallet-stack--quick-mode .mobile-card__new-encounter-peek:active {
+  background: rgba(220, 53, 69, 0.06);
 }
 
 /* ===== Card Header (Always Visible) ===== */
@@ -124,7 +152,7 @@
   background: rgba(0, 0, 0, 0.03);
 }
 
-/* Header left group: room + complaint peek */
+/* Header left group: room + age/sex */
 .mobile-card__header-left {
   display: flex;
   align-items: center;
@@ -140,14 +168,14 @@
   flex-shrink: 0;
 }
 
-.mobile-card__complaint-peek {
-  font-size: 0.8rem;
+/* Age/sex label in grey */
+.mobile-card__age-sex {
+  font-size: 0.85rem;
   color: var(--text-secondary, #888);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  opacity: 0.7;
 }
 
 .mobile-card__status {
@@ -318,22 +346,4 @@
 .mobile-card__action-btn:focus-visible {
   outline: 2px solid var(--focus-ring, #3b82f6);
   outline-offset: 2px;
-}
-
-/* ===== Expand Indicator ===== */
-.mobile-card__expand-indicator {
-  width: 20px;
-  height: 20px;
-  transition: transform 300ms ease-out;
-  color: var(--text-secondary, #999);
-}
-
-.mobile-card--expanded .mobile-card__expand-indicator {
-  transform: rotate(180deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mobile-card__expand-indicator {
-    transition: none;
-  }
 }

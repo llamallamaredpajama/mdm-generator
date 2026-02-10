@@ -77,6 +77,7 @@ export default function MobileWalletStack({
   /**
    * Calculate positions for all cards.
    * Returns { top, zIndex } for each card index (0 = NewEncounterCard).
+   * Depth is conveyed purely through overlap and shadow — no 3D transforms.
    */
   const calculatePositions = useCallback(() => {
     const positions: Array<{ top: number; zIndex: number }> = []
@@ -169,7 +170,7 @@ export default function MobileWalletStack({
 
   return (
     <div
-      className="mobile-wallet-stack"
+      className={`mobile-wallet-stack mobile-wallet-stack--${mode === 'quick' ? 'quick-mode' : 'build-mode'}`}
       role="list"
       aria-label="Patient encounters"
       style={{ height: containerHeight }}
