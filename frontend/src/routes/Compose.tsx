@@ -84,7 +84,7 @@ function ModeDescription({ mode }: { mode: EncounterMode }) {
     <p className="compose-mode-description">
       {mode === 'quick'
         ? 'Quick input for one-shotting your MDM with a single AI analysis'
-        : 'Track multiple encounters through your shift with guided 3-section workflow'}
+        : '3-stage guided workflow to help you capture more information about your patient encounters'}
     </p>
   )
 }

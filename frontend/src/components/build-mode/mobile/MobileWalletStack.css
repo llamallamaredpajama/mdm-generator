@@ -108,6 +108,14 @@
   }
 }
 
+/* Build Mode — blue glow instead of red */
+.mobile-wallet-stack--build-mode .mobile-card--active-glow::before {
+  box-shadow:
+    0 0 8px 2px rgba(59, 130, 246, 0.4),
+    0 0 20px 6px rgba(59, 130, 246, 0.2),
+    0 0 40px 12px rgba(59, 130, 246, 0.08);
+}
+
 /* NewEncounterCard collapsed peek header */
 .mobile-card__new-encounter-peek {
   display: flex;
