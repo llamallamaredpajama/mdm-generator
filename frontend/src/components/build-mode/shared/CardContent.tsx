@@ -4,8 +4,11 @@ import type {
   SectionStatus,
   EncounterMode,
   QuickModeStatus,
+  Section1Data,
+  Section2Data,
+  Section3Data,
 } from '../../../types/encounter'
-import { getQuickModeCardLabel, getEncounterMode } from '../../../types/encounter'
+import { getQuickModeCardLabel, getEncounterMode, formatRoomDisplay } from '../../../types/encounter'
 import './CardContent.css'
 
 export interface CardContentProps {
@@ -71,7 +74,7 @@ function SectionIndicators({ encounter }: { encounter: EncounterDocument }) {
 }
 
 /**
- * Status badge showing overall encounter status (Build Mode)
+ * Status badge showing overall encounter status (Build Mode - legacy)
  */
 function StatusBadge({ status }: { status: EncounterStatus }) {
   const getStatusLabel = (status: EncounterStatus): string => {
@@ -95,6 +98,44 @@ function StatusBadge({ status }: { status: EncounterStatus }) {
     <span className={`card-content__status card-content__status--${status}`}>
       {getStatusLabel(status)}
     </span>
+  )
+}
+
+/**
+ * Build mode status indicator: 3 numbered circles (1, 2, 3).
+ * Circles turn green as each section is completed by AI processing.
+ * When all 3 are done, shows a green "Done" badge instead.
+ */
+function BuildModeStatusCircles({ encounter }: { encounter: EncounterDocument }) {
+  const sections = [encounter.section1, encounter.section2, encounter.section3] as Array<
+    Section1Data | Section2Data | Section3Data
+  >
+  const allComplete = sections.every((s) => s.status === 'completed')
+
+  if (allComplete || encounter.status === 'finalized') {
+    return (
+      <span className="card-content__status card-content__status--finalized">
+        Done
+      </span>
+    )
+  }
+
+  return (
+    <div className="card-content__step-circles">
+      {sections.map((section, i) => {
+        const num = i + 1
+        const isComplete = section.status === 'completed'
+        return (
+          <span
+            key={num}
+            className={`card-content__step-circle ${isComplete ? 'card-content__step-circle--complete' : 'card-content__step-circle--pending'}`}
+            title={`Section ${num}${isComplete ? ' complete' : ''}`}
+          >
+            {num}
+          </span>
+        )
+      })}
+    </div>
   )
 }
 
@@ -192,11 +233,11 @@ export default function CardContent({
       {/* Header: Room + Status */}
       {!hideHeader && (
         <div className="card-content__header">
-          <h3 className="card-content__room">{encounter.roomNumber}</h3>
+          <h3 className="card-content__room">{formatRoomDisplay(encounter.roomNumber)}</h3>
           {isQuickMode ? (
             <QuickModeStatusBadge status={quickStatus} />
           ) : (
-            <StatusBadge status={encounter.status} />
+            <BuildModeStatusCircles encounter={encounter} />
           )}
         </div>
       )}
@@ -231,4 +272,4 @@ export default function CardContent({
 /**
  * Export sub-components for flexible composition
  */
-export { SectionIndicators, StatusBadge, QuickModeStatusBadge, QuickModeIndicator }
+export { SectionIndicators, StatusBadge, BuildModeStatusCircles, QuickModeStatusBadge, QuickModeIndicator }

@@ -126,9 +126,12 @@ export default function Compose() {
   }, [])
 
   // Render editor view when an encounter is selected
+  // Use the encounter's own mode (not the page mode) to pick the right editor
   if (selectedEncounterId) {
-    // Quick mode uses QuickEncounterEditor, Build mode uses EncounterEditor
-    if (mode === 'quick') {
+    const selectedEncounter = encounters.find((e) => e.id === selectedEncounterId)
+    const selectedMode = selectedEncounter?.mode || mode
+
+    if (selectedMode === 'quick') {
       return (
         <div className="compose-page compose-page--editor">
           <QuickEncounterEditor

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import type { EncounterDocument, EncounterMode } from '../../../types/encounter'
+import { getEncounterMode } from '../../../types/encounter'
 import CardContent from '../shared/CardContent'
 import './FullscreenOverlay.css'
 
@@ -160,8 +161,7 @@ export default function FullscreenOverlay({
         <div className="fullscreen-overlay__body">
           <CardContent
             encounter={encounter}
-            mode={mode}
-            showSectionIndicators={mode === 'build'}
+            showSectionIndicators={getEncounterMode(encounter) === 'build'}
             compact={false}
           />
         </div>

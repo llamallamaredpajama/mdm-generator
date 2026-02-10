@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { EncounterDocument, EncounterMode } from '../../../types/encounter'
+import { getEncounterMode } from '../../../types/encounter'
 import type { UseCardExpansionReturn } from '../../../hooks/useCardExpansion'
 import type { NewEncounterFormData } from '../NewEncounterCard'
 import NewEncounterCard from '../NewEncounterCard'
@@ -142,8 +143,7 @@ export default function DesktopKanban({
                 <div className="flippable-card__face flippable-card__face--front">
                   <CardContent
                     encounter={encounter}
-                    mode={mode}
-                    showSectionIndicators={mode === 'build'}
+                    showSectionIndicators={getEncounterMode(encounter) === 'build'}
                     compact={false}
                   />
                 </div>

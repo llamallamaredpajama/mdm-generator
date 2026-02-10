@@ -111,7 +111,7 @@ function compareRooms(a: string, b: string): number {
 }
 
 export interface UseEncounterListReturn {
-  /** List of active (non-archived) encounters filtered by mode */
+  /** List of active (non-archived) encounters across all modes */
   encounters: EncounterDocument[]
   /** Loading state while fetching encounters */
   loading: boolean
@@ -130,9 +130,9 @@ export interface UseEncounterListReturn {
  * Provides real-time updates via Firestore onSnapshot listener.
  *
  * Features:
- * - Filters encounters by mode (quick or build)
+ * - Shows all encounters regardless of mode (shared card stack)
  * - Filters out archived encounters for the active list
- * - Sorts by updatedAt descending (most recent first)
+ * - Sorts by room number (word-only < compound < numeric)
  * - Creates new encounters with default section structure
  * - Deletes encounters (only draft/archived allowed by rules)
  *
@@ -167,11 +167,8 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
             .map((doc) => convertEncounterDoc(doc.id, doc.data()))
             // Filter out archived encounters and filter by mode
             .filter((encounter) => {
-              // Exclude archived encounters
-              if (encounter.status === 'archived') return false
-              // Filter by mode (default to 'build' for encounters without mode field)
-              const encounterMode = encounter.mode || 'build'
-              return encounterMode === mode
+              // Exclude archived encounters — show all modes in the shared stack
+              return encounter.status !== 'archived'
             })
 
           // Sort by room number (word-only < compound < numeric)
@@ -195,7 +192,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
     return () => {
       unsubscribe()
     }
-  }, [user, mode])
+  }, [user])
 
   /**
    * Creates a new encounter with the given room number and chief complaint.

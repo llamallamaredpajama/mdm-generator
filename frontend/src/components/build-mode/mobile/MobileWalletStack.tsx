@@ -1,5 +1,6 @@
 import { useRef, useCallback, useLayoutEffect, useState } from 'react'
 import type { EncounterDocument, EncounterMode } from '../../../types/encounter'
+import { getEncounterMode } from '../../../types/encounter'
 import type { UseCardExpansionReturn } from '../../../hooks/useCardExpansion'
 import type { NewEncounterFormData } from '../NewEncounterCard'
 import NewEncounterCard from '../NewEncounterCard'
@@ -278,7 +279,6 @@ export default function MobileWalletStack({
               isExpanded={cardExpanded}
               onTap={() => handleHeaderTap(encounter.id)}
               onDelete={() => handleDelete(encounter.id)}
-              mode={mode}
             />
 
             {/* Body — visible when expanded */}
@@ -286,8 +286,7 @@ export default function MobileWalletStack({
               <div className="mobile-card__divider" />
               <CardContent
                 encounter={encounter}
-                mode={mode}
-                showSectionIndicators={mode === 'build'}
+                showSectionIndicators={getEncounterMode(encounter) === 'build'}
                 compact={false}
                 hideHeader
               />
@@ -299,7 +298,7 @@ export default function MobileWalletStack({
                   className="mobile-card__action"
                   onClick={() => onSelectEncounter(encounter.id)}
                 >
-                  {mode === 'quick' ? 'Open' : 'Continue'}
+                  {getEncounterMode(encounter) === 'quick' ? 'Open' : 'Continue'}
                 </button>
               )}
             </div>

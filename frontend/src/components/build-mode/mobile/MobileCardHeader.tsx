@@ -1,6 +1,6 @@
 import type { EncounterDocument, EncounterMode } from '../../../types/encounter'
-import { getEncounterMode } from '../../../types/encounter'
-import { StatusBadge, QuickModeStatusBadge } from '../shared/CardContent'
+import { getEncounterMode, formatRoomDisplay } from '../../../types/encounter'
+import { BuildModeStatusCircles, QuickModeStatusBadge } from '../shared/CardContent'
 
 /**
  * Extract age/sex label from encounter data for header display.
@@ -83,11 +83,11 @@ export default function MobileCardHeader({
       role="button"
       tabIndex={0}
       aria-expanded={isExpanded}
-      aria-label={`${encounter.roomNumber}: ${isQuickMode ? 'Quick encounter' : encounter.chiefComplaint || 'Encounter'}. ${isExpanded ? 'Collapse' : 'Expand'}`}
+      aria-label={`${formatRoomDisplay(encounter.roomNumber)}: ${isQuickMode ? 'Quick encounter' : encounter.chiefComplaint || 'Encounter'}. ${isExpanded ? 'Collapse' : 'Expand'}`}
     >
       {/* Room + age/gender - left side */}
       <div className="mobile-card__header-left">
-        <h3 className="mobile-card__room">{encounter.roomNumber}</h3>
+        <h3 className="mobile-card__room">{formatRoomDisplay(encounter.roomNumber)}</h3>
         {(() => {
           const label = getAgeSexLabel(encounter, isQuickMode)
           return label ? (
@@ -101,7 +101,7 @@ export default function MobileCardHeader({
         {isQuickMode ? (
           <QuickModeStatusBadge status={quickStatus} />
         ) : (
-          <StatusBadge status={encounter.status} />
+          <BuildModeStatusCircles encounter={encounter} />
         )}
 
         {/* Delete button - visible when expanded */}

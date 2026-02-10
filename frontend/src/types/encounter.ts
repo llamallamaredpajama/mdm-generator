@@ -422,3 +422,16 @@ export const getQuickModeCardLabel = (encounter: EncounterDocument): string => {
 export const getEncounterMode = (encounter: EncounterDocument): EncounterMode => {
   return encounter.mode || 'build'
 }
+
+/**
+ * Format room number for display.
+ * If the input is purely numeric (e.g., "12"), prepends "Room " → "Room 12".
+ * Otherwise returns as-is (e.g., "Bed 2A" stays "Bed 2A").
+ */
+export const formatRoomDisplay = (roomNumber: string): string => {
+  const trimmed = roomNumber.trim()
+  if (/^\d+$/.test(trimmed)) {
+    return `Room ${trimmed}`
+  }
+  return trimmed
+}

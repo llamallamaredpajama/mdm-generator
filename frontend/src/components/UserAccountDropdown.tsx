@@ -11,7 +11,11 @@ interface AccountInfo {
   remaining: number
 }
 
-export default function UserAccountDropdown() {
+interface UserAccountDropdownProps {
+  iconOnly?: boolean
+}
+
+export default function UserAccountDropdown({ iconOnly }: UserAccountDropdownProps) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const idToken = useAuthToken()
@@ -75,19 +79,22 @@ export default function UserAccountDropdown() {
 
   return (
     <div className="user-account-dropdown" ref={dropdownRef}>
-      <button 
-        className="user-email-button"
+      <button
+        className={`user-email-button${iconOnly ? ' user-email-button--icon-only' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
+        aria-label={iconOnly ? 'Account menu' : undefined}
       >
         <svg className="user-icon" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
         </svg>
-        <span className="user-email-text">{user.email}</span>
-        <svg className="dropdown-arrow" viewBox="0 0 24 24" fill="currentColor" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0)' }}>
-          <path d="M7 10l5 5 5-5z"/>
-        </svg>
+        {!iconOnly && <span className="user-email-text">{user.email}</span>}
+        {!iconOnly && (
+          <svg className="dropdown-arrow" viewBox="0 0 24 24" fill="currentColor" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0)' }}>
+            <path d="M7 10l5 5 5-5z"/>
+          </svg>
+        )}
       </button>
 
       {isOpen && (

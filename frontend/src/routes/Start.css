@@ -27,11 +27,13 @@
 
 .nav-container {
   width: 100%;
-  padding: 0.75rem 2rem;
+  padding: var(--space-md) var(--space-xl);
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-sizing: border-box;
+  max-width: var(--max-width-wide);
+  margin: 0 auto;
 }
 
 .nav-brand {
@@ -41,16 +43,15 @@
 }
 
 .nav-logo {
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: #dc3545;
-  text-shadow: 0 0 20px rgba(220, 53, 69, 0.5);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-accent);
 }
 
 .nav-text {
-  font-size: 1.25rem;
-  font-weight: 300;
-  color: #fff;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-light);
+  color: var(--color-text-primary);
 }
 
 .nav-actions {
@@ -89,21 +90,19 @@
   color: #fff;
 }
 
-.btn-signin {
-  padding: 0.5rem 1.5rem;
-  background: #dc3545;
-  color: #fff;
+.btn-login-link {
+  background: transparent;
   border: none;
-  border-radius: 4px;
+  color: var(--color-text-primary);
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-sm) var(--space-md);
+  transition: color var(--transition-fast);
 }
 
-.btn-signin:hover {
-  background: #c82333;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(220, 53, 69, 0.4);
+.btn-login-link:hover {
+  color: var(--color-accent);
 }
 
 /* Hero Section */
@@ -113,9 +112,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem 2rem;
-  margin-top: -80px;
-  padding-top: 80px;
+  padding: 2rem 2rem 2rem;
+  margin-top: -60px;
+  padding-top: 60px;
 }
 
 .hero-background {
@@ -154,7 +153,7 @@
 
 .title-main {
   display: block;
-  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-size: clamp(2.5rem, 7vw, 4rem);
   font-weight: 300;
   color: #fff;
   margin-bottom: 0.5rem;
@@ -300,6 +299,11 @@
     opacity: 0;
     transform: translate(-50%, -50%) scale(1.5);
   }
+}
+
+/* EKG Animation (mobile only - replaces pulse circles) */
+.ekg-container {
+  display: none;
 }
 
 /* Features Section */
@@ -509,19 +513,58 @@
   }
 
   .nav-container {
-    padding: 0 1rem;
+    padding: var(--space-md);
   }
 
-  .user-email {
-    display: none;
+  .nav-logo {
+    font-size: var(--font-size-lg);
+  }
+
+  .nav-text {
+    font-size: var(--font-size-lg);
   }
 
   .hero {
-    padding: 4rem 1rem 2rem;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 0;
+    padding-top: 80px;
+    padding-bottom: 2rem;
   }
 
   .hero-content {
-    padding: 0 0.5rem;
+    padding: 0 1rem;
+  }
+
+  .title-main {
+    font-size: 10.5vw;
+    white-space: nowrap;
+  }
+
+  .ekg-container {
+    display: block;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 40px;
+    overflow: hidden;
+    margin-bottom: var(--space-sm);
+    opacity: 0.6;
+  }
+
+  .ekg-track {
+    display: flex;
+    width: 200%;
+    height: 100%;
+    animation: ekg-scroll 3s linear infinite;
+  }
+
+  .ekg-svg {
+    width: 50%;
+    height: 100%;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 6px rgba(220, 53, 69, 0.6));
   }
 
   .hero-subtitle {
@@ -707,19 +750,12 @@
   }
 
   .nav-container {
-    padding: 0 0.75rem;
-  }
-
-  .nav-logo {
-    font-size: 1.25rem;
-  }
-
-  .nav-text {
-    font-size: 1rem;
+    padding: var(--space-sm);
   }
 
   .hero {
-    padding: 3rem 0.75rem 1.5rem;
+    padding: 1.5rem 0.75rem 1.5rem;
+    padding-top: 70px;
   }
 
   .hero-content {
@@ -800,6 +836,16 @@
   }
 }
 
+/* EKG scroll animation */
+@keyframes ekg-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 /* Scroll hint animations */
 @keyframes scroll-hint-fade {
   0% { opacity: 1; }
@@ -824,5 +870,9 @@
 
   .scroll-dot {
     transition: none;
+  }
+
+  .ekg-track {
+    animation: none;
   }
 }

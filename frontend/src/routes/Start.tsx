@@ -57,10 +57,10 @@ export default function Start() {
           </div>
           <div className="nav-actions">
             {user ? (
-              <UserAccountDropdown />
+              <UserAccountDropdown iconOnly />
             ) : (
-              <button onClick={signInWithGoogle} className="btn-signin">
-                Sign In
+              <button onClick={signInWithGoogle} className="btn-login-link">
+                Login
               </button>
             )}
           </div>
@@ -73,6 +73,31 @@ export default function Start() {
           <div className="hero-gradient"></div>
           <div className="hero-pattern"></div>
         </div>
+        <div className="ekg-container" aria-hidden="true">
+          <div className="ekg-track">
+            <svg className="ekg-svg" viewBox="0 0 600 100" preserveAspectRatio="none">
+              <path
+                d="M 0,50 L 40,50 L 48,38 L 56,50 L 68,50 L 72,56 L 78,8 L 84,85 L 90,50 L 110,50 L 118,32 L 130,50 L 200,50 L 240,50 L 248,38 L 256,50 L 268,50 L 272,56 L 278,8 L 284,85 L 290,50 L 310,50 L 318,32 L 330,50 L 400,50 L 440,50 L 448,38 L 456,50 L 468,50 L 472,56 L 478,8 L 484,85 L 490,50 L 510,50 L 518,32 L 530,50 L 600,50"
+                fill="none"
+                stroke="#dc3545"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <svg className="ekg-svg" viewBox="0 0 600 100" preserveAspectRatio="none">
+              <path
+                d="M 0,50 L 40,50 L 48,38 L 56,50 L 68,50 L 72,56 L 78,8 L 84,85 L 90,50 L 110,50 L 118,32 L 130,50 L 200,50 L 240,50 L 248,38 L 256,50 L 268,50 L 272,56 L 278,8 L 284,85 L 290,50 L 310,50 L 318,32 L 330,50 L 400,50 L 440,50 L 448,38 L 456,50 L 468,50 L 472,56 L 478,8 L 484,85 L 490,50 L 510,50 L 518,32 L 530,50 L 600,50"
+                fill="none"
+                stroke="#dc3545"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
+
         <div className="hero-content">
           <h1 className="hero-title">
             <span className="title-main">Emergency Medicine</span>

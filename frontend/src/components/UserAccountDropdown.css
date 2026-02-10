@@ -27,6 +27,24 @@
   opacity: 0.8;
 }
 
+.user-email-button--icon-only {
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+}
+
+.user-email-button--icon-only:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.user-email-button--icon-only .user-icon {
+  width: 24px;
+  height: 24px;
+  opacity: 1;
+}
+
 .user-email-text {
   max-width: 200px;
   overflow: hidden;

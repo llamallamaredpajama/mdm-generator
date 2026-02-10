@@ -86,9 +86,8 @@ service cloud.firestore {
         allow update: if isOwner(userId)
           && resource.data.status != 'finalized';
 
-        // Users can only delete draft or archived encounters
-        allow delete: if isOwner(userId)
-          && resource.data.status in ['archived', 'draft'];
+        // Users can delete their own encounters (any status)
+        allow delete: if isOwner(userId);
       }
     }
     

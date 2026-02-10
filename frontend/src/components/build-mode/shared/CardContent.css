@@ -143,6 +143,38 @@
   flex-shrink: 0;
 }
 
+/* ===== BUILD MODE STEP CIRCLES ===== */
+
+.card-content__step-circles {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.card-content__step-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.card-content__step-circle--pending {
+  background: #d4d4d4;
+  color: #888;
+}
+
+.card-content__step-circle--complete {
+  background: var(--color-success);
+  color: #fff;
+}
+
 /* ===== SECTION INDICATORS ===== */
 
 .card-content__sections {

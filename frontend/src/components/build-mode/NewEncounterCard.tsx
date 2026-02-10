@@ -77,7 +77,7 @@ export default function NewEncounterCard({
             className="new-encounter-card__input"
             value={form.roomNumber}
             onChange={(e) => form.onRoomChange(e.target.value)}
-            placeholder="e.g., Room 5"
+            placeholder="e.g., 12"
             disabled={form.isSubmitting}
             autoComplete="off"
           />
