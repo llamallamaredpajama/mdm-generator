@@ -156,13 +156,58 @@
 
 /* ===== RESPONSIVE ADJUSTMENTS ===== */
 
-/* Mobile: full width to match other cards */
+/* Mobile: full width, dark theme to match wallet stack cards */
 @media (max-width: 767px) {
   .new-encounter-card {
     width: 100%;
-    height: auto;             /* Allow flexible height on mobile */
+    height: auto;
     min-height: 200px;
     padding: var(--space-md);
+    background: rgba(38, 38, 42, 1);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .new-encounter-card:hover {
+    background: rgba(42, 42, 46, 1);
+  }
+
+  .new-encounter-card__title {
+    color: #60a5fa;
+  }
+
+  .new-encounter-card__label {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .new-encounter-card__input {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .new-encounter-card__input:focus {
+    border-color: #3b82f6;
+  }
+
+  .new-encounter-card__input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .new-encounter-card__hint {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  /* Quick mode dark variant */
+  .new-encounter-card--mode-quick {
+    border-color: rgba(220, 53, 69, 0.4);
+  }
+
+  .new-encounter-card--mode-quick .new-encounter-card__title {
+    color: #f87171;
+  }
+
+  .new-encounter-card--mode-quick .new-encounter-card__input:focus {
+    border-color: #dc3545;
   }
 }
 

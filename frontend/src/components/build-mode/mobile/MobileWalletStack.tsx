@@ -102,9 +102,9 @@ export default function MobileWalletStack({
     // +1 because index 0 is NewEncounterCard
     const expandedGlobalIndex = expandedIndex === -1 ? -1 : expandedIndex + 1
 
-    // The expanded card's bottom edge
+    // The expanded card's bottom edge — generous gap before the stacked cards
     const expandedHeight = measuredExpandedHeight || HEADER_HEIGHT + EXPANDED_BODY_HEIGHT
-    const expandedBottom = EXPANDED_TOP + expandedHeight + 8 // 8px gap
+    const expandedBottom = EXPANDED_TOP + expandedHeight + 32 // 32px gap
 
     let belowCounter = 0
     for (let i = 0; i < totalItems; i++) {
@@ -135,10 +135,10 @@ export default function MobileWalletStack({
       if (encounterCount === 0) return necHeight
       return necHeight + 8 + (encounterCount - 1) * STACK_SPACING + HEADER_HEIGHT
     }
-    // Expanded: expanded card + remaining cards stacked below
+    // Expanded: expanded card + generous gap + remaining cards stacked below
     const expandedHeight = measuredExpandedHeight || HEADER_HEIGHT + EXPANDED_BODY_HEIGHT
     const remainingCards = totalItems - 1
-    return EXPANDED_TOP + expandedHeight + 8 + (remainingCards - 1) * STACK_SPACING + HEADER_HEIGHT
+    return EXPANDED_TOP + expandedHeight + 32 + (remainingCards - 1) * STACK_SPACING + HEADER_HEIGHT
   })()
 
   /**

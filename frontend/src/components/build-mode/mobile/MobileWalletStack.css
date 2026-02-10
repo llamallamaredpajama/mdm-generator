@@ -1,4 +1,6 @@
-/* Mobile Wallet Stack Layout - Apple Wallet-style card stack */
+/* Mobile Wallet Stack Layout - Apple Wallet-style card stack
+   Dark mode elevation model: lighter surface = higher elevation
+   Pulsating glow on active card via ::before pseudo-element */
 
 /* ===== Container ===== */
 .mobile-wallet-stack {
@@ -13,57 +15,40 @@
   position: absolute;
   left: 1rem;
   right: 1rem;
-  background: var(--card-bg, #ffffff);
+  /* Dark surface — base elevation */
+  background: rgba(28, 28, 30, 1);
   border-radius: 14px;
-  /* Visible border for distinct card edges */
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  /* Layered shadow for depth */
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.08),
-    0 4px 12px rgba(0, 0, 0, 0.06);
+  /* Prominent light border so each card is clearly distinct */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   overflow: hidden;
   transition: top 500ms ease, box-shadow 350ms ease-out;
   will-change: top;
-  /* Left accent border for card identity */
-  border-left: 3px solid var(--color-accent, #dc3545);
 }
 
-/* Cycle through accent colors for visual distinction */
-.mobile-card:nth-child(2) { border-left-color: #3b82f6; }
-.mobile-card:nth-child(3) { border-left-color: #10b981; }
-.mobile-card:nth-child(4) { border-left-color: #f59e0b; }
-.mobile-card:nth-child(5) { border-left-color: #8b5cf6; }
-.mobile-card:nth-child(6) { border-left-color: #ec4899; }
-.mobile-card:nth-child(n+7) { border-left-color: #6366f1; }
-
-/* NewEncounterCard has no left accent */
+/* NewEncounterCard — transparent wrapper, no border */
 .mobile-card--new-encounter {
-  border-left: none;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 /* ===== Collapsed State - Card header peek ===== */
 .mobile-card--collapsed {
   height: 60px;
   overflow: visible;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-left: 3px solid var(--color-accent, #dc3545);
-  /* Subtle shadow — depth comes from overlap, not effects */
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    0 4px 12px rgba(0, 0, 0, 0.06);
+  /* Slightly darker surface for stacked depth */
+  background: rgba(24, 24, 26, 1);
+  /* Strong border so stacked cards read as separate items */
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Preserve accent colors in collapsed state */
-.mobile-card--collapsed:nth-child(2) { border-left-color: #3b82f6; }
-.mobile-card--collapsed:nth-child(3) { border-left-color: #10b981; }
-.mobile-card--collapsed:nth-child(4) { border-left-color: #f59e0b; }
-.mobile-card--collapsed:nth-child(5) { border-left-color: #8b5cf6; }
-.mobile-card--collapsed:nth-child(6) { border-left-color: #ec4899; }
-.mobile-card--collapsed:nth-child(n+7) { border-left-color: #6366f1; }
-
-/* NewEncounterCard collapsed - matches other cards, no left accent */
+/* NewEncounterCard collapsed - transparent wrapper */
 .mobile-card--new-encounter.mobile-card--collapsed {
-  border-left: 1px solid rgba(0, 0, 0, 0.15);
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .mobile-card--collapsed .mobile-card__body {
@@ -72,14 +57,45 @@
 
 /* ===== Expanded State ===== */
 .mobile-card--expanded {
+  /* Lighter surface = higher elevation */
+  background: rgba(38, 38, 42, 1);
   height: auto;
   min-height: 200px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  /* Elevated shadow — selected card lifts above the stack */
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.1),
-    0 12px 28px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
   border-radius: 16px;
+  /* Needed for ::before glow to render behind */
+  overflow: visible;
+  isolation: isolate;
+}
+
+/* Pulsating red glow behind active card */
+.mobile-card--expanded::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 22px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(220, 53, 69, 0.4) 0%,
+    rgba(220, 53, 69, 0.18) 45%,
+    transparent 70%
+  );
+  filter: blur(24px);
+  z-index: -1;
+  pointer-events: none;
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    filter: blur(24px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(28px);
+  }
 }
 
 .mobile-card--expanded .mobile-card__body {
@@ -93,10 +109,9 @@
   height: auto;
   overflow: visible;
   border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.08),
-    0 4px 12px rgba(0, 0, 0, 0.06);
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .mobile-card--new-encounter.mobile-card--collapsed {
@@ -104,7 +119,7 @@
   overflow: hidden;
 }
 
-/* NewEncounterCard collapsed peek header - solid card style, not dashed */
+/* NewEncounterCard collapsed peek header */
 .mobile-card__new-encounter-peek {
   display: flex;
   align-items: center;
@@ -113,65 +128,57 @@
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  /* No inner border - card wrapper provides the border */
   border: none;
   border-radius: 0;
-  color: var(--primary-bg, #3b82f6);
+  color: var(--color-accent, #dc3545);
   font-weight: 600;
   font-size: 1rem;
   background: transparent;
 }
 
 .mobile-card__new-encounter-peek:active {
-  background: rgba(0, 0, 0, 0.03);
-}
-
-/* Quick mode: new encounter peek text is red */
-.mobile-wallet-stack--quick-mode .mobile-card__new-encounter-peek {
-  color: #dc3545;
-}
-
-.mobile-wallet-stack--quick-mode .mobile-card__new-encounter-peek:active {
-  background: rgba(220, 53, 69, 0.06);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 /* ===== Card Header (Always Visible) ===== */
 .mobile-card__header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   height: 60px;
   min-height: 44px; /* Minimum tap target */
-  padding: 0 1rem;
+  padding: 0.5rem 1rem 0;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-card__header:active {
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 /* Header left group: room + age/sex */
 .mobile-card__header-left {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.75rem;
   min-width: 0;
   flex: 1;
+  padding-top: 0.125rem;
 }
 
+/* Room number — white text for dark card background */
 .mobile-card__room {
   font-weight: 700;
   font-size: 1rem;
-  color: var(--text-primary, #1a1a1a);
+  color: rgba(255, 255, 255, 0.92);
   flex-shrink: 0;
 }
 
-/* Age/sex label in grey */
+/* Age/sex label — muted light text */
 .mobile-card__age-sex {
   font-size: 0.85rem;
-  color: var(--text-secondary, #888);
+  color: rgba(255, 255, 255, 0.5);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -199,13 +206,13 @@
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: var(--danger-text, #dc2626);
+  color: #ef4444;
   cursor: pointer;
   transition: background 150ms ease;
 }
 
 .mobile-card__header-delete:active {
-  background: var(--danger-bg, #fee2e2);
+  background: rgba(239, 68, 68, 0.15);
 }
 
 .mobile-card__header-delete:focus-visible {
@@ -221,12 +228,13 @@
   transition:
     opacity 200ms ease-out,
     visibility 200ms ease-out;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 /* ===== Divider between header and body ===== */
 .mobile-card__divider {
   height: 1px;
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.08);
   margin: 0 0 0.75rem;
 }
 
@@ -235,7 +243,7 @@
   display: flex;
   gap: 0.5rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border-color, #e5e5e5);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   margin-top: 1rem;
 }
 
@@ -251,12 +259,12 @@
 }
 
 .mobile-card__action-btn--delete {
-  background: var(--danger-bg, #fee2e2);
-  color: var(--danger-text, #dc2626);
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
 }
 
 .mobile-card__action-btn--delete:active {
-  background: var(--danger-bg-active, #fecaca);
+  background: rgba(239, 68, 68, 0.25);
 }
 
 .mobile-card__action-btn--select {
@@ -295,30 +303,11 @@
   outline-offset: 2px;
 }
 
-/* ===== Quick Mode Styling ===== */
-.mobile-wallet-stack--quick-mode .mobile-card {
-  background: var(--quick-card-bg, #f0f9ff);
-  border-left-color: var(--quick-card-border, #bae6fd);
-}
-
-.mobile-wallet-stack--quick-mode .mobile-card--new-encounter {
-  border-left: none;
-}
-
-/* ===== Build Mode Styling ===== */
-.mobile-wallet-stack--build-mode .mobile-card {
-  background: var(--build-card-bg, #ffffff);
-}
-
-.mobile-wallet-stack--build-mode .mobile-card--new-encounter {
-  border-left: none;
-}
-
 /* ===== Empty State ===== */
 .mobile-wallet-stack--empty {
   padding: 2rem;
   text-align: center;
-  color: var(--text-secondary, #666);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* ===== Reduced Motion ===== */
@@ -334,6 +323,11 @@
   .mobile-card--collapsed .mobile-card__body,
   .mobile-card--expanded .mobile-card__body {
     transition: opacity 100ms ease-out;
+  }
+
+  .mobile-card--expanded::before {
+    animation: none;
+    opacity: 0.8;
   }
 }
 
