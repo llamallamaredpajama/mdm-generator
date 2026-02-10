@@ -151,7 +151,7 @@ export default function Compose() {
     return (
       <div className="compose-page compose-page--carousel">
         <header className="compose-header">
-          <h1 className="compose-title">Compose</h1>
+
           <ModeToggle mode={mode} onModeChange={handleModeChange} disabled />
         </header>
         <ModeDescription mode={mode} />
@@ -170,7 +170,7 @@ export default function Compose() {
     return (
       <div className="compose-page compose-page--carousel">
         <header className="compose-header">
-          <h1 className="compose-title">Compose</h1>
+
           <ModeToggle mode={mode} onModeChange={handleModeChange} />
         </header>
         <ModeDescription mode={mode} />

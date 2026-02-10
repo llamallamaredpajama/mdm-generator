@@ -1,5 +1,5 @@
 import type { EncounterDocument, EncounterMode } from '../../../types/encounter'
-import { getEncounterMode } from '../../../types/encounter'
+import { getEncounterMode, getQuickModeCardLabel } from '../../../types/encounter'
 import { StatusBadge, QuickModeStatusBadge } from '../shared/CardContent'
 
 export interface MobileCardHeaderProps {
@@ -65,8 +65,17 @@ export default function MobileCardHeader({
       aria-expanded={isExpanded}
       aria-label={`${encounter.roomNumber}: ${isQuickMode ? 'Quick encounter' : encounter.chiefComplaint || 'Encounter'}. ${isExpanded ? 'Collapse' : 'Expand'}`}
     >
-      {/* Room number - left side */}
-      <h3 className="mobile-card__room">{encounter.roomNumber}</h3>
+      {/* Room + complaint peek - left side */}
+      <div className="mobile-card__header-left">
+        <h3 className="mobile-card__room">{encounter.roomNumber}</h3>
+        {!isExpanded && (
+          <span className="mobile-card__complaint-peek">
+            {isQuickMode
+              ? getQuickModeCardLabel(encounter) || 'Quick Encounter'
+              : encounter.chiefComplaint || 'No chief complaint'}
+          </span>
+        )}
+      </div>
 
       {/* Status badge, delete, and chevron - right side */}
       <div className="mobile-card__status">

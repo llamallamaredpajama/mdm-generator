@@ -1,37 +1,52 @@
-/* Mobile Wallet Stack Layout - Apple Wallet-style vertical stack */
+/* Mobile Wallet Stack Layout - Apple Wallet-style absolute positioning */
 
 /* ===== Container ===== */
 .mobile-wallet-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  position: relative;
   width: 100%;
   padding: 1rem;
-  position: relative;
-}
-
-/* ===== Card Base ===== */
-.mobile-card {
-  position: relative;
-  background: var(--card-bg, #ffffff);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  transition:
-    height 400ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    transform 300ms ease-out,
-    margin-bottom 300ms ease-out;
-  will-change: height, transform;
 }
 
-.mobile-card:not(:last-child) {
-  margin-bottom: -20px; /* Stack overlap like Apple Wallet */
+/* ===== Card Base (absolute positioned) ===== */
+.mobile-card {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  background: var(--card-bg, #ffffff);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: top 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: top;
+  /* Left accent border for card identity */
+  border-left: 3px solid var(--color-accent, #dc3545);
+}
+
+/* Cycle through accent colors for visual distinction */
+.mobile-card:nth-child(2) { border-left-color: #3b82f6; }
+.mobile-card:nth-child(3) { border-left-color: #10b981; }
+.mobile-card:nth-child(4) { border-left-color: #f59e0b; }
+.mobile-card:nth-child(5) { border-left-color: #8b5cf6; }
+.mobile-card:nth-child(6) { border-left-color: #ec4899; }
+.mobile-card:nth-child(n+7) { border-left-color: #6366f1; }
+
+/* NewEncounterCard has no left accent */
+.mobile-card--new-encounter {
+  border-left: none;
 }
 
 /* ===== Collapsed State ===== */
 .mobile-card--collapsed {
   height: 60px;
   overflow: hidden;
+  /* Subtle top edge line so stacked peek headers look separate */
+  box-shadow:
+    0 -1px 0 rgba(255, 255, 255, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .mobile-card--collapsed .mobile-card__body {
@@ -43,8 +58,11 @@
 .mobile-card--expanded {
   height: auto;
   min-height: 200px;
-  z-index: 10;
-  margin-bottom: 1rem !important;
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+  /* Slightly larger radius when expanded for prominence */
+  border-radius: 16px;
 }
 
 .mobile-card--expanded .mobile-card__body {
@@ -53,10 +71,40 @@
   transition: opacity 200ms ease-out 150ms;
 }
 
-/* Push other cards down when one is expanded */
-.mobile-card--expanded ~ .mobile-card {
-  transform: translateY(20px);
-  margin-bottom: 0;
+/* ===== NewEncounterCard wrapper ===== */
+.mobile-card--new-encounter {
+  height: auto;
+  overflow: visible;
+  border-radius: 14px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.mobile-card--new-encounter.mobile-card--collapsed {
+  height: 60px;
+  overflow: hidden;
+}
+
+/* NewEncounterCard collapsed peek header */
+.mobile-card__new-encounter-peek {
+  display: flex;
+  align-items: center;
+  height: 60px;
+  padding: 0 1rem;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  border: 2px dashed rgba(59, 130, 246, 0.4);
+  border-radius: 14px;
+  color: var(--primary-bg, #3b82f6);
+  font-weight: 500;
+  font-size: 1rem;
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.mobile-card__new-encounter-peek:active {
+  background: rgba(59, 130, 246, 0.1);
 }
 
 /* ===== Card Header (Always Visible) ===== */
@@ -73,19 +121,40 @@
 }
 
 .mobile-card__header:active {
-  background: var(--card-active-bg, rgba(0, 0, 0, 0.05));
+  background: rgba(0, 0, 0, 0.03);
+}
+
+/* Header left group: room + complaint peek */
+.mobile-card__header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .mobile-card__room {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1rem;
   color: var(--text-primary, #1a1a1a);
+  flex-shrink: 0;
+}
+
+.mobile-card__complaint-peek {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #888);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  opacity: 0.7;
 }
 
 .mobile-card__status {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 /* Header inline delete button */
@@ -98,7 +167,7 @@
   min-width: 44px; /* Minimum tap target */
   min-height: 44px;
   padding: 0;
-  margin: -4px 0; /* Extend tap area without affecting layout */
+  margin: -4px 0;
   background: transparent;
   border: none;
   border-radius: 8px;
@@ -126,6 +195,13 @@
     visibility 200ms ease-out;
 }
 
+/* ===== Divider between header and body ===== */
+.mobile-card__divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 0 0 0.75rem;
+}
+
 /* ===== Card Actions ===== */
 .mobile-card__actions {
   display: flex;
@@ -136,7 +212,7 @@
 }
 
 .mobile-card__action-btn {
-  min-height: 44px; /* Minimum tap target */
+  min-height: 44px;
   min-width: 44px;
   padding: 0.5rem 1rem;
   border-radius: 8px;
@@ -169,14 +245,14 @@
 .mobile-card__action {
   display: block;
   width: 100%;
-  min-height: 44px; /* Minimum tap target */
+  min-height: 44px;
   padding: 0.75rem 1rem;
   margin-top: 1rem;
   background: var(--primary-bg, #3b82f6);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-weight: 500;
+  border-radius: 10px;
+  font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
   transition: background 150ms ease;
@@ -194,13 +270,20 @@
 /* ===== Quick Mode Styling ===== */
 .mobile-wallet-stack--quick-mode .mobile-card {
   background: var(--quick-card-bg, #f0f9ff);
-  border: 1px solid var(--quick-card-border, #bae6fd);
+  border-left-color: var(--quick-card-border, #bae6fd);
+}
+
+.mobile-wallet-stack--quick-mode .mobile-card--new-encounter {
+  border-left: none;
 }
 
 /* ===== Build Mode Styling ===== */
 .mobile-wallet-stack--build-mode .mobile-card {
   background: var(--build-card-bg, #ffffff);
-  border: 1px solid var(--build-card-border, #e5e5e5);
+}
+
+.mobile-wallet-stack--build-mode .mobile-card--new-encounter {
+  border-left: none;
 }
 
 /* ===== Empty State ===== */
@@ -220,11 +303,6 @@
     transition: none;
   }
 
-  .mobile-card--expanded ~ .mobile-card {
-    transition: none;
-  }
-
-  /* Still allow opacity changes for accessibility */
   .mobile-card--collapsed .mobile-card__body,
   .mobile-card--expanded .mobile-card__body {
     transition: opacity 100ms ease-out;
@@ -247,6 +325,7 @@
   width: 20px;
   height: 20px;
   transition: transform 300ms ease-out;
+  color: var(--text-secondary, #999);
 }
 
 .mobile-card--expanded .mobile-card__expand-indicator {

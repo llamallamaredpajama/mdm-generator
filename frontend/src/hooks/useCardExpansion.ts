@@ -11,11 +11,12 @@ export interface CardExpansionState {
 export interface UseCardExpansionReturn extends CardExpansionState {
   expand: (cardId: string, fullscreen?: boolean) => void;
   collapse: () => void;
+  toggle: (cardId: string) => void;
   isExpanded: (cardId: string) => boolean;
 }
 
-const EXPAND_DURATION = 400;
-const COLLAPSE_DURATION = 300;
+export const EXPAND_DURATION = 400;
+export const COLLAPSE_DURATION = 300;
 
 export function useCardExpansion(): UseCardExpansionReturn {
   const [state, setState] = useState<CardExpansionState>({
@@ -56,6 +57,23 @@ export function useCardExpansion(): UseCardExpansionReturn {
     }, COLLAPSE_DURATION);
   }, []);
 
+  const toggle = useCallback(
+    (cardId: string) => {
+      if (state.expandedCardId === cardId) {
+        // Already expanded — collapse it
+        collapse();
+      } else if (state.expandedCardId) {
+        // Different card expanded — collapse first, then expand new
+        collapse();
+        setTimeout(() => expand(cardId), COLLAPSE_DURATION);
+      } else {
+        // Nothing expanded — expand directly
+        expand(cardId);
+      }
+    },
+    [state.expandedCardId, collapse, expand]
+  );
+
   const isExpanded = useCallback(
     (cardId: string) => state.expandedCardId === cardId,
     [state.expandedCardId]
@@ -88,6 +106,7 @@ export function useCardExpansion(): UseCardExpansionReturn {
     ...state,
     expand,
     collapse,
+    toggle,
     isExpanded,
   };
 }

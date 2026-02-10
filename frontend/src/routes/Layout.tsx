@@ -7,7 +7,6 @@ export default function Layout() {
       <header className="layout-header">
         <nav className="layout-nav">
           <Link to="/" className="layout-brand">
-            <span className="layout-brand-icon">+</span>
             <span className="layout-brand-text">
               <strong>MDM</strong> Generator
             </span>

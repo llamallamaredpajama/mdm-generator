@@ -409,36 +409,7 @@
 
 /* ─────────────────────────────────────────
    Dark Theme Overrides (for Build Mode)
-   Using the existing dark background
    ───────────────────────────────────────── */
-
-/* Dashboard grid cards - inherit from EncounterDashboard.css but ensure dark theme */
-.build-mode-page .encounter-dashboard {
-  background: transparent;
-}
-
-.build-mode-page .encounter-dashboard__grid {
-  /* Override light theme defaults for dark mode */
-}
-
-.build-mode-page .encounter-card {
-  background: var(--color-bg-tertiary);
-  border-color: var(--color-border-subtle);
-  color: var(--color-text-primary);
-}
-
-.build-mode-page .encounter-card:hover {
-  border-color: var(--color-build-accent);
-  box-shadow: 0 2px 12px var(--color-build-accent-glow);
-}
-
-.build-mode-page .encounter-room {
-  color: var(--color-text-primary);
-}
-
-.build-mode-page .encounter-complaint {
-  color: var(--color-text-secondary);
-}
 
 /* Section panels - dark theme */
 .build-mode-page .section-panel {

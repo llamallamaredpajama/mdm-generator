@@ -17,6 +17,8 @@ export interface CardContentProps {
   showSectionIndicators?: boolean
   /** Compact display for collapsed/summary views */
   compact?: boolean
+  /** Hide the header row (room + status) — used when parent already renders its own header */
+  hideHeader?: boolean
 }
 
 /**
@@ -166,6 +168,7 @@ export default function CardContent({
   mode,
   showSectionIndicators = true,
   compact = false,
+  hideHeader = false,
 }: CardContentProps) {
   const encounterMode = mode ?? getEncounterMode(encounter)
   const isQuickMode = encounterMode === 'quick'
@@ -187,14 +190,16 @@ export default function CardContent({
   return (
     <div className={contentClasses}>
       {/* Header: Room + Status */}
-      <div className="card-content__header">
-        <h3 className="card-content__room">{encounter.roomNumber}</h3>
-        {isQuickMode ? (
-          <QuickModeStatusBadge status={quickStatus} />
-        ) : (
-          <StatusBadge status={encounter.status} />
-        )}
-      </div>
+      {!hideHeader && (
+        <div className="card-content__header">
+          <h3 className="card-content__room">{encounter.roomNumber}</h3>
+          {isQuickMode ? (
+            <QuickModeStatusBadge status={quickStatus} />
+          ) : (
+            <StatusBadge status={encounter.status} />
+          )}
+        </div>
+      )}
 
       {/* Body: Chief Complaint / Quick Mode Label */}
       <p
