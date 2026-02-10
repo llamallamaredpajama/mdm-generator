@@ -1,6 +1,6 @@
 /* Mobile Wallet Stack Layout - Apple Wallet-style card stack
    Dark mode elevation model: lighter surface = higher elevation
-   Pulsating glow on active card via ::before pseudo-element */
+   Edge glow on active card: layered box-shadow with soft fade */
 
 /* ===== Container ===== */
 .mobile-wallet-stack {
@@ -15,10 +15,8 @@
   position: absolute;
   left: 1rem;
   right: 1rem;
-  /* Dark surface — base elevation */
   background: rgba(28, 28, 30, 1);
   border-radius: 14px;
-  /* Prominent light border so each card is clearly distinct */
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   overflow: hidden;
@@ -26,29 +24,21 @@
   will-change: top;
 }
 
-/* NewEncounterCard — transparent wrapper, no border */
-.mobile-card--new-encounter {
-  border: none;
-  background: transparent;
-  box-shadow: none;
-}
-
 /* ===== Collapsed State - Card header peek ===== */
 .mobile-card--collapsed {
   height: 60px;
   overflow: visible;
-  /* Slightly darker surface for stacked depth */
   background: rgba(24, 24, 26, 1);
-  /* Strong border so stacked cards read as separate items */
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  /* Strong visible border — each card reads as distinct in the stack */
+  border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* NewEncounterCard collapsed - transparent wrapper */
+/* NewEncounterCard collapsed — visible card in stack with border */
 .mobile-card--new-encounter.mobile-card--collapsed {
-  border: none;
-  background: transparent;
-  box-shadow: none;
+  background: rgba(24, 24, 26, 1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
 .mobile-card--collapsed .mobile-card__body {
@@ -64,38 +54,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
   border-radius: 16px;
-  /* Needed for ::before glow to render behind */
   overflow: visible;
-  isolation: isolate;
-}
-
-/* Pulsating red glow behind active card */
-.mobile-card--expanded::before {
-  content: "";
-  position: absolute;
-  inset: -12px;
-  border-radius: 22px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(220, 53, 69, 0.4) 0%,
-    rgba(220, 53, 69, 0.18) 45%,
-    transparent 70%
-  );
-  filter: blur(24px);
-  z-index: -1;
-  pointer-events: none;
-  animation: glow-pulse 3s ease-in-out infinite;
-}
-
-@keyframes glow-pulse {
-  0%, 100% {
-    opacity: 0.6;
-    filter: blur(24px);
-  }
-  50% {
-    opacity: 1;
-    filter: blur(28px);
-  }
 }
 
 .mobile-card--expanded .mobile-card__body {
@@ -104,27 +63,57 @@
   transition: opacity 200ms ease-out 150ms;
 }
 
-/* ===== NewEncounterCard wrapper ===== */
-.mobile-card--new-encounter {
+/* ===== NewEncounterCard wrapper — idle (active) state ===== */
+/* When showing the full form (not collapsed), use opaque dark bg to mask glow */
+.mobile-card--new-encounter:not(.mobile-card--collapsed) {
   height: auto;
   overflow: visible;
   border-radius: 14px;
-  border: none;
-  background: transparent;
-  box-shadow: none;
+  /* Opaque background so glow is masked — only edges visible */
+  background: rgba(38, 38, 42, 1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
-.mobile-card--new-encounter.mobile-card--collapsed {
-  height: 60px;
-  overflow: hidden;
+/* ===== Active Card Glow — applied via .mobile-card--active-glow ===== */
+/* Uses ::before with layered box-shadow for soft edge glow.
+   The card's opaque background masks the center — glow only visible at edges. */
+.mobile-card--active-glow {
+  /* Required for pseudo-elements to render outside card bounds */
+  overflow: visible;
+  isolation: isolate;
+}
+
+/* Soft edge glow — box-shadow layers naturally fade outward */
+.mobile-card--active-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    0 0 8px 2px rgba(220, 53, 69, 0.4),
+    0 0 20px 6px rgba(220, 53, 69, 0.2),
+    0 0 40px 12px rgba(220, 53, 69, 0.08);
+  z-index: -1;
+  pointer-events: none;
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* NewEncounterCard collapsed peek header */
 .mobile-card__new-encounter-peek {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   height: 60px;
-  padding: 0 1rem;
+  padding: 0.5rem 1rem 0;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -325,9 +314,9 @@
     transition: opacity 100ms ease-out;
   }
 
-  .mobile-card--expanded::before {
+  .mobile-card--active-glow::before {
     animation: none;
-    opacity: 0.8;
+    opacity: 0.7;
   }
 }
 

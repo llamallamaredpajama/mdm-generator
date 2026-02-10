@@ -31,13 +31,16 @@ const STACK_SPACING = HEADER_HEIGHT + STACK_OVERLAP // 40
 /** Estimated body height when a card is expanded */
 const EXPANDED_BODY_HEIGHT = 280
 /** Top position for the expanded card */
-const EXPANDED_TOP = 8
+const EXPANDED_TOP = 32
+/** Space reserved for clear deck button below the stack */
+const CLEAR_DECK_RESERVE = 16
 
 /**
  * MobileWalletStack - Apple Wallet-style vertical card stack for mobile
  *
  * Uses absolute positioning with calculated `top` values so cards
  * animate smoothly to/from the top of the stack when tapped.
+ * When a card is expanded, the remaining stack anchors to the bottom.
  */
 export default function MobileWalletStack({
   encounters,
@@ -77,20 +80,32 @@ export default function MobileWalletStack({
   /**
    * Calculate positions for all cards.
    * Returns { top, zIndex } for each card index (0 = NewEncounterCard).
-   * Depth is conveyed purely through overlap and shadow — no 3D transforms.
+   *
+   * When expanded: active card at top, remaining stack anchored to bottom.
+   * When idle: cards stack top-down from NewEncounterCard.
    */
   const calculatePositions = useCallback(() => {
     const positions: Array<{ top: number; zIndex: number }> = []
 
     if (!expandedCardId) {
-      // Idle state: NewEncounterCard at top with its full height,
-      // encounter cards stacked below it with STACK_SPACING overlap
+      // Idle state: NewEncounterCard active at top, encounter cards
+      // anchored to bottom — same layout pattern as expanded state
       const necHeight = newEncounterHeight || HEADER_HEIGHT
-      const firstEncounterTop = necHeight + 8 // 8px gap after NewEncounterCard
+      const encounterCount = encounters.length
+      const stackHeight = encounterCount > 0
+        ? (encounterCount - 1) * STACK_SPACING + HEADER_HEIGHT
+        : 0
+
+      const minContainerHeight = Math.max(
+        necHeight + (120 - EXPANDED_TOP) + stackHeight + CLEAR_DECK_RESERVE,
+        520
+      )
+      const stackStartTop = minContainerHeight - stackHeight - CLEAR_DECK_RESERVE
+
       positions.push({ top: 0, zIndex: 1 }) // NewEncounterCard
       for (let i = 1; i < totalItems; i++) {
         positions.push({
-          top: firstEncounterTop + (i - 1) * STACK_SPACING,
+          top: stackStartTop + (i - 1) * STACK_SPACING,
           zIndex: i + 1,
         })
       }
@@ -102,9 +117,24 @@ export default function MobileWalletStack({
     // +1 because index 0 is NewEncounterCard
     const expandedGlobalIndex = expandedIndex === -1 ? -1 : expandedIndex + 1
 
-    // The expanded card's bottom edge — generous gap before the stacked cards
+    // Calculate expanded card height
     const expandedHeight = measuredExpandedHeight || HEADER_HEIGHT + EXPANDED_BODY_HEIGHT
-    const expandedBottom = EXPANDED_TOP + expandedHeight + 32 // 32px gap
+
+    // Calculate total stack height for remaining cards
+    const remainingCards = totalItems - 1
+    const stackHeight = remainingCards > 0
+      ? (remainingCards - 1) * STACK_SPACING + HEADER_HEIGHT
+      : 0
+
+    // Container fills viewport — stack anchors to bottom
+    // Min container height: enough for active card + gap + stack + reserve
+    const minContainerHeight = Math.max(
+      expandedHeight + 120 + stackHeight + CLEAR_DECK_RESERVE,
+      520 // minimum to fill mobile viewport area
+    )
+
+    // Stack starts near the bottom of the container
+    const stackStartTop = minContainerHeight - stackHeight - CLEAR_DECK_RESERVE
 
     let belowCounter = 0
     for (let i = 0; i < totalItems; i++) {
@@ -112,9 +142,9 @@ export default function MobileWalletStack({
         // Expanded card → moves to top
         positions.push({ top: EXPANDED_TOP, zIndex: totalItems + 1 })
       } else {
-        // Non-expanded cards stack below the expanded card
+        // Non-expanded cards stack at the bottom
         positions.push({
-          top: expandedBottom + belowCounter * STACK_SPACING,
+          top: stackStartTop + belowCounter * STACK_SPACING,
           zIndex: belowCounter + 1,
         })
         belowCounter++
@@ -129,16 +159,28 @@ export default function MobileWalletStack({
   // Container height
   const containerHeight = (() => {
     if (!expandedCardId) {
-      // Idle: NewEncounterCard full height + gap + stacked encounter cards
+      // Idle: same gap formula as expanded state so spacing is consistent
       const necHeight = newEncounterHeight || HEADER_HEIGHT
       const encounterCount = encounters.length
       if (encounterCount === 0) return necHeight
-      return necHeight + 8 + (encounterCount - 1) * STACK_SPACING + HEADER_HEIGHT
+      const stackHeight = encounterCount > 0
+        ? (encounterCount - 1) * STACK_SPACING + HEADER_HEIGHT
+        : 0
+      return Math.max(
+        necHeight + (120 - EXPANDED_TOP) + stackHeight + CLEAR_DECK_RESERVE,
+        520
+      )
     }
-    // Expanded: expanded card + generous gap + remaining cards stacked below
+    // Expanded: calculate same as positioning logic
     const expandedHeight = measuredExpandedHeight || HEADER_HEIGHT + EXPANDED_BODY_HEIGHT
     const remainingCards = totalItems - 1
-    return EXPANDED_TOP + expandedHeight + 32 + (remainingCards - 1) * STACK_SPACING + HEADER_HEIGHT
+    const stackHeight = remainingCards > 0
+      ? (remainingCards - 1) * STACK_SPACING + HEADER_HEIGHT
+      : 0
+    return Math.max(
+      expandedHeight + 120 + stackHeight + CLEAR_DECK_RESERVE,
+      520
+    )
   })()
 
   /**
@@ -182,6 +224,7 @@ export default function MobileWalletStack({
           'mobile-card',
           'mobile-card--new-encounter',
           newEncounterCollapsed && 'mobile-card--collapsed',
+          !newEncounterCollapsed && 'mobile-card--active-glow',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -220,6 +263,7 @@ export default function MobileWalletStack({
             className={[
               'mobile-card',
               cardExpanded && 'mobile-card--expanded',
+              cardExpanded && 'mobile-card--active-glow',
               !cardExpanded && 'mobile-card--collapsed',
             ]
               .filter(Boolean)

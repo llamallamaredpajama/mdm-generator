@@ -28,7 +28,7 @@
   justify-content: space-between;
   gap: var(--space-lg);
   max-width: 1200px;
-  margin: var(--space-2xl) auto var(--space-md);
+  margin: var(--space-lg) auto var(--space-md);
   width: 100%;
 }
 
