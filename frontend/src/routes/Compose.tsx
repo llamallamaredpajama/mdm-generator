@@ -198,7 +198,6 @@ export default function Compose() {
     <div className="compose-page compose-page--carousel">
       {/* Header */}
       <header className="compose-header">
-        <h1 className="compose-title">Compose</h1>
         <ModeToggle mode={mode} onModeChange={handleModeChange} />
       </header>
 

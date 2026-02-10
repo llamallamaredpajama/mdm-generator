@@ -24,7 +24,7 @@
   background: rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--color-border-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .layout-nav {
@@ -55,7 +55,7 @@
 }
 
 .layout-brand-text {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-light);
   color: var(--color-text-primary);
 }
@@ -105,6 +105,28 @@
   height: 16px;
 }
 
+/* Compose link - larger and more prominent */
+.layout-nav-link--compose {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--space-sm);
+}
+
+.layout-nav-link--compose svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Settings link - icon only */
+.layout-nav-link--settings {
+  padding: var(--space-sm);
+}
+
+.layout-nav-link--settings svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* ─────────────────────────────────────────
    Main Content Area
    ───────────────────────────────────────── */
@@ -136,7 +158,7 @@
   }
 
   .layout-brand-text {
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-lg);
   }
 
   .layout-nav-links {
@@ -146,6 +168,15 @@
   .layout-nav-link {
     padding: var(--space-sm);
     font-size: var(--font-size-xs);
+  }
+
+  .layout-nav-link--compose {
+    font-size: var(--font-size-lg);
+  }
+
+  .layout-nav-link--compose svg {
+    width: 20px;
+    height: 20px;
   }
 
   .layout-main {
@@ -162,6 +193,10 @@
   .layout-nav-link {
     padding: var(--space-xs);
     font-size: 0.7rem;
+  }
+
+  .layout-nav-link--compose {
+    font-size: var(--font-size-base);
   }
 
   .layout-main {

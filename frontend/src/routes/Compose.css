@@ -28,15 +28,8 @@
   justify-content: space-between;
   gap: var(--space-lg);
   max-width: 1200px;
-  margin: 0 auto var(--space-md);
+  margin: var(--space-2xl) auto var(--space-md);
   width: 100%;
-}
-
-.compose-title {
-  margin: 0;
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
 }
 
 /* ===== MODE TOGGLE - Glass Morphism ===== */
@@ -264,10 +257,6 @@
 @media (max-width: 768px) {
   .compose-page--carousel {
     padding: var(--space-md);
-  }
-
-  .compose-title {
-    font-size: var(--font-size-xl);
   }
 
   .compose-mode-toggle {
