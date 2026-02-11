@@ -1,5 +1,7 @@
 import 'dotenv/config'
 import express from 'express'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import { z } from 'zod'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -13,6 +15,9 @@ import {
   Section1RequestSchema,
   Section2RequestSchema,
   FinalizeRequestSchema,
+  DifferentialItemSchema,
+  MdmPreviewSchema,
+  FinalMdmSchema,
   type DifferentialItem,
   type MdmPreview,
   type FinalMdm,
@@ -56,6 +61,37 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '1mb' }))
 
+// Security headers
+app.use(helmet())
+
+// Rate limiting — global: 60 req/min per IP
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+})
+app.use(globalLimiter)
+
+// Strict LLM rate limit: 10 req/min per IP (for endpoints that call Vertex AI)
+const llmLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Rate limit exceeded for AI operations' },
+})
+
+// Very strict limit for unquoted LLM calls: 5 req/min
+const parseLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Rate limit exceeded for parse operations' },
+})
+
 // Initialize Firebase Admin (expects GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS or default creds in Cloud Run)
 async function initFirebase() {
   try {
@@ -98,6 +134,22 @@ const GenerateSchema = z.object({
   userIdToken: z.string().min(10),
 })
 
+/** Reusable token-size check against plan limits */
+function checkTokenSize(text: string, maxTokensPerRequest: number) {
+  const tokenEstimate = Math.ceil(text.length / 4)
+  if (tokenEstimate > maxTokensPerRequest) {
+    return {
+      exceeded: true as const,
+      payload: {
+        error: `Input too large for your plan. Maximum ${maxTokensPerRequest} tokens allowed.`,
+        tokenEstimate,
+        maxAllowed: maxTokensPerRequest,
+      },
+    }
+  }
+  return { exceeded: false as const }
+}
+
 app.get('/health', (_req, res) => res.json({ ok: true }))
 
 // Admin endpoint to set user plan (protected by admin check)
@@ -132,7 +184,7 @@ app.post('/v1/admin/set-plan', async (req, res) => {
     })
   } catch (e: any) {
     console.error(e)
-    return res.status(500).json({ error: e.message || 'Internal error' })
+    return res.status(500).json({ error: 'Internal error' })
   }
 })
 
@@ -175,7 +227,7 @@ const ParseNarrativeSchema = z.object({
   userIdToken: z.string().min(10),
 })
 
-app.post('/v1/parse-narrative', async (req, res) => {
+app.post('/v1/parse-narrative', parseLimiter, async (req, res) => {
   try {
     const parsed = ParseNarrativeSchema.safeParse(req.body)
     if (!parsed.success) return res.status(400).json({ error: 'Invalid request' })
@@ -198,10 +250,7 @@ app.post('/v1/parse-narrative', async (req, res) => {
     try {
       const result = await callGeminiFlash(prompt)
 
-      // Log the raw model output for debugging
-      console.log('=== RAW PARSE OUTPUT ===')
-      console.log(result.text.substring(0, 500)) // First 500 chars
-      console.log('=== END PREVIEW ===')
+      console.log({ action: 'model-response', endpoint: 'parse-narrative', responseLength: result.text.length })
 
       // Strip markdown code fences if present
       let cleanedText = result.text
@@ -255,7 +304,7 @@ app.post('/v1/parse-narrative', async (req, res) => {
   }
 })
 
-app.post('/v1/generate', async (req, res) => {
+app.post('/v1/generate', llmLimiter, async (req, res) => {
   try {
     const parsed = GenerateSchema.safeParse(req.body)
     if (!parsed.success) return res.status(400).json({ error: 'Invalid request' })
@@ -276,11 +325,11 @@ app.post('/v1/generate', async (req, res) => {
     // Ensure user exists
     await userService.ensureUser(uid, email)
     
-    // Check quota
-    const quotaCheck = await userService.checkQuota(uid)
+    // Check and atomically increment quota
+    const quotaCheck = await userService.checkAndIncrementQuota(uid)
     if (!quotaCheck.allowed) {
-      return res.status(402).json({ 
-        error: 'Monthly quota exceeded', 
+      return res.status(402).json({
+        error: 'Monthly quota exceeded',
         used: quotaCheck.used,
         limit: quotaCheck.limit,
         remaining: 0
@@ -289,13 +338,9 @@ app.post('/v1/generate', async (req, res) => {
     
     // Check token limit per request based on plan
     const stats = await userService.getUsageStats(uid)
-    const tokenEstimate = Math.ceil(narrative.length / 4)
-    if (tokenEstimate > stats.features.maxTokensPerRequest) {
-      return res.status(400).json({ 
-        error: `Input too large for your plan. Maximum ${stats.features.maxTokensPerRequest} tokens allowed.`,
-        tokenEstimate,
-        maxAllowed: stats.features.maxTokensPerRequest
-      })
+    const tokenCheck = checkTokenSize(narrative, stats.features.maxTokensPerRequest)
+    if (tokenCheck.exceeded) {
+      return res.status(400).json(tokenCheck.payload)
     }
 
     // Build prompt and call model
@@ -306,10 +351,7 @@ app.post('/v1/generate', async (req, res) => {
     try {
       const result = await callGeminiFlash(prompt)
       
-      // Log the raw model output for debugging
-      console.log('=== RAW MODEL OUTPUT ===')
-      console.log(result.text.substring(0, 500)) // First 500 chars
-      console.log('=== END PREVIEW ===')
+      console.log({ action: 'model-response', endpoint: 'generate', responseLength: result.text.length })
       
       // Strip markdown code fences if present
       let cleanedText = result.text
@@ -351,8 +393,7 @@ app.post('/v1/generate', async (req, res) => {
       draftText = renderMdmText(draftJson)
     }
 
-    // Increment usage on success
-    await userService.incrementUsage(uid)
+    // Usage already incremented atomically by checkAndIncrementQuota
     
     // Get updated stats
     const updatedStats = await userService.getUsageStats(uid)
@@ -390,7 +431,7 @@ const getEncounterRef = (userId: string, encounterId: string) =>
  * POST /v1/build-mode/process-section1
  * Process initial evaluation (Section 1) and generate worst-first differential
  */
-app.post('/v1/build-mode/process-section1', async (req, res) => {
+app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
   try {
     // 1. Validate request
     const parsed = Section1RequestSchema.safeParse(req.body)
@@ -434,9 +475,9 @@ app.post('/v1/build-mode/process-section1', async (req, res) => {
     // 5. Handle quota - only count first submission per encounter
     let quotaRemaining: number
     if (!encounter.quotaCounted) {
-      // Ensure user exists and check quota
+      // Ensure user exists, atomically check and increment quota
       await userService.ensureUser(uid, email)
-      const quotaCheck = await userService.checkQuota(uid)
+      const quotaCheck = await userService.checkAndIncrementQuota(uid)
       if (!quotaCheck.allowed) {
         return res.status(402).json({
           error: 'Monthly quota exceeded',
@@ -445,14 +486,19 @@ app.post('/v1/build-mode/process-section1', async (req, res) => {
           remaining: 0,
         })
       }
-      // Decrement quota and mark as counted
-      await userService.incrementUsage(uid)
+      // Mark as counted
       await encounterRef.update({ quotaCounted: true })
     }
 
     // Get updated quota
     const stats = await userService.getUsageStats(uid)
     quotaRemaining = stats.remaining
+
+    // Check token limit per request based on plan
+    const tokenCheck = checkTokenSize(content, stats.features.maxTokensPerRequest)
+    if (tokenCheck.exceeded) {
+      return res.status(400).json(tokenCheck.payload)
+    }
 
     // 6. Build prompt and call Vertex AI
     const systemPrompt = await fs.readFile(
@@ -473,16 +519,30 @@ app.post('/v1/build-mode/process-section1', async (req, res) => {
         .trim()
 
       try {
-        differential = JSON.parse(cleanedText)
+        let rawParsed = JSON.parse(cleanedText)
         // Validate structure
-        if (!Array.isArray(differential)) {
+        if (!Array.isArray(rawParsed)) {
           const jsonStart = cleanedText.indexOf('[')
           const jsonEnd = cleanedText.lastIndexOf(']')
           if (jsonStart >= 0 && jsonEnd > jsonStart) {
-            differential = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+            rawParsed = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
           } else {
             throw new Error('Expected array of differential items')
           }
+        }
+        // Validate each item with Zod schema
+        const validated = z.array(DifferentialItemSchema).safeParse(rawParsed)
+        if (validated.success) {
+          differential = validated.data
+        } else {
+          console.warn('Section 1 Zod validation failed:', validated.error.message)
+          differential = [
+            {
+              diagnosis: 'Unable to validate differential',
+              urgency: 'urgent' as const,
+              reasoning: 'Model output did not match expected schema. Please review and resubmit.',
+            },
+          ]
         }
       } catch (parseError) {
         console.error('Section 1 JSON parse error:', parseError)
@@ -541,7 +601,7 @@ app.post('/v1/build-mode/process-section1', async (req, res) => {
  * POST /v1/build-mode/process-section2
  * Process workup & results (Section 2) and generate MDM preview
  */
-app.post('/v1/build-mode/process-section2', async (req, res) => {
+app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
   try {
     // 1. Validate request
     const parsed = Section2RequestSchema.safeParse(req.body)
@@ -587,6 +647,13 @@ app.post('/v1/build-mode/process-section2', async (req, res) => {
       })
     }
 
+    // Check token limit per request based on plan
+    const stats = await userService.getUsageStats(uid)
+    const tokenCheck = checkTokenSize(content, stats.features.maxTokensPerRequest)
+    if (tokenCheck.exceeded) {
+      return res.status(400).json(tokenCheck.payload)
+    }
+
     // 6. Build prompt with section 1 context and call Vertex AI
     const section1Content = encounter.section1?.content || ''
     const section1Response = encounter.section1?.llmResponse || []
@@ -604,21 +671,49 @@ app.post('/v1/build-mode/process-section2', async (req, res) => {
         .trim()
 
       try {
-        mdmPreview = JSON.parse(cleanedText)
-        // Ensure required fields
-        if (!mdmPreview.problems) mdmPreview.problems = []
-        if (!mdmPreview.differential) mdmPreview.differential = []
-        if (!mdmPreview.dataReviewed) mdmPreview.dataReviewed = []
-        if (!mdmPreview.reasoning) mdmPreview.reasoning = ''
+        let rawParsed = JSON.parse(cleanedText)
+        // Try to extract JSON if top-level parse isn't an object
+        if (typeof rawParsed !== 'object' || rawParsed === null) {
+          const jsonStart = cleanedText.indexOf('{')
+          const jsonEnd = cleanedText.lastIndexOf('}')
+          if (jsonStart >= 0 && jsonEnd > jsonStart) {
+            rawParsed = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+          } else {
+            throw new Error('No valid JSON object found')
+          }
+        }
+        // Validate with Zod schema
+        const validated = MdmPreviewSchema.safeParse(rawParsed)
+        if (validated.success) {
+          mdmPreview = validated.data
+        } else {
+          console.warn('Section 2 Zod validation failed:', validated.error.message)
+          mdmPreview = {
+            problems: ['Unable to validate MDM preview'],
+            differential: section1Response.map((d: DifferentialItem) => d.diagnosis),
+            dataReviewed: [],
+            reasoning: 'Model output did not match expected schema. Please review and resubmit.',
+          }
+        }
       } catch (parseError) {
         console.error('Section 2 JSON parse error:', parseError)
         // Try to extract JSON
         const jsonStart = cleanedText.indexOf('{')
         const jsonEnd = cleanedText.lastIndexOf('}')
         if (jsonStart >= 0 && jsonEnd > jsonStart) {
-          mdmPreview = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+          const extracted = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+          const validated = MdmPreviewSchema.safeParse(extracted)
+          if (validated.success) {
+            mdmPreview = validated.data
+          } else {
+            mdmPreview = {
+              problems: ['Unable to parse MDM preview'],
+              differential: section1Response.map((d: DifferentialItem) => d.diagnosis),
+              dataReviewed: [],
+              reasoning: 'Please review input and resubmit',
+            }
+          }
         } else {
-          // Return minimal fallback
           mdmPreview = {
             problems: ['Unable to parse MDM preview'],
             differential: section1Response.map((d: DifferentialItem) => d.diagnosis),
@@ -672,7 +767,7 @@ app.post('/v1/build-mode/process-section2', async (req, res) => {
  * POST /v1/build-mode/finalize
  * Process treatment & disposition (Section 3) and generate final MDM
  */
-app.post('/v1/build-mode/finalize', async (req, res) => {
+app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
   try {
     // 1. Validate request
     const parsed = FinalizeRequestSchema.safeParse(req.body)
@@ -718,6 +813,13 @@ app.post('/v1/build-mode/finalize', async (req, res) => {
       })
     }
 
+    // Check token limit per request based on plan
+    const stats = await userService.getUsageStats(uid)
+    const tokenCheck = checkTokenSize(content, stats.features.maxTokensPerRequest)
+    if (tokenCheck.exceeded) {
+      return res.status(400).json(tokenCheck.payload)
+    }
+
     // 6. Build prompt with all sections and call Vertex AI
     const section1Data = {
       content: encounter.section1?.content || '',
@@ -742,19 +844,40 @@ app.post('/v1/build-mode/finalize', async (req, res) => {
         .trim()
 
       // Try to parse as complete FinalMdm object
+      const fallbackMdm: FinalMdm = {
+        text: 'Unable to generate final MDM. Please review and try again.',
+        json: {
+          problems: [],
+          differential: [],
+          dataReviewed: [],
+          reasoning: 'Generation failed',
+          risk: [],
+          disposition: '',
+          complexityLevel: 'moderate',
+        },
+      }
+
       try {
-        const parsed = JSON.parse(cleanedText)
-        finalMdm = {
-          text: parsed.text || '',
+        const rawParsed = JSON.parse(cleanedText)
+        const candidate: FinalMdm = {
+          text: rawParsed.text || '',
           json: {
-            problems: parsed.json?.problems || parsed.problems || [],
-            differential: parsed.json?.differential || parsed.differential || [],
-            dataReviewed: parsed.json?.dataReviewed || parsed.dataReviewed || [],
-            reasoning: parsed.json?.reasoning || parsed.reasoning || '',
-            risk: parsed.json?.risk || parsed.risk || [],
-            disposition: parsed.json?.disposition || parsed.disposition || '',
-            complexityLevel: parsed.json?.complexityLevel || parsed.complexityLevel || 'moderate',
+            problems: rawParsed.json?.problems || rawParsed.problems || [],
+            differential: rawParsed.json?.differential || rawParsed.differential || [],
+            dataReviewed: rawParsed.json?.dataReviewed || rawParsed.dataReviewed || [],
+            reasoning: rawParsed.json?.reasoning || rawParsed.reasoning || '',
+            risk: rawParsed.json?.risk || rawParsed.risk || [],
+            disposition: rawParsed.json?.disposition || rawParsed.disposition || '',
+            complexityLevel: rawParsed.json?.complexityLevel || rawParsed.complexityLevel || 'moderate',
           },
+        }
+        // Validate with Zod schema
+        const validated = FinalMdmSchema.safeParse(candidate)
+        if (validated.success) {
+          finalMdm = validated.data
+        } else {
+          console.warn('Finalize Zod validation failed:', validated.error.message)
+          finalMdm = fallbackMdm
         }
       } catch (parseError) {
         console.error('Finalize JSON parse error:', parseError)
@@ -762,33 +885,27 @@ app.post('/v1/build-mode/finalize', async (req, res) => {
         const jsonStart = cleanedText.indexOf('{')
         const jsonEnd = cleanedText.lastIndexOf('}')
         if (jsonStart >= 0 && jsonEnd > jsonStart) {
-          const jsonObj = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
-          finalMdm = {
-            text: jsonObj.text || renderMdmText(jsonObj),
-            json: {
-              problems: jsonObj.problems || [],
-              differential: jsonObj.differential || [],
-              dataReviewed: jsonObj.dataReviewed || [],
-              reasoning: jsonObj.reasoning || '',
-              risk: jsonObj.risk || [],
-              disposition: jsonObj.disposition || '',
-              complexityLevel: jsonObj.complexityLevel || 'moderate',
-            },
+          try {
+            const jsonObj = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+            const candidate: FinalMdm = {
+              text: jsonObj.text || renderMdmText(jsonObj),
+              json: {
+                problems: jsonObj.problems || [],
+                differential: jsonObj.differential || [],
+                dataReviewed: jsonObj.dataReviewed || [],
+                reasoning: jsonObj.reasoning || '',
+                risk: jsonObj.risk || [],
+                disposition: jsonObj.disposition || '',
+                complexityLevel: jsonObj.complexityLevel || 'moderate',
+              },
+            }
+            const validated = FinalMdmSchema.safeParse(candidate)
+            finalMdm = validated.success ? validated.data : fallbackMdm
+          } catch {
+            finalMdm = fallbackMdm
           }
         } else {
-          // Return minimal fallback
-          finalMdm = {
-            text: 'Unable to generate final MDM. Please review and try again.',
-            json: {
-              problems: [],
-              differential: [],
-              dataReviewed: [],
-              reasoning: 'Generation failed',
-              risk: [],
-              disposition: '',
-              complexityLevel: 'moderate',
-            },
-          }
+          finalMdm = fallbackMdm
         }
       }
     } catch (modelError) {
@@ -809,10 +926,7 @@ app.post('/v1/build-mode/finalize', async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now(),
     })
 
-    // 8. Get quota remaining
-    const stats = await userService.getUsageStats(uid)
-
-    // 9. Log action (no PHI)
+    // 8. Log action (no PHI)
     console.log({
       action: 'finalize',
       uid,
@@ -848,7 +962,7 @@ const QuickModeGenerateSchema = z.object({
  * One-shot MDM generation for Quick Mode encounters
  * Extracts patient identifier and generates complete MDM in a single call
  */
-app.post('/v1/quick-mode/generate', async (req, res) => {
+app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
   try {
     // 1. Validate request
     const parsed = QuickModeGenerateSchema.safeParse(req.body)
@@ -899,7 +1013,7 @@ app.post('/v1/quick-mode/generate', async (req, res) => {
     let quotaRemaining: number
     if (!encounter.quotaCounted) {
       await userService.ensureUser(uid, email)
-      const quotaCheck = await userService.checkQuota(uid)
+      const quotaCheck = await userService.checkAndIncrementQuota(uid)
       if (!quotaCheck.allowed) {
         return res.status(402).json({
           error: 'Monthly quota exceeded',
@@ -908,8 +1022,7 @@ app.post('/v1/quick-mode/generate', async (req, res) => {
           remaining: 0,
         })
       }
-      // Increment quota
-      await userService.incrementUsage(uid)
+      // Mark as counted
       await encounterRef.update({
         quotaCounted: true,
         quotaCountedAt: admin.firestore.Timestamp.now(),
@@ -919,6 +1032,12 @@ app.post('/v1/quick-mode/generate', async (req, res) => {
     // Get updated quota
     const stats = await userService.getUsageStats(uid)
     quotaRemaining = stats.remaining
+
+    // Check token limit per request based on plan
+    const tokenCheck = checkTokenSize(narrative, stats.features.maxTokensPerRequest)
+    if (tokenCheck.exceeded) {
+      return res.status(400).json(tokenCheck.payload)
+    }
 
     // 7. Mark as processing
     await encounterRef.update({

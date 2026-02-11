@@ -125,6 +125,7 @@ export class UserService {
 
   /**
    * Check and enforce usage quota
+   * @deprecated Use checkAndIncrementQuota() for atomic quota enforcement
    */
   async checkQuota(uid: string): Promise<{ allowed: boolean; used: number; limit: number; remaining: number }> {
     const user = await this.getUser(uid)
@@ -133,7 +134,7 @@ export class UserService {
     }
 
     const currentPeriod = this.getCurrentPeriodKey()
-    
+
     // Reset usage if new period
     if (user.periodKey !== currentPeriod) {
       await this.collection.doc(uid).update({
@@ -155,12 +156,61 @@ export class UserService {
 
   /**
    * Increment usage counter
+   * @deprecated Use checkAndIncrementQuota() for atomic quota enforcement
    */
   async incrementUsage(uid: string): Promise<void> {
     await this.collection.doc(uid).update({
       usedThisPeriod: admin.firestore.FieldValue.increment(1),
       totalRequests: admin.firestore.FieldValue.increment(1),
       updatedAt: admin.firestore.Timestamp.now()
+    })
+  }
+
+  /**
+   * Atomically check quota and increment usage in a single Firestore transaction.
+   * Prevents race conditions where concurrent requests both pass the check.
+   */
+  async checkAndIncrementQuota(uid: string): Promise<{ allowed: boolean; used: number; limit: number; remaining: number }> {
+    const ref = this.collection.doc(uid)
+    const currentPeriod = this.getCurrentPeriodKey()
+
+    return getDb().runTransaction(async (tx) => {
+      const snap = await tx.get(ref)
+      if (!snap.exists) {
+        throw new Error('User not found')
+      }
+
+      const user = snap.data() as UserDocument
+
+      // Reset usage if new billing period
+      let used = user.usedThisPeriod
+      if (user.periodKey !== currentPeriod) {
+        used = 0
+      }
+
+      const limit = user.features.maxRequestsPerMonth
+      const allowed = used < limit
+
+      if (allowed) {
+        tx.update(ref, {
+          usedThisPeriod: used + 1,
+          totalRequests: admin.firestore.FieldValue.increment(1),
+          periodKey: currentPeriod,
+          updatedAt: admin.firestore.Timestamp.now()
+        })
+        return { allowed: true, used: used + 1, limit, remaining: Math.max(0, limit - used - 1) }
+      }
+
+      // Over quota — still reset periodKey if it was stale, but don't increment
+      if (user.periodKey !== currentPeriod) {
+        tx.update(ref, {
+          periodKey: currentPeriod,
+          usedThisPeriod: 0,
+          updatedAt: admin.firestore.Timestamp.now()
+        })
+      }
+
+      return { allowed: false, used, limit, remaining: 0 }
     })
   }
 
@@ -209,8 +259,10 @@ export class UserService {
 
       return null
     } catch (e) {
-      console.error('Error checking Stripe subscription:', e)
-      return null
+      // Don't silently swallow — a Firestore failure here causes paid users
+      // to be treated as free-tier. Log prominently so on-call can detect it.
+      console.error('CRITICAL: Failed to check Stripe subscription for user. Paid user may be downgraded to free tier.', e)
+      throw e
     }
   }
 
