@@ -5,11 +5,18 @@ export type GenResult = { text: string }
 // Singleton: create the VertexAI client once at module level
 const project = process.env.PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || 'mdm-generator'
 const location = process.env.VERTEX_LOCATION || process.env.GOOGLE_CLOUD_REGION || 'us-central1'
-const vertex = new VertexAI({ project, location })
+
+// Parse inline JSON credentials if available (local dev via GOOGLE_APPLICATION_CREDENTIALS_JSON)
+const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
+const googleAuthOptions = credentialsJson
+  ? { credentials: JSON.parse(credentialsJson) }
+  : undefined
+
+const vertex = new VertexAI({ project, location, googleAuthOptions })
 
 export async function callGeminiFlash(prompt: { system: string; user: string }): Promise<GenResult> {
   const model = vertex.getGenerativeModel({
-    model: 'gemini-2.5-pro-preview-05-06',
+    model: 'gemini-2.5-pro',
     safetySettings: [
       // conservative defaults; can be tuned later
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
