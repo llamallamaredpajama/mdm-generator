@@ -346,6 +346,44 @@
   outline-offset: 2px;
 }
 
+/* ===== Delete Icon — Bottom-Right of Active Card ===== */
+.mobile-card__delete-corner {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.mobile-card__delete-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.mobile-card__delete-icon:active {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.mobile-card__delete-icon:hover {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.mobile-card__delete-icon:focus-visible {
+  outline: 2px solid var(--focus-ring, #3b82f6);
+  outline-offset: 2px;
+}
+
 /* ===== Empty State ===== */
 .mobile-wallet-stack--empty {
   padding: 2rem;

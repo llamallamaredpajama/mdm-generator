@@ -181,7 +181,7 @@ export default function QuickEncounterEditor({
                 className="quick-editor__textarea"
                 value={narrative}
                 onChange={(e) => setNarrative(e.target.value)}
-                maxLength={3000}
+                maxLength={2000}
                 placeholder="Dictate or type your description of the patient encounter here. Use your natural narrative style (e.g., HPI, ROS, PE, Differential, Workup, Interpretation of results, Impression, and Plan).
 
 Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal, radiating to left arm, associated with diaphoresis. History of HTN, DM..."
@@ -189,8 +189,8 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
               />
 
               <div className="quick-editor__input-footer">
-                <span className={`quick-editor__char-count ${narrative.length >= 2700 ? 'quick-editor__char-count--warning' : ''} ${narrative.length >= 3000 ? 'quick-editor__char-count--limit' : ''}`}>
-                  {narrative.length.toLocaleString()}/3,000 characters
+                <span className={`quick-editor__char-count ${narrative.length >= 1800 ? 'quick-editor__char-count--warning' : ''} ${narrative.length >= 2000 ? 'quick-editor__char-count--limit' : ''}`}>
+                  {narrative.length.toLocaleString()}/2,000 characters
                 </span>
 
                 <button

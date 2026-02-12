@@ -158,7 +158,7 @@ export default function BuildModeAccordion({
               onChange={(value) => handleChange('chiefComplaint', 'context', value)}
               minHeight={80}
               maxHeight={200}
-              maxLength={2000}
+              maxLength={1000}
               showCharCount
               autoGrow
             />
@@ -303,7 +303,7 @@ export default function BuildModeAccordion({
                 onChange={(value) => handleChange('riskAssessment', 'patientFactors', value)}
                 minHeight={60}
                 maxHeight={120}
-                maxLength={500}
+                maxLength={1000}
                 autoGrow
               />
             </div>
@@ -316,7 +316,7 @@ export default function BuildModeAccordion({
                 onChange={(value) => handleChange('riskAssessment', 'diagnosticRisks', value)}
                 minHeight={60}
                 maxHeight={120}
-                maxLength={500}
+                maxLength={1000}
                 autoGrow
               />
             </div>
@@ -331,7 +331,7 @@ export default function BuildModeAccordion({
                 onChange={(value) => handleChange('riskAssessment', 'treatmentRisks', value)}
                 minHeight={60}
                 maxHeight={120}
-                maxLength={500}
+                maxLength={1000}
                 autoGrow
               />
             </div>
@@ -344,7 +344,7 @@ export default function BuildModeAccordion({
                 onChange={(value) => handleChange('riskAssessment', 'dispositionRisks', value)}
                 minHeight={60}
                 maxHeight={120}
-                maxLength={500}
+                maxLength={1000}
                 autoGrow
               />
             </div>
@@ -369,7 +369,7 @@ export default function BuildModeAccordion({
               onChange={(value) => handleChange('clinicalReasoning', 'evaluationApproach', value)}
               minHeight={80}
               maxHeight={200}
-              maxLength={1500}
+              maxLength={1000}
               showCharCount
               autoGrow
             />
@@ -383,7 +383,7 @@ export default function BuildModeAccordion({
               onChange={(value) => handleChange('clinicalReasoning', 'keyDecisionPoints', value)}
               minHeight={80}
               maxHeight={200}
-              maxLength={1500}
+              maxLength={1000}
               showCharCount
               autoGrow
             />
@@ -444,7 +444,7 @@ export default function BuildModeAccordion({
               onChange={(value) => handleChange('treatmentProcedures', 'rationale', value)}
               minHeight={60}
               maxHeight={120}
-              maxLength={500}
+              maxLength={1000}
               autoGrow
             />
           </div>
@@ -499,7 +499,7 @@ export default function BuildModeAccordion({
               onChange={(value) => handleChange('disposition', 'rationale', value)}
               minHeight={60}
               maxHeight={120}
-              maxLength={500}
+              maxLength={1000}
               autoGrow
             />
           </div>
@@ -513,7 +513,7 @@ export default function BuildModeAccordion({
               onChange={(value) => handleChange('disposition', 'dischargeInstructions', value)}
               minHeight={80}
               maxHeight={200}
-              maxLength={1500}
+              maxLength={1000}
               showCharCount
               autoGrow
             />
