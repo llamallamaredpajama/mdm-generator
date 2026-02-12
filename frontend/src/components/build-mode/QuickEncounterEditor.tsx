@@ -13,6 +13,7 @@ import { useState, useCallback } from 'react'
 import { useQuickEncounter } from '../../hooks/useQuickEncounter'
 import { formatRoomDisplay, formatPatientIdentifier } from '../../types/encounter'
 import DictationGuide from '../DictationGuide'
+import ConfirmationModal from '../ConfirmationModal'
 import { useToast } from '../../contexts/ToastContext'
 import './QuickEncounterEditor.css'
 
@@ -45,21 +46,30 @@ export default function QuickEncounterEditor({
   const { success: showSuccess, error: showError } = useToast()
   const [showGuide, setShowGuide] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   /**
-   * Handle MDM generation
+   * Handle Generate button click — show PHI confirmation first
    */
-  const handleGenerate = useCallback(async () => {
+  const handleGenerateClick = useCallback(() => {
     if (!narrative.trim()) {
       showError('Please enter a narrative before generating')
       return
     }
+    setShowConfirmModal(true)
+  }, [narrative, showError])
+
+  /**
+   * Handle MDM generation after PHI confirmation
+   */
+  const handleConfirmedGenerate = useCallback(async () => {
+    setShowConfirmModal(false)
 
     const result = await submitNarrative()
     if (result?.ok) {
       showSuccess('MDM generated successfully')
     }
-  }, [narrative, submitNarrative, showSuccess, showError])
+  }, [submitNarrative, showSuccess])
 
   /**
    * Copy MDM text to clipboard
@@ -186,7 +196,7 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
                 <button
                   type="button"
                   className="quick-editor__generate-btn"
-                  onClick={handleGenerate}
+                  onClick={handleGenerateClick}
                   disabled={!canGenerate}
                 >
                   {isProcessing ? (
@@ -290,7 +300,7 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
               <button
                 type="button"
                 className="quick-editor__retry-btn"
-                onClick={handleGenerate}
+                onClick={handleGenerateClick}
                 disabled={!canGenerate}
               >
                 Retry Generation
@@ -315,6 +325,13 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
           Educational tool only. All outputs require physician review before clinical use.
         </p>
       </footer>
+
+      {/* PHI Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmedGenerate}
+      />
     </div>
   )
 }

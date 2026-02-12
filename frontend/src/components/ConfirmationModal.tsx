@@ -5,10 +5,9 @@ interface ConfirmationModalProps {
   isOpen: boolean
   onClose: () => void
   onConfirm: () => void
-  text: string
 }
 
-export default function ConfirmationModal({ isOpen, onClose, onConfirm, text }: ConfirmationModalProps) {
+export default function ConfirmationModal({ isOpen, onClose, onConfirm }: ConfirmationModalProps) {
   const [confirmed, setConfirmed] = useState(false)
 
   if (!isOpen) return null
@@ -49,21 +48,16 @@ export default function ConfirmationModal({ isOpen, onClose, onConfirm, text }: 
           </label>
         </div>
 
-        <div className="modal-info">
-          <p><strong>Token estimate:</strong> ~{Math.ceil(text.length / 4)} tokens</p>
-          <p className="info-text">Your narrative will be processed to generate MDM documentation.</p>
-        </div>
-
         <div className="modal-actions">
-          <button onClick={handleClose} className="btn-secondary">
-            Cancel
-          </button>
-          <button 
-            onClick={handleConfirm} 
+          <button
+            onClick={handleConfirm}
             disabled={!confirmed}
             className="btn-primary"
           >
             Submit
+          </button>
+          <button onClick={handleClose} className="btn-secondary">
+            Cancel
           </button>
         </div>
       </div>

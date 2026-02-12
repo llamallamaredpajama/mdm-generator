@@ -20,6 +20,7 @@ import type { SectionNumber, EncounterDocument, SectionStatus } from '../../type
 import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
 import { ApiError } from '../../lib/api'
+import ConfirmationModal from '../ConfirmationModal'
 import './EncounterEditor.css'
 
 /**
@@ -110,6 +111,10 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   // Quota exceeded state for showing upgrade prompt
   const [showQuotaExceeded, setShowQuotaExceeded] = useState(false)
 
+  // PHI confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [pendingSection, setPendingSection] = useState<SectionNumber | null>(null)
+
   // Section state helpers
   const section1State = useSectionState(encounter, 1)
   const section2State = useSectionState(encounter, 2)
@@ -133,10 +138,23 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   }, [])
 
   /**
-   * Handle section submission
+   * Handle section submit click — show PHI confirmation first
    */
-  const handleSubmit = useCallback(
-    async (section: SectionNumber) => {
+  const handleSubmitClick = useCallback((section: SectionNumber) => {
+    setPendingSection(section)
+    setShowConfirmModal(true)
+  }, [])
+
+  /**
+   * Handle confirmed section submission after PHI acknowledgment
+   */
+  const handleConfirmedSubmit = useCallback(
+    async () => {
+      if (pendingSection === null) return
+      const section = pendingSection
+      setShowConfirmModal(false)
+      setPendingSection(null)
+
       // Clear previous error for this section
       setSectionErrors((prev) => ({ ...prev, [section]: null }))
 
@@ -180,7 +198,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         }
       }
     },
-    [submitSection, workingDiagnosis]
+    [pendingSection, submitSection, workingDiagnosis]
   )
 
   // Loading state
@@ -269,7 +287,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           guide={getSectionGuide(1)}
           preview={getSectionPreview(1, encounter)}
           onContentChange={(content: string) => handleContentChange(1, content)}
-          onSubmit={() => handleSubmit(1)}
+          onSubmit={() => handleSubmitClick(1)}
           isSubmitting={isSubmitting && submittingSection === 1}
           submissionError={sectionErrors[1]?.message}
           isErrorRetryable={sectionErrors[1]?.isRetryable}
@@ -323,7 +341,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
               guide={getSectionGuide(2)}
               preview={getSectionPreview(2, encounter)}
               onContentChange={(content: string) => handleContentChange(2, content)}
-              onSubmit={() => handleSubmit(2)}
+              onSubmit={() => handleSubmitClick(2)}
               isSubmitting={isSubmitting && submittingSection === 2}
               submissionError={sectionErrors[2]?.message}
               isErrorRetryable={sectionErrors[2]?.isRetryable}
@@ -359,7 +377,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
             guide={getSectionGuide(3)}
             preview={getSectionPreview(3, encounter)}
             onContentChange={(content: string) => handleContentChange(3, content)}
-            onSubmit={() => handleSubmit(3)}
+            onSubmit={() => handleSubmitClick(3)}
             isSubmitting={isSubmitting && submittingSection === 3}
             submissionError={sectionErrors[3]?.message}
             isErrorRetryable={sectionErrors[3]?.isRetryable}
@@ -427,6 +445,13 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       <footer className="encounter-editor__footer">
         <ShiftTimer shiftStartedAt={encounter.shiftStartedAt} status={encounter.status} />
       </footer>
+
+      {/* PHI Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => { setShowConfirmModal(false); setPendingSection(null) }}
+        onConfirm={handleConfirmedSubmit}
+      />
     </div>
   )
 }
