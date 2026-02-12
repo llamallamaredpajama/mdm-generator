@@ -1,4 +1,5 @@
 import { Outlet, Link, NavLink } from 'react-router-dom'
+import ErrorBoundary from '../components/ErrorBoundary'
 import './Layout.css'
 
 export default function Layout() {
@@ -38,7 +39,9 @@ export default function Layout() {
       </header>
 
       <main className="layout-main">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   )

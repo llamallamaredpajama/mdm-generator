@@ -98,8 +98,10 @@ async function apiFetch<T>(
   options: RequestInit,
   context?: string
 ): Promise<T> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 30_000)
   try {
-    const res = await fetch(url, options)
+    const res = await fetch(url, { ...options, signal: controller.signal })
 
     if (!res.ok) {
       // Try to parse error response for more specific message
@@ -123,10 +125,20 @@ async function apiFetch<T>(
     return res.json()
   } catch (error) {
     if (error instanceof ApiError) throw error
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new ApiError(
+        `${context ? `${context}: ` : ''}Request timed out. Please try again.`,
+        0,
+        'network',
+        true
+      )
+    }
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw ApiError.networkError(context)
     }
     throw ApiError.networkError(context)
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
 
