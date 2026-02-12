@@ -96,10 +96,11 @@ export class ApiError extends Error {
 async function apiFetch<T>(
   url: string,
   options: RequestInit,
-  context?: string
+  context?: string,
+  timeoutMs: number = 30_000
 ): Promise<T> {
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30_000)
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
   try {
     const res = await fetch(url, { ...options, signal: controller.signal })
 
@@ -195,7 +196,8 @@ export async function generateMDM(body: GenerateRequest): Promise<GenerateRespon
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     },
-    'MDM generation'
+    'MDM generation',
+    60_000
   )
 }
 
@@ -249,7 +251,8 @@ export async function parseNarrative(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ narrative, userIdToken }),
     },
-    'Narrative parsing'
+    'Narrative parsing',
+    60_000
   )
 }
 
@@ -309,7 +312,8 @@ export async function processSection1(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ encounterId, content, userIdToken }),
     },
-    'Section 1 processing'
+    'Section 1 processing',
+    60_000
   )
 }
 
@@ -330,7 +334,8 @@ export async function processSection2(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ encounterId, content, userIdToken, workingDiagnosis }),
     },
-    'Section 2 processing'
+    'Section 2 processing',
+    60_000
   )
 }
 
@@ -350,7 +355,8 @@ export async function finalizeEncounter(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ encounterId, content, userIdToken }),
     },
-    'Encounter finalization'
+    'Encounter finalization',
+    60_000
   )
 }
 
@@ -390,6 +396,7 @@ export async function generateQuickMode(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ encounterId, narrative, userIdToken }),
     },
-    'Quick mode MDM generation'
+    'Quick mode MDM generation',
+    60_000
   )
 }
