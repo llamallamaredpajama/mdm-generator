@@ -170,6 +170,32 @@ If `git diff` shows any of these, STOP and review:
 | Modify MDM output | Update `outputSchema.ts` → `promptBuilder.ts` → `Output.tsx` |
 | Change prompting | Edit `docs/mdm-gen-guide.md` |
 
+## iOS Simulator Testing
+
+Prefix all `xcrun simctl` commands with `DEVELOPER_DIR` (avoids needing `sudo xcode-select -s`):
+
+```bash
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+```
+
+Simulator: iPhone 16 Plus (iOS 26.0), UDID: `A9AE64DD-14FF-44CB-BFF4-080457DE8B3B`
+
+```bash
+# Navigate to dev server in simulator Safari
+xcrun simctl openurl booted "http://localhost:5173"
+
+# Take screenshot (Claude can read the resulting PNG)
+xcrun simctl io booted screenshot /tmp/sim-screenshot.png
+
+# Dark/light mode
+xcrun simctl ui booted appearance dark
+
+# Clean status bar for screenshots
+xcrun simctl status_bar booted override --time "9:41" --batteryState charged --batteryLevel 100
+```
+
+Screenshots are 3x Retina. If using AXe for tap interactions, divide pixel coordinates by 3 for point coordinates.
+
 ## Important Reminders
 
 1. **Medical tool** - Accuracy and safety are paramount
