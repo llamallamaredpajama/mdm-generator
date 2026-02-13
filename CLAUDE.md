@@ -36,6 +36,11 @@ MDM Generator transforms Emergency Medicine physician narratives into compliant,
 | `/v1/whoami` | POST | Auth validation + user info |
 | `/v1/generate` | POST | Generate MDM from narrative |
 
+## Deployment
+- **Production**: Firebase Hosting → https://mdm-generator.web.app
+- **Command**: `firebase deploy --only hosting --project mdm-generator` (from project root, after building frontend)
+- **Do NOT** use Vercel, Netlify, or other hosting CLIs
+
 ## Commands
 
 ```bash
