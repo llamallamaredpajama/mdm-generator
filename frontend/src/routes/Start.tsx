@@ -78,24 +78,46 @@ export default function Start() {
             <h1 className="em-title">Emergency Medicine</h1>
             <div className="ekg-underline" aria-hidden="true">
               <div className="ekg-track">
-                <svg className="ekg-svg" viewBox="0 0 600 100" preserveAspectRatio="none">
+                <svg className="ekg-svg" viewBox="0 0 3000 100" preserveAspectRatio="none" overflow="visible">
+                  <defs>
+                    <filter id="electron-blur" x="-300%" y="-300%" width="700%" height="700%">
+                      <feGaussianBlur stdDeviation={5} />
+                    </filter>
+                    <radialGradient id="ekg-glow">
+                      <stop offset="0%" stopColor="#fff" stopOpacity={1} />
+                      <stop offset="25%" stopColor="#ffaab5" stopOpacity={0.7} />
+                      <stop offset="55%" stopColor="#ff6b7a" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#dc3545" stopOpacity={0} />
+                    </radialGradient>
+                  </defs>
                   <path
-                    d="M 0,50 L 40,50 L 48,38 L 56,50 L 68,50 L 72,56 L 78,8 L 84,85 L 90,50 L 110,50 L 118,32 L 130,50 L 200,50 L 240,50 L 248,38 L 256,50 L 268,50 L 272,56 L 278,8 L 284,85 L 290,50 L 310,50 L 318,32 L 330,50 L 400,50 L 440,50 L 448,38 L 456,50 L 468,50 L 472,56 L 478,8 L 484,85 L 490,50 L 510,50 L 518,32 L 530,50 L 600,50"
+                    id="ekg-trace-path"
+                    d="M 0,85 L 100,85 Q 135,72 170,85 L 190,85 L 194,90 L 202,2 L 210,95 L 215,85 L 245,85 Q 280,68 315,85 L 600,85 Q 635,72 670,85 L 690,85 L 694,90 L 702,2 L 710,95 L 715,85 L 745,85 Q 780,68 815,85 L 1100,85 Q 1135,72 1170,85 L 1190,85 L 1194,90 L 1202,2 L 1210,95 L 1215,85 L 1245,85 Q 1280,68 1315,85 L 1600,85 Q 1635,72 1670,85 L 1690,85 L 1694,90 L 1702,2 L 1710,95 L 1715,85 L 1745,85 Q 1780,68 1815,85 L 2100,85 Q 2135,72 2170,85 L 2190,85 L 2194,90 L 2202,2 L 2210,95 L 2215,85 L 2245,85 Q 2280,68 2315,85 L 2600,85 Q 2635,72 2670,85 L 2690,85 L 2694,90 L 2702,2 L 2710,95 L 2715,85 L 2745,85 Q 2780,68 2815,85 L 3000,85"
                     fill="none"
                     stroke="#dc3545"
-                    strokeWidth="2.5"
+                    strokeWidth={2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
                   />
+                  <g className="electron-dot">
+                    <animateMotion dur="16s" repeatCount="indefinite" calcMode="linear"
+                      keyPoints="1;0;0" keyTimes="0;0.333;1">
+                      <mpath href="#ekg-trace-path" />
+                    </animateMotion>
+                    <circle r={18} fill="url(#ekg-glow)" filter="url(#electron-blur)" />
+                    <circle r={4} fill="#fff" opacity={0.95} />
+                  </g>
                 </svg>
-                <svg className="ekg-svg" viewBox="0 0 600 100" preserveAspectRatio="none">
+                <svg className="ekg-svg" viewBox="0 0 3000 100" preserveAspectRatio="none">
                   <path
-                    d="M 0,50 L 40,50 L 48,38 L 56,50 L 68,50 L 72,56 L 78,8 L 84,85 L 90,50 L 110,50 L 118,32 L 130,50 L 200,50 L 240,50 L 248,38 L 256,50 L 268,50 L 272,56 L 278,8 L 284,85 L 290,50 L 310,50 L 318,32 L 330,50 L 400,50 L 440,50 L 448,38 L 456,50 L 468,50 L 472,56 L 478,8 L 484,85 L 490,50 L 510,50 L 518,32 L 530,50 L 600,50"
+                    d="M 0,85 L 100,85 Q 135,72 170,85 L 190,85 L 194,90 L 202,2 L 210,95 L 215,85 L 245,85 Q 280,68 315,85 L 600,85 Q 635,72 670,85 L 690,85 L 694,90 L 702,2 L 710,95 L 715,85 L 745,85 Q 780,68 815,85 L 1100,85 Q 1135,72 1170,85 L 1190,85 L 1194,90 L 1202,2 L 1210,95 L 1215,85 L 1245,85 Q 1280,68 1315,85 L 1600,85 Q 1635,72 1670,85 L 1690,85 L 1694,90 L 1702,2 L 1710,95 L 1715,85 L 1745,85 Q 1780,68 1815,85 L 2100,85 Q 2135,72 2170,85 L 2190,85 L 2194,90 L 2202,2 L 2210,95 L 2215,85 L 2245,85 Q 2280,68 2315,85 L 2600,85 Q 2635,72 2670,85 L 2690,85 L 2694,90 L 2702,2 L 2710,95 L 2715,85 L 2745,85 Q 2780,68 2815,85 L 3000,85"
                     fill="none"
                     stroke="#dc3545"
-                    strokeWidth="2.5"
+                    strokeWidth={2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
                   />
                 </svg>
               </div>
@@ -149,13 +171,6 @@ export default function Start() {
             </svg>
             Designed by ER Physicians for ER Physicians
           </span>
-        </div>
-        <div className="hero-visual">
-          <div className="pulse-container">
-            <div className="pulse pulse-1"></div>
-            <div className="pulse pulse-2"></div>
-            <div className="pulse pulse-3"></div>
-          </div>
         </div>
       </section>
 
