@@ -1,8 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, signInWithGoogle } from '../lib/firebase'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import UserAccountDropdown from '../components/UserAccountDropdown'
 import './Start.css'
+
+// Desktop: 6 QRS complexes across 3000-unit viewBox
+const EKG_PATH_DESKTOP =
+  'M 0,85 L 100,85 Q 135,72 170,85 L 190,85 L 194,90 L 202,2 L 210,95 L 215,85 L 245,85 Q 280,68 315,85 L 600,85 Q 635,72 670,85 L 690,85 L 694,90 L 702,2 L 710,95 L 715,85 L 745,85 Q 780,68 815,85 L 1100,85 Q 1135,72 1170,85 L 1190,85 L 1194,90 L 1202,2 L 1210,95 L 1215,85 L 1245,85 Q 1280,68 1315,85 L 1600,85 Q 1635,72 1670,85 L 1690,85 L 1694,90 L 1702,2 L 1710,95 L 1715,85 L 1745,85 Q 1780,68 1815,85 L 2100,85 Q 2135,72 2170,85 L 2190,85 L 2194,90 L 2202,2 L 2210,95 L 2215,85 L 2245,85 Q 2280,68 2315,85 L 2600,85 Q 2635,72 2670,85 L 2690,85 L 2694,90 L 2702,2 L 2710,95 L 2715,85 L 2745,85 Q 2780,68 2815,85 L 3000,85'
+
+// Mobile: 3 QRS complexes across 1500-unit viewBox
+const EKG_PATH_MOBILE =
+  'M 0,85 L 100,85 Q 135,72 170,85 L 190,85 L 194,90 L 202,2 L 210,95 L 215,85 L 245,85 Q 280,68 315,85 L 600,85 Q 635,72 670,85 L 690,85 L 694,90 L 702,2 L 710,95 L 715,85 L 745,85 Q 780,68 815,85 L 1100,85 Q 1135,72 1170,85 L 1190,85 L 1194,90 L 1202,2 L 1210,95 L 1215,85 L 1245,85 Q 1280,68 1315,85 L 1500,85'
 
 function useScrollDots(itemCount: number, childSelector?: string) {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -43,8 +52,13 @@ function useScrollDots(itemCount: number, childSelector?: string) {
 export default function Start() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const { scrollRef: featuresRef, activeIndex: featuresActive, scrollTo: featuresScrollTo } = useScrollDots(4)
   const { scrollRef: stepsRef, activeIndex: stepsActive, scrollTo: stepsScrollTo } = useScrollDots(3, '.step')
+
+  const ekgPath = isMobile ? EKG_PATH_MOBILE : EKG_PATH_DESKTOP
+  const ekgViewBox = isMobile ? '0 0 1500 100' : '0 0 3000 100'
+  const ekgDur = isMobile ? '8s' : '16s'
 
   return (
     <div className="landing-page">
@@ -78,7 +92,7 @@ export default function Start() {
             <h1 className="em-title">Emergency Medicine</h1>
             <div className="ekg-underline" aria-hidden="true">
               <div className="ekg-track">
-                <svg className="ekg-svg" viewBox="0 0 3000 100" preserveAspectRatio="none" overflow="visible">
+                <svg className="ekg-svg" viewBox={ekgViewBox} preserveAspectRatio="none" overflow="visible">
                   <defs>
                     <filter id="electron-blur" x="-300%" y="-300%" width="700%" height="700%">
                       <feGaussianBlur stdDeviation={5} />
@@ -92,7 +106,7 @@ export default function Start() {
                   </defs>
                   <path
                     id="ekg-trace-path"
-                    d="M 0,85 L 100,85 Q 135,72 170,85 L 190,85 L 194,90 L 202,2 L 210,95 L 215,85 L 245,85 Q 280,68 315,85 L 600,85 Q 635,72 670,85 L 690,85 L 694,90 L 702,2 L 710,95 L 715,85 L 745,85 Q 780,68 815,85 L 1100,85 Q 1135,72 1170,85 L 1190,85 L 1194,90 L 1202,2 L 1210,95 L 1215,85 L 1245,85 Q 1280,68 1315,85 L 1600,85 Q 1635,72 1670,85 L 1690,85 L 1694,90 L 1702,2 L 1710,95 L 1715,85 L 1745,85 Q 1780,68 1815,85 L 2100,85 Q 2135,72 2170,85 L 2190,85 L 2194,90 L 2202,2 L 2210,95 L 2215,85 L 2245,85 Q 2280,68 2315,85 L 2600,85 Q 2635,72 2670,85 L 2690,85 L 2694,90 L 2702,2 L 2710,95 L 2715,85 L 2745,85 Q 2780,68 2815,85 L 3000,85"
+                    d={ekgPath}
                     fill="none"
                     stroke="#dc3545"
                     strokeWidth={2}
@@ -101,7 +115,7 @@ export default function Start() {
                     vectorEffect="non-scaling-stroke"
                   />
                   <g className="electron-dot">
-                    <animateMotion dur="16s" repeatCount="indefinite" calcMode="linear"
+                    <animateMotion dur={ekgDur} repeatCount="indefinite" calcMode="linear"
                       keyPoints="1;0" keyTimes="0;1">
                       <mpath href="#ekg-trace-path" />
                     </animateMotion>
@@ -109,10 +123,10 @@ export default function Start() {
                     <circle r={4} fill="#fff" opacity={0.95} />
                   </g>
                 </svg>
-                <svg className="ekg-svg" viewBox="0 0 3000 100" preserveAspectRatio="none" overflow="visible">
+                <svg className="ekg-svg" viewBox={ekgViewBox} preserveAspectRatio="none" overflow="visible">
                   <path
                     id="ekg-trace-path-2"
-                    d="M 0,85 L 100,85 Q 135,72 170,85 L 190,85 L 194,90 L 202,2 L 210,95 L 215,85 L 245,85 Q 280,68 315,85 L 600,85 Q 635,72 670,85 L 690,85 L 694,90 L 702,2 L 710,95 L 715,85 L 745,85 Q 780,68 815,85 L 1100,85 Q 1135,72 1170,85 L 1190,85 L 1194,90 L 1202,2 L 1210,95 L 1215,85 L 1245,85 Q 1280,68 1315,85 L 1600,85 Q 1635,72 1670,85 L 1690,85 L 1694,90 L 1702,2 L 1710,95 L 1715,85 L 1745,85 Q 1780,68 1815,85 L 2100,85 Q 2135,72 2170,85 L 2190,85 L 2194,90 L 2202,2 L 2210,95 L 2215,85 L 2245,85 Q 2280,68 2315,85 L 2600,85 Q 2635,72 2670,85 L 2690,85 L 2694,90 L 2702,2 L 2710,95 L 2715,85 L 2745,85 Q 2780,68 2815,85 L 3000,85"
+                    d={ekgPath}
                     fill="none"
                     stroke="#dc3545"
                     strokeWidth={2}
@@ -121,7 +135,7 @@ export default function Start() {
                     vectorEffect="non-scaling-stroke"
                   />
                   <g className="electron-dot">
-                    <animateMotion dur="16s" repeatCount="indefinite" calcMode="linear"
+                    <animateMotion dur={ekgDur} repeatCount="indefinite" calcMode="linear"
                       keyPoints="1;0" keyTimes="0;1">
                       <mpath href="#ekg-trace-path-2" />
                     </animateMotion>
