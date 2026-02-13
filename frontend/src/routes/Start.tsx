@@ -102,15 +102,16 @@ export default function Start() {
                   />
                   <g className="electron-dot">
                     <animateMotion dur="16s" repeatCount="indefinite" calcMode="linear"
-                      keyPoints="1;0;0" keyTimes="0;0.333;1">
+                      keyPoints="1;0" keyTimes="0;1">
                       <mpath href="#ekg-trace-path" />
                     </animateMotion>
                     <circle r={18} fill="url(#ekg-glow)" filter="url(#electron-blur)" />
                     <circle r={4} fill="#fff" opacity={0.95} />
                   </g>
                 </svg>
-                <svg className="ekg-svg" viewBox="0 0 3000 100" preserveAspectRatio="none">
+                <svg className="ekg-svg" viewBox="0 0 3000 100" preserveAspectRatio="none" overflow="visible">
                   <path
+                    id="ekg-trace-path-2"
                     d="M 0,85 L 100,85 Q 135,72 170,85 L 190,85 L 194,90 L 202,2 L 210,95 L 215,85 L 245,85 Q 280,68 315,85 L 600,85 Q 635,72 670,85 L 690,85 L 694,90 L 702,2 L 710,95 L 715,85 L 745,85 Q 780,68 815,85 L 1100,85 Q 1135,72 1170,85 L 1190,85 L 1194,90 L 1202,2 L 1210,95 L 1215,85 L 1245,85 Q 1280,68 1315,85 L 1600,85 Q 1635,72 1670,85 L 1690,85 L 1694,90 L 1702,2 L 1710,95 L 1715,85 L 1745,85 Q 1780,68 1815,85 L 2100,85 Q 2135,72 2170,85 L 2190,85 L 2194,90 L 2202,2 L 2210,95 L 2215,85 L 2245,85 Q 2280,68 2315,85 L 2600,85 Q 2635,72 2670,85 L 2690,85 L 2694,90 L 2702,2 L 2710,95 L 2715,85 L 2745,85 Q 2780,68 2815,85 L 3000,85"
                     fill="none"
                     stroke="#dc3545"
@@ -119,6 +120,14 @@ export default function Start() {
                     strokeLinejoin="round"
                     vectorEffect="non-scaling-stroke"
                   />
+                  <g className="electron-dot">
+                    <animateMotion dur="16s" repeatCount="indefinite" calcMode="linear"
+                      keyPoints="1;0" keyTimes="0;1">
+                      <mpath href="#ekg-trace-path-2" />
+                    </animateMotion>
+                    <circle r={18} fill="url(#ekg-glow)" filter="url(#electron-blur)" />
+                    <circle r={4} fill="#fff" opacity={0.95} />
+                  </g>
                 </svg>
               </div>
             </div>
