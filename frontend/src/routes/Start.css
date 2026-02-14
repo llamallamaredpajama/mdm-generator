@@ -272,6 +272,7 @@
 .btn-icon {
   width: 24px;
   height: 24px;
+  transition: transform 0.3s ease;
 }
 
 .hero-badge {
@@ -295,10 +296,6 @@
   width: 20px;
   height: 20px;
   color: #dc3545;
-}
-
-.hero-visual {
-  display: none;
 }
 
 /* Features Section */
@@ -608,14 +605,11 @@
     padding-left: 1rem;
     padding-right: 1rem;
     padding-bottom: 1rem;
+    scrollbar-width: none;
   }
 
   .features-grid::-webkit-scrollbar {
     display: none;
-  }
-
-  .features-grid {
-    scrollbar-width: none;
   }
 
   .feature-card {
@@ -635,14 +629,11 @@
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     padding: 0 1rem 1rem;
+    scrollbar-width: none;
   }
 
   .steps::-webkit-scrollbar {
     display: none;
-  }
-
-  .steps {
-    scrollbar-width: none;
   }
 
   .step {
@@ -900,4 +891,5 @@
     -webkit-text-fill-color: unset;
     background-clip: unset;
   }
+
 }
