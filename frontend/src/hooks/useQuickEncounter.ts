@@ -19,6 +19,7 @@ import {
 import { db, useAuth } from '../lib/firebase'
 import { useAuthToken } from '../lib/firebase'
 import { generateQuickMode, type QuickModeResponse } from '../lib/api'
+import { useTrendAnalysisContext } from '../contexts/TrendAnalysisContext'
 import type {
   EncounterDocument,
   QuickModeData,
@@ -100,6 +101,7 @@ function convertEncounterDoc(docId: string, data: DocumentData): EncounterDocume
 export function useQuickEncounter(encounterId: string | null): UseQuickEncounterReturn {
   const { user } = useAuth()
   const idToken = useAuthToken()
+  const { isEnabled: trendEnabled, location: trendLocation, isLocationValid: trendLocationValid } = useTrendAnalysisContext()
 
   const [encounter, setEncounter] = useState<EncounterDocument | null>(null)
   const [loading, setLoading] = useState(true)
@@ -214,7 +216,8 @@ export function useQuickEncounter(encounterId: string | null): UseQuickEncounter
         clearTimeout(saveTimerRef.current)
       }
 
-      const response = await generateQuickMode(encounterId, narrative, idToken)
+      const location = trendEnabled && trendLocationValid && trendLocation ? trendLocation : undefined
+      const response = await generateQuickMode(encounterId, narrative, idToken, location)
       return response
     } catch (err) {
       console.error('Failed to generate MDM:', err)
@@ -236,7 +239,7 @@ export function useQuickEncounter(encounterId: string | null): UseQuickEncounter
     } finally {
       setIsSubmitting(false)
     }
-  }, [user, encounterId, idToken, narrative, encounter?.quickModeData?.status])
+  }, [user, encounterId, idToken, narrative, encounter?.quickModeData?.status, trendEnabled, trendLocationValid, trendLocation])
 
   return {
     encounter,

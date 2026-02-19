@@ -63,10 +63,13 @@ export interface PromptParts {
  * 2. Generate a complete MDM following EM worst-first approach
  * 3. Return both as structured JSON
  */
-export async function buildQuickModePrompt(narrative: string): Promise<PromptParts> {
+export async function buildQuickModePrompt(
+  narrative: string,
+  surveillanceContext?: string
+): Promise<PromptParts> {
   const mdmGuide = await loadMdmGuide()
 
-  const systemPrompt = `${mdmGuide}
+  let systemPrompt = `${mdmGuide}
 
 ---
 
@@ -134,6 +137,11 @@ ${narrative}
 ---
 
 Generate the complete JSON response now:`
+
+  // Append surveillance context if provided
+  if (surveillanceContext) {
+    systemPrompt += `\n\n---\n\n# Regional Epidemiologic Context\n\n${surveillanceContext}\n\nConsider this regional surveillance data when constructing the differential diagnosis. Weight epidemiologically active conditions appropriately.`
+  }
 
   return {
     system: systemPrompt,

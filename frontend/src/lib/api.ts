@@ -302,7 +302,8 @@ export interface FinalizeResponse {
 export async function processSection1(
   encounterId: string,
   content: string,
-  userIdToken: string
+  userIdToken: string,
+  location?: { zipCode?: string; state?: string }
 ): Promise<Section1Response> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -310,7 +311,7 @@ export async function processSection1(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, content, userIdToken }),
+      body: JSON.stringify({ encounterId, content, userIdToken, ...(location && { location }) }),
     },
     'Section 1 processing',
     60_000
@@ -386,7 +387,8 @@ export interface QuickModeResponse {
 export async function generateQuickMode(
   encounterId: string,
   narrative: string,
-  userIdToken: string
+  userIdToken: string,
+  location?: { zipCode?: string; state?: string }
 ): Promise<QuickModeResponse> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -394,9 +396,66 @@ export async function generateQuickMode(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, narrative, userIdToken }),
+      body: JSON.stringify({ encounterId, narrative, userIdToken, ...(location && { location }) }),
     },
     'Quick mode MDM generation',
     60_000
   )
+}
+
+// =============================================================================
+// Surveillance Trend Analysis API Functions
+// =============================================================================
+
+export async function analyzeSurveillance(
+  chiefComplaint: string,
+  differential: string[],
+  location: { zipCode?: string; state?: string },
+  userIdToken: string,
+  encounterId?: string
+): Promise<{
+  ok: boolean
+  analysis: import('../types/surveillance').TrendAnalysisResult | null
+  warnings?: string[]
+}> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/surveillance/analyze`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chiefComplaint, differential, location, userIdToken, encounterId }),
+    },
+    'Surveillance analysis',
+    30_000
+  )
+}
+
+export async function downloadSurveillanceReport(
+  analysisId: string,
+  userIdToken: string
+): Promise<Blob> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 30_000)
+
+  try {
+    const res = await fetch(`${apiBaseUrl}/v1/surveillance/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ analysisId, userIdToken }),
+      signal: controller.signal,
+    })
+
+    if (!res.ok) {
+      throw ApiError.fromResponse(res, 'PDF download')
+    }
+
+    return await res.blob()
+  } catch (error) {
+    if (error instanceof ApiError) throw error
+    throw ApiError.networkError('PDF download')
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }

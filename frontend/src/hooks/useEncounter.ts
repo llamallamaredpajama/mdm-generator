@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db, useAuth, useAuthToken } from '../lib/firebase'
 import { processSection1, processSection2, finalizeEncounter } from '../lib/api'
+import { useTrendAnalysisContext } from '../contexts/TrendAnalysisContext'
 import type {
   EncounterDocument,
   SectionNumber,
@@ -51,6 +52,7 @@ export interface UseEncounterReturn {
 export function useEncounter(encounterId: string | null): UseEncounterReturn {
   const { user } = useAuth()
   const token = useAuthToken()
+  const { isEnabled: trendEnabled, location: trendLocation, isLocationValid: trendLocationValid } = useTrendAnalysisContext()
 
   // Core state
   const [encounter, setEncounter] = useState<EncounterDocument | null>(null)
@@ -243,8 +245,9 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
 
         // Call appropriate API endpoint based on section
         switch (section) {
-          case 1:
-            response = await processSection1(encounterId, content, token)
+          case 1: {
+            const location = trendEnabled && trendLocationValid && trendLocation ? trendLocation : undefined
+            response = await processSection1(encounterId, content, token, location)
             // Update Firestore with response
             await updateDoc(encounterRef, {
               'section1.content': content,
@@ -260,6 +263,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
             })
             setQuotaRemaining((response as Section1Response).quotaRemaining)
             break
+          }
 
           case 2:
             response = await processSection2(encounterId, content, token, workingDiagnosis)
@@ -306,7 +310,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
         setSubmittingSection(null)
       }
     },
-    [user, encounterId, token, encounter, localContent, canSubmitSection]
+    [user, encounterId, token, encounter, localContent, canSubmitSection, trendEnabled, trendLocationValid, trendLocation]
   )
 
   // Merge local content with encounter for return value

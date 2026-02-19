@@ -147,4 +147,12 @@
   --max-width-narrow: 800px;
   --max-width-wide: 1600px;
   --header-height: 70px;
+
+  /* ─────────────────────────────────────────
+     Surveillance / Trend Analysis Colors
+     ───────────────────────────────────────── */
+  --color-surveillance-bg: rgba(23, 162, 184, 0.05);
+  --color-surveillance-border: rgba(23, 162, 184, 0.2);
+  --color-surveillance-accent: #17a2b8;
+  --color-surveillance-glow: rgba(23, 162, 184, 0.3);
 }

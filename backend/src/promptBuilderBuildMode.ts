@@ -11,8 +11,12 @@ import type { DifferentialItem, MdmPreview, Section1Response, Section2Response }
  * Section 1: Initial Evaluation
  * Generates worst-first differential diagnosis from patient presentation.
  */
-export function buildSection1Prompt(content: string, systemPrompt: string): { system: string; user: string } {
-  const system = [
+export function buildSection1Prompt(
+  content: string,
+  systemPrompt: string,
+  surveillanceContext?: string
+): { system: string; user: string } {
+  let system = [
     systemPrompt,
     '',
     'SECTION 1: INITIAL EVALUATION - DIFFERENTIAL DIAGNOSIS GENERATION',
@@ -36,6 +40,11 @@ export function buildSection1Prompt(content: string, systemPrompt: string): { sy
     '- ROUTINE: Conditions amenable to standard ED evaluation and outpatient follow-up',
     '  Examples: GERD, musculoskeletal pain, viral syndrome, migraine',
   ].join('\n')
+
+  // Append surveillance context if provided
+  if (surveillanceContext) {
+    system += `\n\nREGIONAL EPIDEMIOLOGIC CONTEXT:\n${surveillanceContext}\nConsider regionally active conditions when building the differential.`
+  }
 
   const user = [
     'INITIAL PATIENT PRESENTATION:',

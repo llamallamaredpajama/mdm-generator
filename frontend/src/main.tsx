@@ -10,6 +10,7 @@ import Output from './routes/Output'
 import Settings from './routes/Settings'
 import { AuthProvider } from './lib/firebase'
 import { ToastProvider } from './contexts/ToastContext'
+import { TrendAnalysisProvider } from './contexts/TrendAnalysisContext'
 
 const router = createBrowserRouter([
   {
@@ -31,7 +32,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
       <ToastProvider>
-        <RouterProvider router={router} />
+        <TrendAnalysisProvider>
+          <RouterProvider router={router} />
+        </TrendAnalysisProvider>
       </ToastProvider>
     </AuthProvider>
   </StrictMode>,

@@ -21,6 +21,9 @@ import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../ty
 import { BuildModeStatusCircles } from './shared/CardContent'
 import { ApiError } from '../../lib/api'
 import ConfirmationModal from '../ConfirmationModal'
+import TrendAnalysisToggle from '../TrendAnalysisToggle'
+import TrendResultsPanel from '../TrendResultsPanel'
+import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
 import './EncounterEditor.css'
 
 /**
@@ -111,6 +114,8 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   // Quota exceeded state for showing upgrade prompt
   const [showQuotaExceeded, setShowQuotaExceeded] = useState(false)
 
+  const { analysis, isAnalyzing, analyze, downloadPdf } = useTrendAnalysis()
+
   // PHI confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [pendingSection, setPendingSection] = useState<SectionNumber | null>(null)
@@ -165,6 +170,17 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         } else {
           await submitSection(section)
         }
+
+        // After Section 1 completes, trigger trend analysis if enabled
+        if (section === 1 && encounter?.section1?.llmResponse?.differential) {
+          const differential = encounter.section1.llmResponse.differential
+          const dxList = Array.isArray(differential)
+            ? differential.map((d: { diagnosis?: string }) => d.diagnosis || '').filter(Boolean)
+            : []
+          if (dxList.length > 0 && encounter.chiefComplaint) {
+            analyze(encounter.chiefComplaint, dxList)
+          }
+        }
       } catch (err) {
         console.error('Submission failed:', err)
 
@@ -198,7 +214,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         }
       }
     },
-    [pendingSection, submitSection, workingDiagnosis]
+    [pendingSection, submitSection, workingDiagnosis, encounter, analyze]
   )
 
   // Loading state
@@ -275,6 +291,8 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
       {/* Section Panels */}
       <div className="encounter-editor__sections">
+        <TrendAnalysisToggle compact />
+
         {/* Section 1: Initial Evaluation */}
         <SectionPanel
           sectionNumber={1}
@@ -293,6 +311,16 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           isErrorRetryable={sectionErrors[1]?.isRetryable}
           onDismissError={() => dismissError(1)}
         />
+
+        {/* Trend Analysis Results (after Section 1) */}
+        {encounter.section1.status === 'completed' && (
+          <TrendResultsPanel
+            analysis={analysis}
+            isLoading={isAnalyzing}
+            showPdfDownload
+            onDownloadPdf={() => analysis && downloadPdf(analysis.analysisId)}
+          />
+        )}
 
         {/* Section 2: Workup & Results (blocked) */}
         {!isSection1Complete && !isFinalized && !isArchived && (

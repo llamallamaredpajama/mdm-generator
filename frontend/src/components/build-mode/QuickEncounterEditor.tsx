@@ -15,6 +15,9 @@ import { formatRoomDisplay, formatPatientIdentifier } from '../../types/encounte
 import DictationGuide from '../DictationGuide'
 import ConfirmationModal from '../ConfirmationModal'
 import { useToast } from '../../contexts/ToastContext'
+import TrendAnalysisToggle from '../TrendAnalysisToggle'
+import TrendResultsPanel from '../TrendResultsPanel'
+import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
 import './QuickEncounterEditor.css'
 
 interface QuickEncounterEditorProps {
@@ -44,6 +47,7 @@ export default function QuickEncounterEditor({
   } = useQuickEncounter(encounterId)
 
   const { success: showSuccess, error: showError } = useToast()
+  const { analysis, isAnalyzing, analyze, downloadPdf } = useTrendAnalysis()
   const [showGuide, setShowGuide] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
@@ -68,8 +72,18 @@ export default function QuickEncounterEditor({
     const result = await submitNarrative()
     if (result?.ok) {
       showSuccess('MDM generated successfully')
+      // Trigger trend analysis if enabled
+      if (result.patientIdentifier?.chiefComplaint) {
+        const differential = result.mdm?.json?.differential
+        const dxList = Array.isArray(differential)
+          ? differential.map((d: { diagnosis?: string }) => d.diagnosis || '').filter(Boolean)
+          : []
+        if (dxList.length > 0) {
+          analyze(result.patientIdentifier.chiefComplaint, dxList)
+        }
+      }
     }
-  }, [submitNarrative, showSuccess])
+  }, [submitNarrative, showSuccess, analyze])
 
   /**
    * Copy MDM text to clipboard
@@ -176,6 +190,7 @@ export default function QuickEncounterEditor({
               <label htmlFor="narrative-input" className="quick-editor__label">
                 Encounter Narrative
               </label>
+              <TrendAnalysisToggle />
               <textarea
                 id="narrative-input"
                 className="quick-editor__textarea"
@@ -264,6 +279,13 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
                   )}
                 </button>
               </div>
+
+              <TrendResultsPanel
+                analysis={analysis}
+                isLoading={isAnalyzing}
+                showPdfDownload
+                onDownloadPdf={() => analysis && downloadPdf(analysis.analysisId)}
+              />
 
               <div className="quick-editor__output-content">
                 <pre className="quick-editor__output-text">{mdmOutput.text}</pre>

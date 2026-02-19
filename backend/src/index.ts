@@ -33,6 +33,7 @@ import {
   getQuickModeFallback,
   type QuickModeGenerationResult,
 } from './promptBuilderQuickMode'
+import surveillanceRouter from './surveillance/routes'
 
 const app = express()
 
@@ -1100,6 +1101,8 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
     return res.status(500).json({ error: 'Internal error' })
   }
 })
+
+app.use(surveillanceRouter)
 
 // Initialize Firebase and start server
 async function main() {
