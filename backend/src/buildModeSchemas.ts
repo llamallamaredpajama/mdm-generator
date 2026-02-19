@@ -19,6 +19,10 @@ export const Section1RequestSchema = z.object({
   encounterId: z.string().min(1),
   content: z.string().min(1).max(SECTION1_MAX_CHARS),
   userIdToken: z.string().min(10),
+  location: z.object({
+    zipCode: z.string().optional(),
+    state: z.string().optional(),
+  }).optional(),
 })
 
 export type Section1Request = z.infer<typeof Section1RequestSchema>

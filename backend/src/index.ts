@@ -34,6 +34,11 @@ import {
   type QuickModeGenerationResult,
 } from './promptBuilderQuickMode'
 import surveillanceRouter from './surveillance/routes'
+import { mapToSyndromes } from './surveillance/syndromeMapper'
+import { RegionResolver } from './surveillance/regionResolver'
+import { AdapterRegistry } from './surveillance/adapters/adapterRegistry'
+import { computeCorrelations } from './surveillance/correlationEngine'
+import { buildSurveillanceContext } from './surveillance/promptAugmenter'
 
 const app = express()
 
@@ -451,7 +456,7 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    const { encounterId, content } = parsed.data
+    const { encounterId, content, location: section1Location } = parsed.data
 
     // 3. Get encounter and verify ownership
     const encounterRef = getEncounterRef(uid, encounterId)
@@ -501,13 +506,47 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       return res.status(400).json(tokenCheck.payload)
     }
 
-    // 6. Build prompt and call Vertex AI
+    // 6. Surveillance enrichment (supplementary — failures must not block section 1)
+    let section1SurveillanceCtx: string | undefined
+    if (section1Location) {
+      try {
+        const syndromes = mapToSyndromes(content, [])
+        const resolver = new RegionResolver()
+        const region = await resolver.resolve(section1Location)
+        if (region) {
+          const registry = new AdapterRegistry()
+          const { dataPoints } = await registry.fetchAll(region, syndromes)
+          const correlations = computeCorrelations({
+            chiefComplaint: content,
+            differential: [],
+            dataPoints,
+          })
+          section1SurveillanceCtx = buildSurveillanceContext({
+            analysisId: '',
+            region,
+            regionLabel: region.county
+              ? `${region.county}, ${region.stateAbbrev}`
+              : region.state,
+            rankedFindings: correlations,
+            alerts: [],
+            summary: '',
+            dataSourcesQueried: [],
+            dataSourceErrors: [],
+            analyzedAt: new Date().toISOString(),
+          }) || undefined
+        }
+      } catch (survError) {
+        console.warn('Section 1 surveillance enrichment failed (non-blocking):', survError)
+      }
+    }
+
+    // 7. Build prompt and call Vertex AI
     const systemPrompt = await fs.readFile(
       path.join(__dirname, '../../docs/mdm-gen-guide.md'),
       'utf8'
     ).catch(() => '') // Fallback to empty if guide not found
 
-    const prompt = buildSection1Prompt(content, systemPrompt)
+    const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx)
 
     let differential: DifferentialItem[] = []
     try {
@@ -956,6 +995,10 @@ const QuickModeGenerateSchema = z.object({
   encounterId: z.string().min(1),
   narrative: z.string().min(1).max(16000),
   userIdToken: z.string().min(10),
+  location: z.object({
+    zipCode: z.string().optional(),
+    state: z.string().optional(),
+  }).optional(),
 })
 
 /**
@@ -982,7 +1025,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    const { encounterId, narrative } = parsed.data
+    const { encounterId, narrative, location } = parsed.data
 
     // 3. Get encounter and verify ownership
     const encounterRef = getEncounterRef(uid, encounterId)
@@ -1047,10 +1090,44 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now(),
     })
 
-    // 8. Build prompt and call Vertex AI
+    // 8. Surveillance enrichment (supplementary — failures must not block MDM)
+    let surveillanceContext: string | undefined
+    if (location) {
+      try {
+        const syndromes = mapToSyndromes(narrative, [])
+        const resolver = new RegionResolver()
+        const region = await resolver.resolve(location)
+        if (region) {
+          const registry = new AdapterRegistry()
+          const { dataPoints } = await registry.fetchAll(region, syndromes)
+          const correlations = computeCorrelations({
+            chiefComplaint: narrative,
+            differential: [],
+            dataPoints,
+          })
+          surveillanceContext = buildSurveillanceContext({
+            analysisId: '',
+            region,
+            regionLabel: region.county
+              ? `${region.county}, ${region.stateAbbrev}`
+              : region.state,
+            rankedFindings: correlations,
+            alerts: [],
+            summary: '',
+            dataSourcesQueried: [],
+            dataSourceErrors: [],
+            analyzedAt: new Date().toISOString(),
+          }) || undefined
+        }
+      } catch (survError) {
+        console.warn('Surveillance enrichment failed (non-blocking):', survError)
+      }
+    }
+
+    // 9. Build prompt and call Vertex AI
     let result: QuickModeGenerationResult
     try {
-      const prompt = await buildQuickModePrompt(narrative)
+      const prompt = await buildQuickModePrompt(narrative, surveillanceContext)
       const modelResponse = await callGeminiFlash(prompt)
       result = parseQuickModeResponse(modelResponse.text)
     } catch (modelError) {
@@ -1058,7 +1135,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       result = getQuickModeFallback()
     }
 
-    // 9. Update Firestore with results
+    // 10. Update Firestore with results
     await encounterRef.update({
       'quickModeData.status': 'completed',
       'quickModeData.narrative': narrative,
@@ -1078,7 +1155,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now(),
     })
 
-    // 10. Log action (no PHI)
+    // 11. Log action (no PHI)
     console.log({
       action: 'quick-mode-generate',
       uid,
@@ -1086,7 +1163,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       timestamp: new Date().toISOString(),
     })
 
-    // 11. Return response
+    // 12. Return response
     return res.json({
       ok: true,
       mdm: {
