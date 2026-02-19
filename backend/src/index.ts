@@ -44,16 +44,14 @@ const app = express()
 
 // CORS configuration
 const allowedOrigins = [
-  'http://localhost:5173', // Vite dev server
-  'http://localhost:5174', // Alternative Vite port
-  'http://localhost:3000', // Alternative React port
   process.env.FRONTEND_URL, // Production frontend URL
 ].filter(Boolean) as string[]
 
 app.use((req, res, next) => {
   const origin = req.headers.origin
-  // Allow listed origins or any Firebase Hosting domain for this project
-  if (origin && (allowedOrigins.includes(origin) || origin.match(/^https:\/\/mdm-generator[^.]*\.web\.app$/))) {
+  // Allow any localhost origin (Vite auto-increments ports) or listed/Firebase origins
+  const isLocalhost = origin?.match(/^http:\/\/localhost:\d+$/)
+  if (origin && (isLocalhost || allowedOrigins.includes(origin) || origin.match(/^https:\/\/mdm-generator[^.]*\.web\.app$/))) {
     res.header('Access-Control-Allow-Origin', origin)
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
