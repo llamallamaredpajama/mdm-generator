@@ -86,11 +86,17 @@ describe('RegionResolver', () => {
       expect(result).toBeNull()
     })
 
-    it('returns null on Firestore error', async () => {
+    it('falls back to ZIP prefix resolution on Firestore error', async () => {
       mockGet.mockRejectedValueOnce(new Error('Firestore unavailable'))
 
       const result = await resolver.resolveFromZip('78701')
-      expect(result).toBeNull()
+      // ZIP prefix 787 → TX, so we get state-level resolution as fallback
+      expect(result).not.toBeNull()
+      expect(result!.stateAbbrev).toBe('TX')
+      expect(result!.state).toBe('Texas')
+      expect(result!.geoLevel).toBe('state')
+      // No county-level data from the prefix fallback
+      expect(result!.county).toBeUndefined()
     })
   })
 

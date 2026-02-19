@@ -71,11 +71,14 @@ router.post('/v1/surveillance/analyze', async (req, res) => {
     }
     const uid = decoded.uid
 
-    // 3. AUTHORIZE — Pro or Enterprise only
+    // 3. AUTHORIZE — Pro or Enterprise only (standalone panel; inline enrichment has no plan gate)
     const stats = await userService.getUsageStats(uid)
     if (stats.plan !== 'pro' && stats.plan !== 'enterprise' && stats.plan !== 'admin') {
       return res.status(403).json({
-        error: 'Surveillance analysis requires a Pro or Enterprise plan',
+        error: 'Surveillance trend analysis requires a Pro or Enterprise plan',
+        upgradeRequired: true,
+        requiredPlan: 'pro',
+        currentPlan: stats.plan,
       })
     }
 

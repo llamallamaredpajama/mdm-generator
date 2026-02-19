@@ -5,6 +5,7 @@
  */
 
 import type { TrendAnalysisResult, TrendFinding, SurveillanceAlert } from '../types/surveillance'
+import type { TrendAnalysisError } from '../hooks/useTrendAnalysis'
 import './TrendResultsPanel.css'
 
 interface TrendResultsPanelProps {
@@ -12,10 +13,14 @@ interface TrendResultsPanelProps {
   analysis: TrendAnalysisResult | null
   /** Loading state */
   isLoading?: boolean
+  /** Error state from analysis */
+  error?: TrendAnalysisError | null
   /** Whether to show PDF download button */
   showPdfDownload?: boolean
   /** Callback for PDF download */
   onDownloadPdf?: () => void
+  /** Callback for retry */
+  onRetry?: () => void
 }
 
 const TREND_ARROWS: Record<string, string> = {
@@ -68,8 +73,10 @@ function FindingRow({ finding }: { finding: TrendFinding }) {
 export default function TrendResultsPanel({
   analysis,
   isLoading = false,
+  error,
   showPdfDownload = false,
   onDownloadPdf,
+  onRetry,
 }: TrendResultsPanelProps) {
   if (isLoading) {
     return (
@@ -80,6 +87,41 @@ export default function TrendResultsPanel({
         <div className="trend-results__loading">
           <div className="trend-results__spinner" />
           <span>Analyzing regional surveillance data...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="trend-results trend-results--error">
+        <div className="trend-results__header">
+          <h4 className="trend-results__title">Regional Trend Analysis</h4>
+        </div>
+        <div className="trend-results__error-content" role="alert">
+          {error.upgradeRequired ? (
+            <>
+              <p className="trend-results__error-message">
+                Standalone trend analysis requires a Pro or Enterprise plan.
+              </p>
+              <p className="trend-results__error-note">
+                Regional surveillance data is still used to enrich your MDM output automatically.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="trend-results__error-message">{error.message}</p>
+              {error.isRetryable && onRetry && (
+                <button
+                  type="button"
+                  className="trend-results__retry-btn"
+                  onClick={onRetry}
+                >
+                  Try Again
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     )

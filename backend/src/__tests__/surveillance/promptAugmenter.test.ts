@@ -78,7 +78,7 @@ describe('buildSurveillanceContext', () => {
     expect(buildSurveillanceContext(undefined as any)).toBe('')
   })
 
-  it('returns empty string when no significant findings', () => {
+  it('returns "no significant signals" message when no significant findings and no differential', () => {
     const analysis = makeAnalysis({
       rankedFindings: [
         makeFinding({ tier: 'low' }),
@@ -87,10 +87,11 @@ describe('buildSurveillanceContext', () => {
       alerts: [makeAlert({ level: 'info' })],
     })
 
-    expect(buildSurveillanceContext(analysis)).toBe('')
+    const output = buildSurveillanceContext(analysis)
+    expect(output).toContain('No significant regional surveillance signals detected')
   })
 
-  it('includes only high and moderate tier findings', () => {
+  it('includes only high and moderate tier findings without differential', () => {
     const analysis = makeAnalysis({
       rankedFindings: [
         makeFinding({ tier: 'high', condition: 'Influenza' }),
@@ -107,6 +108,40 @@ describe('buildSurveillanceContext', () => {
     expect(output).toContain('RSV')
     expect(output).not.toContain('Norovirus')
     expect(output).not.toContain('Adenovirus')
+  })
+
+  it('includes absence data for differential-matched low/background findings', () => {
+    const analysis = makeAnalysis({
+      rankedFindings: [
+        makeFinding({ tier: 'high', condition: 'Influenza' }),
+        makeFinding({ tier: 'background', condition: 'Lyme Disease' }),
+        makeFinding({ tier: 'low', condition: 'RMSF', trendDirection: 'stable' }),
+      ],
+      alerts: [],
+    })
+
+    const output = buildSurveillanceContext(analysis, ['Lyme Disease', 'RMSF', 'Meningitis'])
+
+    expect(output).toContain('Influenza')
+    expect(output).toContain('Conditions Not Significantly Active')
+    expect(output).toContain('Lyme Disease')
+    expect(output).toContain('Below background levels')
+    expect(output).toContain('RMSF')
+    expect(output).toContain('Low regional activity')
+  })
+
+  it('does not include absence data for findings not on the differential', () => {
+    const analysis = makeAnalysis({
+      rankedFindings: [
+        makeFinding({ tier: 'background', condition: 'Adenovirus' }),
+      ],
+      alerts: [],
+    })
+
+    const output = buildSurveillanceContext(analysis, ['Chest Pain', 'PE'])
+
+    expect(output).not.toContain('Adenovirus')
+    expect(output).toContain('No significant regional surveillance signals')
   })
 
   it('includes critical and warning alerts but not info', () => {

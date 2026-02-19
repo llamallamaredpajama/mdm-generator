@@ -297,8 +297,10 @@ describe('POST /v1/surveillance/analyze', () => {
 
     expect(res.status).toBe(403)
     expect(res.body.error).toBe(
-      'Surveillance analysis requires a Pro or Enterprise plan',
+      'Surveillance trend analysis requires a Pro or Enterprise plan',
     )
+    expect(res.body.upgradeRequired).toBe(true)
+    expect(res.body.requiredPlan).toBe('pro')
   })
 
   it('returns 400 when region cannot be resolved', async () => {

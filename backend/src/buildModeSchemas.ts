@@ -64,6 +64,7 @@ export const DifferentialItemSchema = z.object({
   diagnosis: z.string(),
   urgency: z.enum(['emergent', 'urgent', 'routine']),
   reasoning: z.string(),
+  regionalContext: z.string().optional(),
 })
 
 export type DifferentialItem = z.infer<typeof DifferentialItemSchema>
@@ -89,6 +90,7 @@ export const MdmPreviewSchema = z.object({
   differential: z.union([z.string(), z.array(z.string())]),
   dataReviewed: z.union([z.string(), z.array(z.string())]),
   reasoning: z.string(),
+  regionalSurveillance: z.string().optional(),
 })
 
 export type MdmPreview = z.infer<typeof MdmPreviewSchema>
@@ -118,6 +120,7 @@ export const FinalMdmSchema = z.object({
     risk: z.union([z.string(), z.array(z.string())]),
     disposition: z.string(),
     complexityLevel: z.enum(['low', 'moderate', 'high']).optional(),
+    regionalSurveillance: z.string().optional(),
   }),
 })
 

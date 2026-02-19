@@ -13,10 +13,17 @@ const MAX_CHARS = 2000
  * Build a concise, plain-text surveillance context block from a
  * TrendAnalysisResult for inclusion in an LLM prompt.
  *
- * Returns an empty string when there is nothing clinically significant
- * to report (null input, no high/moderate findings, etc.).
+ * When `differential` is provided, also includes low/background findings
+ * that match differential diagnoses, with explicit "not active" language.
+ * This enables the LLM to note reduced pre-test probability for conditions
+ * without regional activity.
+ *
+ * Returns an empty string only when input is null.
  */
-export function buildSurveillanceContext(analysis: TrendAnalysisResult | null): string {
+export function buildSurveillanceContext(
+  analysis: TrendAnalysisResult | null,
+  differential?: string[],
+): string {
   if (!analysis) return ''
 
   const significantFindings = analysis.rankedFindings.filter(
@@ -27,8 +34,21 @@ export function buildSurveillanceContext(analysis: TrendAnalysisResult | null): 
     (a) => a.level === 'critical' || a.level === 'warning',
   )
 
-  // Nothing useful to inject into the prompt
-  if (significantFindings.length === 0 && actionableAlerts.length === 0) return ''
+  // Find low/background findings that match conditions on the differential
+  const absenceFindings = differential && differential.length > 0
+    ? analysis.rankedFindings.filter((f) => {
+        if (f.tier === 'high' || f.tier === 'moderate') return false
+        const conditionLower = f.condition.toLowerCase()
+        return differential.some((dx) => {
+          const dxLower = dx.toLowerCase()
+          return conditionLower.includes(dxLower) || dxLower.includes(conditionLower)
+        })
+      })
+    : []
+
+  // If no significant activity AND no absence data relevant to the differential,
+  // still return a summary indicating the region was checked
+  const hasContent = significantFindings.length > 0 || actionableAlerts.length > 0 || absenceFindings.length > 0
 
   const parts: string[] = []
 
@@ -36,11 +56,20 @@ export function buildSurveillanceContext(analysis: TrendAnalysisResult | null): 
   parts.push(`Regional Surveillance Summary (${analysis.regionLabel}):`)
   parts.push('')
 
-  // Findings section
+  // Active findings section
   if (significantFindings.length > 0) {
     parts.push('Active Conditions:')
     for (const f of significantFindings) {
       parts.push(`- ${formatFinding(f)}`)
+    }
+    parts.push('')
+  }
+
+  // Absence/low-activity section for differential-matched conditions
+  if (absenceFindings.length > 0) {
+    parts.push('Conditions Not Significantly Active in This Region:')
+    for (const f of absenceFindings) {
+      parts.push(`- ${formatAbsenceFinding(f)}`)
     }
     parts.push('')
   }
@@ -51,6 +80,12 @@ export function buildSurveillanceContext(analysis: TrendAnalysisResult | null): 
     for (const a of actionableAlerts) {
       parts.push(`- ${formatAlert(a)}`)
     }
+    parts.push('')
+  }
+
+  // If no findings at all, note that the region was queried with no signals
+  if (!hasContent) {
+    parts.push('No significant regional surveillance signals detected for the given clinical presentation.')
     parts.push('')
   }
 
@@ -74,6 +109,15 @@ function formatFinding(f: ClinicalCorrelation): string {
   const tierLabel = f.tier.toUpperCase()
   const trendDesc = formatTrend(f.trendDirection, f.trendMagnitude)
   return `${f.condition}: ${trendDesc}, ${tierLabel} relevance. ${f.summary}`
+}
+
+/** Format a low/background finding with explicit absence language. */
+function formatAbsenceFinding(f: ClinicalCorrelation): string {
+  if (f.tier === 'background') {
+    return `${f.condition}: Below background levels — no significant regional activity. Consider reduced pre-test probability.`
+  }
+  // tier === 'low'
+  return `${f.condition}: Low regional activity (${f.trendDirection}). No significant outbreak signals detected.`
 }
 
 /** Describe the trend direction with optional magnitude. */

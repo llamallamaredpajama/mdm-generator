@@ -610,6 +610,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       'section1.submissionCount': newSubmissionCount,
       'section1.status': 'completed',
       'section1.lastUpdated': admin.firestore.Timestamp.now(),
+      // Persist surveillance context so Section 3 (finalize) can access it
+      ...(section1SurveillanceCtx && { surveillanceContext: section1SurveillanceCtx }),
       status: 'section1_done',
       updatedAt: admin.firestore.Timestamp.now(),
     })
@@ -871,7 +873,10 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       workingDiagnosis: undefined, // Could be stored in encounter if needed
     }
 
-    const prompt = buildFinalizePrompt(section1Data, section2Data, content)
+    // Retrieve surveillance context stored during Section 1
+    const storedSurveillanceCtx: string | undefined = encounter.surveillanceContext || undefined
+
+    const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx)
 
     let finalMdm: FinalMdm
     try {

@@ -6,14 +6,21 @@
 import { useState, useCallback } from 'react'
 import { useAuthToken } from '../lib/firebase'
 import { useTrendAnalysisContext } from '../contexts/TrendAnalysisContext'
-import { analyzeSurveillance, downloadSurveillanceReport } from '../lib/api'
+import { analyzeSurveillance, downloadSurveillanceReport, ApiError } from '../lib/api'
 import type { TrendAnalysisResult } from '../types/surveillance'
+
+export interface TrendAnalysisError {
+  message: string
+  upgradeRequired: boolean
+  requiredPlan?: string
+  isRetryable: boolean
+}
 
 export function useTrendAnalysis() {
   const token = useAuthToken()
   const { isEnabled, location, isLocationValid, lastAnalysis, setLastAnalysis } = useTrendAnalysisContext()
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
+  const [error, setError] = useState<TrendAnalysisError | null>(null)
 
   const analyze = useCallback(
     async (chiefComplaint: string, differential: string[]): Promise<TrendAnalysisResult | null> => {
@@ -37,9 +44,15 @@ export function useTrendAnalysis() {
         }
         return response.analysis
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Analysis failed')
-        setError(error)
-        console.error('Trend analysis failed:', error)
+        const apiErr = err instanceof ApiError ? err : null
+        const trendError: TrendAnalysisError = {
+          message: apiErr?.message || (err instanceof Error ? err.message : 'Analysis failed'),
+          upgradeRequired: apiErr?.statusCode === 403,
+          requiredPlan: apiErr?.statusCode === 403 ? 'pro' : undefined,
+          isRetryable: apiErr?.isRetryable ?? false,
+        }
+        setError(trendError)
+        console.error('Trend analysis failed:', err)
         return null
       } finally {
         setIsAnalyzing(false)

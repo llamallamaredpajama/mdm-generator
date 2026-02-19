@@ -41,9 +41,20 @@ export function buildSection1Prompt(
     '  Examples: GERD, musculoskeletal pain, viral syndrome, migraine',
   ].join('\n')
 
-  // Append surveillance context if provided
+  // Append surveillance context with explicit instructions
   if (surveillanceContext) {
-    system += `\n\nREGIONAL EPIDEMIOLOGIC CONTEXT:\n${surveillanceContext}\nConsider regionally active conditions when building the differential.`
+    system += [
+      '',
+      '',
+      'REGIONAL EPIDEMIOLOGIC CONTEXT:',
+      surveillanceContext,
+      '',
+      'SURVEILLANCE INTEGRATION INSTRUCTIONS:',
+      '1. If regional data shows RISING activity for conditions relevant to this presentation, explicitly note this in the reasoning (e.g., "Regional surveillance shows rising RSV activity, increasing pre-test probability")',
+      '2. If regional data shows ABSENCE or LOW activity for a differential diagnosis, note reduced pre-test probability (e.g., "No significant Lyme activity in this region, reducing pre-test probability")',
+      '3. Include "Regional Surveillance Data" as a data source in your clinical reasoning',
+      '4. Add a "regionalContext" field to each differential item where regional data is relevant',
+    ].join('\n')
   }
 
   const user = [
@@ -58,7 +69,8 @@ export function buildSection1Prompt(
     '    {',
     '      "diagnosis": "Condition name",',
     '      "urgency": "emergent" | "urgent" | "routine",',
-    '      "reasoning": "Why this is on the differential based on presentation"',
+    '      "reasoning": "Why this is on the differential based on presentation",',
+    '      "regionalContext": "Optional: How regional surveillance data affects pre-test probability for this diagnosis"',
     '    }',
     '  ]',
     '}',
@@ -164,7 +176,8 @@ export function buildSection2Prompt(
 export function buildFinalizePrompt(
   section1: { content: string; response: Pick<Section1Response, 'differential'> },
   section2: { content: string; response: Pick<Section2Response, 'mdmPreview'>; workingDiagnosis?: string },
-  section3Content: string
+  section3Content: string,
+  surveillanceContext?: string
 ): { system: string; user: string } {
   const differentialSummary = section1.response.differential
     .map((d: DifferentialItem) => `- ${d.diagnosis} (${d.urgency})`)
@@ -193,6 +206,11 @@ export function buildFinalizePrompt(
     '=== MDM PREVIEW ===',
     JSON.stringify(mdmPreview, null, 2),
     '',
+    ...(surveillanceContext ? [
+      '=== REGIONAL SURVEILLANCE DATA ===',
+      surveillanceContext,
+      '',
+    ] : []),
     'CRITICAL REQUIREMENTS:',
     '1. Generate copy-pastable MDM text formatted for EHR documentation',
     '2. Include MDM complexity level determination (Low, Moderate, High)',
@@ -201,6 +219,10 @@ export function buildFinalizePrompt(
     '5. Document disposition decision with clinical rationale',
     '6. Add appropriate discharge instructions if applicable',
     '7. NEVER fabricate information - use only what was provided',
+    ...(surveillanceContext ? [
+      '8. Include regional surveillance data sources in the Data Reviewed section (e.g., "Regional Surveillance Data: CDC Respiratory, NWSS Wastewater")',
+      '9. Note any regional epidemiologic context that influenced the differential or clinical reasoning',
+    ] : []),
     '',
     'MDM COMPLEXITY DETERMINATION:',
     '- HIGH: Multiple diagnoses, extensive data review, high-risk decision making',
@@ -227,7 +249,8 @@ export function buildFinalizePrompt(
     '        "imaging": [...],',
     '        "ekg": "...",',
     '        "externalRecords": "...",',
-    '        "independentInterpretation": [...]',
+    '        "independentInterpretation": [...],',
+    '        "regionalSurveillance": "Regional surveillance data sources and key findings, if available"',
     '      },',
     '      "riskAssessment": {',
     '        "highestRiskElement": "...",',

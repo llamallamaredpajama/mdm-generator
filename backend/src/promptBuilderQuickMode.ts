@@ -138,9 +138,9 @@ ${narrative}
 
 Generate the complete JSON response now:`
 
-  // Append surveillance context if provided
+  // Append surveillance context with explicit integration instructions
   if (surveillanceContext) {
-    systemPrompt += `\n\n---\n\n# Regional Epidemiologic Context\n\n${surveillanceContext}\n\nConsider this regional surveillance data when constructing the differential diagnosis. Weight epidemiologically active conditions appropriately.`
+    systemPrompt += `\n\n---\n\n# Regional Epidemiologic Context\n\n${surveillanceContext}\n\n## Surveillance Integration Instructions\n\n1. Include "Regional Surveillance Data" in the "dataReviewed" array (e.g., "Regional Surveillance Data: CDC Respiratory, NWSS Wastewater — [key findings]")\n2. In differential reasoning, explicitly note how regional surveillance data affects pre-test probability:\n   - For conditions with RISING regional activity: note increased pre-test probability\n   - For conditions with LOW/ABSENT regional activity: note reduced pre-test probability\n3. In the MDM "text" field, include a brief "Regional Epidemiologic Context" paragraph summarizing:\n   - Data sources consulted\n   - Regionally active conditions relevant to the differential\n   - Conditions on the differential that are NOT active in this region\n4. Weight epidemiologically active conditions appropriately in urgency classification`
   }
 
   return {
