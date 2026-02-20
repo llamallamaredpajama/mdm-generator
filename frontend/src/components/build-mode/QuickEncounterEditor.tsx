@@ -17,6 +17,7 @@ import ConfirmationModal from '../ConfirmationModal'
 import { useToast } from '../../contexts/ToastContext'
 import TrendAnalysisToggle from '../TrendAnalysisToggle'
 import TrendResultsPanel from '../TrendResultsPanel'
+import TrendReportModal from '../TrendReportModal'
 import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
 import './QuickEncounterEditor.css'
 
@@ -51,6 +52,7 @@ export default function QuickEncounterEditor({
   const [showGuide, setShowGuide] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [showTrendReport, setShowTrendReport] = useState(false)
 
   /**
    * Handle Generate button click — show PHI confirmation first
@@ -286,6 +288,15 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
                 showPdfDownload
                 onDownloadPdf={() => analysis && downloadPdf(analysis.analysisId)}
               />
+              {analysis && analysis.rankedFindings.length > 0 && (
+                <button
+                  type="button"
+                  className="quick-editor__report-btn"
+                  onClick={() => setShowTrendReport(true)}
+                >
+                  📋 View Chart Report
+                </button>
+              )}
 
               <div className="quick-editor__output-content">
                 <pre className="quick-editor__output-text">{mdmOutput.text}</pre>
@@ -347,6 +358,15 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
           Educational tool only. All outputs require physician review before clinical use.
         </p>
       </footer>
+
+      {/* Trend Report Modal */}
+      {analysis && (
+        <TrendReportModal
+          analysis={analysis}
+          isOpen={showTrendReport}
+          onClose={() => setShowTrendReport(false)}
+        />
+      )}
 
       {/* PHI Confirmation Modal */}
       <ConfirmationModal

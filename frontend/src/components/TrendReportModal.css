@@ -1,0 +1,127 @@
+/* TrendReportModal Styles */
+
+.trend-report-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  padding: var(--space-lg);
+}
+
+.trend-report-modal {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-surveillance-border);
+  border-radius: var(--radius-lg);
+  max-width: 640px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+.trend-report-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.trend-report-modal__title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-surveillance-accent);
+}
+
+.trend-report-modal__close {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--space-xs);
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.trend-report-modal__close:hover {
+  color: var(--color-text-primary);
+}
+
+.trend-report-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md) var(--space-lg);
+}
+
+.trend-report-modal__text {
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--color-text-primary);
+  background: var(--color-bg-tertiary);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.trend-report-modal__actions {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-border);
+  justify-content: flex-end;
+}
+
+.trend-report-modal__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.trend-report-modal__btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.trend-report-modal__btn--primary {
+  background: var(--color-surveillance-accent);
+  color: #000;
+  border-color: var(--color-surveillance-accent);
+}
+
+.trend-report-modal__btn--primary:hover {
+  opacity: 0.9;
+}
+
+.trend-report-modal__btn--copied {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #000;
+}
+
+@media (max-width: 480px) {
+  .trend-report-overlay {
+    padding: var(--space-md);
+  }
+
+  .trend-report-modal__actions {
+    flex-direction: column;
+  }
+}

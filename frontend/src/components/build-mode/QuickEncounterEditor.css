@@ -335,22 +335,44 @@
 
 /* Patient identifier display */
 .quick-editor__identifier {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  background: rgba(245, 158, 11, 0.1);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
+  gap: var(--space-xs);
+  padding: 2px var(--space-sm);
+  background: rgba(245, 158, 11, 0.08);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
 }
 
 .quick-editor__identifier-label {
   color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
 }
 
 .quick-editor__identifier-value {
   font-weight: var(--font-weight-medium);
   color: #d97706;
+  font-size: var(--font-size-xs);
+}
+
+/* Chart report button */
+.quick-editor__report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-surveillance-accent);
+  background: transparent;
+  border: 1px solid var(--color-surveillance-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-bottom: var(--space-sm);
+}
+
+.quick-editor__report-btn:hover {
+  background: rgba(23, 162, 184, 0.1);
 }
 
 /* Original narrative details */
