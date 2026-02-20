@@ -116,7 +116,7 @@ export default function Start() {
                   />
                   <g className="electron-dot">
                     <animateMotion dur={ekgDur} repeatCount="indefinite" calcMode="linear"
-                      keyPoints="1;0" keyTimes="0;1">
+                      keyPoints="0;1" keyTimes="0;1">
                       <mpath href="#ekg-trace-path" />
                     </animateMotion>
                     <circle r={18} fill="url(#ekg-glow)" filter="url(#electron-blur)" />
@@ -136,7 +136,7 @@ export default function Start() {
                   />
                   <g className="electron-dot">
                     <animateMotion dur={ekgDur} repeatCount="indefinite" calcMode="linear"
-                      keyPoints="1;0" keyTimes="0;1">
+                      keyPoints="0;1" keyTimes="0;1">
                       <mpath href="#ekg-trace-path-2" />
                     </animateMotion>
                     <circle r={18} fill="url(#ekg-glow)" filter="url(#electron-blur)" />

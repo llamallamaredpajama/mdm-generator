@@ -845,16 +845,16 @@
 
 /* EKG scroll animation */
 @keyframes em-title-shine {
-  from { background-position: 0% center; }
-  to { background-position: 100% center; }
+  from { background-position: 100% center; }
+  to { background-position: 0% center; }
 }
 
 @keyframes ekg-scroll {
   from {
-    transform: translateX(0);
+    transform: translateX(-50%);
   }
   to {
-    transform: translateX(-50%);
+    transform: translateX(0);
   }
 }
 
