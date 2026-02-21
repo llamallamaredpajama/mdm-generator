@@ -5,7 +5,7 @@
  * Target budget: 200-400 tokens (~800-1600 chars), hard cap at 500 tokens (~2000 chars).
  */
 
-import type { TrendAnalysisResult, ClinicalCorrelation, TrendAlert } from './types'
+import type { TrendAnalysisResult, ClinicalCorrelation, TrendAlert, DataSourceSummary } from './types'
 
 const MAX_CHARS = 2000
 
@@ -86,6 +86,25 @@ export function buildSurveillanceContext(
   // If no findings at all, note that the region was queried with no signals
   if (!hasContent) {
     parts.push('No significant regional surveillance signals detected for the given clinical presentation.')
+    parts.push('')
+  }
+
+  // Data Sources Reviewed subsection (per-source detail for LLM)
+  if (analysis.dataSourceSummaries && analysis.dataSourceSummaries.length > 0) {
+    parts.push('Data Sources Reviewed:')
+    for (const ds of analysis.dataSourceSummaries) {
+      if (ds.status === 'error') {
+        parts.push(`- ${ds.label}: Data unavailable (query error)`)
+      } else if (ds.status === 'not_queried') {
+        parts.push(`- ${ds.label}: Not queried (no relevant syndromes)`)
+      } else if (ds.status === 'no_data') {
+        parts.push(`- ${ds.label}: No significant activity`)
+      } else if (ds.highlights.length > 0) {
+        parts.push(`- ${ds.label}: ${ds.highlights.join('; ')}`)
+      } else {
+        parts.push(`- ${ds.label}: No significant activity`)
+      }
+    }
     parts.push('')
   }
 
@@ -178,20 +197,56 @@ function truncateToLimit(
 }
 
 /**
- * Append surveillance data source information to the MDM text output.
- * Inserts before the RISK or DISPOSITION section if found, otherwise appends at end.
+ * Build a compact surveillance attestation line from the context string.
+ * Extracts per-source highlights when available.
  */
-export function appendSurveillanceToMdmText(mdmText: string, surveillanceContext: string): string {
+function buildSurveillanceAttestationLine(surveillanceContext: string): string {
+  // Try to extract per-source details from "Data Sources Reviewed:" subsection
+  const dsMatch = surveillanceContext.match(/Data Sources Reviewed:\n([\s\S]*?)(?:\n\n|Data sources:|\n$|$)/)
+  if (dsMatch) {
+    const sourceLines = dsMatch[1]
+      .split('\n')
+      .map((l) => l.replace(/^-\s*/, '').trim())
+      .filter(Boolean)
+    if (sourceLines.length > 0) {
+      return `- Regional Surveillance Data: ${sourceLines.join('; ')}`
+    }
+  }
+  // Fallback: use plain sources list
   const sourcesMatch = surveillanceContext.match(/Data sources:\s*(.+)/i)
   const sources = sourcesMatch?.[1]?.trim() || 'CDC Respiratory, NWSS Wastewater, CDC NNDSS'
+  return `- Regional Surveillance Data (${sources})`
+}
 
-  const insertion = `\nRegional Surveillance Data Reviewed: ${sources}\n`
+/**
+ * Append surveillance data source information to the MDM text output.
+ * Inserts within the "Data reviewed" / "DATA REVIEWED" section if found,
+ * otherwise falls back to inserting before RISK.
+ */
+export function appendSurveillanceToMdmText(mdmText: string, surveillanceContext: string): string {
+  const insertion = buildSurveillanceAttestationLine(surveillanceContext)
 
+  // Strategy 1: Insert at end of "Data reviewed" section (before the next section header)
+  const dataReviewedMatch = mdmText.match(/\n(DATA REVIEWED|Data [Rr]eviewed|Data Ordered\/Reviewed)[^\n]*/i)
+  if (dataReviewedMatch && dataReviewedMatch.index != null) {
+    // Find the next major section header after "Data reviewed"
+    const afterDataReviewed = dataReviewedMatch.index + dataReviewedMatch[0].length
+    const nextSectionMatch = mdmText.slice(afterDataReviewed).search(/\n(?:RISK|Risk Assessment|ASSESSMENT|DISPOSITION|CLINICAL DECISION|DECISION MAKING)/i)
+
+    if (nextSectionMatch > 0) {
+      const insertPos = afterDataReviewed + nextSectionMatch
+      return mdmText.slice(0, insertPos) + '\n' + insertion + mdmText.slice(insertPos)
+    }
+  }
+
+  // Strategy 2: Fallback — insert before RISK section
   const riskIdx = mdmText.search(/\n(RISK|Risk Assessment)/i)
   if (riskIdx > 0) {
-    return mdmText.slice(0, riskIdx) + insertion + mdmText.slice(riskIdx)
+    return mdmText.slice(0, riskIdx) + '\n' + insertion + '\n' + mdmText.slice(riskIdx)
   }
-  return mdmText + insertion
+
+  // Strategy 3: Append at end
+  return mdmText + '\n' + insertion
 }
 
 /** Assemble the final plain-text block from pre-filtered parts. */

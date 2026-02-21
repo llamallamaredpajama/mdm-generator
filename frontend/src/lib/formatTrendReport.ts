@@ -50,9 +50,31 @@ export function formatTrendReport(analysis: TrendAnalysisResult): string {
     lines.push('')
   }
 
-  // Attribution
-  lines.push(`Data sources: ${analysis.dataSourcesQueried.join(', ')}`)
-  lines.push('')
+  // Data sources reviewed breakdown
+  if (analysis.dataSourceSummaries && analysis.dataSourceSummaries.length > 0) {
+    lines.push('DATA SOURCES REVIEWED:')
+    lines.push('')
+    for (const ds of analysis.dataSourceSummaries) {
+      lines.push(`${ds.label}:`)
+      if (ds.status === 'error') {
+        lines.push('  Data unavailable (query error)')
+      } else if (ds.status === 'not_queried') {
+        lines.push('  Not queried (no relevant syndromes)')
+      } else if (ds.status === 'no_data' || ds.highlights.length === 0) {
+        lines.push('  No significant activity')
+      } else {
+        for (const h of ds.highlights) {
+          lines.push(`  - ${h}`)
+        }
+      }
+      lines.push('')
+    }
+  } else {
+    // Fallback: simple attribution
+    lines.push(`Data sources: ${analysis.dataSourcesQueried.join(', ')}`)
+    lines.push('')
+  }
+
   lines.push('This surveillance data is supplementary. Clinical judgment must guide all decisions.')
 
   return lines.join('\n')

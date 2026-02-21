@@ -513,7 +513,7 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
         const region = await resolver.resolve(section1Location)
         if (region) {
           const registry = new AdapterRegistry()
-          const { dataPoints, errors: survErrors } = await registry.fetchAll(region, syndromes)
+          const { dataPoints, errors: survErrors, queriedSources } = await registry.fetchAll(region, syndromes)
           const correlations = computeCorrelations({
             chiefComplaint: content,
             differential: [],
@@ -537,6 +537,7 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
             summary: '',
             dataSourcesQueried,
             dataSourceErrors: survErrors,
+            dataSourceSummaries: [],
             analyzedAt: new Date().toISOString(),
           }) || undefined
         }
@@ -997,7 +998,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
         /surveillance|regional/i.test(item)
       )
       if (!hasSurveillance) {
-        reviewed.push('Regional Surveillance Data (CDC Respiratory, NWSS Wastewater, CDC NNDSS)')
+        reviewed.push('Regional Surveillance Data: CDC Respiratory (hospital admission trends), NWSS Wastewater (pathogen PCR), CDC NNDSS (notifiable diseases) — reviewed and integrated')
         finalMdm.json.dataReviewed = reviewed
         finalMdm.text = appendSurveillanceToMdmText(finalMdm.text, storedSurveillanceCtx)
       }
@@ -1149,7 +1150,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
         const region = await resolver.resolve(location)
         if (region) {
           const registry = new AdapterRegistry()
-          const { dataPoints, errors: survErrors } = await registry.fetchAll(region, syndromes)
+          const { dataPoints, errors: survErrors, queriedSources: survQueriedSources } = await registry.fetchAll(region, syndromes)
           const correlations = computeCorrelations({
             chiefComplaint: narrative,
             differential: [],
@@ -1173,6 +1174,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
             summary: '',
             dataSourcesQueried,
             dataSourceErrors: survErrors,
+            dataSourceSummaries: [],
             analyzedAt: new Date().toISOString(),
           }) || undefined
         }
@@ -1201,7 +1203,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
         /surveillance|regional/i.test(item)
       )
       if (!hasSurveillance) {
-        reviewed.push('Regional Surveillance Data (CDC Respiratory, NWSS Wastewater, CDC NNDSS)')
+        reviewed.push('Regional Surveillance Data: CDC Respiratory (hospital admission trends), NWSS Wastewater (pathogen PCR), CDC NNDSS (notifiable diseases) — reviewed and integrated')
         result.json.dataReviewed = reviewed
         result.text = appendSurveillanceToMdmText(result.text, surveillanceContext)
       }

@@ -211,7 +211,7 @@ beforeEach(() => {
   mockResolve.mockResolvedValue(MOCK_REGION)
 
   // Default: adapter registry returns data
-  mockFetchAll.mockResolvedValue({ dataPoints: [MOCK_DATA_POINT], errors: [] })
+  mockFetchAll.mockResolvedValue({ dataPoints: [MOCK_DATA_POINT], errors: [], queriedSources: ['cdc_respiratory', 'cdc_wastewater', 'cdc_nndss'] })
 
   // Default: correlation engine returns findings
   mockComputeCorrelations.mockReturnValue([MOCK_CORRELATION])
@@ -344,6 +344,7 @@ describe('POST /v1/surveillance/analyze', () => {
           timestamp: '2026-02-18T00:00:00.000Z',
         },
       ],
+      queriedSources: ['cdc_respiratory', 'cdc_wastewater', 'cdc_nndss'],
     })
 
     const res = await request(app)

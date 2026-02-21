@@ -42,4 +42,6 @@ export interface DataSourceAdapter {
 export interface AdapterFetchResult {
   dataPoints: SurveillanceDataPoint[]
   errors: DataSourceError[]
+  /** Source keys that were actually queried (relevant adapters) */
+  queriedSources: string[]
 }

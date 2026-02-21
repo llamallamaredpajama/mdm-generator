@@ -58,16 +58,18 @@ describe('CdcNndssAdapter', () => {
         ok: true,
         json: () => Promise.resolve([
           {
-            disease: 'West Nile Virus',
-            mmwr_year: '2026',
-            mmwr_week: '5',
-            current_week: '12',
+            label: 'West Nile Virus disease, Neuroinvasive',
+            year: '2026',
+            week: '5',
+            m2: '12',
+            states: 'US RESIDENTS',
           },
           {
-            disease: 'West Nile Virus',
-            mmwr_year: '2026',
-            mmwr_week: '4',
-            current_week: '10',
+            label: 'West Nile Virus disease, Neuroinvasive',
+            year: '2026',
+            week: '4',
+            m2: '10',
+            states: 'US RESIDENTS',
           },
         ]),
       })
@@ -75,9 +77,23 @@ describe('CdcNndssAdapter', () => {
       const result = await adapter.fetch(testRegion, ['neurological'])
       expect(result.length).toBeGreaterThan(0)
       expect(result[0].source).toBe('cdc_nndss')
-      expect(result[0].condition).toBe('West Nile Virus')
+      expect(result[0].condition).toBe('West Nile Virus disease, Neuroinvasive')
       expect(result[0].unit).toBe('case_count')
       expect(result[0].geoLevel).toBe('national')
+      expect(result[0].value).toBe(12)
+    })
+
+    it('parses year and week correctly', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([
+          { label: 'Lyme disease', year: '2026', week: '3', m2: '15' },
+        ]),
+      })
+
+      const result = await adapter.fetch(testRegion, ['vector_borne'])
+      expect(result[0].periodStart).toBe('2026-W03')
+      expect(result[0].periodEnd).toBe('2026-W03')
     })
 
     it('returns empty array for irrelevant syndromes', async () => {
@@ -100,13 +116,13 @@ describe('CdcNndssAdapter', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve([
-          { disease: 'Lyme Disease', mmwr_year: '2026', mmwr_week: '5', current_week: '25' },
-          { disease: 'Lyme Disease', mmwr_year: '2026', mmwr_week: '4', current_week: '20' },
+          { label: 'Lyme disease', year: '2026', week: '5', m2: '25' },
+          { label: 'Lyme disease', year: '2026', week: '4', m2: '20' },
         ]),
       })
 
       const result = await adapter.fetch(testRegion, ['vector_borne'])
-      const lymePoints = result.filter((dp) => dp.condition === 'Lyme Disease')
+      const lymePoints = result.filter((dp) => dp.condition === 'Lyme disease')
       expect(lymePoints.length).toBe(2)
       // 25/20 = 25% increase — exceeds 10% threshold → 'rising'
       expect(lymePoints[0].trend).toBe('rising')
@@ -116,16 +132,30 @@ describe('CdcNndssAdapter', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve([
-          { disease: 'Anthrax', mmwr_year: '2026', mmwr_week: '5', current_week: '0' },
+          { label: 'Anthrax', year: '2026', week: '5', m2: '0' },
         ]),
       })
 
       const result = await adapter.fetch(testRegion, ['bioterrorism_sentinel'])
-      // Value 0 is filtered (NaN check or 0 case count)
-      // But 0 is still a valid number — should still produce a data point
       expect(result.length).toBe(1)
       expect(result[0].condition).toBe('Anthrax')
       expect(result[0].syndromes).toContain('bioterrorism_sentinel')
+    })
+
+    it('skips rows where m2 is absent and flag is suppressed', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([
+          { label: 'Plague', year: '2026', week: '5', m2_flag: '-' },
+          { label: 'Anthrax', year: '2026', week: '5', m2: '1' },
+        ]),
+      })
+
+      const result = await adapter.fetch(testRegion, ['bioterrorism_sentinel'])
+      // Plague should be skipped (no m2, flag is suppressed)
+      // Anthrax should be included
+      expect(result.length).toBe(1)
+      expect(result[0].condition).toBe('Anthrax')
     })
 
     it('handles rate limiting (429)', async () => {

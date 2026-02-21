@@ -1,6 +1,11 @@
 /**
  * CDC Respiratory Virus Adapter
- * Queries data.cdc.gov SODA API for ILI/COVID/RSV surveillance data.
+ * Queries data.cdc.gov SODA API for hospital utilization data (COVID-19/Flu/RSV).
+ * Dataset: mpgq-jmmr — Weekly hospital respiratory data by jurisdiction.
+ *
+ * Real API fields used:
+ *   weekendingdate, jurisdiction, pctconfc19inptbeds, pctconffluinptbeds,
+ *   pctconfrsvinptbeds, totalconfc19newadmpctchg, totalconfflunewadmpctchg
  */
 
 import type { DataSourceAdapter, DataSourceConfig } from './types'
@@ -8,6 +13,25 @@ import type { SurveillanceDataPoint, SyndromeCategory, ResolvedRegion } from '..
 import { SurveillanceCache } from '../cache/surveillanceCache'
 
 const cache = new SurveillanceCache()
+
+/** Maps each tracked respiratory condition to the real API field names. */
+const CONDITION_FIELDS = [
+  {
+    name: 'Influenza',
+    bedPctField: 'pctconffluinptbeds',
+    admPctChgField: 'totalconfflunewadmpctchg',
+  },
+  {
+    name: 'COVID-19',
+    bedPctField: 'pctconfc19inptbeds',
+    admPctChgField: 'totalconfc19newadmpctchg',
+  },
+  {
+    name: 'RSV',
+    bedPctField: 'pctconfrsvinptbeds',
+    admPctChgField: null, // no precomputed pctchg field for RSV in this dataset
+  },
+] as const
 
 export class CdcRespiratoryAdapter implements DataSourceAdapter {
   config: DataSourceConfig = {
@@ -30,14 +54,11 @@ export class CdcRespiratoryAdapter implements DataSourceAdapter {
     if (cached) return cached
 
     try {
-      // Query CDC SODA API for respiratory virus surveillance
-      // Dataset: COVID-19/Respiratory Virus data
       const params = new URLSearchParams({
-        '$limit': '50',
-        '$order': 'week_ending_date DESC',
+        '$limit': '10',
+        '$order': 'weekendingdate DESC',
       })
 
-      // Filter by state if available
       if (region.stateAbbrev) {
         params.append('jurisdiction', region.stateAbbrev)
       }
@@ -70,16 +91,23 @@ export class CdcRespiratoryAdapter implements DataSourceAdapter {
   private normalize(rawData: any[], region: ResolvedRegion): SurveillanceDataPoint[] {
     const dataPoints: SurveillanceDataPoint[] = []
 
-    for (const row of rawData.slice(0, 20)) {
-      const conditions = [
-        { name: 'Influenza', field: 'percent_positive_influenza', unit: 'percent_positive' },
-        { name: 'COVID-19', field: 'percent_positive_covid', unit: 'percent_positive' },
-        { name: 'RSV', field: 'percent_positive_rsv', unit: 'percent_positive' },
-      ]
+    for (const row of rawData.slice(0, 10)) {
+      const date = row.weekendingdate || ''
 
-      for (const cond of conditions) {
-        const value = parseFloat(row[cond.field])
+      for (const cond of CONDITION_FIELDS) {
+        const value = parseFloat(row[cond.bedPctField])
         if (isNaN(value)) continue
+
+        // Use precomputed week-over-week % change for trend if available
+        let trend: SurveillanceDataPoint['trend'] = 'unknown'
+        let trendMagnitude: number | undefined
+        if (cond.admPctChgField) {
+          const pctChg = parseFloat(row[cond.admPctChgField])
+          if (!isNaN(pctChg)) {
+            trend = pctChg > 5 ? 'rising' : pctChg < -5 ? 'falling' : 'stable'
+            trendMagnitude = Math.round(Math.abs(pctChg))
+          }
+        }
 
         dataPoints.push({
           source: this.config.name,
@@ -87,24 +115,27 @@ export class CdcRespiratoryAdapter implements DataSourceAdapter {
           syndromes: ['respiratory_upper', 'respiratory_lower'],
           region: region.stateAbbrev,
           geoLevel: region.geoLevel === 'county' ? 'state' : region.geoLevel,
-          periodStart: row.week_ending_date || '',
-          periodEnd: row.week_ending_date || '',
+          periodStart: date,
+          periodEnd: date,
           value,
-          unit: cond.unit,
-          trend: 'unknown',
+          unit: 'pct_inpatient_beds',
+          trend,
+          trendMagnitude,
           metadata: { source_dataset: 'mpgq-jmmr' },
         })
       }
     }
 
-    // Compute trends by comparing recent vs prior data for same condition
-    this.computeTrends(dataPoints)
+    // For conditions without precomputed trend (RSV), compute from 2-point comparison
+    this.computeFallbackTrends(dataPoints)
     return dataPoints
   }
 
-  private computeTrends(dataPoints: SurveillanceDataPoint[]): void {
+  /** Compute trends for data points that still have 'unknown' trend by comparing consecutive weeks. */
+  private computeFallbackTrends(dataPoints: SurveillanceDataPoint[]): void {
     const byCondition = new Map<string, SurveillanceDataPoint[]>()
     for (const dp of dataPoints) {
+      if (dp.trend !== 'unknown') continue
       const list = byCondition.get(dp.condition) || []
       list.push(dp)
       byCondition.set(dp.condition, list)
@@ -112,7 +143,7 @@ export class CdcRespiratoryAdapter implements DataSourceAdapter {
 
     for (const [, points] of byCondition) {
       if (points.length < 2) continue
-      // Assume sorted DESC by date
+      // Data sorted DESC by date; index 0 is most recent
       const recent = points[0].value
       const prior = points[1].value
       if (prior === 0) continue

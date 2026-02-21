@@ -27,6 +27,14 @@ export interface SurveillanceAlert {
   condition?: string
 }
 
+/** Per-source summary of what each CDC data feed returned */
+export interface DataSourceSummary {
+  source: string
+  label: string
+  status: 'data' | 'no_data' | 'error' | 'not_queried'
+  highlights: string[]
+}
+
 /** Complete trend analysis result */
 export interface TrendAnalysisResult {
   analysisId: string
@@ -35,6 +43,7 @@ export interface TrendAnalysisResult {
   alerts: SurveillanceAlert[]
   summary: string
   dataSourcesQueried: string[]
+  dataSourceSummaries?: DataSourceSummary[]
   analyzedAt: string
 }
 

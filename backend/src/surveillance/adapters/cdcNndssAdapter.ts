@@ -1,7 +1,16 @@
 /**
  * CDC NNDSS Adapter
  * Queries CDC National Notifiable Diseases Surveillance System.
- * Covers neurological, vector-borne, and bioterrorism sentinel conditions.
+ * Dataset: x9gk-5huc — NNDSS Table II weekly case counts.
+ *
+ * Real API fields:
+ *   label     — disease/condition name
+ *   m2        — current week case count
+ *   year      — MMWR year
+ *   week      — MMWR week
+ *   states    — geographic grouping (e.g. "US RESIDENTS")
+ *   location1 — state name (when present)
+ *   m1_flag / m2_flag — data flags ("-" = no data/suppressed)
  */
 
 import type { DataSourceAdapter, DataSourceConfig } from './types'
@@ -19,13 +28,17 @@ export class CdcNndssAdapter implements DataSourceAdapter {
     supportedGeoLevels: ['state', 'national'],
   }
 
-  /** Condition -> syndrome category mapping */
+  /** Condition -> syndrome category mapping (case-insensitive lookup built at init) */
   private conditionSyndromeMap: Record<string, SyndromeCategory[]> = {
+    'West Nile Virus disease, Neuroinvasive': ['neurological', 'vector_borne'],
+    'West Nile Virus disease, Nonneuroinvasive': ['vector_borne'],
     'West Nile Virus': ['neurological', 'vector_borne'],
+    'Lyme disease': ['vector_borne'],
     'Lyme Disease': ['vector_borne'],
     'Dengue': ['vector_borne', 'hemorrhagic'],
     'Malaria': ['vector_borne'],
     'Measles': ['febrile_rash'],
+    'Meningococcal disease': ['neurological'],
     'Meningococcal Disease': ['neurological'],
     'Pertussis': ['respiratory_upper'],
     'Anthrax': ['bioterrorism_sentinel'],
@@ -48,10 +61,9 @@ export class CdcNndssAdapter implements DataSourceAdapter {
     try {
       const params = new URLSearchParams({
         '$limit': '100',
-        '$order': 'mmwr_year DESC, mmwr_week DESC',
+        '$order': 'year DESC, week DESC',
       })
 
-      // NNDSS Table II dataset
       const url = `${this.config.baseUrl}/x9gk-5huc.json?${params.toString()}`
 
       const response = await fetch(url, {
@@ -74,18 +86,38 @@ export class CdcNndssAdapter implements DataSourceAdapter {
     }
   }
 
+  /** Look up syndromes for a condition label, case-insensitive. */
+  private getSyndromes(condition: string): SyndromeCategory[] | undefined {
+    // Exact match first
+    if (this.conditionSyndromeMap[condition]) return this.conditionSyndromeMap[condition]
+    // Case-insensitive fallback
+    const lower = condition.toLowerCase()
+    for (const [key, value] of Object.entries(this.conditionSyndromeMap)) {
+      if (key.toLowerCase() === lower) return value
+    }
+    return undefined
+  }
+
   private normalize(rawData: any[], region: ResolvedRegion): SurveillanceDataPoint[] {
     const dataPoints: SurveillanceDataPoint[] = []
 
     for (const row of rawData.slice(0, 50)) {
-      const condition = row.disease || row.label || ''
-      const value = parseFloat(row.current_week || row.cum_2024 || '0')
-      if (isNaN(value) || !condition) continue
+      const condition = row.label || ''
+      if (!condition) continue
 
-      const syndromes = this.conditionSyndromeMap[condition] || ['neurological']
+      // Parse case count from m2 field; skip if flagged as suppressed or missing
+      const m2Flag = row.m2_flag || ''
+      const rawCount = row.m2
+      // "-" flag or missing m2 means no data; still allow 0 as a valid count
+      if (m2Flag === '-' && (rawCount === undefined || rawCount === null)) continue
 
-      const year = row.mmwr_year || new Date().getFullYear()
-      const week = row.mmwr_week || 1
+      const value = parseFloat(rawCount ?? '0')
+      if (isNaN(value)) continue
+
+      const syndromes = this.getSyndromes(condition) || ['neurological']
+
+      const year = row.year || new Date().getFullYear()
+      const week = row.week || 1
 
       dataPoints.push({
         source: this.config.name,

@@ -59,6 +59,7 @@ function makeAnalysis(overrides: Partial<TrendAnalysisResult> = {}): TrendAnalys
     summary: 'Influenza rising in region.',
     dataSourcesQueried: ['CDC Respiratory', 'NWSS Wastewater'],
     dataSourceErrors: [],
+    dataSourceSummaries: [],
     analyzedAt: '2026-02-18T12:00:00Z',
     ...overrides,
   }

@@ -91,6 +91,7 @@ function makeMockAnalysis(
       'Regional surveillance data indicate a significant rise in Influenza A positivity with moderate RSV co-circulation. Consider influenza testing for febrile respiratory presentations.',
     dataSourcesQueried: ['CDC ILINet', 'CDC NREVSS', 'CDC NSSP'],
     dataSourceErrors: [],
+    dataSourceSummaries: [],
     analyzedAt: '2026-02-18T14:30:00.000Z',
     ...overrides,
   }

@@ -47,18 +47,22 @@ describe('CdcRespiratoryAdapter', () => {
         ok: true,
         json: () => Promise.resolve([
           {
-            week_ending_date: '2026-02-08',
+            weekendingdate: '2026-02-14T00:00:00.000',
             jurisdiction: 'TX',
-            percent_positive_influenza: '15.2',
-            percent_positive_covid: '8.1',
-            percent_positive_rsv: '12.5',
+            pctconfc19inptbeds: '1.25',
+            pctconffluinptbeds: '3.40',
+            pctconfrsvinptbeds: '0.80',
+            totalconfc19newadmpctchg: '-11.49',
+            totalconfflunewadmpctchg: '-21.54',
           },
           {
-            week_ending_date: '2026-02-01',
+            weekendingdate: '2026-02-07T00:00:00.000',
             jurisdiction: 'TX',
-            percent_positive_influenza: '13.0',
-            percent_positive_covid: '7.5',
-            percent_positive_rsv: '11.0',
+            pctconfc19inptbeds: '1.30',
+            pctconffluinptbeds: '3.10',
+            pctconfrsvinptbeds: '0.90',
+            totalconfc19newadmpctchg: '20.15',
+            totalconfflunewadmpctchg: '24.82',
           },
         ]),
       })
@@ -67,6 +71,79 @@ describe('CdcRespiratoryAdapter', () => {
       expect(result.length).toBeGreaterThan(0)
       expect(result[0].source).toBe('cdc_respiratory')
       expect(result[0].region).toBe('TX')
+      expect(result[0].unit).toBe('pct_inpatient_beds')
+    })
+
+    it('parses all three conditions (Influenza, COVID-19, RSV)', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([
+          {
+            weekendingdate: '2026-02-14T00:00:00.000',
+            jurisdiction: 'TX',
+            pctconfc19inptbeds: '1.25',
+            pctconffluinptbeds: '3.40',
+            pctconfrsvinptbeds: '0.80',
+            totalconfc19newadmpctchg: '-11.49',
+            totalconfflunewadmpctchg: '-21.54',
+          },
+        ]),
+      })
+
+      const result = await adapter.fetch(testRegion, ['respiratory_upper'])
+      const conditions = result.map((dp) => dp.condition)
+      expect(conditions).toContain('Influenza')
+      expect(conditions).toContain('COVID-19')
+      expect(conditions).toContain('RSV')
+    })
+
+    it('uses precomputed pctchg for trend when available', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([
+          {
+            weekendingdate: '2026-02-14T00:00:00.000',
+            jurisdiction: 'TX',
+            pctconfc19inptbeds: '1.25',
+            pctconffluinptbeds: '3.40',
+            totalconfc19newadmpctchg: '-11.49',
+            totalconfflunewadmpctchg: '24.82',
+          },
+        ]),
+      })
+
+      const result = await adapter.fetch(testRegion, ['respiratory_upper'])
+      const covid = result.find((dp) => dp.condition === 'COVID-19')
+      const flu = result.find((dp) => dp.condition === 'Influenza')
+      expect(covid?.trend).toBe('falling')
+      expect(covid?.trendMagnitude).toBe(11)
+      expect(flu?.trend).toBe('rising')
+      expect(flu?.trendMagnitude).toBe(25)
+    })
+
+    it('computes fallback trend for RSV from 2-point comparison', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([
+          {
+            weekendingdate: '2026-02-14T00:00:00.000',
+            jurisdiction: 'TX',
+            pctconfrsvinptbeds: '1.20',
+          },
+          {
+            weekendingdate: '2026-02-07T00:00:00.000',
+            jurisdiction: 'TX',
+            pctconfrsvinptbeds: '0.80',
+          },
+        ]),
+      })
+
+      const result = await adapter.fetch(testRegion, ['respiratory_lower'])
+      const rsvPoints = result.filter((dp) => dp.condition === 'RSV')
+      expect(rsvPoints.length).toBe(2)
+      // 1.20/0.80 = 50% increase → 'rising'
+      expect(rsvPoints[0].trend).toBe('rising')
+      expect(rsvPoints[0].trendMagnitude).toBe(50)
     })
 
     it('returns empty array for irrelevant syndromes', async () => {

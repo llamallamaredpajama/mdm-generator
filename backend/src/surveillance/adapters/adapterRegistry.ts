@@ -31,9 +31,10 @@ export class AdapterRegistry {
     syndromes: SyndromeCategory[]
   ): Promise<AdapterFetchResult> {
     const relevantAdapters = this.adapters.filter((a) => a.isRelevant(syndromes))
+    const queriedSources = relevantAdapters.map((a) => a.config.name)
 
     if (relevantAdapters.length === 0) {
-      return { dataPoints: [], errors: [] }
+      return { dataPoints: [], errors: [], queriedSources }
     }
 
     const results = await Promise.allSettled(
@@ -58,6 +59,6 @@ export class AdapterRegistry {
       }
     }
 
-    return { dataPoints, errors }
+    return { dataPoints, errors, queriedSources }
   }
 }

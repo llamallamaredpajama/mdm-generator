@@ -1,6 +1,16 @@
 /**
  * CDC NWSS Wastewater Adapter
- * Queries CDC National Wastewater Surveillance System for pathogen detection data.
+ * Queries CDC National Wastewater Surveillance System for SARS-CoV-2 detection data.
+ * Dataset: g653-rqe2 — Site-level PCR concentration measurements.
+ *
+ * Real API fields:
+ *   key_plot_id  — site identifier with embedded state code (e.g. "NWSS_tx_256_...")
+ *   date         — sample date (ISO)
+ *   pcr_conc_lin — PCR concentration (linear scale, copies/L)
+ *   normalization — normalization method
+ *
+ * This dataset only contains SARS-CoV-2 data. Multiple sites exist per state,
+ * so we aggregate to a per-date median for a clean trend signal.
  */
 
 import type { DataSourceAdapter, DataSourceConfig } from './types'
@@ -8,6 +18,22 @@ import type { SurveillanceDataPoint, SyndromeCategory, ResolvedRegion } from '..
 import { SurveillanceCache } from '../cache/surveillanceCache'
 
 const cache = new SurveillanceCache()
+
+/** Extract the 2-letter state abbreviation from a key_plot_id string.
+ *  Pattern: `[Source]_[state]_[siteId]_...` where state is lowercase 2-letter code
+ *  followed by `_[digits]`. */
+function parseStateFromKeyPlotId(keyPlotId: string): string | null {
+  const match = keyPlotId.match(/_([a-z]{2})_\d+_/)
+  return match ? match[1].toUpperCase() : null
+}
+
+/** Compute median of a numeric array. */
+function median(values: number[]): number {
+  if (values.length === 0) return 0
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+}
 
 export class CdcWastewaterAdapter implements DataSourceAdapter {
   config: DataSourceConfig = {
@@ -30,16 +56,13 @@ export class CdcWastewaterAdapter implements DataSourceAdapter {
     if (cached) return cached
 
     try {
+      const stateLC = region.stateAbbrev.toLowerCase()
       const params = new URLSearchParams({
-        '$limit': '50',
+        '$limit': '200',
         '$order': 'date DESC',
+        '$where': `key_plot_id LIKE '%_${stateLC}_%'`,
       })
 
-      if (region.stateAbbrev) {
-        params.append('state', region.stateAbbrev)
-      }
-
-      // NWSS wastewater dataset
       const url = `${this.config.baseUrl}/g653-rqe2.json?${params.toString()}`
 
       const response = await fetch(url, {
@@ -63,59 +86,60 @@ export class CdcWastewaterAdapter implements DataSourceAdapter {
   }
 
   private normalize(rawData: any[], region: ResolvedRegion): SurveillanceDataPoint[] {
-    const dataPoints: SurveillanceDataPoint[] = []
+    // 1. Parse rows, filter to confirmed state matches, group concentrations by date
+    const byDate = new Map<string, number[]>()
 
-    const pathogenSyndromeMap: Record<string, SyndromeCategory[]> = {
-      'SARS-CoV-2': ['respiratory_upper', 'respiratory_lower'],
-      'Influenza A': ['respiratory_upper', 'respiratory_lower'],
-      'RSV': ['respiratory_upper', 'respiratory_lower'],
-      'Norovirus': ['gastrointestinal'],
-      'Mpox': ['febrile_rash'],
+    for (const row of rawData) {
+      const keyPlotId = row.key_plot_id || ''
+      const siteState = parseStateFromKeyPlotId(keyPlotId)
+      if (siteState !== region.stateAbbrev) continue
+
+      const concentration = parseFloat(row.pcr_conc_lin)
+      if (isNaN(concentration) || concentration < 0) continue
+
+      const date = row.date || ''
+      if (!date) continue
+
+      const values = byDate.get(date) || []
+      values.push(concentration)
+      byDate.set(date, values)
     }
 
-    for (const row of rawData.slice(0, 30)) {
-      const pathogen = row.pathogen || row.metric || 'SARS-CoV-2'
-      const value = parseFloat(row.percentile || row.concentration || '0')
-      if (isNaN(value)) continue
+    // 2. Aggregate to median concentration per date, sorted by date DESC
+    const aggregated = [...byDate.entries()]
+      .map(([date, values]) => ({ date, value: median(values), siteCount: values.length }))
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 10) // keep most recent 10 dates
 
-      const syndromes = pathogenSyndromeMap[pathogen] || ['respiratory_lower']
+    // 3. Build data points
+    const dataPoints: SurveillanceDataPoint[] = aggregated.map((agg) => ({
+      source: this.config.name,
+      condition: 'SARS-CoV-2',
+      syndromes: ['respiratory_upper', 'respiratory_lower'] as SyndromeCategory[],
+      region: region.stateAbbrev,
+      geoLevel: 'state' as const,
+      periodStart: agg.date,
+      periodEnd: agg.date,
+      value: agg.value,
+      unit: 'wastewater_concentration',
+      trend: 'unknown' as const,
+      metadata: { source_dataset: 'g653-rqe2', sites_aggregated: agg.siteCount },
+    }))
 
-      dataPoints.push({
-        source: this.config.name,
-        condition: pathogen,
-        syndromes,
-        region: region.stateAbbrev,
-        geoLevel: 'state',
-        periodStart: row.date || row.week_end || '',
-        periodEnd: row.date || row.week_end || '',
-        value,
-        unit: 'wastewater_concentration',
-        trend: 'unknown',
-        metadata: { source_dataset: 'g653-rqe2' },
-      })
-    }
-
+    // 4. Compute trend from 2 most recent aggregated dates
     this.computeTrends(dataPoints)
     return dataPoints
   }
 
   private computeTrends(dataPoints: SurveillanceDataPoint[]): void {
-    const byCondition = new Map<string, SurveillanceDataPoint[]>()
-    for (const dp of dataPoints) {
-      const list = byCondition.get(dp.condition) || []
-      list.push(dp)
-      byCondition.set(dp.condition, list)
-    }
+    if (dataPoints.length < 2) return
+    // Data points are sorted DESC — index 0 is most recent
+    const recent = dataPoints[0].value
+    const prior = dataPoints[1].value
+    if (prior === 0) return
 
-    for (const [, points] of byCondition) {
-      if (points.length < 2) continue
-      const recent = points[0].value
-      const prior = points[1].value
-      if (prior === 0) continue
-
-      const change = ((recent - prior) / prior) * 100
-      points[0].trend = change > 5 ? 'rising' : change < -5 ? 'falling' : 'stable'
-      points[0].trendMagnitude = Math.round(Math.abs(change))
-    }
+    const change = ((recent - prior) / prior) * 100
+    dataPoints[0].trend = change > 5 ? 'rising' : change < -5 ? 'falling' : 'stable'
+    dataPoints[0].trendMagnitude = Math.round(Math.abs(change))
   }
 }

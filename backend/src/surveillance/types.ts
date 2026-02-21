@@ -90,6 +90,14 @@ export interface TrendAlert {
   source?: string
 }
 
+/** Per-source summary of what each CDC data feed returned */
+export interface DataSourceSummary {
+  source: string   // 'cdc_respiratory' | 'cdc_wastewater' | 'cdc_nndss'
+  label: string    // Human-readable: 'CDC Respiratory Hospital Data'
+  status: 'data' | 'no_data' | 'error' | 'not_queried'
+  highlights: string[]  // Per-condition one-liners
+}
+
 /** Complete trend analysis output */
 export interface TrendAnalysisResult {
   analysisId: string
@@ -100,5 +108,6 @@ export interface TrendAnalysisResult {
   summary: string
   dataSourcesQueried: string[]
   dataSourceErrors: DataSourceError[]
+  dataSourceSummaries: DataSourceSummary[]
   analyzedAt: string   // ISO timestamp
 }

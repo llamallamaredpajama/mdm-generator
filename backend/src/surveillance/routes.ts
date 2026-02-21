@@ -18,9 +18,82 @@ import { RegionResolver } from './regionResolver'
 import { AdapterRegistry } from './adapters/adapterRegistry'
 import { computeCorrelations, detectAlerts } from './correlationEngine'
 import { generateTrendReport } from './pdfGenerator'
-import type { TrendAnalysisResult, ClinicalCorrelation, TrendAlert } from './types'
+import type { TrendAnalysisResult, ClinicalCorrelation, TrendAlert, SurveillanceDataPoint, DataSourceSummary, DataSourceError } from './types'
 
 const router = Router()
+
+/** Known CDC data source keys and their human-readable labels */
+const KNOWN_SOURCES: { key: string; label: string }[] = [
+  { key: 'cdc_respiratory', label: 'CDC Respiratory Hospital Data' },
+  { key: 'cdc_wastewater', label: 'NWSS Wastewater Surveillance' },
+  { key: 'cdc_nndss', label: 'CDC NNDSS Notifiable Diseases' },
+]
+
+/** Format a highlight for a single data point based on its source */
+function formatHighlight(dp: SurveillanceDataPoint): string {
+  const trendLabel = dp.trend === 'rising' ? 'Rising' : dp.trend === 'falling' ? 'Falling' : dp.trend === 'stable' ? 'Stable' : 'Unknown'
+  const mag = dp.trendMagnitude != null ? `, ${dp.trendMagnitude > 0 ? '+' : ''}${dp.trendMagnitude.toFixed(1)}%` : ''
+
+  if (dp.unit === 'pct_inpatient_beds') {
+    return `${dp.condition}: ${dp.value.toFixed(2)}% of inpatient beds (${trendLabel}${mag})`
+  }
+  if (dp.unit === 'wastewater_concentration') {
+    const formatted = dp.value >= 1_000_000
+      ? `${(dp.value / 1_000_000).toFixed(1)}M copies/L`
+      : dp.value >= 1_000
+        ? `${(dp.value / 1_000).toFixed(1)}K copies/L`
+        : `${dp.value.toFixed(0)} copies/L`
+    return `${dp.condition}: ${formatted} (${trendLabel}${mag})`
+  }
+  if (dp.unit === 'case_count') {
+    return `${dp.condition}: ${dp.value} cases/wk (${trendLabel}${mag})`
+  }
+  return `${dp.condition}: ${dp.value} ${dp.unit} (${trendLabel}${mag})`
+}
+
+/**
+ * Build per-source summaries from raw data points and errors.
+ * Returns one entry per known source indicating what was found.
+ */
+function buildDataSourceSummaries(
+  dataPoints: SurveillanceDataPoint[],
+  errors: DataSourceError[],
+  queriedSourceKeys: Set<string>,
+): DataSourceSummary[] {
+  const errorSet = new Set(errors.map((e) => e.source))
+  const pointsBySource = new Map<string, SurveillanceDataPoint[]>()
+  for (const dp of dataPoints) {
+    const existing = pointsBySource.get(dp.source) || []
+    existing.push(dp)
+    pointsBySource.set(dp.source, existing)
+  }
+
+  return KNOWN_SOURCES.map(({ key, label }) => {
+    if (errorSet.has(key)) {
+      return { source: key, label, status: 'error' as const, highlights: [] }
+    }
+    if (!queriedSourceKeys.has(key)) {
+      return { source: key, label, status: 'not_queried' as const, highlights: [] }
+    }
+    const points = pointsBySource.get(key)
+    if (!points || points.length === 0) {
+      return { source: key, label, status: 'no_data' as const, highlights: [] }
+    }
+
+    // Pick the most recent data point per condition
+    const latestByCondition = new Map<string, SurveillanceDataPoint>()
+    for (const dp of points) {
+      const existing = latestByCondition.get(dp.condition)
+      if (!existing || dp.periodEnd > existing.periodEnd) {
+        latestByCondition.set(dp.condition, dp)
+      }
+    }
+
+    const highlights = Array.from(latestByCondition.values()).map(formatHighlight)
+
+    return { source: key, label, status: 'data' as const, highlights }
+  })
+}
 
 /**
  * Build a brief 1-2 sentence summary of the surveillance analysis.
@@ -88,7 +161,7 @@ router.post('/v1/surveillance/analyze', async (req, res) => {
       : `${region.state} — HHS Region ${region.hhsRegion}`
 
     const registry = new AdapterRegistry()
-    const { dataPoints, errors } = await registry.fetchAll(region, syndromes)
+    const { dataPoints, errors, queriedSources } = await registry.fetchAll(region, syndromes)
 
     const correlations = computeCorrelations({
       chiefComplaint: data.chiefComplaint,
@@ -107,6 +180,10 @@ router.post('/v1/surveillance/analyze', async (req, res) => {
       (_, i) => !failedSources.has(allSourceKeys[i]),
     )
 
+    // Build per-source summaries
+    const queriedSourceKeys = new Set(queriedSources || allSourceKeys.filter((_, i) => !failedSources.has(allSourceKeys[i])))
+    const dataSourceSummaries = buildDataSourceSummaries(dataPoints, errors, queriedSourceKeys)
+
     const analysis: TrendAnalysisResult = {
       analysisId,
       region,
@@ -116,6 +193,7 @@ router.post('/v1/surveillance/analyze', async (req, res) => {
       summary: buildSummary(correlations, alerts, regionLabel),
       dataSourcesQueried,
       dataSourceErrors: errors,
+      dataSourceSummaries,
       analyzedAt: new Date().toISOString(),
     }
 
