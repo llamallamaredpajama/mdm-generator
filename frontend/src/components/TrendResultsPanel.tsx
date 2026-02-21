@@ -127,8 +127,27 @@ export default function TrendResultsPanel({
     )
   }
 
-  if (!analysis || analysis.rankedFindings.length === 0) {
-    return null // Don't render if no results
+  if (!analysis) {
+    return null
+  }
+
+  if (analysis.rankedFindings.length === 0) {
+    return (
+      <div className="trend-results trend-results--empty">
+        <div className="trend-results__header">
+          <h4 className="trend-results__title">Regional Trend Analysis</h4>
+          <span className="trend-results__region">{analysis.regionLabel}</span>
+        </div>
+        <p className="trend-results__empty-message">
+          {analysis.summary || 'No significant regional surveillance signals detected for this presentation.'}
+        </p>
+        <footer className="trend-results__footer">
+          <p className="trend-results__attribution">
+            Data: {analysis.dataSourcesQueried.join(', ')} | {new Date(analysis.analyzedAt).toLocaleDateString()}
+          </p>
+        </footer>
+      </div>
+    )
   }
 
   return (

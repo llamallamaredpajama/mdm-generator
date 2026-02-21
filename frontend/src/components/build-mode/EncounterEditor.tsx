@@ -7,7 +7,7 @@
  * Build Mode v2 - Phase 4
  */
 
-import { useState, useCallback, type ReactNode } from 'react'
+import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { useEncounter, useSectionState } from '../../hooks/useEncounter'
 import { ShiftTimer } from './ShiftTimer'
 import SectionPanel from './SectionPanel'
@@ -67,12 +67,18 @@ function getSectionPreview(
   if (!encounter) return null
 
   switch (section) {
-    case 1:
+    case 1: {
       // Show differential preview if section 1 has LLM response
-      if (encounter.section1.llmResponse?.differential) {
-        return <DifferentialPreview differential={encounter.section1.llmResponse.differential} />
+      // Handle both flat DifferentialItem[] and wrapped { differential: [...] } shapes
+      const llmResponse = encounter.section1.llmResponse
+      const differential = Array.isArray(llmResponse)
+        ? llmResponse
+        : llmResponse?.differential
+      if (Array.isArray(differential) && differential.length > 0) {
+        return <DifferentialPreview differential={differential} />
       }
       return null
+    }
     case 2:
       // Show MDM preview if section 2 has LLM response
       if (encounter.section2.llmResponse?.mdmPreview) {
@@ -116,6 +122,32 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   const [showQuotaExceeded, setShowQuotaExceeded] = useState(false)
 
   const { analysis, isAnalyzing, analyze, downloadPdf } = useTrendAnalysis()
+
+  // Track whether we've already triggered analysis for this encounter
+  const analyzedForRef = useRef<string | null>(null)
+
+  // Trigger trend analysis when Section 1 completes (watches Firestore state)
+  useEffect(() => {
+    if (
+      encounter?.section1?.status === 'completed' &&
+      encounter.section1.llmResponse &&
+      encounter.chiefComplaint &&
+      analyzedForRef.current !== encounter.id
+    ) {
+      const llmResponse = encounter.section1.llmResponse
+      // Handle both flat DifferentialItem[] and wrapped { differential: [...] } shapes
+      const differential = Array.isArray(llmResponse) ? llmResponse : llmResponse?.differential
+      if (Array.isArray(differential)) {
+        const dxList = differential
+          .map((d: string | { diagnosis?: string }) => (typeof d === 'string' ? d : d.diagnosis || ''))
+          .filter(Boolean)
+        if (dxList.length > 0) {
+          analyzedForRef.current = encounter.id
+          analyze(encounter.chiefComplaint, dxList)
+        }
+      }
+    }
+  }, [encounter?.id, encounter?.section1?.status, encounter?.section1?.llmResponse, encounter?.chiefComplaint, analyze])
 
   // Trend report modal state
   const [showTrendReport, setShowTrendReport] = useState(false)
@@ -175,16 +207,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           await submitSection(section)
         }
 
-        // After Section 1 completes, trigger trend analysis if enabled
-        if (section === 1 && encounter?.section1?.llmResponse?.differential) {
-          const differential = encounter.section1.llmResponse.differential
-          const dxList = Array.isArray(differential)
-            ? differential.map((d: { diagnosis?: string }) => d.diagnosis || '').filter(Boolean)
-            : []
-          if (dxList.length > 0 && encounter.chiefComplaint) {
-            analyze(encounter.chiefComplaint, dxList)
-          }
-        }
+
       } catch (err) {
         console.error('Submission failed:', err)
 
@@ -218,7 +241,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         }
       }
     },
-    [pendingSection, submitSection, workingDiagnosis, encounter, analyze]
+    [pendingSection, submitSection, workingDiagnosis]
   )
 
   // Loading state

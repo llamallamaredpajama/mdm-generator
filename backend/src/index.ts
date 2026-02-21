@@ -513,12 +513,19 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
         const region = await resolver.resolve(section1Location)
         if (region) {
           const registry = new AdapterRegistry()
-          const { dataPoints } = await registry.fetchAll(region, syndromes)
+          const { dataPoints, errors: survErrors } = await registry.fetchAll(region, syndromes)
           const correlations = computeCorrelations({
             chiefComplaint: content,
             differential: [],
             dataPoints,
           })
+          // Determine which data sources were successfully queried
+          const allSourceNames = ['CDC Respiratory', 'NWSS Wastewater', 'CDC NNDSS']
+          const allSourceKeys = ['cdc_respiratory', 'cdc_wastewater', 'cdc_nndss']
+          const failedSources = new Set(survErrors.map((e: any) => e.source))
+          const dataSourcesQueried = allSourceNames.filter(
+            (_, i) => !failedSources.has(allSourceKeys[i]),
+          )
           section1SurveillanceCtx = buildSurveillanceContext({
             analysisId: '',
             region,
@@ -528,8 +535,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
             rankedFindings: correlations,
             alerts: [],
             summary: '',
-            dataSourcesQueried: [],
-            dataSourceErrors: [],
+            dataSourcesQueried,
+            dataSourceErrors: survErrors,
             analyzedAt: new Date().toISOString(),
           }) || undefined
         }
@@ -1127,12 +1134,19 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
         const region = await resolver.resolve(location)
         if (region) {
           const registry = new AdapterRegistry()
-          const { dataPoints } = await registry.fetchAll(region, syndromes)
+          const { dataPoints, errors: survErrors } = await registry.fetchAll(region, syndromes)
           const correlations = computeCorrelations({
             chiefComplaint: narrative,
             differential: [],
             dataPoints,
           })
+          // Determine which data sources were successfully queried
+          const allSourceNames = ['CDC Respiratory', 'NWSS Wastewater', 'CDC NNDSS']
+          const allSourceKeys = ['cdc_respiratory', 'cdc_wastewater', 'cdc_nndss']
+          const failedSources = new Set(survErrors.map((e: any) => e.source))
+          const dataSourcesQueried = allSourceNames.filter(
+            (_, i) => !failedSources.has(allSourceKeys[i]),
+          )
           surveillanceContext = buildSurveillanceContext({
             analysisId: '',
             region,
@@ -1142,8 +1156,8 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
             rankedFindings: correlations,
             alerts: [],
             summary: '',
-            dataSourcesQueried: [],
-            dataSourceErrors: [],
+            dataSourcesQueried,
+            dataSourceErrors: survErrors,
             analyzedAt: new Date().toISOString(),
           }) || undefined
         }

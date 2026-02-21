@@ -78,7 +78,9 @@ export default function QuickEncounterEditor({
       if (result.patientIdentifier?.chiefComplaint) {
         const differential = result.mdm?.json?.differential
         const dxList = Array.isArray(differential)
-          ? differential.map((d: { diagnosis?: string }) => d.diagnosis || '').filter(Boolean)
+          ? differential
+              .map((d: string | { diagnosis?: string }) => (typeof d === 'string' ? d : d.diagnosis || ''))
+              .filter(Boolean)
           : []
         if (dxList.length > 0) {
           analyze(result.patientIdentifier.chiefComplaint, dxList)
