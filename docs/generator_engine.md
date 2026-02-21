@@ -16,6 +16,10 @@ This document provides a comprehensive analysis of the MDM Generator's AI engine
 6. [Output Schema & Validation](#6-output-schema--validation)
 7. [Usage Tracking & Subscription Enforcement](#7-usage-tracking--subscription-enforcement)
 8. [Error Handling & Fallbacks](#8-error-handling--fallbacks)
+9. [Build Mode Engine](#9-build-mode-engine)
+10. [Quick Mode Engine](#10-quick-mode-engine)
+11. [Surveillance Enrichment Pipeline](#11-surveillance-enrichment-pipeline)
+12. [Parse Narrative Helper](#12-parse-narrative-helper)
 
 ---
 
@@ -24,28 +28,40 @@ This document provides a comprehensive analysis of the MDM Generator's AI engine
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           USER INTERFACE                                 │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌──────────┐ │
-│  │   Compose   │───▶│  Preflight  │───▶│   Output    │───▶│   Copy   │ │
-│  │  (Input)    │    │  (PHI Check)│    │  (Display)  │    │(Clipboard)│ │
-│  └─────────────┘    └─────────────┘    └─────────────┘    └──────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼ POST /v1/generate
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐           │
+│  │  Compose  │  │   Build   │  │ Preflight │  │  Output   │           │
+│  │ (Quick)   │  │   Mode    │  │(PHI Check)│  │ (Display) │           │
+│  └─────┬─────┘  └─────┬─────┘  └─────┬─────┘  └───────────┘           │
+│        │              │              │                                   │
+└────────┼──────────────┼──────────────┼──────────────────────────────────┘
+         │              │              │
+         ▼              ▼              ▼
+  /v1/quick-mode   /v1/build-mode   /v1/generate
+    /generate      /process-section*   (legacy)
+                   /finalize
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           BACKEND ENGINE                                 │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌──────────┐ │
-│  │   Validate  │───▶│   Prompt    │───▶│  Vertex AI  │───▶│  Parse   │ │
-│  │  Auth+Quota │    │   Builder   │    │   (Gemini)  │    │  Output  │ │
-│  └─────────────┘    └─────────────┘    └─────────────┘    └──────────┘ │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐           │
+│  │ Validate  │─▶│  Prompt   │─▶│ Vertex AI │─▶│  Parse    │           │
+│  │ Auth+Quota│  │  Builder  │  │ (Gemini)  │  │  Output   │           │
+│  └───────────┘  └───────────┘  └───────────┘  └─────┬─────┘           │
+│                                                      │                  │
+│                       ┌──────────────────────────────┘                  │
+│                       ▼                                                 │
+│  ┌─────────────────────────────────────────────────────────┐           │
+│  │              SURVEILLANCE ENRICHMENT (non-blocking)      │           │
+│  │  syndromeMapper → regionResolver → CDC Adapters (×3)    │           │
+│  │  → correlationEngine → promptAugmenter → PDF (PDFKit)   │           │
+│  └─────────────────────────────────────────────────────────┘           │
 └─────────────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        EXTERNAL SERVICES                                 │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                  │
-│  │  Firebase   │    │   Vertex    │    │   Stripe    │                  │
-│  │    Auth     │    │     AI      │    │  (via ext)  │                  │
-│  └─────────────┘    └─────────────┘    └─────────────┘                  │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐           │
+│  │ Firebase  │  │ Vertex AI │  │  Stripe   │  │ CDC APIs  │           │
+│  │   Auth    │  │ (Gemini)  │  │ (via ext) │  │ (×3)      │           │
+│  └───────────┘  └───────────┘  └───────────┘  └───────────┘           │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -509,34 +525,376 @@ When all parsing fails, return safe defaults:
 
 ---
 
+## 9. Build Mode Engine
+
+### 9.1 Architecture
+
+Build Mode uses a 3-section progressive workflow where each section builds on the previous one. Encounter data persists in Firestore across sections.
+
+```
+Section 1 (Initial Eval)     Section 2 (Workup)          Section 3 (Finalize)
+POST /v1/build-mode/         POST /v1/build-mode/         POST /v1/build-mode/
+  process-section1             process-section2             finalize
+        │                           │                           │
+        ▼                           ▼                           ▼
+┌──────────────┐           ┌──────────────┐           ┌──────────────┐
+│ Chief complaint,         │ Labs, imaging,│           │ Treatment,   │
+│ age, sex,    │           │ EKG, external │           │ procedures,  │
+│ problems     │           │ records       │           │ disposition  │
+│ considered   │           │               │           │              │
+└──────┬───────┘           └──────┬────────┘           └──────┬───────┘
+       │                          │                           │
+       ▼                          ▼                           ▼
+  Worst-first              MDM Preview                  Final MDM
+  differential             (partial)                    (complete)
+       │                          │                           │
+       ▼                          ▼                           ▼
+  Firestore:               Firestore:                  Firestore:
+  section1.status=         section2.status=            section3.status=
+  'completed'              'completed'                 'completed'
+```
+
+### 9.2 Endpoints
+
+| Endpoint | Input | Output | Requires |
+|----------|-------|--------|----------|
+| `/v1/build-mode/process-section1` | Chief complaint, age, sex, problems considered | Worst-first differential (`DifferentialItem[]`) | Auth + quota |
+| `/v1/build-mode/process-section2` | Labs, imaging, EKG, external records | MDM preview (`MdmPreview`) | Section 1 completed |
+| `/v1/build-mode/finalize` | Treatment, procedures, disposition | Final MDM text + JSON (`FinalMdm`) | Section 2 completed |
+
+### 9.3 Zod Schemas
+
+**File:** `backend/src/buildModeSchemas.ts`
+
+Key schemas:
+- `Section1RequestSchema` — chief complaint, age, sex, problems considered (max 4000 chars combined)
+- `Section2RequestSchema` — labs, imaging, EKG, external records (max 3000 chars combined)
+- `FinalizeRequestSchema` — treatment, procedures, disposition (max 2500 chars combined)
+- `DifferentialItemSchema` — condition, classification (1-11), reasoning, probability
+- `MdmPreviewSchema` — partial MDM with differential, data reviewed, risk assessment
+- `FinalMdmSchema` — complete MDM with all sections including disposition
+
+### 9.4 Firestore Encounter Document
+
+**Collection:** `customers/{uid}/encounters/{encounterId}`
+
+```typescript
+{
+  mode: 'build',
+  createdAt: Timestamp,
+  updatedAt: Timestamp,
+  quotaCounted: boolean,          // true after first Section 1 submission
+  surveillanceContext?: string,    // stored at Section 1, reused at finalize
+  section1: {
+    status: 'pending' | 'completed',
+    submissions: number,          // max 2
+    data: { ... },                // Section 1 input
+    result: { ... },              // Differential output
+  },
+  section2: {
+    status: 'pending' | 'completed',
+    submissions: number,          // max 2
+    data: { ... },
+    result: { ... },              // MDM preview output
+  },
+  section3: {
+    status: 'pending' | 'completed',
+    submissions: number,          // max 2
+    data: { ... },
+    result: { ... },              // Final MDM output
+  }
+}
+```
+
+### 9.5 Submission Counting and Locking
+
+Each section allows **max 2 submissions**. After 2 submissions, the section returns `{ isLocked: true }` and no further processing occurs. This prevents abuse while allowing physicians to revise once.
+
+### 9.6 Quota Counting
+
+Quota is counted **once per encounter**, not per section. The `quotaCounted` flag on the encounter document prevents double-counting. Only the first Section 1 submission calls `checkAndIncrementQuota()`. Subsequent sections skip quota checks.
+
+### 9.7 Section Progression Enforcement
+
+Server-side enforcement:
+- **Section 2** requires `section1.status === 'completed'`
+- **Finalize** requires `section2.status === 'completed'`
+
+Requests that violate progression return `400 Bad Request`.
+
+### 9.8 Surveillance Context Persistence
+
+During Section 1 processing, if surveillance is enabled, the surveillance context is fetched and stored on the encounter document as `surveillanceContext`. At finalize (Section 3), this stored context is reused rather than re-fetching from CDC APIs, ensuring consistency and reducing external API calls.
+
+### 9.9 Deterministic Surveillance Enrichment at Finalize
+
+After the LLM generates the final MDM, surveillance data is **deterministically appended** to the `dataReviewed` array and text output via `appendSurveillanceToMdmText()`. This is NOT left to the LLM — it's a post-processing step to ensure surveillance data appears exactly as intended.
+
+---
+
+## 10. Quick Mode Engine
+
+### 10.1 Overview
+
+Quick Mode provides one-shot MDM generation: a single narrative produces a complete MDM plus an extracted patient identifier (age, sex, chief complaint).
+
+**Endpoint:** `POST /v1/quick-mode/generate`
+
+### 10.2 Prompt Construction
+
+**File:** `backend/src/promptBuilderQuickMode.ts`
+
+The Quick Mode prompt builder:
+1. Constructs a system prompt with the full `mdm-gen-guide.md` content (same as legacy)
+2. Adds instructions for patient identifier extraction in addition to MDM generation
+3. Requests structured JSON output with both MDM sections and patient identifier fields
+
+### 10.3 Patient Identifier Extraction
+
+The response includes extracted identifiers:
+- **Age** — patient age from narrative
+- **Sex** — patient sex from narrative
+- **Chief complaint** — primary presenting complaint
+
+These are used in the frontend encounter list for quick identification.
+
+### 10.4 Encounter Validation
+
+Quick Mode encounters use `mode: 'quick'` in Firestore. They are one-shot only — no section progression. The `quotaCounted` flag works the same way as Build Mode (counted on first generation).
+
+### 10.5 Surveillance Enrichment
+
+Quick Mode follows the same surveillance enrichment pattern as Build Mode Section 1:
+1. If surveillance is enabled, fetch and correlate CDC data
+2. Store `surveillanceContext` on the encounter document
+3. Deterministically append surveillance data to MDM output
+
+---
+
+## 11. Surveillance Enrichment Pipeline
+
+### 11.1 Architecture
+
+```
+                    ┌────────────────┐
+                    │ Chief Complaint│
+                    │ + Location     │
+                    └───────┬────────┘
+                            │
+                            ▼
+                    ┌────────────────┐
+                    │ syndromeMapper │  Maps complaint → surveillance syndromes
+                    └───────┬────────┘
+                            │
+                            ▼
+                    ┌────────────────┐
+                    │ regionResolver │  Location → HHS region code
+                    └───────┬────────┘
+                            │
+                            ▼
+                    ┌────────────────┐
+                    │AdapterRegistry │  Fetches from all 3 CDC sources
+                    │  .fetchAll()   │  (parallel, with caching)
+                    └───────┬────────┘
+                            │
+                ┌───────────┼───────────┐
+                ▼           ▼           ▼
+        ┌──────────┐ ┌──────────┐ ┌──────────┐
+        │Respiratory│ │Wastewater│ │  NNDSS   │
+        │ Adapter  │ │ Adapter  │ │ Adapter  │
+        └──────────┘ └──────────┘ └──────────┘
+                │           │           │
+                └───────────┼───────────┘
+                            ▼
+                    ┌────────────────┐
+                    │ correlation    │  Scores relevance (0-100)
+                    │   Engine       │  Classifies tier
+                    └───────┬────────┘
+                            │
+                            ▼
+                    ┌────────────────┐
+                    │promptAugmenter │  Builds surveillance context string
+                    └───────┬────────┘
+                            │
+                    ┌───────┴────────┐
+                    ▼                ▼
+            ┌──────────┐    ┌──────────┐
+            │ LLM Prompt│    │ PDF Report│
+            │ Enrichment│    │(PDFKit +  │
+            │           │    │ Chart.js) │
+            └──────────┘    └──────────┘
+```
+
+### 11.2 CDC Data Adapters
+
+| Adapter | Data Source | Key Metric | Use Case |
+|---------|-----------|------------|----------|
+| `cdcRespiratoryAdapter` | CDC respiratory hospital data | `pct_inpatient_beds` | Respiratory illness trends, flu/RSV/COVID |
+| `cdcWastewaterAdapter` | NWSS wastewater surveillance | `wastewater_concentration` | Early warning for viral outbreaks |
+| `cdcNndssAdapter` | Notifiable diseases (NNDSS) | `case_count` | Reportable infectious disease tracking |
+
+All adapters implement caching via `backend/src/surveillance/cache/` to reduce API calls.
+
+### 11.3 Correlation Scoring
+
+**File:** `backend/src/surveillance/correlationEngine.ts`
+
+Scoring uses 5 weighted components (total 0-100):
+
+| Component | Weight | Description |
+|-----------|--------|-------------|
+| Symptom Match | 0-40 | How well patient symptoms match surveillance data |
+| Differential Match | 0-20 | Overlap between differential diagnoses and trending conditions |
+| Epidemiologic Signal | 0-25 | Strength of CDC surveillance signal |
+| Seasonal Plausibility | 0-10 | Whether timing aligns with known seasonal patterns |
+| Geographic Relevance | 0-5 | Proximity of patient location to surveillance hotspots |
+
+### 11.4 Tier Classification
+
+Based on correlation score:
+
+| Tier | Score Range | Meaning |
+|------|-------------|---------|
+| **High** | 70-100 | Strong epidemiological correlation, highlighted in MDM |
+| **Moderate** | 40-69 | Notable correlation, included in data reviewed |
+| **Low** | 20-39 | Weak signal, mentioned briefly |
+| **Background** | 0-19 | No meaningful correlation, omitted |
+
+### 11.5 Alert Detection
+
+When correlation scores cross the **high** threshold, an alert is flagged in the surveillance context. This surfaces prominently in the MDM output to draw physician attention.
+
+### 11.6 Non-Blocking Rule
+
+**Critical:** Surveillance failures must NEVER block MDM generation.
+
+```typescript
+// Required pattern for all surveillance calls:
+try {
+  const surveillanceContext = await fetchSurveillanceData(params);
+  // use context...
+} catch (err) {
+  console.warn('Surveillance enrichment failed, continuing without:', err);
+  // MDM generation proceeds without surveillance data
+}
+```
+
+### 11.7 Surveillance API Routes
+
+**File:** `backend/src/surveillance/routes.ts`
+
+| Endpoint | Purpose | Access |
+|----------|---------|--------|
+| `POST /v1/surveillance/analyze` | Run trend analysis for given location + syndromes | All authenticated users |
+| `POST /v1/surveillance/report` | Generate and download PDF trend report | Pro+ plans only (`exportFormats.includes('pdf')`) |
+
+### 11.8 Firestore Storage
+
+Analysis results stored in `surveillance_analyses/{analysisId}` for PDF report generation. This allows the report endpoint to retrieve pre-computed analysis rather than re-running the pipeline.
+
+### 11.9 PDF Generation
+
+**File:** `backend/src/surveillance/pdfGenerator.ts`
+
+Uses PDFKit for document layout and Chart.js (via `chartjs-node-canvas`) for server-side chart rendering. Reports include:
+- Trend charts per data source
+- Correlation scores and tier classifications
+- Per-source data breakdowns
+- Alert summaries
+
+---
+
+## 12. Parse Narrative Helper
+
+### 12.1 Overview
+
+**Endpoint:** `POST /v1/parse-narrative` (5/min rate limit)
+
+A UI helper endpoint that parses free-form physician narratives into structured fields for Build Mode pre-fill. This does **not** count against the user's generation quota.
+
+### 12.2 Prompt Construction
+
+**File:** `backend/src/parsePromptBuilder.ts`
+
+The parse prompt instructs the LLM to extract structured fields from the narrative without generating MDM content.
+
+### 12.3 Response Structure
+
+```typescript
+interface ParsedNarrative {
+  chiefComplaint: string;
+  problemsConsidered: string[];
+  dataReviewed: string[];
+  riskFactors: string[];
+  treatment: string[];
+  disposition: string;
+}
+```
+
+### 12.4 Usage Pattern
+
+1. Physician enters narrative in Build Mode
+2. Frontend calls `/v1/parse-narrative` to pre-fill section fields
+3. Physician reviews and adjusts pre-filled data
+4. Physician submits sections through the normal Build Mode flow
+
+This reduces friction when transitioning from free-form dictation to structured Build Mode input.
+
+---
+
 ## Key Files Reference
 
 | File | Purpose |
 |------|---------|
+| **Frontend** | |
 | `frontend/src/routes/Compose.tsx` | Input collection (Simple/Build modes) |
 | `frontend/src/routes/Preflight.tsx` | PHI confirmation, generation trigger |
 | `frontend/src/routes/Output.tsx` | MDM display and copy |
+| `frontend/src/routes/BuildMode.tsx` | Build Mode encounter management |
 | `frontend/src/lib/api.ts` | API client functions |
 | `frontend/src/types/buildMode.ts` | Build Mode type definitions |
+| `frontend/src/contexts/TrendAnalysisContext.tsx` | Surveillance state (localStorage persistence) |
+| `frontend/src/components/build-mode/desktop/DesktopKanban.tsx` | Desktop encounter layout |
+| `frontend/src/components/build-mode/mobile/MobileWalletStack.tsx` | Mobile encounter layout |
+| `frontend/src/hooks/useEncounter.ts` | Build Mode encounter hook |
+| `frontend/src/hooks/useQuickEncounter.ts` | Quick Mode encounter hook |
+| **Backend — Core** | |
 | `backend/src/index.ts` | API endpoints, main generation flow |
-| `backend/src/promptBuilder.ts` | System/user prompt construction |
+| `backend/src/promptBuilder.ts` | Legacy one-shot prompt construction |
+| `backend/src/promptBuilderBuildMode.ts` | Build Mode section prompts (S1/S2/finalize) |
+| `backend/src/promptBuilderQuickMode.ts` | Quick Mode prompt + response parsing |
+| `backend/src/parsePromptBuilder.ts` | Narrative → structured fields parsing prompt |
 | `backend/src/vertex.ts` | Vertex AI/Gemini configuration |
-| `backend/src/outputSchema.ts` | MDM schema validation and rendering |
+| `backend/src/outputSchema.ts` | Legacy MDM schema validation and rendering |
+| `backend/src/buildModeSchemas.ts` | Build Mode Zod schemas (requests, responses, Firestore) |
 | `backend/src/services/userService.ts` | User management, quota tracking |
-| `docs/mdm-gen-guide.md` | Complete MDM generation guide |
+| **Backend — Surveillance** | |
+| `backend/src/surveillance/routes.ts` | Surveillance API routes (/analyze, /report) |
+| `backend/src/surveillance/adapters/` | CDC data adapters (respiratory, wastewater, NNDSS) |
+| `backend/src/surveillance/correlationEngine.ts` | Correlation scoring (0-100) and tier classification |
+| `backend/src/surveillance/promptAugmenter.ts` | Builds surveillance context for LLM prompts |
+| `backend/src/surveillance/pdfGenerator.ts` | PDFKit + Chart.js trend report generation |
+| `backend/src/surveillance/syndromeMapper.ts` | Maps chief complaints to surveillance syndromes |
+| `backend/src/surveillance/regionResolver.ts` | Resolves location to HHS region |
+| `backend/src/surveillance/schemas.ts` | Surveillance Zod schemas |
+| `backend/src/surveillance/types.ts` | Surveillance TypeScript types |
+| `backend/src/surveillance/cache/` | Adapter response caching |
+| **Documentation** | |
+| `docs/mdm-gen-guide.md` | Complete MDM generation guide (prompt source of truth) |
 | `docs/prd.md` | Product requirements |
 
 ---
 
 ## Summary
 
-The MDM Generator employs a sophisticated pipeline that:
+The MDM Generator employs a multi-mode pipeline that:
 
-1. **Collects** physician narratives through flexible input modes
-2. **Validates** authentication, quotas, and input constraints
-3. **Constructs** carefully engineered prompts with embedded medical guidelines
+1. **Collects** physician narratives through three modes: Build Mode (progressive 3-section), Quick Mode (one-shot), and legacy Compose
+2. **Validates** authentication, quotas (per-encounter, not per-request), and input constraints
+3. **Constructs** mode-specific prompts with embedded medical guidelines via dedicated prompt builders
 4. **Generates** MDM documentation using Gemini 2.0 Flash with conservative settings
-5. **Parses** and validates output against strict medical documentation schemas
-6. **Handles** errors gracefully with medically-safe fallback defaults
+5. **Enriches** outputs with regional surveillance data from CDC sources (non-blocking)
+6. **Parses** and validates output against strict medical documentation schemas (Zod)
+7. **Handles** errors gracefully with medically-safe fallback defaults
 
-The system's core differentiator is its **worst-first approach** - prioritizing dangerous diagnoses over likely ones - combined with **explicit defaults** that prevent fabrication while maintaining clinical utility. All outputs include mandatory disclaimers emphasizing educational use and required physician review.
+The system's core differentiator is its **worst-first approach** — prioritizing dangerous diagnoses over likely ones — combined with **explicit defaults** that prevent fabrication while maintaining clinical utility. Build Mode's progressive workflow allows physicians to iterate on each section, while Quick Mode provides a streamlined single-pass experience. The surveillance enrichment pipeline adds real-time epidemiological context without blocking MDM generation. All outputs include mandatory disclaimers emphasizing educational use and required physician review.

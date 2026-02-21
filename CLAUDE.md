@@ -14,27 +14,54 @@ MDM Generator transforms Emergency Medicine physician narratives into compliant,
 
 ## Architecture
 
+> For comprehensive implementation rules and patterns, see `_bmad-output/project-context.md`.
+
 ```
-/frontend          React 19 + Vite + TypeScript + Firebase Auth
-/backend           Express + TypeScript + Vertex AI (Gemini) + Firebase Admin
+/frontend          React 19 + Vite 7 + TypeScript + Firebase Auth
+/backend           Express + TypeScript + Vertex AI (Gemini) + Firebase Admin + Zod
 ```
 
 | Layer | Stack | Purpose |
 |-------|-------|---------|
-| Frontend | React 19, Vite, React Router | UI with client-side-only medical content |
-| Backend | Express, Vertex AI Gemini | Auth validation, LLM calls, structured MDM |
+| Frontend | React 19, Vite 7, React Router | UI with client-side-only medical content |
+| Backend | Express, Vertex AI Gemini, Zod | Auth, LLM calls, structured MDM |
 | Auth | Firebase Auth (Google) | User authentication |
 | Payments | Firebase Stripe Extension | Subscription management |
+| Surveillance | 3 CDC adapters, PDFKit, Chart.js | Regional trend analysis + PDF reports |
 
 ### Routes
-`/` Start | `/compose` Input | `/preflight` PHI check | `/output` MDM display | `/settings` User prefs
+`/` Start | `/compose` Input | `/preflight` PHI check | `/output` MDM display | `/settings` User prefs | `/build` Build Mode
 
 ### API Endpoints
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/healthz` | GET | Health check |
-| `/v1/whoami` | POST | Auth validation + user info |
-| `/v1/generate` | POST | Generate MDM from narrative |
+| Endpoint | Method | Rate Limit | Purpose |
+|----------|--------|------------|---------|
+| `/health` | GET | global | Health check |
+| `/v1/whoami` | POST | global | Auth validation + user info + usage stats |
+| `/v1/admin/set-plan` | POST | global | Admin: set user plan (requires admin claim) |
+| `/v1/parse-narrative` | POST | 5/min | Parse narrative → structured fields (UI helper, no quota) |
+| `/v1/generate` | POST | 10/min | Legacy one-shot MDM generation |
+| `/v1/build-mode/process-section1` | POST | 10/min | Initial eval → worst-first differential |
+| `/v1/build-mode/process-section2` | POST | 10/min | Workup & results → MDM preview |
+| `/v1/build-mode/finalize` | POST | 10/min | Treatment & disposition → final MDM |
+| `/v1/quick-mode/generate` | POST | 10/min | One-shot MDM + patient identifier extraction |
+| `/v1/surveillance/analyze` | POST | global | Regional trend analysis |
+| `/v1/surveillance/report` | POST | global | PDF trend report download (Pro+ only) |
+
+## Two-Mode Architecture
+
+### Build Mode (`/build`)
+3-section progressive workflow with Firestore persistence:
+1. **Section 1** (Initial Eval) → generates worst-first differential
+2. **Section 2** (Workup & Results) → generates MDM preview
+3. **Section 3** (Treatment & Disposition) → generates final MDM
+
+Rules: max 2 submissions per section (then locks), quota counted once per encounter (not per section), section progression enforced server-side.
+
+### Quick Mode
+One-shot MDM generation: single narrative → complete MDM + extracted patient identifier (age/sex/chief complaint). Uses separate prompt builder (`promptBuilderQuickMode.ts`).
+
+### Surveillance Enrichment
+Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS wastewater, NNDSS notifiable diseases). **Non-blocking** — failures must never prevent MDM generation. Surveillance context is stored on the encounter doc during Section 1 and reused at finalize. PDF trend reports require Pro+ plan.
 
 ## Deployment
 - **Production**: Firebase Hosting → https://mdm-generator.web.app
@@ -61,13 +88,24 @@ cd backend && pnpm build         # TypeScript compilation (REQUIRED before commi
 |------|---------|
 | `docs/mdm-gen-guide.md` | Core prompting logic and MDM template |
 | `docs/prd.md` | Product requirements and constraints |
-| `backend/src/promptBuilder.ts` | LLM prompt construction |
-| `backend/src/outputSchema.ts` | MDM structure validation |
+| `backend/src/promptBuilder.ts` | Legacy one-shot prompt construction |
+| `backend/src/promptBuilderBuildMode.ts` | Build Mode section prompts (S1/S2/finalize) |
+| `backend/src/promptBuilderQuickMode.ts` | Quick Mode one-shot prompt + response parsing |
+| `backend/src/parsePromptBuilder.ts` | Narrative → structured fields parsing prompt |
+| `backend/src/outputSchema.ts` | Legacy MDM structure validation |
+| `backend/src/buildModeSchemas.ts` | Build Mode Zod schemas (requests, responses, Firestore) |
 
 ### Key Components
 - `frontend/src/components/DictationGuide.tsx` - Inline physician guidance
 - `frontend/src/components/Checklist.tsx` - Pre-submission PHI verification
 - `frontend/src/routes/Output.tsx` - MDM display with copy functionality
+- `frontend/src/routes/BuildMode.tsx` - Build Mode encounter management
+- `frontend/src/components/build-mode/desktop/DesktopKanban.tsx` - Desktop encounter layout
+- `frontend/src/components/build-mode/mobile/MobileWalletStack.tsx` - Mobile encounter layout
+- `frontend/src/components/TrendAnalysisToggle.tsx` - Surveillance enable/disable + location
+- `frontend/src/components/TrendResultsPanel.tsx` - Trend analysis results display
+- `frontend/src/components/TrendReportModal.tsx` - PDF report download modal
+- `frontend/src/contexts/TrendAnalysisContext.tsx` - Surveillance state (persists to localStorage)
 
 ## Security Patterns
 
@@ -164,6 +202,11 @@ If `git diff` shows any of these, STOP and review:
 | Frontend tests | `frontend/src/__tests__/` |
 | Test fixtures | `frontend/src/__fixtures__/` |
 | Backend services | `backend/src/services/` |
+| Surveillance module | `backend/src/surveillance/` (adapters/, cache/) |
+| Build Mode components | `frontend/src/components/build-mode/` (desktop/, mobile/, shared/) |
+| Frontend contexts | `frontend/src/contexts/` |
+| Frontend hooks | `frontend/src/hooks/` |
+| Frontend types | `frontend/src/types/` |
 | Documentation | `docs/` |
 | Scripts | `scripts/` |
 
@@ -171,9 +214,12 @@ If `git diff` shows any of these, STOP and review:
 
 | Task | Action |
 |------|--------|
-| Add route | Create in `frontend/src/routes/`, add to router |
+| Add route | Create in `frontend/src/routes/`, add to `App.tsx` router |
 | Modify MDM output | Update `outputSchema.ts` → `promptBuilder.ts` → `Output.tsx` |
 | Change prompting | Edit `docs/mdm-gen-guide.md` |
+| Add Build Mode section | Schema in `buildModeSchemas.ts` → prompt in `promptBuilderBuildMode.ts` → endpoint in `index.ts` → UI in `components/build-mode/` |
+| Modify surveillance | Adapter in `surveillance/adapters/` → correlation in `correlationEngine.ts` → prompt augmenter → PDF generator |
+| Add Quick Mode feature | `promptBuilderQuickMode.ts` → endpoint in `index.ts` → `useQuickEncounter.ts` hook |
 
 ## iOS Simulator Testing
 
