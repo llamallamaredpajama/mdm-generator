@@ -16,7 +16,7 @@ const vertex = new VertexAI({ project, location, googleAuthOptions })
 
 export async function callGeminiFlash(prompt: { system: string; user: string }): Promise<GenResult> {
   const model = vertex.getGenerativeModel({
-    model: 'gemini-2.5-pro',
+    model: 'gemini-3.1-pro-preview',
     safetySettings: [
       // conservative defaults; can be tuned later
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
