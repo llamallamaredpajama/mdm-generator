@@ -216,7 +216,7 @@ If `git diff` shows any of these, STOP and review:
 |------|--------|
 | Add route | Create in `frontend/src/routes/`, add to `App.tsx` router |
 | Modify MDM output | Update `outputSchema.ts` → `promptBuilder.ts` → `Output.tsx` |
-| Change prompting | Edit `docs/mdm-gen-guide.md` |
+| Change prompting | Edit `docs/mdm-gen-guide.md` **→ also update `docs/generator_engine.md`** to reflect any changes to medical logic, template structure, or generation rules |
 | Add Build Mode section | Schema in `buildModeSchemas.ts` → prompt in `promptBuilderBuildMode.ts` → endpoint in `index.ts` → UI in `components/build-mode/` |
 | Modify surveillance | Adapter in `surveillance/adapters/` → correlation in `correlationEngine.ts` → prompt augmenter → PDF generator |
 | Add Quick Mode feature | `promptBuilderQuickMode.ts` → endpoint in `index.ts` → `useQuickEncounter.ts` hook |

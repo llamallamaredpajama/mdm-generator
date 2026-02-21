@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document provides a comprehensive analysis of the MDM Generator's AI engine - the complete pipeline from user input to generated Medical Decision Making documentation. The system transforms physician narratives into compliant, high-complexity MDM drafts using an EM-specific "worst-first" approach powered by Google's Vertex AI (Gemini 2.0 Flash).
+This document provides a comprehensive analysis of the MDM Generator's AI engine - the complete pipeline from user input to generated Medical Decision Making documentation. The system transforms physician narratives into compliant, high-complexity MDM drafts using an EM-specific "worst-first" approach powered by Google's Vertex AI (Gemini 3.1 Pro).
 
 ---
 
@@ -253,7 +253,7 @@ OUTPUT FORMAT INSTRUCTIONS:
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
-| Model | `gemini-2.0-flash-exp` | Fast, cost-effective |
+| Model | `gemini-3.1-pro-preview` | Reasoning-first, high capability |
 | Temperature | `0.2` | Low randomness for medical accuracy |
 | TopP | `0.95` | Nucleus sampling for natural language |
 | maxOutputTokens | `8192` | Full MDM output (~4000 typical) |
@@ -892,7 +892,7 @@ The MDM Generator employs a multi-mode pipeline that:
 1. **Collects** physician narratives through three modes: Build Mode (progressive 3-section), Quick Mode (one-shot), and legacy Compose
 2. **Validates** authentication, quotas (per-encounter, not per-request), and input constraints
 3. **Constructs** mode-specific prompts with embedded medical guidelines via dedicated prompt builders
-4. **Generates** MDM documentation using Gemini 2.0 Flash with conservative settings
+4. **Generates** MDM documentation using Gemini 3.1 Pro with conservative settings
 5. **Enriches** outputs with regional surveillance data from CDC sources (non-blocking)
 6. **Parses** and validates output against strict medical documentation schemas (Zod)
 7. **Handles** errors gracefully with medically-safe fallback defaults
