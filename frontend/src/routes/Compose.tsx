@@ -9,6 +9,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useEncounterList } from '../hooks/useEncounterList'
 import EncounterCarousel from '../components/build-mode/EncounterCarousel'
 import EncounterEditor from '../components/build-mode/EncounterEditor'
@@ -93,11 +94,21 @@ function ModeDescription({ mode }: { mode: EncounterMode }) {
  * Compose Route Component
  */
 export default function Compose() {
+  const location = useLocation()
+
   // Mode state - persisted during session
   const [mode, setMode] = useState<EncounterMode>('quick')
 
   // View state: null = carousel, string = editor for that encounter
   const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null)
+
+  // Reset to Quick Compose carousel when header Compose button is clicked
+  useEffect(() => {
+    if (location.state?.resetToQuick) {
+      setMode('quick')
+      setSelectedEncounterId(null)
+    }
+  }, [location.state?.resetToQuick])
 
   // Fetch encounters from Firestore, filtered by mode
   const { encounters, loading, error, createEncounter, deleteEncounter, clearAllEncounters } = useEncounterList(mode)

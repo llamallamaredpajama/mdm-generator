@@ -1,8 +1,10 @@
-import { Outlet, Link, NavLink } from 'react-router-dom'
+import { Outlet, Link, NavLink, useNavigate } from 'react-router-dom'
 import ErrorBoundary from '../components/ErrorBoundary'
 import './Layout.css'
 
 export default function Layout() {
+  const navigate = useNavigate()
+
   return (
     <div className="app-shell">
       <header className="layout-header">
@@ -17,6 +19,10 @@ export default function Layout() {
             <NavLink
               to="/compose"
               className={({ isActive }) => `layout-nav-link layout-nav-link--compose ${isActive ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/compose', { state: { resetToQuick: Date.now() } })
+              }}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
