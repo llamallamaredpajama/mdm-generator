@@ -5,7 +5,7 @@ import { loadCdrRules, type CdrRule } from './cdrLoader'
  * that category becomes "active" and its rules are evaluated individually.
  */
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  'TRAUMA': ['trauma', 'fall', 'fell', 'mvc', 'motor vehicle', 'accident', 'injury', 'hit', 'struck', 'collision', 'laceration', 'fracture', 'head injury', 'blunt', 'penetrating', 'assault', 'gcs', 'concussion', 'cervical', 'c-spine', 'neck pain', 'spine'],
+  'TRAUMA': ['trauma', 'fall', 'fell', 'mvc', 'motor vehicle', 'accident', 'injury', 'injured', 'hit', 'struck', 'collision', 'laceration', 'fracture', 'head injury', 'blunt', 'penetrating', 'assault', 'gcs', 'concussion', 'cervical', 'c-spine', 'neck pain', 'spine', 'ankle', 'knee', 'sprain', 'twisted', 'wrist', 'malleolus', 'swelling', 'deformity', 'dislocation', 'musculoskeletal'],
   'CARDIOVASCULAR': ['chest pain', 'cardiac', 'heart', 'stemi', 'nstemi', 'mi', 'myocardial', 'troponin', 'ekg', 'ecg', 'palpitations', 'arrhythmia', 'afib', 'atrial fibrillation', 'dvt', 'deep vein', 'aortic', 'hypertensive', 'blood pressure', 'bp', 'syncope', 'angina', 'acs', 'acute coronary'],
   'PULMONARY': ['shortness of breath', 'sob', 'dyspnea', 'pe', 'pulmonary embolism', 'pneumonia', 'cough', 'wheezing', 'asthma', 'copd', 'respiratory', 'oxygen', 'hypoxia', 'pleuritic', 'pneumothorax', 'hemoptysis', 'lung'],
   'NEUROLOGY': ['headache', 'stroke', 'tia', 'seizure', 'weakness', 'numbness', 'altered mental status', 'ams', 'confusion', 'dizziness', 'vertigo', 'subarachnoid', 'sah', 'hemorrhage', 'meningitis', 'facial droop', 'slurred speech', 'aphasia', 'neurological', 'neuro'],
