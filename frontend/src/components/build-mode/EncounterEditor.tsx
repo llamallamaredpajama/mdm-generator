@@ -23,6 +23,7 @@ import { ApiError } from '../../lib/api'
 import ConfirmationModal from '../ConfirmationModal'
 import TrendAnalysisToggle from '../TrendAnalysisToggle'
 import TrendResultsPanel from '../TrendResultsPanel'
+import TrendReportModal from '../TrendReportModal'
 import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
 import './EncounterEditor.css'
 
@@ -115,6 +116,9 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   const [showQuotaExceeded, setShowQuotaExceeded] = useState(false)
 
   const { analysis, isAnalyzing, analyze, downloadPdf } = useTrendAnalysis()
+
+  // Trend report modal state
+  const [showTrendReport, setShowTrendReport] = useState(false)
 
   // PHI confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false)
@@ -314,12 +318,23 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
         {/* Trend Analysis Results (after Section 1) */}
         {encounter.section1.status === 'completed' && (
-          <TrendResultsPanel
-            analysis={analysis}
-            isLoading={isAnalyzing}
-            showPdfDownload
-            onDownloadPdf={() => analysis && downloadPdf(analysis.analysisId)}
-          />
+          <>
+            <TrendResultsPanel
+              analysis={analysis}
+              isLoading={isAnalyzing}
+              showPdfDownload
+              onDownloadPdf={() => analysis && downloadPdf(analysis.analysisId)}
+            />
+            {analysis && analysis.rankedFindings.length > 0 && (
+              <button
+                type="button"
+                className="encounter-editor__report-btn"
+                onClick={() => setShowTrendReport(true)}
+              >
+                📋 View Chart Report
+              </button>
+            )}
+          </>
         )}
 
         {/* Section 2: Workup & Results (blocked) */}
@@ -473,6 +488,15 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       <footer className="encounter-editor__footer">
         <ShiftTimer shiftStartedAt={encounter.shiftStartedAt} status={encounter.status} />
       </footer>
+
+      {/* Trend Report Modal */}
+      {analysis && (
+        <TrendReportModal
+          analysis={analysis}
+          isOpen={showTrendReport}
+          onClose={() => setShowTrendReport(false)}
+        />
+      )}
 
       {/* PHI Confirmation Modal */}
       <ConfirmationModal
