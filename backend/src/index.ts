@@ -38,7 +38,7 @@ import { mapToSyndromes } from './surveillance/syndromeMapper'
 import { RegionResolver } from './surveillance/regionResolver'
 import { AdapterRegistry } from './surveillance/adapters/adapterRegistry'
 import { computeCorrelations } from './surveillance/correlationEngine'
-import { buildSurveillanceContext } from './surveillance/promptAugmenter'
+import { buildSurveillanceContext, appendSurveillanceToMdmText } from './surveillance/promptAugmenter'
 
 const app = express()
 
@@ -988,7 +988,22 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       return res.status(500).json({ error: 'Failed to finalize encounter' })
     }
 
-    // 7. Update Firestore
+    // 7. Deterministic surveillance enrichment of dataReviewed
+    if (storedSurveillanceCtx && finalMdm.json?.dataReviewed) {
+      const reviewed = Array.isArray(finalMdm.json.dataReviewed)
+        ? finalMdm.json.dataReviewed
+        : [finalMdm.json.dataReviewed]
+      const hasSurveillance = reviewed.some((item: string) =>
+        /surveillance|regional/i.test(item)
+      )
+      if (!hasSurveillance) {
+        reviewed.push('Regional Surveillance Data (CDC Respiratory, NWSS Wastewater, CDC NNDSS)')
+        finalMdm.json.dataReviewed = reviewed
+        finalMdm.text = appendSurveillanceToMdmText(finalMdm.text, storedSurveillanceCtx)
+      }
+    }
+
+    // 8. Update Firestore
     const newSubmissionCount = currentSubmissionCount + 1
 
     await encounterRef.update({
@@ -1177,7 +1192,22 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       result = getQuickModeFallback()
     }
 
-    // 10. Update Firestore with results
+    // 10. Deterministic surveillance enrichment of dataReviewed
+    if (surveillanceContext && result.json?.dataReviewed) {
+      const reviewed = Array.isArray(result.json.dataReviewed)
+        ? result.json.dataReviewed
+        : [result.json.dataReviewed]
+      const hasSurveillance = reviewed.some((item: string) =>
+        /surveillance|regional/i.test(item)
+      )
+      if (!hasSurveillance) {
+        reviewed.push('Regional Surveillance Data (CDC Respiratory, NWSS Wastewater, CDC NNDSS)')
+        result.json.dataReviewed = reviewed
+        result.text = appendSurveillanceToMdmText(result.text, surveillanceContext)
+      }
+    }
+
+    // 11. Update Firestore with results
     await encounterRef.update({
       'quickModeData.status': 'completed',
       'quickModeData.narrative': narrative,

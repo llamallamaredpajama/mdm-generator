@@ -280,19 +280,10 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
 
           case 3:
             response = await finalizeEncounter(encounterId, content, token)
-            // Update Firestore with response
-            await updateDoc(encounterRef, {
-              'section3.content': content,
-              'section3.submissionCount': 1, // Finalize only allows 1 submission typically
-              'section3.isLocked': true,
-              'section3.status': 'completed',
-              'section3.llmResponse': {
-                finalMdm: (response as FinalizeResponse).finalMdm,
-                processedAt: serverTimestamp(),
-              },
-              status: 'finalized',
-              updatedAt: serverTimestamp(),
-            })
+            // Backend already updates Firestore with section3 data and status: 'finalized'.
+            // The onSnapshot listener will pick up changes automatically.
+            // Client-side write is skipped to avoid race with Firestore rule
+            // that blocks updates when status == 'finalized'.
             setQuotaRemaining((response as FinalizeResponse).quotaRemaining)
             break
         }

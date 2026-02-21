@@ -177,6 +177,23 @@ function truncateToLimit(
   )
 }
 
+/**
+ * Append surveillance data source information to the MDM text output.
+ * Inserts before the RISK or DISPOSITION section if found, otherwise appends at end.
+ */
+export function appendSurveillanceToMdmText(mdmText: string, surveillanceContext: string): string {
+  const sourcesMatch = surveillanceContext.match(/Data sources:\s*(.+)/i)
+  const sources = sourcesMatch?.[1]?.trim() || 'CDC Respiratory, NWSS Wastewater, CDC NNDSS'
+
+  const insertion = `\nRegional Surveillance Data Reviewed: ${sources}\n`
+
+  const riskIdx = mdmText.search(/\n(RISK|Risk Assessment)/i)
+  if (riskIdx > 0) {
+    return mdmText.slice(0, riskIdx) + insertion + mdmText.slice(riskIdx)
+  }
+  return mdmText + insertion
+}
+
 /** Assemble the final plain-text block from pre-filtered parts. */
 function buildOutput(
   regionLabel: string,
