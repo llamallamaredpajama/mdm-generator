@@ -69,8 +69,8 @@ export default function Start() {
     if (!title) return
 
     const LEAD_RADIUS = 40
-    const DECAY_RATE = 60
-    const TRAIL_CUTOFF = 200
+    const DECAY_RATE = 140
+    const TRAIL_CUTOFF = 500
 
     let charCenters: number[] = []
     let visible = true
