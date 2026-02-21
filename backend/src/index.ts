@@ -558,6 +558,10 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
 
       try {
         let rawParsed = JSON.parse(cleanedText)
+        // Unwrap { "differential": [...] } wrapper if present
+        if (!Array.isArray(rawParsed) && rawParsed?.differential && Array.isArray(rawParsed.differential)) {
+          rawParsed = rawParsed.differential
+        }
         // Validate structure
         if (!Array.isArray(rawParsed)) {
           const jsonStart = cleanedText.indexOf('[')
@@ -696,7 +700,14 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
 
     // 6. Build prompt with section 1 context and call Vertex AI
     const section1Content = encounter.section1?.content || ''
-    const section1Response = encounter.section1?.llmResponse || []
+    const rawS1Response = encounter.section1?.llmResponse
+    let s1Differential: DifferentialItem[] = []
+    if (Array.isArray(rawS1Response)) {
+      s1Differential = rawS1Response
+    } else if (rawS1Response?.differential && Array.isArray(rawS1Response.differential)) {
+      s1Differential = rawS1Response.differential
+    }
+    const section1Response = { differential: s1Differential }
 
     const prompt = buildSection2Prompt(section1Content, section1Response, content, workingDiagnosis)
 
@@ -712,6 +723,10 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
 
       try {
         let rawParsed = JSON.parse(cleanedText)
+        // Unwrap { "mdmPreview": { ... } } wrapper if present
+        if (rawParsed.mdmPreview && typeof rawParsed.mdmPreview === 'object') {
+          rawParsed = rawParsed.mdmPreview
+        }
         // Try to extract JSON if top-level parse isn't an object
         if (typeof rawParsed !== 'object' || rawParsed === null) {
           const jsonStart = cleanedText.indexOf('{')
@@ -730,7 +745,7 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
           console.warn('Section 2 Zod validation failed:', validated.error.message)
           mdmPreview = {
             problems: ['Unable to validate MDM preview'],
-            differential: section1Response.map((d: DifferentialItem) => d.diagnosis),
+            differential: section1Response.differential.map((d: DifferentialItem) => d.diagnosis),
             dataReviewed: [],
             reasoning: 'Model output did not match expected schema. Please review and resubmit.',
           }
@@ -748,7 +763,7 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
           } else {
             mdmPreview = {
               problems: ['Unable to parse MDM preview'],
-              differential: section1Response.map((d: DifferentialItem) => d.diagnosis),
+              differential: section1Response.differential.map((d: DifferentialItem) => d.diagnosis),
               dataReviewed: [],
               reasoning: 'Please review input and resubmit',
             }
@@ -756,7 +771,7 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
         } else {
           mdmPreview = {
             problems: ['Unable to parse MDM preview'],
-            differential: section1Response.map((d: DifferentialItem) => d.diagnosis),
+            differential: section1Response.differential.map((d: DifferentialItem) => d.diagnosis),
             dataReviewed: [],
             reasoning: 'Please review input and resubmit',
           }
@@ -861,14 +876,24 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     }
 
     // 6. Build prompt with all sections and call Vertex AI
+    const rawS1 = encounter.section1?.llmResponse
+    const s1Diff: DifferentialItem[] = Array.isArray(rawS1)
+      ? rawS1
+      : (rawS1?.differential && Array.isArray(rawS1.differential))
+        ? rawS1.differential
+        : []
     const section1Data = {
       content: encounter.section1?.content || '',
-      response: { differential: encounter.section1?.llmResponse || [] },
+      response: { differential: s1Diff },
     }
+    const rawS2 = encounter.section2?.llmResponse
+    const s2Preview = (rawS2?.mdmPreview && typeof rawS2.mdmPreview === 'object')
+      ? rawS2.mdmPreview
+      : rawS2 || {}
     const section2Data = {
       content: encounter.section2?.content || '',
-      response: { mdmPreview: encounter.section2?.llmResponse || {} },
-      workingDiagnosis: undefined, // Could be stored in encounter if needed
+      response: { mdmPreview: s2Preview },
+      workingDiagnosis: encounter.section2?.workingDiagnosis,
     }
 
     // Retrieve surveillance context stored during Section 1

@@ -86,12 +86,12 @@ export type Section1Response = z.infer<typeof Section1ResponseSchema>
  * Accumulated from Section 1 + Section 2
  */
 export const MdmPreviewSchema = z.object({
-  problems: z.union([z.string(), z.array(z.string())]),
-  differential: z.union([z.string(), z.array(z.string())]),
-  dataReviewed: z.union([z.string(), z.array(z.string())]),
+  problems: z.any(),        // string | string[] | object[] — LLM output varies
+  differential: z.any(),    // string | string[] | object[] — LLM output varies
+  dataReviewed: z.any(),    // string | string[] | object — LLM output varies
   reasoning: z.string(),
   regionalSurveillance: z.string().optional(),
-})
+}).passthrough()
 
 export type MdmPreview = z.infer<typeof MdmPreviewSchema>
 
