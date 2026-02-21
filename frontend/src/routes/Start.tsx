@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, signInWithGoogle } from '../lib/firebase'
-import { useIsMobile } from '../hooks/useMediaQuery'
+import { useIsMobile, usePrefersReducedMotion } from '../hooks/useMediaQuery'
 import UserAccountDropdown from '../components/UserAccountDropdown'
 import './Start.css'
 
@@ -56,6 +56,108 @@ export default function Start() {
   const { scrollRef: featuresRef, activeIndex: featuresActive, scrollTo: featuresScrollTo } = useScrollDots(4)
   const { scrollRef: stepsRef, activeIndex: stepsActive, scrollTo: stepsScrollTo } = useScrollDots(3, '.step')
 
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const electron1Ref = useRef<SVGGElement | null>(null)
+  const electron2Ref = useRef<SVGGElement | null>(null)
+  const charRefs = useRef<(HTMLSpanElement | null)[]>([])
+  const titleRef = useRef<HTMLHeadingElement | null>(null)
+
+  // Phosphor glow: light up characters as the electron passes beneath them
+  useEffect(() => {
+    if (prefersReducedMotion) return
+    const title = titleRef.current
+    if (!title) return
+
+    const LEAD_RADIUS = 40
+    const DECAY_RATE = 60
+    const TRAIL_CUTOFF = 200
+
+    let charCenters: number[] = []
+    let visible = true
+    let rafId: number
+
+    const cacheCharCenters = () => {
+      charCenters = charRefs.current.map(span => {
+        if (!span) return 0
+        const rect = span.getBoundingClientRect()
+        return rect.left + rect.width / 2
+      })
+    }
+
+    cacheCharCenters()
+
+    let resizeObs: ResizeObserver | undefined
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObs = new ResizeObserver(cacheCharCenters)
+      resizeObs.observe(title)
+    }
+
+    let intersectionObs: IntersectionObserver | undefined
+    if (typeof IntersectionObserver !== 'undefined') {
+      intersectionObs = new IntersectionObserver(
+        ([entry]) => { visible = entry.isIntersecting },
+        { threshold: 0 }
+      )
+      intersectionObs.observe(title)
+    }
+
+    const getElectronX = (ref: React.RefObject<SVGGElement | null>): number | null => {
+      const g = ref.current
+      if (!g) return null
+      const rect = g.getBoundingClientRect()
+      return rect.left + rect.width / 2
+    }
+
+    const tick = () => {
+      if (visible) {
+        const ex1 = getElectronX(electron1Ref)
+        const ex2 = getElectronX(electron2Ref)
+
+        const spans = charRefs.current
+        for (let i = 0; i < spans.length; i++) {
+          const span = spans[i]
+          if (!span) continue
+          const cx = charCenters[i]
+
+          let intensity = 0
+          for (const ex of [ex1, ex2]) {
+            if (ex === null) continue
+            const dist = ex - cx
+            let t = 0
+            if (dist < -LEAD_RADIUS) {
+              t = 0
+            } else if (dist < 0) {
+              t = 1 + dist / LEAD_RADIUS
+            } else if (dist < TRAIL_CUTOFF) {
+              t = Math.exp(-dist / DECAY_RATE)
+            }
+            if (t > intensity) intensity = t
+          }
+
+          const alpha = 0.4 + 0.6 * intensity
+          span.style.color = `rgba(255, 255, 255, ${alpha})`
+          if (intensity > 0.05) {
+            const bloom = intensity
+            span.style.textShadow =
+              `0 0 ${8 * bloom}px rgba(255, 170, 181, ${0.7 * bloom}), ` +
+              `0 0 ${20 * bloom}px rgba(255, 107, 122, ${0.4 * bloom})`
+          } else {
+            span.style.textShadow = 'none'
+          }
+        }
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+
+    rafId = requestAnimationFrame(tick)
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      resizeObs?.disconnect()
+      intersectionObs?.disconnect()
+    }
+  }, [prefersReducedMotion])
+
   const ekgPath = isMobile ? EKG_PATH_MOBILE : EKG_PATH_DESKTOP
   const ekgViewBox = isMobile ? '0 0 1500 100' : '0 0 3000 100'
   const electronDur = isMobile ? '5s' : '10s'
@@ -89,7 +191,15 @@ export default function Start() {
         </div>
         <div className="em-title-section">
           <div className="em-title-wrapper">
-            <h1 className="em-title">Emergency Medicine</h1>
+            <h1 className="em-title" ref={titleRef} aria-label="Emergency Medicine">
+              {'Emergency'.split('').map((char, i) => (
+                <span key={i} className="em-char" ref={el => { charRefs.current[i] = el }}>{char}</span>
+              ))}
+              {' '}
+              {'Medicine'.split('').map((char, i) => (
+                <span key={i + 9} className="em-char" ref={el => { charRefs.current[i + 9] = el }}>{char}</span>
+              ))}
+            </h1>
             <div className="ekg-underline" aria-hidden="true">
               <div className="ekg-track">
                 <svg className="ekg-svg" viewBox={ekgViewBox} preserveAspectRatio="none" overflow="visible">
@@ -114,7 +224,7 @@ export default function Start() {
                     strokeLinejoin="round"
                     vectorEffect="non-scaling-stroke"
                   />
-                  <g className="electron-dot">
+                  <g className="electron-dot" ref={electron1Ref}>
                     <animateMotion dur={electronDur} repeatCount="indefinite" calcMode="linear"
                       keyPoints="0;1" keyTimes="0;1">
                       <mpath href="#ekg-trace-path" />
@@ -134,7 +244,7 @@ export default function Start() {
                     strokeLinejoin="round"
                     vectorEffect="non-scaling-stroke"
                   />
-                  <g className="electron-dot">
+                  <g className="electron-dot" ref={electron2Ref}>
                     <animateMotion dur={electronDur} repeatCount="indefinite" calcMode="linear"
                       keyPoints="0;1" keyTimes="0;1">
                       <mpath href="#ekg-trace-path-2" />

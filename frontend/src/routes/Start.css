@@ -170,27 +170,11 @@
   font-weight: 300;
   margin: 0;
   line-height: 1.1;
-  /* Electron-synced shine with trailing afterglow */
-  background: linear-gradient(
-    90deg,
-    rgba(255, 235, 240, 0.48) 0%,
-    rgba(255, 255, 255, 0.45) 4%,
-    rgba(255, 255, 255, 0.45) 44%,
-    rgba(255, 210, 220, 0.8) 46%,
-    #fff 48%,
-    #fff 54%,
-    rgba(255, 240, 245, 0.9) 60%,
-    rgba(255, 225, 235, 0.75) 68%,
-    rgba(255, 210, 220, 0.55) 76%,
-    rgba(255, 255, 255, 0.45) 85%,
-    rgba(255, 255, 255, 0.45) 100%
-  );
-  background-size: 300% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: em-title-shine 10s linear infinite;
-  animation-delay: -1s;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.em-char {
+  display: inline-block;
 }
 
 .ekg-underline {
@@ -542,25 +526,6 @@
 
   .em-title {
     font-size: 10vw;
-    animation-duration: 5s;
-    animation-delay: 0s;
-    background-image: linear-gradient(
-      90deg,
-      #fff 0%,
-      rgba(255, 210, 220, 0.8) 4%,
-      rgba(255, 210, 220, 0.5) 11%,
-      rgba(255, 255, 255, 0.45) 19%,
-      rgba(255, 255, 255, 0.45) 44%,
-      rgba(255, 210, 220, 0.8) 46%,
-      #fff 48%,
-      #fff 54%,
-      rgba(255, 240, 245, 0.9) 60%,
-      rgba(255, 225, 235, 0.75) 68%,
-      rgba(255, 210, 220, 0.55) 76%,
-      rgba(255, 255, 255, 0.45) 85%,
-      rgba(255, 255, 255, 0.45) 100%
-    );
-    background-size: 200% 100%;
   }
 
   .ekg-underline {
@@ -848,11 +813,6 @@
 }
 
 /* EKG scroll animation */
-@keyframes em-title-shine {
-  from { background-position: 100% center; }
-  to { background-position: 0% center; }
-}
-
 @keyframes ekg-scroll {
   from {
     transform: translateX(-50%);
@@ -897,11 +857,6 @@
   }
 
   .em-title {
-    animation: none;
     color: #fff;
-    background: none;
-    -webkit-background-clip: unset;
-    -webkit-text-fill-color: unset;
-    background-clip: unset;
   }
 }
