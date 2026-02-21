@@ -170,25 +170,27 @@
   font-weight: 300;
   margin: 0;
   line-height: 1.1;
-  /* Electron-synced shine */
+  /* Electron-synced shine with trailing afterglow */
   background: linear-gradient(
     90deg,
     rgba(255, 235, 240, 0.48) 0%,
     rgba(255, 255, 255, 0.45) 4%,
-    rgba(255, 255, 255, 0.45) 46%,
-    rgba(255, 210, 220, 0.8) 47.5%,
-    #fff 49%,
-    #fff 51%,
-    rgba(255, 210, 220, 0.8) 55%,
-    rgba(255, 210, 220, 0.5) 62%,
-    rgba(255, 255, 255, 0.45) 70%,
+    rgba(255, 255, 255, 0.45) 44%,
+    rgba(255, 210, 220, 0.8) 46%,
+    #fff 48%,
+    #fff 54%,
+    rgba(255, 240, 245, 0.9) 60%,
+    rgba(255, 225, 235, 0.75) 68%,
+    rgba(255, 210, 220, 0.55) 76%,
+    rgba(255, 255, 255, 0.45) 85%,
     rgba(255, 255, 255, 0.45) 100%
   );
   background-size: 300% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: em-title-shine 8s linear infinite;
+  animation: em-title-shine 10s linear infinite;
+  animation-delay: -1s;
 }
 
 .ekg-underline {
@@ -209,7 +211,7 @@
   display: flex;
   width: 200%;
   height: 100%;
-  animation: ekg-scroll 16s linear infinite;
+  animation: ekg-scroll 12.8s linear infinite;
 }
 
 .ekg-svg {
@@ -540,20 +542,22 @@
 
   .em-title {
     font-size: 10vw;
-    animation-duration: 4s;
+    animation-duration: 5s;
+    animation-delay: 0s;
     background-image: linear-gradient(
       90deg,
       #fff 0%,
       rgba(255, 210, 220, 0.8) 4%,
       rgba(255, 210, 220, 0.5) 11%,
       rgba(255, 255, 255, 0.45) 19%,
-      rgba(255, 255, 255, 0.45) 46%,
-      rgba(255, 210, 220, 0.8) 47.5%,
-      #fff 49%,
-      #fff 51%,
-      rgba(255, 210, 220, 0.8) 55%,
-      rgba(255, 210, 220, 0.5) 62%,
-      rgba(255, 255, 255, 0.45) 70%,
+      rgba(255, 255, 255, 0.45) 44%,
+      rgba(255, 210, 220, 0.8) 46%,
+      #fff 48%,
+      #fff 54%,
+      rgba(255, 240, 245, 0.9) 60%,
+      rgba(255, 225, 235, 0.75) 68%,
+      rgba(255, 210, 220, 0.55) 76%,
+      rgba(255, 255, 255, 0.45) 85%,
       rgba(255, 255, 255, 0.45) 100%
     );
     background-size: 200% 100%;
@@ -566,7 +570,7 @@
   }
 
   .ekg-track {
-    animation-duration: 8s;
+    animation-duration: 6.4s;
   }
 
   .hero-content {

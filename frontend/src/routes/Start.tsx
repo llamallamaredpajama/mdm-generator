@@ -58,7 +58,7 @@ export default function Start() {
 
   const ekgPath = isMobile ? EKG_PATH_MOBILE : EKG_PATH_DESKTOP
   const ekgViewBox = isMobile ? '0 0 1500 100' : '0 0 3000 100'
-  const ekgDur = isMobile ? '8s' : '16s'
+  const electronDur = isMobile ? '5s' : '10s'
 
   return (
     <div className="landing-page">
@@ -115,7 +115,7 @@ export default function Start() {
                     vectorEffect="non-scaling-stroke"
                   />
                   <g className="electron-dot">
-                    <animateMotion dur={ekgDur} repeatCount="indefinite" calcMode="linear"
+                    <animateMotion dur={electronDur} repeatCount="indefinite" calcMode="linear"
                       keyPoints="0;1" keyTimes="0;1">
                       <mpath href="#ekg-trace-path" />
                     </animateMotion>
@@ -135,7 +135,7 @@ export default function Start() {
                     vectorEffect="non-scaling-stroke"
                   />
                   <g className="electron-dot">
-                    <animateMotion dur={ekgDur} repeatCount="indefinite" calcMode="linear"
+                    <animateMotion dur={electronDur} repeatCount="indefinite" calcMode="linear"
                       keyPoints="0;1" keyTimes="0;1">
                       <mpath href="#ekg-trace-path-2" />
                     </animateMotion>
