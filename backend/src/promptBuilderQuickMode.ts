@@ -65,7 +65,8 @@ export interface PromptParts {
  */
 export async function buildQuickModePrompt(
   narrative: string,
-  surveillanceContext?: string
+  surveillanceContext?: string,
+  cdrContext?: string
 ): Promise<PromptParts> {
   const mdmGuide = await loadMdmGuide()
 
@@ -141,6 +142,11 @@ Generate the complete JSON response now:`
   // Append surveillance context with explicit integration instructions
   if (surveillanceContext) {
     systemPrompt += `\n\n---\n\n# Regional Epidemiologic Context\n\n${surveillanceContext}\n\n## Surveillance Integration Instructions\n\n1. Include "Regional Surveillance Data" in the "dataReviewed" array (e.g., "Regional Surveillance Data: CDC Respiratory, NWSS Wastewater — [key findings]")\n2. In differential reasoning, explicitly note how regional surveillance data affects pre-test probability:\n   - For conditions with RISING regional activity: note increased pre-test probability\n   - For conditions with LOW/ABSENT regional activity: note reduced pre-test probability\n3. In the MDM "text" field, include a brief "Regional Epidemiologic Context" paragraph summarizing:\n   - Data sources consulted\n   - Regionally active conditions relevant to the differential\n   - Conditions on the differential that are NOT active in this region\n4. Weight epidemiologically active conditions appropriately in urgency classification`
+  }
+
+  // Append CDR context with one-shot integration instructions
+  if (cdrContext) {
+    systemPrompt += `\n\n---\n\n# Clinical Decision Rules Context\n\n${cdrContext}\n\n## CDR Quick Mode Instructions\n\n1. Identify all applicable clinical decision rules from the reference above based on the narrative\n2. Calculate scores where sufficient data exists — note missing data points for incomplete calculations\n3. Include CDR results in the "dataReviewed" array (e.g., "HEART Score: 4 (moderate risk) — Age >45 (+1), HTN (+1), troponin normal (0), EKG non-specific (+1), moderate clinical suspicion (+1)")\n4. Reference CDR results in differential reasoning to support probability assessments\n5. Use CDR scores to inform risk assessment and disposition recommendations\n6. In the MDM "text" field, include CDR calculations in the Data Reviewed and Risk Assessment sections`
   }
 
   return {

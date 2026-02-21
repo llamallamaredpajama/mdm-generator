@@ -27,7 +27,7 @@ MEDICAL DECISION MAKING SUMMARY:
 
 - This [age][sex] presents with [chief complaint] requiring complex medical decision-making based on [primary complexity driver].
 
-PROBLEMS CONSIDERATED:
+PROBLEMS CONSIDERED:
 [**First** use the following definitions to **CLASSIFY** any problems mentioned in the user description:
 Self-limited or minor problem: A problem that runs a definite and prescribed course, is transient in nature, and is not likely to permanently alter health status.
 Chronic Stable illness: A problem with an expected duration of at least one year or until the death of the patient. For the purpose of defining chronicity, conditions are treated as chronic whether or not stage or severity changes (e.g., uncontrolled diabetes and controlled diabetes are a single chronic condition). "Stable" for the purposes of categorizing MDM is defined by the specific treatment goals for an individual patient. A patient who is not at their treatment goal is not stable, even if the condition has not changed and there is no short-term threat to life or function. For example, a patient with persistently poorly controlled blood pressure for whom better control is a goal is not stable, even if the pressures are not changing and the patient is asymptomatic. The risk of morbidity without treatment is significant.
@@ -42,45 +42,53 @@ Acute, complicated injury: An injury which requires treatment that includes eval
 Acute or chronic illness or injury that poses a threat to life or bodily function: An acute illness with systemic symptoms, an acute complicated injury, or a chronic illness or injury with exacerbation and/or progression or side effects of treatment that poses a threat to life or bodily function in the near term without treatment. Some symptoms may represent a condition that is significantly probable and poses a potential threat to life or bodily function. These may be included in this category when the evaluation and treatment are consistent with this degree of potential.
 **Then**, list any and all of the problems mentioned by user or determined by the differential diagnosis by CLASS in the following manner:]
 
-1. [CLASS] considered: [Condition].
+[Condition]: [CLASS].
 Suspected due to: [Inclusion reasoning].
-[Exclusion method]- [remaining probability]
-2. [CLASS] considered: [Condition].
-Suspected due to: [Inclusion reasoning].
-[Exclusion method]- [remaining probability]
-3. [CLASS] considered: [Condition].
-Suspected due to: [Inclusion reasoning].
-[Exclusion method]- [remaining probability]
-4.[CLASS] considered: [Condition].
-Suspected due to: [Inclusion reasoning].
-[Exclusion method]- [remaining probability]
-4. [CLASS] considered: [Condition].
-Suspected due to: [Inclusion reasoning].
-[Exclusion method]- [remaining probability]
-6.[CLASS] considered: [Condition].
-Suspected due to: [Inclusion reasoning].
-[Exclusion method]- [remaining probability]
 
-[the user may employ risk stratification tools to ascertain the significance or severity of a presentation and/or help determine appropriate diagnostic or therapeutic interventions. **Be sure to mention any clinical exclusion methods by name** under “Exclusion Method/remaining probability” if the user mentions them explicitly for any particular Condition:
-“Canadian CT Head Injury rule” – Calculates the need for a CT for patients with a head injury.
-“HEART score” – for major cardiac events and to determine between discharge or admit/obs from the ED
-“NEXUS criteria” and “Canadian c-spine rule” to out potentially disabling c-spine injury.
-“Ottawa Ankle Rule” and “Ottawa Knee Rule” - Calculates the need for an x-ray for patients with an ankle/knee injury.
-“PECARN” for Pediatric Head Injury - Predicts need for brain imaging after pediatric head injury.
-“PERC” Rule For Pulmonary Embolism - Rules out PE if no criteria are present and pre-test probability is ≤15%.
-“Pneumonia Severity Index” / “PORT score” – Estimates mortality for adult patients with community-acquired pneumonia and determines between discharge or admit/obs from the ED
-“Well’s Criteria” for DVT - Calculates risk of DVT based on clinical criteria
-“Well’s Criteria” for Pulmonary Embolism - Objectifies risk of pulmonary embolism.
-Documentation that the user used a risk calculator to determine the need for additional testing or treatment is an indicator of the complexity of problems addressed.]
+[Condition]: [CLASS].
+Suspected due to: [Inclusion reasoning].
+
+[Condition]: [CLASS].
+Suspected due to: [Inclusion reasoning].
+
+[Condition]: [CLASS].
+Suspected due to: [Inclusion reasoning].
+
+[Condition]: [CLASS].
+Suspected due to: [Inclusion reasoning].
+
+[Condition]: [CLASS].
+Suspected due to: [Inclusion reasoning].
+
+[Condition]: [CLASS].
+Suspected due to: [Inclusion reasoning].
+
 RISK ASSESSMENT:
-The patient has [justify highest complexity level possible, by condition, NOT class],and due to this patient’s overall presentation, I consider [Diagnosis/symptom] to be the Primary Problem. However, [List with brief exclusion rationale].
-Highest risk element: [Specific intervention/decision conferring highest risk]
-Other risk factors present:
+The patient has [list symptoms and objective clinical findings reported of highest complexity conditions possible], and due to this patient's overall presentation, I consider the patient's highest risk diagnosis to be [Diagnosis/symptom]. However, I believe that the patient is most likely to have [most likely diagnosis given totality of circumstances- if user specifies a certain diagnosis as "most likely" or "working diagnosis" or "probably has," list it here]
 
-- Patient factors: [Age, comorbidities, social determinants]
-- Diagnostic risks: [Radiation, contrast, procedures]
-- Treatment risks: [Medications, interventions]
-- Disposition risks: [If discharged with uncertainty]
+[List all other conditions considered  with brief "exclusion rationale", use "low probablity" rather than "excluded" unless a Risk Stratification Tool was explicitly mentioned as a justification for something being "excluded" and be sure to mention any such Risk Stratification Tools if applicable from the ones listed below]. 
+
+Clinical Decision Rules (CDR):
+When a CDR reference is provided in the prompt context (CLINICAL DECISION RULES REFERENCE section), you MUST:
+1. Identify all applicable CDRs based on the patient presentation and available data
+2. Name the specific rule (e.g., "HEART Score", "Ottawa Ankle Rules", "PECARN Pediatric Head CT Rule")
+3. Calculate the score using available data points — list each criterion and whether it is met, not met, or data unavailable
+4. State the score interpretation and clinical implication (e.g., "HEART Score 3 — Low risk, 1.7% MACE rate, safe for discharge with outpatient follow-up")
+5. Note specifically which data points are missing that would be needed for a complete calculation
+6. Use CDR results to justify exclusion reasoning: use "low probability" rather than "excluded" unless a CDR explicitly supports exclusion (e.g., "PERC negative — PE excluded per validated clinical decision rule")
+7. Include CDR calculations in the Data Reviewed section of the MDM output
+
+When NO CDR reference is provided in the prompt, still mention any risk stratification tools by name if the user explicitly references them or if the clinical data clearly fulfills a well-known rule's criteria.
+
+Documentation that clinical decision rules were applied to determine the need for additional testing or treatment is an indicator of the complexity of problems addressed.
+
+Highest risk element: [Specific intervention/decision conferring highest risk]
+
+Other risk factors present:
+Patient factors: [Age, comorbidities, social determinants]
+Diagnostic risks: [Radiation, contrast, procedures, any tests carry risk of "false positives leading to unnecessary further testing, potentially harmful invasive procedures or potentially harmful and unnecessary therapies"]
+Treatment risks: [Medications, interventions]
+Disposition risks: [If discharged with uncertainty]
 
 CLINICAL REASONING AND MANAGEMENT:
 Evaluation approach:
@@ -120,16 +128,16 @@ Procedures performed:
 
 DISPOSITION DECISION PROCESS:
 Reassessments:
-
 - [Time and findings; if nothing specified, use "unremarkable"]
+
 Response to treatment:
 - [Patient improvement/deterioration;  if nothing specified, remove this component, including "Response to treatment:"]
+
 External Discussions:
 - [If disposition includes the words “admit" or "observation” or “transferred”, document with whom the case was discussed here]
 -[If the disposition includes the words “discharge” or “home”, and the user mentions a discussion with a follow-up physician occurred, document it here. If disposition is “discharge” or “discharge home” *AND NO discussion* with a follow-up physician occurred, state: "discussion with referred physician considered; patient/family demonstrate clear understanding of issues and close follow-up with their physician was recommended".]
 
 Risk mitigation strategies:
-
 - [Specific actions taken to reduce risk]
 - [Safety-netting measures implemented]
 
@@ -141,7 +149,6 @@ DISPOSITION:
 [If the highest risk element mentions “substance abuse”, add “Patient is at high risk of premature death from trauma, organ failure or overdose from continued substance abuse and is unable to abstain due to severity of withdrawal symptoms. This necessitates admission to observation for treatment and monitoring to control such symptoms and reduce such risks.” If substance abuse is not mentioned, remove this section entirely]
 
 Discharge instructions: [If discharged]
-
 - Primary and all other relevant diagnoses explained
 - Incidental findings reported to the patient and to follow with their primary or specialist providers for further assessment and care.
 - Medications prescribed: [list]
@@ -150,9 +157,7 @@ Discharge instructions: [If discharged]
 - Return precautions: any worsening or new symptoms, especially severe pain or difficulty with normal bodily function. [Specific symptoms]
 - Patient understanding verified
 
-
 ## Review your response prior to submitting to the user to:
-
 **Ensure there are NO hallucinations or make-believe components**
 Your response is copy-pastable with **ONLY** the template and user-specified information:
 Do NOT add things like "here is your Medical Decision Making document".

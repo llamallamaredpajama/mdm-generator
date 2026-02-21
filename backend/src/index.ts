@@ -39,6 +39,8 @@ import { RegionResolver } from './surveillance/regionResolver'
 import { AdapterRegistry } from './surveillance/adapters/adapterRegistry'
 import { computeCorrelations } from './surveillance/correlationEngine'
 import { buildSurveillanceContext, appendSurveillanceToMdmText } from './surveillance/promptAugmenter'
+import { selectRelevantRules } from './cdr/cdrSelector'
+import { buildCdrContext } from './cdr/cdrPromptAugmenter'
 
 const app = express()
 
@@ -546,13 +548,24 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       }
     }
 
+    // 6b. CDR enrichment (supplementary — failures must not block section 1)
+    let section1CdrCtx: string | undefined
+    try {
+      const selectedRules = selectRelevantRules(content)
+      if (selectedRules.length > 0) {
+        section1CdrCtx = buildCdrContext(selectedRules) || undefined
+      }
+    } catch (cdrError) {
+      console.warn('Section 1 CDR enrichment failed (non-blocking):', cdrError)
+    }
+
     // 7. Build prompt and call Vertex AI
     const systemPrompt = await fs.readFile(
       path.join(__dirname, '../../docs/mdm-gen-guide.md'),
       'utf8'
     ).catch(() => '') // Fallback to empty if guide not found
 
-    const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx)
+    const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx, section1CdrCtx)
 
     let differential: DifferentialItem[] = []
     try {
@@ -622,6 +635,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       'section1.lastUpdated': admin.firestore.Timestamp.now(),
       // Persist surveillance context so Section 3 (finalize) can access it
       ...(section1SurveillanceCtx && { surveillanceContext: section1SurveillanceCtx }),
+      // Persist CDR context so Section 2 and Section 3 can access it
+      ...(section1CdrCtx && { cdrContext: section1CdrCtx }),
       status: 'section1_done',
       updatedAt: admin.firestore.Timestamp.now(),
     })
@@ -717,7 +732,21 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
     }
     const section1Response = { differential: s1Differential }
 
-    const prompt = buildSection2Prompt(section1Content, section1Response, content, workingDiagnosis)
+    // 6b. CDR enrichment for Section 2 (non-blocking)
+    let section2CdrCtx: string | undefined
+    const storedS1CdrCtx: string | undefined = encounter.cdrContext || undefined
+    try {
+      // Re-run CDR selector on combined S1+S2 content to find additional rules from workup data
+      const combinedText = `${section1Content} ${content}`
+      const selectedRules = selectRelevantRules(combinedText)
+      if (selectedRules.length > 0) {
+        section2CdrCtx = buildCdrContext(selectedRules) || undefined
+      }
+    } catch (cdrError) {
+      console.warn('Section 2 CDR enrichment failed (non-blocking):', cdrError)
+    }
+
+    const prompt = buildSection2Prompt(section1Content, section1Response, content, workingDiagnosis, section2CdrCtx, storedS1CdrCtx)
 
     let mdmPreview: MdmPreview
     try {
@@ -800,6 +829,8 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       'section2.submissionCount': newSubmissionCount,
       'section2.status': 'completed',
       'section2.lastUpdated': admin.firestore.Timestamp.now(),
+      // Update CDR context with expanded S2 analysis (may include additional rules from workup)
+      ...(section2CdrCtx && { cdrContext: section2CdrCtx }),
       status: 'section2_done',
       updatedAt: admin.firestore.Timestamp.now(),
     })
@@ -907,7 +938,10 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     // Retrieve surveillance context stored during Section 1
     const storedSurveillanceCtx: string | undefined = encounter.surveillanceContext || undefined
 
-    const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx)
+    // Retrieve CDR context stored during Section 1/2
+    const storedCdrCtx: string | undefined = encounter.cdrContext || undefined
+
+    const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx)
 
     let finalMdm: FinalMdm
     try {
@@ -1183,10 +1217,21 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       }
     }
 
+    // 8b. CDR enrichment (supplementary — failures must not block MDM)
+    let quickCdrContext: string | undefined
+    try {
+      const selectedRules = selectRelevantRules(narrative)
+      if (selectedRules.length > 0) {
+        quickCdrContext = buildCdrContext(selectedRules) || undefined
+      }
+    } catch (cdrError) {
+      console.warn('Quick mode CDR enrichment failed (non-blocking):', cdrError)
+    }
+
     // 9. Build prompt and call Vertex AI
     let result: QuickModeGenerationResult
     try {
-      const prompt = await buildQuickModePrompt(narrative, surveillanceContext)
+      const prompt = await buildQuickModePrompt(narrative, surveillanceContext, quickCdrContext)
       const modelResponse = await callGeminiFlash(prompt)
       result = parseQuickModeResponse(modelResponse.text)
     } catch (modelError) {

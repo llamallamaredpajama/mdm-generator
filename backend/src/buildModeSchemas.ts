@@ -65,6 +65,7 @@ export const DifferentialItemSchema = z.object({
   urgency: z.enum(['emergent', 'urgent', 'routine']),
   reasoning: z.string(),
   regionalContext: z.string().optional(),
+  cdrContext: z.string().optional(),
 })
 
 export type DifferentialItem = z.infer<typeof DifferentialItemSchema>
@@ -91,6 +92,7 @@ export const MdmPreviewSchema = z.object({
   dataReviewed: z.any(),    // string | string[] | object — LLM output varies
   reasoning: z.string(),
   regionalSurveillance: z.string().optional(),
+  cdrResults: z.string().optional(),
 }).passthrough()
 
 export type MdmPreview = z.infer<typeof MdmPreviewSchema>
@@ -121,6 +123,7 @@ export const FinalMdmSchema = z.object({
     disposition: z.string(),
     complexityLevel: z.enum(['low', 'moderate', 'high']).optional(),
     regionalSurveillance: z.string().optional(),
+    clinicalDecisionRules: z.string().optional(),
   }),
 })
 

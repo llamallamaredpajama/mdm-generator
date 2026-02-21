@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && cp src/cdr/clinical-decision-rules.md dist/cdr/",
     "test": "vitest run",
     "test:watch": "vitest"
   },

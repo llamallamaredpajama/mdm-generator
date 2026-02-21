@@ -14,7 +14,8 @@ import type { DifferentialItem, MdmPreview, Section1Response, Section2Response }
 export function buildSection1Prompt(
   content: string,
   systemPrompt: string,
-  surveillanceContext?: string
+  surveillanceContext?: string,
+  cdrContext?: string
 ): { system: string; user: string } {
   let system = [
     systemPrompt,
@@ -57,6 +58,23 @@ export function buildSection1Prompt(
     ].join('\n')
   }
 
+  // Append CDR context with instructions
+  if (cdrContext) {
+    system += [
+      '',
+      '',
+      'CLINICAL DECISION RULES CONTEXT:',
+      cdrContext,
+      '',
+      'CDR SECTION 1 INSTRUCTIONS:',
+      '1. Identify applicable clinical decision rules from the CDR reference above',
+      '2. Note which data points are present and which are missing for each applicable rule',
+      '3. Calculate partial scores where sufficient data exists from the initial presentation',
+      '4. Include CDR analysis in differential reasoning (e.g., "HEART score components present: age >45, known HTN — partial score suggests moderate risk pending troponin")',
+      '5. Add a "cdrContext" field to each differential item where a CDR informs the assessment',
+    ].join('\n')
+  }
+
   const user = [
     'INITIAL PATIENT PRESENTATION:',
     '---',
@@ -70,7 +88,8 @@ export function buildSection1Prompt(
     '      "diagnosis": "Condition name",',
     '      "urgency": "emergent" | "urgent" | "routine",',
     '      "reasoning": "Why this is on the differential based on presentation",',
-    '      "regionalContext": "Optional: How regional surveillance data affects pre-test probability for this diagnosis"',
+    '      "regionalContext": "Optional: How regional surveillance data affects pre-test probability for this diagnosis",',
+    '      "cdrContext": "Optional: Applicable CDR scores/results that inform this diagnosis"',
     '    }',
     '  ]',
     '}',
@@ -90,13 +109,15 @@ export function buildSection2Prompt(
   section1Content: string,
   section1Response: Pick<Section1Response, 'differential'>,
   section2Content: string,
-  workingDiagnosis?: string
+  workingDiagnosis?: string,
+  cdrContext?: string,
+  section1CdrAnalysis?: string
 ): { system: string; user: string } {
   const differentialSummary = section1Response.differential
     .map((d: DifferentialItem) => `- ${d.diagnosis} (${d.urgency}): ${d.reasoning}`)
     .join('\n')
 
-  const system = [
+  let system = [
     'SECTION 2: WORKUP & RESULTS - MDM PREVIEW GENERATION',
     '',
     'You are building an MDM preview that incorporates workup results into the clinical picture.',
@@ -109,6 +130,11 @@ export function buildSection2Prompt(
     differentialSummary,
     '---',
     '',
+    ...(section1CdrAnalysis ? [
+      '=== SECTION 1 CDR ANALYSIS ===',
+      section1CdrAnalysis,
+      '',
+    ] : []),
     'CRITICAL REQUIREMENTS:',
     '1. Incorporate all lab/imaging/EKG results into clinical reasoning',
     '2. Update differential probabilities based on workup findings',
@@ -123,6 +149,24 @@ export function buildSection2Prompt(
     '- EKG: Rhythm, intervals, ST changes',
     '- Clinical Decision Rules: HEART score, Wells criteria, PERC rule, etc.',
   ].join('\n')
+
+  // Append CDR context with S2-specific instructions
+  if (cdrContext) {
+    system += [
+      '',
+      '',
+      'CLINICAL DECISION RULES CONTEXT:',
+      cdrContext,
+      '',
+      'CDR SECTION 2 INSTRUCTIONS:',
+      '1. Combine initial presentation data from Section 1 with new workup results to complete CDR calculations',
+      '2. For rules with partial scores from Section 1, fill in missing components using workup data (e.g., troponin result completes HEART score)',
+      '3. Calculate complete scores where all data is now available',
+      '4. Apply new CDRs that become relevant based on workup findings (e.g., Wells PE if D-dimer ordered)',
+      '5. Document CDR results in the "clinicalDecisionRules" section of dataReviewed',
+      '6. Use CDR results to justify differential probability changes (e.g., "HEART score 3 — low risk, supports discharge pathway")',
+    ].join('\n')
+  }
 
   const workingDxInstruction = workingDiagnosis
     ? `\nWORKING DIAGNOSIS (physician-specified): ${workingDiagnosis}`
@@ -177,7 +221,8 @@ export function buildFinalizePrompt(
   section1: { content: string; response: Pick<Section1Response, 'differential'> },
   section2: { content: string; response: Pick<Section2Response, 'mdmPreview'>; workingDiagnosis?: string },
   section3Content: string,
-  surveillanceContext?: string
+  surveillanceContext?: string,
+  cdrContext?: string
 ): { system: string; user: string } {
   const differentialSummary = section1.response.differential
     .map((d: DifferentialItem) => `- ${d.diagnosis} (${d.urgency})`)
@@ -209,6 +254,17 @@ export function buildFinalizePrompt(
     ...(surveillanceContext ? [
       '=== REGIONAL SURVEILLANCE DATA ===',
       surveillanceContext,
+      '',
+    ] : []),
+    ...(cdrContext ? [
+      '=== CLINICAL DECISION RULES RESULTS ===',
+      cdrContext,
+      '',
+      'CDR FINALIZE INSTRUCTIONS:',
+      '1. Include all CDR calculations and results in the final MDM text (Data Reviewed section)',
+      '2. Reference specific CDR scores in Risk Assessment when they inform disposition decisions',
+      '3. Note CDR results that support discharge safety (e.g., "HEART score 2 — low risk, safe for discharge with outpatient follow-up")',
+      '4. Include CDR-based exclusion reasoning (e.g., "Ottawa Ankle Rules negative — imaging deferred")',
       '',
     ] : []),
     'CRITICAL REQUIREMENTS:',
