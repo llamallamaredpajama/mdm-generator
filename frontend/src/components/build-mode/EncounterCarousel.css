@@ -68,6 +68,7 @@
   width: 100%;
   padding: var(--space-md);
   margin-top: var(--space-lg);
+  margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.8);
