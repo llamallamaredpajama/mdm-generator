@@ -144,8 +144,15 @@ router.post('/v1/surveillance/analyze', async (req, res) => {
     }
     const uid = decoded.uid
 
-    // 3. Fetch user stats (used for logging)
+    // 3. AUTHORIZE — surveillance requires Pro or Enterprise plan
     const stats = await userService.getUsageStats(uid)
+    if (stats.plan === 'free') {
+      return res.status(403).json({
+        error: 'Surveillance trend analysis requires a Pro or Enterprise plan',
+        upgradeRequired: true,
+        requiredPlan: 'pro',
+      })
+    }
 
     // 4. EXECUTE
     const syndromes = mapToSyndromes(data.chiefComplaint, data.differential)

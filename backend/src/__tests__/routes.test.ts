@@ -701,7 +701,7 @@ describe('POST /v1/build-mode/process-section2', () => {
   })
 
   /**
-   * BUG TEST: Data format mismatch between section1 storage and section2 retrieval.
+   * Regression test: raw-array format mismatch between section1 storage and section2 retrieval.
    *
    * Section 1 route stores `section1.llmResponse` as a raw DifferentialItem[] array.
    * Section 2 route reads it and passes directly to buildSection2Prompt(), which
@@ -713,7 +713,7 @@ describe('POST /v1/build-mode/process-section2', () => {
    * Expected: Route should wrap the array as { differential: llmResponse }
    * Actual: Passes raw array, causing buildSection2Prompt to crash
    */
-  it('BUG: section2 returns 500 when section1 llmResponse is stored as raw array', async () => {
+  it('handles section1 llmResponse stored as raw array', async () => {
     mockEncounterDocRef.get.mockResolvedValueOnce(
       makeEncounterSnap({
         section1: {
@@ -733,8 +733,7 @@ describe('POST /v1/build-mode/process-section2', () => {
       .post('/v1/build-mode/process-section2')
       .send(validBody)
 
-    // Bug: should be 200, but crashes because buildSection2Prompt gets wrong format
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(200)
   })
 })
 
