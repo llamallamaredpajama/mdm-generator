@@ -64,8 +64,15 @@ One-shot MDM generation: single narrative → complete MDM + extracted patient i
 Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS wastewater, NNDSS notifiable diseases). **Non-blocking** — failures must never prevent MDM generation. Surveillance context is stored on the encounter doc during Section 1 and reused at finalize. PDF trend reports require Pro+ plan.
 
 ## Deployment
-- **Production**: Firebase Hosting → https://mdm-generator.web.app
-- **Command**: `firebase deploy --only hosting --project mdm-generator` (from project root, after building frontend)
+- **Frontend**: Firebase Hosting → https://mdm-generator.web.app
+  - `firebase deploy --only hosting --project mdm-generator` (from project root, after building frontend)
+- **Backend**: Cloud Run → `mdm-backend` (us-central1)
+  - Build: `gcloud builds submit --config /dev/stdin --project mdm-generator . <<'CLOUDBUILD'`
+    `steps: [{name: 'gcr.io/cloud-builders/docker', args: ['build','-f','backend/Dockerfile','-t','gcr.io/mdm-generator/mdm-backend:latest','.']}]`
+    `images: ['gcr.io/mdm-generator/mdm-backend:latest']`
+    `CLOUDBUILD`
+  - Deploy: `gcloud run deploy mdm-backend --image gcr.io/mdm-generator/mdm-backend:latest --project mdm-generator --region us-central1`
+- **IMPORTANT**: Backend changes in `backend/src/` are NOT live until the Cloud Run container is rebuilt and deployed. `pnpm build` only compiles locally.
 - **Do NOT** use Vercel, Netlify, or other hosting CLIs
 
 ## Commands

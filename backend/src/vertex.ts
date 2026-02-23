@@ -19,7 +19,7 @@ export async function callGemini(
   timeoutMs: number = 55_000
 ): Promise<GenResult> {
   const model = vertex.getGenerativeModel({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-2.5-pro',
     safetySettings: [
       // conservative defaults; can be tuned later
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
