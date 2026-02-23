@@ -259,7 +259,10 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               'section1.submissionCount': response.submissionCount,
               'section1.isLocked': response.isLocked,
               'section1.status': 'completed',
-              'section1.llmResponse': (response as Section1Response).differential,
+              'section1.llmResponse': {
+                differential: (response as Section1Response).differential,
+                processedAt: serverTimestamp(),
+              },
               status: 'section1_done',
               updatedAt: serverTimestamp(),
             })
@@ -276,7 +279,10 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               'section2.isLocked': response.isLocked,
               'section2.status': 'completed',
               'section2.workingDiagnosis': workingDiagnosis || null,
-              'section2.llmResponse': (response as Section2Response).mdmPreview,
+              'section2.llmResponse': {
+                mdmPreview: (response as Section2Response).mdmPreview,
+                processedAt: serverTimestamp(),
+              },
               status: 'section2_done',
               currentSection: response.isLocked ? 3 : 2,
               updatedAt: serverTimestamp(),

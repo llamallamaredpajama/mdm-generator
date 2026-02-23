@@ -1,5 +1,5 @@
 import { useRef, useCallback, useLayoutEffect, useState } from 'react'
-import type { EncounterDocument, EncounterMode } from '../../../types/encounter'
+import type { EncounterDocument, EncounterMode, FinalMdm } from '../../../types/encounter'
 import { getEncounterMode } from '../../../types/encounter'
 import { useToast } from '../../../contexts/ToastContext'
 import type { UseCardExpansionReturn } from '../../../hooks/useCardExpansion'
@@ -59,8 +59,10 @@ function getCopyableOutput(encounter: EncounterDocument): string {
       return encounter.quickModeData.mdmOutput?.text || ''
     }
   } else {
-    if (encounter.status === 'finalized' && encounter.section3.llmResponse?.finalMdm?.text) {
-      return encounter.section3.llmResponse.finalMdm.text
+    if (encounter.status === 'finalized') {
+      const s3 = encounter.section3.llmResponse
+      const text = s3?.finalMdm?.text || (s3 as unknown as FinalMdm)?.text
+      if (text) return text
     }
   }
 

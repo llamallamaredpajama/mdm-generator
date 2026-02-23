@@ -16,7 +16,7 @@ import Section2Guide from './Section2Guide'
 import Section3Guide from './Section3Guide'
 import DifferentialPreview from './DifferentialPreview'
 import MdmPreviewPanel from './MdmPreviewPanel'
-import type { SectionNumber, EncounterDocument, SectionStatus } from '../../types/encounter'
+import type { SectionNumber, EncounterDocument, SectionStatus, MdmPreview, FinalMdm } from '../../types/encounter'
 import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
 import { ApiError } from '../../lib/api'
@@ -79,12 +79,16 @@ function getSectionPreview(
       }
       return null
     }
-    case 2:
-      // Show MDM preview if section 2 has LLM response
-      if (encounter.section2.llmResponse?.mdmPreview) {
-        return <MdmPreviewPanel mdmPreview={encounter.section2.llmResponse.mdmPreview} />
+    case 2: {
+      // Handle both nested { mdmPreview } and flat MdmPreview shapes (backward compat)
+      const s2Response = encounter.section2.llmResponse
+      const mdmPreview = s2Response?.mdmPreview ??
+        ((s2Response as unknown as MdmPreview)?.problems !== undefined ? s2Response as unknown as MdmPreview : null)
+      if (mdmPreview) {
+        return <MdmPreviewPanel mdmPreview={mdmPreview} />
       }
       return null
+    }
     case 3:
       // Section 3 doesn't have an inline preview (final MDM shows in output)
       return null
@@ -294,6 +298,15 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   const isSection1Complete = encounter.section1.status === 'completed'
   const isSection2Complete = encounter.section2.status === 'completed'
 
+  // Defensive: handle both nested { finalMdm } and flat FinalMdm shapes (backward compat)
+  const finalMdmData = (() => {
+    const s3 = encounter?.section3?.llmResponse
+    if (!s3) return null
+    if (s3.finalMdm) return s3.finalMdm
+    if ((s3 as unknown as FinalMdm).text) return s3 as unknown as FinalMdm
+    return null
+  })()
+
   return (
     <div className="encounter-editor">
       {/* Header */}
@@ -487,18 +500,18 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       )}
 
       {/* Final MDM Output (shown when finalized) */}
-      {isFinalized && encounter.section3.llmResponse?.finalMdm && (
+      {isFinalized && finalMdmData && (
         <div className="encounter-editor__final-mdm">
           <h2 className="encounter-editor__final-mdm-title">Final MDM</h2>
           <div className="encounter-editor__final-mdm-content">
-            <pre>{encounter.section3.llmResponse.finalMdm.text}</pre>
+            <pre>{finalMdmData.text}</pre>
           </div>
           <button
             type="button"
             className="encounter-editor__copy-button"
             onClick={() => {
-              if (encounter.section3.llmResponse?.finalMdm.text) {
-                navigator.clipboard.writeText(encounter.section3.llmResponse.finalMdm.text)
+              if (finalMdmData.text) {
+                navigator.clipboard.writeText(finalMdmData.text)
               }
             }}
           >

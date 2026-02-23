@@ -629,7 +629,10 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
 
     await encounterRef.update({
       'section1.content': content,
-      'section1.llmResponse': differential,
+      'section1.llmResponse': {
+        differential,
+        processedAt: admin.firestore.Timestamp.now(),
+      },
       'section1.submissionCount': newSubmissionCount,
       'section1.status': 'completed',
       'section1.lastUpdated': admin.firestore.Timestamp.now(),
@@ -825,7 +828,10 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
 
     await encounterRef.update({
       'section2.content': content,
-      'section2.llmResponse': mdmPreview,
+      'section2.llmResponse': {
+        mdmPreview,
+        processedAt: admin.firestore.Timestamp.now(),
+      },
       'section2.submissionCount': newSubmissionCount,
       'section2.status': 'completed',
       'section2.lastUpdated': admin.firestore.Timestamp.now(),
