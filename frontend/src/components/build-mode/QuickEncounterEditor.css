@@ -1,6 +1,6 @@
 /* ============================================================================
    QuickEncounterEditor Component Styles
-   Editor view for Quick Mode MDM generation
+   "F1 Speed" editor for Quick Mode MDM generation
    ============================================================================ */
 
 .quick-editor {
@@ -42,7 +42,16 @@
 }
 
 .quick-editor__error-icon {
-  font-size: var(--font-size-3xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(220, 53, 69, 0.1);
+  color: var(--color-error);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
 }
 
 /* ===== HEADER ===== */
@@ -81,35 +90,6 @@
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-}
-
-.quick-editor__status {
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-lg);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-.quick-editor__status--draft {
-  background: #f0f0f0;
-  color: #666666;
-}
-
-.quick-editor__status--processing {
-  background: rgba(245, 158, 11, 0.15);
-  color: #d97706;
-}
-
-.quick-editor__status--completed {
-  background: rgba(40, 167, 69, 0.15);
-  color: var(--color-success);
-}
-
-.quick-editor__status--error {
-  background: rgba(220, 53, 69, 0.15);
-  color: var(--color-error);
 }
 
 .quick-editor__guide-toggle {
@@ -167,12 +147,6 @@
   flex: 1;
 }
 
-.quick-editor__label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-}
-
 .quick-editor__textarea {
   flex: 1;
   min-height: 200px;
@@ -210,19 +184,31 @@
   gap: var(--space-md);
 }
 
-.quick-editor__char-count {
+/* ===== INLINE PHI ATTESTATION ===== */
+
+.quick-editor__phi-attestation {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.quick-editor__phi-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #d97706;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.quick-editor__phi-label {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-}
-
-.quick-editor__char-count--warning {
-  color: #d97706;
-}
-
-.quick-editor__char-count--limit {
-  color: var(--color-error);
   font-weight: var(--font-weight-medium);
 }
+
+/* ===== GENERATE BUTTON ===== */
 
 .quick-editor__generate-btn {
   display: flex;
@@ -277,6 +263,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
 }
 
 .quick-editor__output-title {
@@ -284,6 +272,12 @@
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   color: #1a1a1a;
+}
+
+.quick-editor__output-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .quick-editor__copy-btn {
@@ -313,6 +307,31 @@
   width: 16px;
   height: 16px;
 }
+
+/* ===== NEXT PATIENT BUTTON ===== */
+
+.quick-editor__next-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: #d97706;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 0 10px rgba(217, 119, 6, 0.3);
+}
+
+.quick-editor__next-btn:hover {
+  background: #b45309;
+  box-shadow: 0 0 20px rgba(180, 83, 9, 0.5);
+}
+
+/* ===== OUTPUT CONTENT ===== */
 
 .quick-editor__output-content {
   flex: 1;
@@ -443,26 +462,71 @@
   cursor: not-allowed;
 }
 
-/* ===== GUIDE PANEL ===== */
+/* ===== GUIDE DIALOG ===== */
 
-.quick-editor__guide {
-  width: 360px;
-  flex-shrink: 0;
-  background: #ffffff;
+.quick-editor__guide-dialog {
+  position: fixed;
+  max-width: 480px;
+  width: 90vw;
+  max-height: 80vh;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  padding: 0;
+  background: #ffffff;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
   overflow: hidden;
 }
 
-.quick-editor__guide-content {
-  height: 100%;
-  overflow: auto;
+.quick-editor__guide-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.quick-editor__guide-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  background: #fafafa;
+}
+
+.quick-editor__guide-dialog-header h3 {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.quick-editor__guide-dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.quick-editor__guide-dialog-close:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.quick-editor__guide-dialog-body {
+  padding: var(--space-lg);
+  overflow-y: auto;
+  max-height: calc(80vh - 60px);
 }
 
 /* ===== FOOTER ===== */
 
 .quick-editor__footer {
-  padding-top: var(--space-md);
+  padding-top: var(--space-sm);
   border-top: 1px solid var(--color-border);
   text-align: center;
 }
@@ -474,12 +538,6 @@
 }
 
 /* ===== RESPONSIVE ===== */
-
-@media (max-width: 1024px) {
-  .quick-editor__guide {
-    display: none;
-  }
-}
 
 @media (max-width: 768px) {
   .quick-editor {
@@ -497,6 +555,15 @@
 
   .quick-editor__generate-btn {
     width: 100%;
+    justify-content: center;
+  }
+
+  .quick-editor__output-actions {
+    flex-wrap: wrap;
+  }
+
+  .quick-editor__next-btn {
+    flex: 1;
     justify-content: center;
   }
 }

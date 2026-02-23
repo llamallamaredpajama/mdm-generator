@@ -1,21 +1,20 @@
 /**
  * QuickEncounterEditor Component
  *
- * Editor view for Quick Mode encounters. Provides:
- * - Single textarea for narrative input
+ * "F1 Speed" editor for Quick Mode encounters. Provides:
+ * - Single textarea for narrative input (auto-focused)
+ * - Inline PHI attestation (no modal)
+ * - Auto-copy MDM to clipboard on generation
+ * - Floating dialog dictation guide
+ * - "Next Patient" quick-reset
  * - Auto-save to Firestore
- * - Generate MDM button
- * - Output display with copy functionality
- * - Collapsible dictation guide
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useQuickEncounter } from '../../hooks/useQuickEncounter'
 import { formatRoomDisplay, formatPatientIdentifier } from '../../types/encounter'
 import DictationGuide from '../DictationGuide'
-import ConfirmationModal from '../ConfirmationModal'
 import { useToast } from '../../contexts/ToastContext'
-import TrendAnalysisToggle from '../TrendAnalysisToggle'
 import TrendResultsPanel from '../TrendResultsPanel'
 import TrendReportModal from '../TrendReportModal'
 import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
@@ -26,14 +25,23 @@ interface QuickEncounterEditorProps {
   encounterId: string
   /** Callback when user clicks back to carousel */
   onBack: () => void
+  /** Whether PHI attestation checkbox is checked (managed by parent) */
+  phiAttested: boolean
+  /** Callback to toggle PHI attestation */
+  onPhiAttestedChange: (checked: boolean) => void
+  /** Callback to start a new encounter (Next Patient) */
+  onNewEncounter: () => void
 }
 
 /**
- * QuickEncounterEditor - Editor for quick mode MDM generation
+ * QuickEncounterEditor - F1 Speed editor for quick mode MDM generation
  */
 export default function QuickEncounterEditor({
   encounterId,
   onBack,
+  phiAttested,
+  onPhiAttestedChange,
+  onNewEncounter,
 }: QuickEncounterEditorProps) {
   const {
     encounter,
@@ -51,29 +59,58 @@ export default function QuickEncounterEditor({
   const { analysis, isAnalyzing, analyze, downloadPdf } = useTrendAnalysis()
   const [showGuide, setShowGuide] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showTrendReport, setShowTrendReport] = useState(false)
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-focus textarea when editor mounts
+  useEffect(() => {
+    if (!loading && encounter && quickStatus !== 'completed') {
+      textareaRef.current?.focus()
+    }
+  }, [loading, encounter, quickStatus])
+
+  // Sync dialog open/close with showGuide state
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    if (showGuide && !dialog.open) {
+      dialog.showModal()
+    } else if (!showGuide && dialog.open) {
+      dialog.close()
+    }
+  }, [showGuide])
 
   /**
-   * Handle Generate button click — show PHI confirmation first
+   * Handle Generate button click — submit directly (PHI attested inline)
    */
-  const handleGenerateClick = useCallback(() => {
+  const handleGenerateClick = useCallback(async () => {
     if (!narrative.trim()) {
       showError('Please enter a narrative before generating')
       return
     }
-    setShowConfirmModal(true)
-  }, [narrative, showError])
-
-  /**
-   * Handle MDM generation after PHI confirmation
-   */
-  const handleConfirmedGenerate = useCallback(async () => {
-    setShowConfirmModal(false)
+    if (!phiAttested) {
+      showError('Please confirm no PHI is included')
+      return
+    }
 
     const result = await submitNarrative()
     if (result?.ok) {
       showSuccess('MDM generated successfully')
+
+      // Auto-copy MDM to clipboard
+      if (result.mdm?.text) {
+        try {
+          await navigator.clipboard.writeText(result.mdm.text)
+          setCopied(true)
+          showSuccess('MDM copied to clipboard')
+          setTimeout(() => setCopied(false), 3000)
+        } catch {
+          // Browser may block clipboard after async gap — fallback silently
+          showSuccess('MDM ready — tap Copy')
+        }
+      }
+
       // Trigger trend analysis if enabled
       if (result.patientIdentifier?.chiefComplaint) {
         const differential = result.mdm?.json?.differential
@@ -87,7 +124,7 @@ export default function QuickEncounterEditor({
         }
       }
     }
-  }, [submitNarrative, showSuccess, analyze])
+  }, [narrative, phiAttested, submitNarrative, showSuccess, showError, analyze])
 
   /**
    * Copy MDM text to clipboard
@@ -122,14 +159,14 @@ export default function QuickEncounterEditor({
     return (
       <div className="quick-editor">
         <div className="quick-editor__error">
-          <span className="quick-editor__error-icon">⚠️</span>
+          <span className="quick-editor__error-icon">!</span>
           <p>{error?.message || 'Encounter not found'}</p>
           <button
             type="button"
             className="quick-editor__back-btn"
             onClick={onBack}
           >
-            ← Back to Carousel
+            Back
           </button>
         </div>
       </div>
@@ -138,7 +175,7 @@ export default function QuickEncounterEditor({
 
   const isCompleted = quickStatus === 'completed'
   const isProcessing = quickStatus === 'processing' || isSubmitting
-  const canGenerate = narrative.trim().length > 0 && !isCompleted && !isProcessing
+  const canGenerate = narrative.trim().length > 0 && !isCompleted && !isProcessing && phiAttested
 
   return (
     <div className="quick-editor">
@@ -154,14 +191,6 @@ export default function QuickEncounterEditor({
         </div>
 
         <div className="quick-editor__header-right">
-          {quickStatus && (
-            <span className={`quick-editor__status quick-editor__status--${quickStatus}`}>
-              {quickStatus === 'draft' && 'Draft'}
-              {quickStatus === 'processing' && 'Processing...'}
-              {quickStatus === 'completed' && 'Done'}
-              {quickStatus === 'error' && 'Error'}
-            </span>
-          )}
           <button
             type="button"
             className={`quick-editor__guide-toggle ${showGuide ? 'quick-editor__guide-toggle--active' : ''}`}
@@ -186,31 +215,34 @@ export default function QuickEncounterEditor({
 
       {/* Main Content */}
       <div className="quick-editor__content">
-        {/* Left: Input/Output */}
         <div className="quick-editor__main">
           {/* Input Section - show when not completed */}
           {!isCompleted && (
             <div className="quick-editor__input-section">
-              <label htmlFor="narrative-input" className="quick-editor__label">
-                Encounter Narrative
-              </label>
-              <TrendAnalysisToggle />
               <textarea
+                ref={textareaRef}
                 id="narrative-input"
                 className="quick-editor__textarea"
                 value={narrative}
                 onChange={(e) => setNarrative(e.target.value)}
                 maxLength={2000}
-                placeholder="Dictate or type your description of the patient encounter here. Use your natural narrative style (e.g., HPI, ROS, PE, Differential, Workup, Interpretation of results, Impression, and Plan).
+                placeholder={`Dictate your encounter (e.g., "45M chest pain in Room 3...")
 
-Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal, radiating to left arm, associated with diaphoresis. History of HTN, DM..."
+Include: Chief complaint, Differential (worst-first), Workup & results,
+Risk assessment, Treatment, Disposition`}
                 disabled={isProcessing}
               />
 
               <div className="quick-editor__input-footer">
-                <span className={`quick-editor__char-count ${narrative.length >= 1800 ? 'quick-editor__char-count--warning' : ''} ${narrative.length >= 2000 ? 'quick-editor__char-count--limit' : ''}`}>
-                  {narrative.length.toLocaleString()}/2,000 characters
-                </span>
+                <label className="quick-editor__phi-attestation">
+                  <input
+                    type="checkbox"
+                    checked={phiAttested}
+                    onChange={(e) => onPhiAttestedChange(e.target.checked)}
+                    className="quick-editor__phi-checkbox"
+                  />
+                  <span className="quick-editor__phi-label">No PHI included</span>
+                </label>
 
                 <button
                   type="button"
@@ -247,41 +279,59 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
             <div className="quick-editor__output-section">
               <div className="quick-editor__output-header">
                 <h3 className="quick-editor__output-title">Generated MDM</h3>
-                <button
-                  type="button"
-                  className={`quick-editor__copy-btn ${copied ? 'quick-editor__copy-btn--copied' : ''}`}
-                  onClick={handleCopy}
-                  aria-label={copied ? 'Copied!' : 'Copy to clipboard'}
-                >
-                  {copied ? (
-                    <>
-                      <svg
-                        className="quick-editor__copy-icon"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="quick-editor__copy-icon"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                      </svg>
-                      Copy MDM
-                    </>
-                  )}
-                </button>
+                <div className="quick-editor__output-actions">
+                  <button
+                    type="button"
+                    className={`quick-editor__copy-btn ${copied ? 'quick-editor__copy-btn--copied' : ''}`}
+                    onClick={handleCopy}
+                    aria-label={copied ? 'Copied!' : 'Copy to clipboard'}
+                  >
+                    {copied ? (
+                      <>
+                        <svg
+                          className="quick-editor__copy-icon"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="quick-editor__copy-icon"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                        Copy MDM
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="quick-editor__next-btn"
+                    onClick={onNewEncounter}
+                  >
+                    <svg
+                      className="quick-editor__btn-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                    Next Patient
+                  </button>
+                </div>
               </div>
 
               <TrendResultsPanel
@@ -296,7 +346,7 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
                   className="quick-editor__report-btn"
                   onClick={() => setShowTrendReport(true)}
                 >
-                  📋 View Chart Report
+                  View Chart Report
                 </button>
               )}
 
@@ -304,7 +354,7 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
                 <pre className="quick-editor__output-text">{mdmOutput.text}</pre>
               </div>
 
-              {/* Patient Identifier */}
+              {/* Patient Identifier + Room */}
               {encounter.quickModeData?.patientIdentifier && (
                 <div className="quick-editor__identifier">
                   <span className="quick-editor__identifier-label">Extracted:</span>
@@ -313,7 +363,10 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
                       encounter.quickModeData.patientIdentifier.age,
                       encounter.quickModeData.patientIdentifier.sex,
                       encounter.quickModeData.patientIdentifier.chiefComplaint,
-                    ].filter(Boolean).join(' • ')}
+                      encounter.quickModeData.patientIdentifier.roomNumber
+                        ? `Rm ${encounter.quickModeData.patientIdentifier.roomNumber}`
+                        : null,
+                    ].filter(Boolean).join(' \u2022 ')}
                   </span>
                 </div>
               )}
@@ -343,23 +396,39 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
             </div>
           )}
         </div>
-
-        {/* Right: Guide Panel */}
-        {showGuide && (
-          <aside className="quick-editor__guide">
-            <div className="quick-editor__guide-content">
-              <DictationGuide />
-            </div>
-          </aside>
-        )}
       </div>
 
-      {/* Disclaimer */}
+      {/* Slim Footer Disclaimer */}
       <footer className="quick-editor__footer">
         <p className="quick-editor__disclaimer">
-          Educational tool only. All outputs require physician review before clinical use.
+          Educational only — physician review required
         </p>
       </footer>
+
+      {/* Dictation Guide Dialog */}
+      <dialog
+        ref={dialogRef}
+        className="quick-editor__guide-dialog"
+        onClose={() => setShowGuide(false)}
+      >
+        <div className="quick-editor__guide-dialog-header">
+          <h3>Dictation Guide</h3>
+          <button
+            type="button"
+            className="quick-editor__guide-dialog-close"
+            onClick={() => setShowGuide(false)}
+            aria-label="Close guide"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width="20" height="20">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <div className="quick-editor__guide-dialog-body">
+          <DictationGuide />
+        </div>
+      </dialog>
 
       {/* Trend Report Modal */}
       {analysis && (
@@ -369,13 +438,6 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
           onClose={() => setShowTrendReport(false)}
         />
       )}
-
-      {/* PHI Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-        onConfirm={handleConfirmedGenerate}
-      />
     </div>
   )
 }

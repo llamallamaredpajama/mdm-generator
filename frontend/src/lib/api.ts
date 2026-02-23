@@ -369,6 +369,7 @@ export interface PatientIdentifier {
   age?: string
   sex?: string
   chiefComplaint?: string
+  roomNumber?: string
 }
 
 export interface QuickModeResponse {
