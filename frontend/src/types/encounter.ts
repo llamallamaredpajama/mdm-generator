@@ -46,8 +46,6 @@ export interface PatientIdentifier {
   sex?: string
   /** Brief chief complaint (e.g., "chest pain") */
   chiefComplaint?: string
-  /** Room/bed number extracted from narrative (e.g., "3", "2A") */
-  roomNumber?: string
 }
 
 /** Quick mode specific data stored in encounter */

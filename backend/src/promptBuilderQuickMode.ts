@@ -16,7 +16,6 @@ export interface PatientIdentifier {
   age?: string
   sex?: string
   chiefComplaint?: string
-  roomNumber?: string
 }
 
 /**
@@ -85,7 +84,6 @@ You are processing a single narrative input to generate a complete Medical Decis
    - Age (e.g., "45", "elderly", "pediatric")
    - Sex (e.g., "male", "female", "M", "F")
    - Chief Complaint (brief, e.g., "chest pain", "abdominal pain", "shortness of breath")
-   - Room/Bed Number if mentioned (e.g., "room 3", "bed 2A", "bay C", "Rm 5")
 
 2. **Generate Complete MDM**: Following the worst-first Emergency Medicine approach:
    - Identify life-threatening diagnoses first
@@ -102,8 +100,7 @@ Return ONLY valid JSON in this exact structure (no markdown, no code fences):
   "patientIdentifier": {
     "age": "extracted age or null",
     "sex": "extracted sex or null",
-    "chiefComplaint": "brief chief complaint or null",
-    "roomNumber": "extracted room/bed number or null"
+    "chiefComplaint": "brief chief complaint or null"
   },
   "mdm": {
     "text": "Complete formatted MDM text ready for EHR paste",
@@ -178,7 +175,6 @@ export function parseQuickModeResponse(rawResponse: string): QuickModeGeneration
         age: parsed.patientIdentifier?.age || undefined,
         sex: parsed.patientIdentifier?.sex || undefined,
         chiefComplaint: parsed.patientIdentifier?.chiefComplaint || undefined,
-        roomNumber: parsed.patientIdentifier?.roomNumber || undefined,
       },
     }
   } catch (parseError) {
@@ -197,7 +193,6 @@ export function parseQuickModeResponse(rawResponse: string): QuickModeGeneration
           age: parsed.patientIdentifier?.age || undefined,
           sex: parsed.patientIdentifier?.sex || undefined,
           chiefComplaint: parsed.patientIdentifier?.chiefComplaint || undefined,
-          roomNumber: parsed.patientIdentifier?.roomNumber || undefined,
         },
       }
     }

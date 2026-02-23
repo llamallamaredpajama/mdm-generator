@@ -123,6 +123,17 @@
   opacity: 0.9;
 }
 
+/* ===== MODE DESCRIPTION ===== */
+
+.compose-mode-description {
+  margin: 0 auto var(--space-lg);
+  max-width: 1200px;
+  width: 100%;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
 /* ===== MAIN CONTENT ===== */
 
 .compose-main {
@@ -259,6 +270,9 @@
     font-size: var(--font-size-xs);
   }
 
+  .compose-mode-description {
+    font-size: var(--font-size-xs);
+  }
 }
 
 @media (max-width: 480px) {

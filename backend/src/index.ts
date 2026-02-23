@@ -1311,7 +1311,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
     }
 
     // 11. Update Firestore with results
-    const firestoreUpdate: Record<string, unknown> = {
+    await encounterRef.update({
       'quickModeData.status': 'completed',
       'quickModeData.narrative': narrative,
       'quickModeData.patientIdentifier': result.patientIdentifier,
@@ -1328,14 +1328,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       ].filter(Boolean).join(' ').trim() || encounter.chiefComplaint,
       status: 'finalized',
       updatedAt: admin.firestore.Timestamp.now(),
-    }
-
-    // Update roomNumber from extracted value if present
-    if (result.patientIdentifier.roomNumber) {
-      firestoreUpdate.roomNumber = result.patientIdentifier.roomNumber
-    }
-
-    await encounterRef.update(firestoreUpdate)
+    })
 
     // 11. Log action (no PHI)
     console.log({

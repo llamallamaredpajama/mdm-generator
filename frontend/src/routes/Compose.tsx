@@ -2,13 +2,13 @@
  * Unified Compose Route
  *
  * Provides two modes for MDM generation:
- * 1. Quick Compose - "F1 Speed" single-input workflow (auto-creates encounter)
+ * 1. Quick Compose - Simple single-input workflow for straightforward cases
  * 2. Build Mode - 3-section guided workflow for complex cases
  *
- * Quick Mode skips the carousel: navigate → textarea ready → type → generate.
+ * Both modes use the same carousel-based UI for managing encounters.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useEncounterList } from '../hooks/useEncounterList'
 import EncounterCarousel from '../components/build-mode/EncounterCarousel'
@@ -18,7 +18,7 @@ import type { EncounterMode } from '../types/encounter'
 import './Compose.css'
 
 /**
- * Compact mode toggle — icon + label segmented control
+ * Mode toggle component for switching between Quick Compose and Build Mode
  */
 function ModeToggle({
   mode,
@@ -49,7 +49,7 @@ function ModeToggle({
         >
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
         </svg>
-        Quick
+        Quick Compose
       </button>
       <button
         type="button"
@@ -71,9 +71,22 @@ function ModeToggle({
           <line x1="3" y1="9" x2="21" y2="9" />
           <line x1="9" y1="21" x2="9" y2="9" />
         </svg>
-        Build
+        Build Mode
       </button>
     </div>
+  )
+}
+
+/**
+ * Mode description shown below the toggle
+ */
+function ModeDescription({ mode }: { mode: EncounterMode }) {
+  return (
+    <p className="compose-mode-description">
+      {mode === 'quick'
+        ? 'Quick input for one-shotting your MDM with a single AI analysis'
+        : '3-stage guided workflow to help you capture more information about your patient encounters'}
+    </p>
   )
 }
 
@@ -86,19 +99,10 @@ export default function Compose() {
   // Mode state - persisted during session
   const [mode, setMode] = useState<EncounterMode>('quick')
 
-  // View state: null = carousel (build) / auto-create (quick), string = editor
+  // View state: null = carousel, string = editor for that encounter
   const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null)
 
-  // PHI attestation — session state, resets on refresh (compliance)
-  const [phiAttested, setPhiAttested] = useState(false)
-
-  // Track whether auto-create is in progress to prevent double-create
-  const autoCreateInProgress = useRef(false)
-
-  // Quick mode encounter counter for auto-generating room numbers
-  const quickCounterRef = useRef(0)
-
-  // Reset to Quick Compose when header Compose button is clicked
+  // Reset to Quick Compose carousel when header Compose button is clicked
   useEffect(() => {
     if (location.state?.resetToQuick) {
       setMode('quick')
@@ -109,42 +113,9 @@ export default function Compose() {
   // Fetch encounters from Firestore, filtered by mode
   const { encounters, loading, error, createEncounter, deleteEncounter, clearAllEncounters } = useEncounterList(mode)
 
-  // Update quick counter based on existing quick encounters
-  useEffect(() => {
-    const quickEncounters = encounters.filter(e => e.mode === 'quick')
-    const maxNum = quickEncounters.reduce((max, e) => {
-      const match = e.roomNumber.match(/^Q-(\d+)$/)
-      return match ? Math.max(max, parseInt(match[1], 10)) : max
-    }, 0)
-    quickCounterRef.current = maxNum
-  }, [encounters])
-
-  /**
-   * Auto-create encounter for Quick Mode when no encounter is selected
-   */
-  useEffect(() => {
-    if (mode !== 'quick' || selectedEncounterId || loading || autoCreateInProgress.current) {
-      return
-    }
-
-    autoCreateInProgress.current = true
-    const roomNumber = `Q-${quickCounterRef.current + 1}`
-
-    createEncounter(roomNumber, '')
-      .then((id) => {
-        setSelectedEncounterId(id)
-        window.history.pushState({ encounterEditor: true }, '')
-      })
-      .catch((err) => {
-        console.error('Failed to auto-create quick encounter:', err)
-      })
-      .finally(() => {
-        autoCreateInProgress.current = false
-      })
-  }, [mode, selectedEncounterId, loading, createEncounter])
-
   /**
    * Handle encounter selection from carousel.
+   * Pushes a history entry so the browser back button returns to the carousel.
    */
   const handleSelectEncounter = useCallback((id: string) => {
     setSelectedEncounterId(id)
@@ -172,36 +143,16 @@ export default function Compose() {
   }, [selectedEncounterId])
 
   /**
-   * Handle mode change — clear selected encounter when switching
+   * Handle mode change
+   * Clear selected encounter when switching modes
    */
   const handleModeChange = useCallback((newMode: EncounterMode) => {
     setMode(newMode)
     setSelectedEncounterId(null)
   }, [])
 
-  /**
-   * Handle "Next Patient" — clear selection to trigger auto-create
-   */
-  const handleNewEncounter = useCallback(() => {
-    setSelectedEncounterId(null)
-    setPhiAttested(false)
-  }, [])
-
-  // Quick mode: auto-creating encounter — show brief loading
-  if (mode === 'quick' && !selectedEncounterId) {
-    return (
-      <div className="compose-page compose-page--editor">
-        <div className="quick-editor">
-          <div className="quick-editor__loading">
-            <div className="quick-editor__spinner" />
-            <span>Preparing encounter...</span>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   // Render editor view when an encounter is selected
+  // Use the encounter's own mode (not the page mode) to pick the right editor
   if (selectedEncounterId) {
     const selectedEncounter = encounters.find((e) => e.id === selectedEncounterId)
     const selectedMode = selectedEncounter?.mode || mode
@@ -212,9 +163,6 @@ export default function Compose() {
           <QuickEncounterEditor
             encounterId={selectedEncounterId}
             onBack={handleBack}
-            phiAttested={phiAttested}
-            onPhiAttestedChange={setPhiAttested}
-            onNewEncounter={handleNewEncounter}
           />
         </div>
       )
@@ -227,13 +175,15 @@ export default function Compose() {
     )
   }
 
-  // Loading state (Build Mode only — Quick Mode handled above)
+  // Loading state
   if (loading) {
     return (
       <div className="compose-page compose-page--carousel">
         <header className="compose-header">
+
           <ModeToggle mode={mode} onModeChange={handleModeChange} disabled />
         </header>
+        <ModeDescription mode={mode} />
         <main className="compose-main compose-main--carousel">
           <div className="compose-loading">
             <div className="compose-loading-spinner" aria-hidden="true" />
@@ -249,11 +199,13 @@ export default function Compose() {
     return (
       <div className="compose-page compose-page--carousel">
         <header className="compose-header">
+
           <ModeToggle mode={mode} onModeChange={handleModeChange} />
         </header>
+        <ModeDescription mode={mode} />
         <main className="compose-main compose-main--carousel">
           <div className="compose-error">
-            <span className="compose-error-icon" aria-hidden="true">!</span>
+            <span className="compose-error-icon" aria-hidden="true">⚠️</span>
             <p className="compose-error-message">
               {error.message || 'Failed to load encounters'}
             </p>
@@ -270,13 +222,18 @@ export default function Compose() {
     )
   }
 
-  // Render carousel view (Build Mode default — Quick Mode auto-creates above)
+  // Render carousel view (default)
   return (
     <div className="compose-page compose-page--carousel">
+      {/* Header */}
       <header className="compose-header">
         <ModeToggle mode={mode} onModeChange={handleModeChange} />
       </header>
 
+      {/* Mode Description */}
+      <ModeDescription mode={mode} />
+
+      {/* Main Carousel Content */}
       <main className="compose-main compose-main--carousel" id="compose-content" role="tabpanel">
         <EncounterCarousel
           encounters={encounters}
@@ -288,9 +245,10 @@ export default function Compose() {
         />
       </main>
 
+      {/* Footer Disclaimer */}
       <footer className="compose-footer">
         <p className="compose-disclaimer">
-          Educational only — physician review required
+          Educational tool only. All outputs require physician review before clinical use.
         </p>
       </footer>
     </div>
