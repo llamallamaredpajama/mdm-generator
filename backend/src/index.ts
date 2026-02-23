@@ -41,6 +41,7 @@ import { computeCorrelations } from './surveillance/correlationEngine'
 import { buildSurveillanceContext, appendSurveillanceToMdmText } from './surveillance/promptAugmenter'
 import { selectRelevantRules } from './cdr/cdrSelector'
 import { buildCdrContext } from './cdr/cdrPromptAugmenter'
+import type { TestDefinition, TestCategory, TestLibraryResponse } from './types/libraries'
 
 const app = express()
 
@@ -97,6 +98,11 @@ const parseLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Rate limit exceeded for parse operations' },
 })
+
+// In-memory cache for test library (rarely changes)
+const TEST_LIBRARY_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+let testLibraryCache: TestLibraryResponse | null = null
+let testLibraryCacheTime = 0
 
 // Initialize Firebase Admin (expects GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS or default creds in Cloud Run)
 async function initFirebase() {
@@ -157,6 +163,60 @@ function checkTokenSize(text: string, maxTokensPerRequest: number) {
 }
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
+
+// ============================================================================
+// Library Endpoints
+// ============================================================================
+
+/**
+ * GET /v1/libraries/tests
+ * Returns the canonical ER test catalog from the testLibrary Firestore collection.
+ * In-memory cached for 5 minutes since test library data rarely changes.
+ */
+app.get('/v1/libraries/tests', async (req, res) => {
+  try {
+    // 1. AUTHENTICATE
+    const idToken = req.headers.authorization?.split('Bearer ')[1]
+    if (!idToken) return res.status(401).json({ error: 'Unauthorized' })
+    try {
+      await admin.auth().verifyIdToken(idToken)
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    // 2. No request body to VALIDATE (GET request)
+    // 3. No special AUTHORIZATION needed (any authenticated user can read tests)
+
+    // 4. EXECUTE — return from cache or read Firestore
+    const now = Date.now()
+    if (testLibraryCache && (now - testLibraryCacheTime) < TEST_LIBRARY_CACHE_TTL) {
+      return res.json(testLibraryCache)
+    }
+
+    const snapshot = await getDb().collection('testLibrary').get()
+    const tests = snapshot.docs.map(doc => doc.data() as TestDefinition)
+    const categories = [...new Set(tests.map(t => t.category))] as TestCategory[]
+
+    const response: TestLibraryResponse = {
+      ok: true,
+      tests,
+      categories,
+      cachedAt: new Date().toISOString(),
+    }
+
+    testLibraryCache = response
+    testLibraryCacheTime = now
+
+    // 5. AUDIT
+    console.log({ action: 'get-test-library', testCount: tests.length, timestamp: new Date().toISOString() })
+
+    // 6. RESPOND
+    return res.json(response)
+  } catch (e: any) {
+    console.error('get-test-library error:', e)
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
 
 // Admin endpoint to set user plan (protected by admin check)
 app.post('/v1/admin/set-plan', async (req, res) => {
