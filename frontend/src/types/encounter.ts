@@ -107,14 +107,18 @@ export interface DifferentialItem {
 /**
  * MDM preview generated after Section 2 processing
  * Contains accumulated information from sections 1 and 2
+ *
+ * NOTE: problems, differential, and dataReviewed may be strings, arrays,
+ * or objects — the backend schema uses z.any() because LLM output varies.
+ * Always normalize before display (see MdmPreviewPanel.normalizeToString).
  */
 export interface MdmPreview {
-  /** Problems/diagnoses being addressed */
-  problems: string
-  /** Differential diagnosis summary */
-  differential: string
-  /** Data reviewed: labs, imaging, EKG, etc. */
-  dataReviewed: string
+  /** Problems/diagnoses being addressed (may be string or array from LLM) */
+  problems: string | string[] | Record<string, unknown>[]
+  /** Differential diagnosis summary (may be string or array from LLM) */
+  differential: string | string[] | Record<string, unknown>[]
+  /** Data reviewed: labs, imaging, EKG, etc. (may be string or array from LLM) */
+  dataReviewed: string | string[] | Record<string, unknown>[]
   /** Clinical reasoning and decision-making rationale */
   reasoning: string
 }

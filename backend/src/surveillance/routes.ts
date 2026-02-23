@@ -204,13 +204,15 @@ router.post('/v1/surveillance/analyze', async (req, res) => {
       analyzedAt: new Date().toISOString(),
     }
 
-    // Store analysis in Firestore for later PDF generation
+    // Store analysis in Firestore for later PDF generation.
+    // JSON round-trip strips `undefined` values that Firestore rejects.
+    const cleanAnalysis = JSON.parse(JSON.stringify(analysis))
     const db = admin.firestore()
     await db
       .collection('surveillance_analyses')
       .doc(analysisId)
       .set({
-        ...analysis,
+        ...cleanAnalysis,
         uid,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       })

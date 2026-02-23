@@ -267,9 +267,9 @@ export interface DifferentialItem {
 }
 
 export interface MdmPreview {
-  problems: string
-  differential: string
-  dataReviewed: string
+  problems: string | string[] | Record<string, unknown>[]
+  differential: string | string[] | Record<string, unknown>[]
+  dataReviewed: string | string[] | Record<string, unknown>[]
   reasoning: string
 }
 

@@ -22,6 +22,28 @@ interface SectionItem {
   icon: string
 }
 
+/**
+ * Normalize a MdmPreview field value to a display string.
+ * The backend schema uses z.any() for problems/differential/dataReviewed,
+ * so the LLM may return strings, arrays, or nested objects.
+ */
+function normalizeToString(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) {
+    return value
+      .map((item) =>
+        typeof item === 'string'
+          ? item
+          : typeof item === 'object' && item !== null && 'diagnosis' in item
+            ? (item as { diagnosis: string }).diagnosis
+            : JSON.stringify(item)
+      )
+      .join('\n')
+  }
+  if (value == null) return ''
+  return String(value)
+}
+
 const SECTIONS: SectionItem[] = [
   { id: 'problems', title: 'Problems Addressed', icon: '!' },
   { id: 'differential', title: 'Differential Diagnosis', icon: '?' },
@@ -165,7 +187,7 @@ export function MdmPreviewPanel({
             key={section.id}
             title={section.title}
             icon={section.icon}
-            content={mdmPreview[section.id]}
+            content={normalizeToString(mdmPreview[section.id])}
             isExpanded={expandedSections.has(section.id)}
             onToggle={() => toggleSection(section.id)}
             sectionId={section.id}

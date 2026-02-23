@@ -125,8 +125,9 @@ export default function SectionPanel({
   const [isExpanded, setIsExpanded] = useState(status !== 'completed')
   const [isGuideVisible, setIsGuideVisible] = useState(false)
 
-  const canSubmit = !isLocked && submissionCount < MAX_SUBMISSIONS_PER_SECTION && content.trim().length > 0
-  const isOverLimit = content.length > maxChars
+  const safeContent = content ?? ''
+  const canSubmit = !isLocked && submissionCount < MAX_SUBMISSIONS_PER_SECTION && safeContent.trim().length > 0
+  const isOverLimit = safeContent.length > maxChars
 
   const handleToggle = () => {
     setIsExpanded(!isExpanded)
@@ -262,7 +263,7 @@ export default function SectionPanel({
             <div className="submit-area">
               {isOverLimit && (
                 <span className="char-error-message">
-                  {content.length - maxChars} characters over limit
+                  {safeContent.length - maxChars} characters over limit
                 </span>
               )}
               <button
@@ -283,7 +284,7 @@ export default function SectionPanel({
                   </>
                 )}
               </button>
-              <CharacterCount current={content.length} max={maxChars} />
+              <CharacterCount current={safeContent.length} max={maxChars} />
             </div>
           </div>
         </div>
