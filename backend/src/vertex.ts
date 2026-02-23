@@ -14,7 +14,10 @@ const googleAuthOptions = credentialsJson
 
 const vertex = new VertexAI({ project, location, googleAuthOptions })
 
-export async function callGeminiFlash(prompt: { system: string; user: string }): Promise<GenResult> {
+export async function callGemini(
+  prompt: { system: string; user: string },
+  timeoutMs: number = 55_000
+): Promise<GenResult> {
   const model = vertex.getGenerativeModel({
     model: 'gemini-3.1-pro-preview',
     safetySettings: [
@@ -39,7 +42,14 @@ export async function callGeminiFlash(prompt: { system: string; user: string }):
     { role: 'user', parts: [{ text: prompt.user }] },
   ] as any
 
-  const res = await model.generateContent({ contents })
+  const resultPromise = model.generateContent({ contents })
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Vertex AI generation timed out')), timeoutMs)
+  )
+  const res = await Promise.race([resultPromise, timeoutPromise])
   const text = res.response?.candidates?.[0]?.content?.parts?.[0]?.text || ''
   return { text }
 }
+
+/** @deprecated Use callGemini instead */
+export const callGeminiFlash = callGemini

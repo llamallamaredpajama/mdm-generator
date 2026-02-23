@@ -133,7 +133,7 @@ export const VALID_SECTION2_RESPONSE = JSON.stringify({
   reasoning: 'Serial troponins negative, EKG unchanged, PE unlikely by Wells criteria.',
 })
 
-/** Valid finalize response */
+/** Valid finalize response — already matches schema field names */
 export const VALID_FINALIZE_RESPONSE = JSON.stringify({
   text: 'MDM: Differential includes ACS, PE. Data reviewed: EKG, troponin. Disposition: discharge.',
   json: {
@@ -144,6 +144,21 @@ export const VALID_FINALIZE_RESPONSE = JSON.stringify({
     risk: ['Return precautions given'],
     disposition: 'Discharge home with cardiology follow-up',
     complexityLevel: 'high',
+  },
+})
+
+/** LLM-realistic finalize response — wrapped with prompt field names and title-case */
+export const WRAPPED_FINALIZE_RESPONSE = JSON.stringify({
+  finalMdm: {
+    complexityLevel: 'High',
+    text: 'MDM: Differential includes ACS, PE. Data reviewed: EKG, troponin. Disposition: discharge.',
+    json: {
+      problemsAddressed: [{ condition: 'Chest pain', classification: 'emergent', reasoning: 'ACS risk' }],
+      dataReviewedOrdered: { laboratory: ['Troponin'], imaging: ['CXR'], ekg: 'NSR' },
+      riskAssessment: { highestRiskElement: 'ACS', patientFactors: ['HTN'] },
+      clinicalReasoning: 'Worst-first approach applied. ACS ruled out.',
+      disposition: { decision: 'Discharge', levelOfCare: 'home', rationale: 'low risk' },
+    },
   },
 })
 

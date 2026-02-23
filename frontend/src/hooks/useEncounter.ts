@@ -118,6 +118,11 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
 
             setEncounter(encounterData)
 
+            // Reconcile: if backend finalized after client timeout, clear stale error
+            if (encounterData.status === 'finalized' && encounterData.section3?.llmResponse) {
+              setError(null)
+            }
+
             // Initialize local content from Firestore if empty
             setLocalContent((prev) => ({
               1: prev[1] || encounterData.section1.content,

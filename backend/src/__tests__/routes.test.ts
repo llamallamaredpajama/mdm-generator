@@ -29,6 +29,7 @@ import {
   VALID_SECTION1_RESPONSE,
   VALID_SECTION2_RESPONSE,
   VALID_FINALIZE_RESPONSE,
+  WRAPPED_FINALIZE_RESPONSE,
   VALID_QUICK_MODE_RESPONSE,
   SAMPLE_NARRATIVE,
 } from './helpers/mockFactories'
@@ -128,6 +129,7 @@ vi.mock('../services/userService', () => ({
 const mockCallGeminiFlash = vi.fn()
 vi.mock('../vertex', () => ({
   callGeminiFlash: (...args: unknown[]) => mockCallGeminiFlash(...args),
+  callGemini: (...args: unknown[]) => mockCallGeminiFlash(...args),
 }))
 
 // ---------------------------------------------------------------------------
@@ -805,6 +807,67 @@ describe('POST /v1/build-mode/finalize', () => {
 
     expect(res.status).toBe(400)
     expect(res.body.isLocked).toBe(true)
+  })
+
+  it('parses wrapped finalMdm response from LLM', async () => {
+    mockCallGeminiFlash.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
+
+    const res = await request(app)
+      .post('/v1/build-mode/finalize')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.finalMdm.text).toBeTruthy()
+    expect(res.body.finalMdm.text).not.toMatch(/unable to generate/i)
+    expect(res.body.finalMdm.json.problems).toBeDefined()
+    expect(res.body.finalMdm.json.problems.length).toBeGreaterThan(0)
+  })
+
+  it('normalizes title-case complexityLevel to lowercase', async () => {
+    mockCallGeminiFlash.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
+
+    const res = await request(app)
+      .post('/v1/build-mode/finalize')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    expect(res.body.finalMdm.json.complexityLevel).toBe('high')
+  })
+
+  it('maps prompt field names to schema field names', async () => {
+    mockCallGeminiFlash.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
+
+    const res = await request(app)
+      .post('/v1/build-mode/finalize')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    const json = res.body.finalMdm.json
+    // Schema names should be populated (mapped from prompt names)
+    expect(json.problems).toBeDefined()
+    expect(json.dataReviewed).toBeDefined()
+    expect(json.risk).toBeDefined()
+    expect(json.reasoning).toBeDefined()
+    expect(json.disposition).toBeDefined()
+    // Prompt field names should NOT appear at top level
+    expect(json.problemsAddressed).toBeUndefined()
+    expect(json.dataReviewedOrdered).toBeUndefined()
+    expect(json.riskAssessment).toBeUndefined()
+    expect(json.clinicalReasoning).toBeUndefined()
+  })
+
+  it('returns fallback MDM when JSON is completely unparseable', async () => {
+    mockCallGeminiFlash.mockResolvedValueOnce({ text: 'This is not JSON at all <html>oops</html>' })
+
+    const res = await request(app)
+      .post('/v1/build-mode/finalize')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.finalMdm).toBeDefined()
+    expect(res.body.finalMdm.text).toMatch(/unable to generate/i)
   })
 })
 

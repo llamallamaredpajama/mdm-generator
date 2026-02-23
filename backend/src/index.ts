@@ -9,7 +9,7 @@ import admin from 'firebase-admin'
 import { buildPrompt } from './promptBuilder'
 import { buildParsePrompt, getEmptyParsedNarrative, type ParsedNarrative } from './parsePromptBuilder'
 import { MdmSchema, renderMdmText } from './outputSchema'
-import { callGeminiFlash } from './vertex'
+import { callGemini, callGeminiFlash } from './vertex'
 import { userService } from './services/userService'
 import {
   Section1RequestSchema,
@@ -945,7 +945,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
 
     let finalMdm: FinalMdm
     try {
-      const result = await callGeminiFlash(prompt)
+      const result = await callGemini(prompt, 90_000)
 
       // Parse response - expect text and json sections
       let cleanedText = result.text
@@ -967,20 +967,71 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
         },
       }
 
-      try {
-        const rawParsed = JSON.parse(cleanedText)
-        const candidate: FinalMdm = {
-          text: rawParsed.text || '',
+      // --- Helpers for coercing LLM objects to schema-expected types ---
+      const flattenToStrings = (val: unknown): string[] | undefined => {
+        if (!val) return undefined
+        if (Array.isArray(val)) return val.map((v) => typeof v === 'object' ? JSON.stringify(v) : String(v))
+        return undefined
+      }
+      const flattenNestedObj = (val: unknown): string[] | undefined => {
+        if (!val || typeof val !== 'object') return undefined
+        if (Array.isArray(val)) return val.map(String)
+        const entries: string[] = []
+        for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+          if (Array.isArray(v)) entries.push(...v.map((item) => `${k}: ${item}`))
+          else if (v) entries.push(`${k}: ${v}`)
+        }
+        return entries.length ? entries : undefined
+      }
+      const stringifyDisposition = (val: unknown): string => {
+        if (!val) return ''
+        if (typeof val === 'string') return val
+        if (typeof val === 'object') {
+          const d = val as Record<string, unknown>
+          const parts = [d.decision, d.levelOfCare, d.rationale].filter(Boolean)
+          return parts.join(' — ') || JSON.stringify(val)
+        }
+        return String(val)
+      }
+      const normalizeComplexity = (val: unknown): 'low' | 'moderate' | 'high' => {
+        const s = String(val || 'moderate').toLowerCase()
+        if (s === 'low' || s === 'moderate' || s === 'high') return s
+        return 'moderate'
+      }
+      const asStringOrArr = (val: unknown): string | string[] | undefined => {
+        if (typeof val === 'string') return val
+        if (Array.isArray(val)) return val.map(String)
+        return undefined
+      }
+      const extractFinalMdm = (raw: Record<string, unknown>): FinalMdm => {
+        const j = (raw.json && typeof raw.json === 'object' ? raw.json : {}) as Record<string, unknown>
+        return {
+          text: (raw.text as string) || '',
           json: {
-            problems: rawParsed.json?.problems || rawParsed.problems || [],
-            differential: rawParsed.json?.differential || rawParsed.differential || [],
-            dataReviewed: rawParsed.json?.dataReviewed || rawParsed.dataReviewed || [],
-            reasoning: rawParsed.json?.reasoning || rawParsed.reasoning || '',
-            risk: rawParsed.json?.risk || rawParsed.risk || [],
-            disposition: rawParsed.json?.disposition || rawParsed.disposition || '',
-            complexityLevel: rawParsed.json?.complexityLevel || rawParsed.complexityLevel || 'moderate',
+            problems: asStringOrArr(j.problems) || asStringOrArr(raw.problems)
+              || flattenToStrings(j.problemsAddressed) || flattenToStrings(raw.problemsAddressed) || [],
+            differential: asStringOrArr(j.differential) || asStringOrArr(raw.differential) || [],
+            dataReviewed: asStringOrArr(j.dataReviewed) || asStringOrArr(raw.dataReviewed)
+              || flattenNestedObj(j.dataReviewedOrdered) || flattenNestedObj(raw.dataReviewedOrdered) || [],
+            reasoning: (j.reasoning || raw.reasoning
+              || j.clinicalReasoning || raw.clinicalReasoning || '') as string,
+            risk: asStringOrArr(j.risk) || asStringOrArr(raw.risk)
+              || flattenNestedObj(j.riskAssessment) || flattenNestedObj(raw.riskAssessment) || [],
+            disposition: stringifyDisposition(j.disposition || raw.disposition),
+            complexityLevel: normalizeComplexity(j.complexityLevel || raw.complexityLevel),
           },
         }
+      }
+
+      try {
+        let rawParsed = JSON.parse(cleanedText)
+
+        // Defensive unwrap: if LLM wraps in { finalMdm: {...} }
+        if (rawParsed.finalMdm && typeof rawParsed.finalMdm === 'object') {
+          rawParsed = rawParsed.finalMdm
+        }
+
+        const candidate = extractFinalMdm(rawParsed)
         // Validate with Zod schema
         const validated = FinalMdmSchema.safeParse(candidate)
         if (validated.success) {
@@ -996,18 +1047,14 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
         const jsonEnd = cleanedText.lastIndexOf('}')
         if (jsonStart >= 0 && jsonEnd > jsonStart) {
           try {
-            const jsonObj = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+            let jsonObj = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+            // Defensive unwrap for fallback path too
+            if (jsonObj.finalMdm && typeof jsonObj.finalMdm === 'object') {
+              jsonObj = jsonObj.finalMdm
+            }
             const candidate: FinalMdm = {
+              ...extractFinalMdm(jsonObj),
               text: jsonObj.text || renderMdmText(jsonObj),
-              json: {
-                problems: jsonObj.problems || [],
-                differential: jsonObj.differential || [],
-                dataReviewed: jsonObj.dataReviewed || [],
-                reasoning: jsonObj.reasoning || '',
-                risk: jsonObj.risk || [],
-                disposition: jsonObj.disposition || '',
-                complexityLevel: jsonObj.complexityLevel || 'moderate',
-              },
             }
             const validated = FinalMdmSchema.safeParse(candidate)
             finalMdm = validated.success ? validated.data : fallbackMdm

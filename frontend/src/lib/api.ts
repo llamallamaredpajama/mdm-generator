@@ -357,7 +357,7 @@ export async function finalizeEncounter(
       body: JSON.stringify({ encounterId, content, userIdToken }),
     },
     'Encounter finalization',
-    60_000
+    120_000
   )
 }
 
