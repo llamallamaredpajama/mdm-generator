@@ -1090,7 +1090,10 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
 
     await encounterRef.update({
       'section3.content': content,
-      'section3.llmResponse': finalMdm,
+      'section3.llmResponse': {
+        finalMdm,
+        processedAt: admin.firestore.Timestamp.now(),
+      },
       'section3.submissionCount': newSubmissionCount,
       'section3.status': 'completed',
       'section3.lastUpdated': admin.firestore.Timestamp.now(),
