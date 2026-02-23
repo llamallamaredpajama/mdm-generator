@@ -25,6 +25,7 @@ import TrendAnalysisToggle from '../TrendAnalysisToggle'
 import TrendResultsPanel from '../TrendResultsPanel'
 import TrendReportModal from '../TrendReportModal'
 import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
+import { useToast } from '../../contexts/ToastContext'
 import './EncounterEditor.css'
 
 /**
@@ -125,6 +126,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   // Quota exceeded state for showing upgrade prompt
   const [showQuotaExceeded, setShowQuotaExceeded] = useState(false)
 
+  const { success: toastSuccess, error: toastError } = useToast()
   const { analysis, isAnalyzing, analyze, downloadPdf } = useTrendAnalysis()
 
   // Track whether we've already triggered analysis for this encounter
@@ -509,9 +511,14 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           <button
             type="button"
             className="encounter-editor__copy-button"
-            onClick={() => {
+            onClick={async () => {
               if (finalMdmData.text) {
-                navigator.clipboard.writeText(finalMdmData.text)
+                try {
+                  await navigator.clipboard.writeText(finalMdmData.text)
+                  toastSuccess('Copied to clipboard!')
+                } catch {
+                  toastError('Failed to copy to clipboard')
+                }
               }
             }}
           >
