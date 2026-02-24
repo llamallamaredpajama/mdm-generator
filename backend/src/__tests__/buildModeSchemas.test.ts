@@ -18,9 +18,9 @@ import {
 // ============================================================================
 describe('character limit constants', () => {
   it('has correct max char limits', () => {
-    expect(SECTION1_MAX_CHARS).toBe(4000)
-    expect(SECTION2_MAX_CHARS).toBe(3000)
-    expect(SECTION3_MAX_CHARS).toBe(2500)
+    expect(SECTION1_MAX_CHARS).toBe(2000)
+    expect(SECTION2_MAX_CHARS).toBe(2000)
+    expect(SECTION3_MAX_CHARS).toBe(2000)
   })
 })
 

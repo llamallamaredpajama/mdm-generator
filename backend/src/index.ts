@@ -15,18 +15,30 @@ import {
   Section1RequestSchema,
   Section2RequestSchema,
   FinalizeRequestSchema,
+  MatchCdrsRequestSchema,
+  SuggestDiagnosisRequestSchema,
+  ParseResultsRequestSchema,
   DifferentialItemSchema,
   MdmPreviewSchema,
   FinalMdmSchema,
   type DifferentialItem,
   type MdmPreview,
   type FinalMdm,
+  type CdrTracking,
+  type TestResult,
+  type ParsedResultItem,
 } from './buildModeSchemas'
 import {
   buildSection1Prompt,
   buildSection2Prompt,
   buildFinalizePrompt,
+  buildCdrAutoPopulatePrompt,
+  buildSuggestDiagnosisPrompt,
+  buildParseResultsPrompt,
+  type FinalizeStructuredData,
 } from './promptBuilderBuildMode'
+import { matchCdrsFromDifferential } from './services/cdrMatcher'
+import { buildCdrTracking, type AutoPopulatedValues } from './services/cdrTrackingBuilder'
 import {
   buildQuickModePrompt,
   parseQuickModeResponse,
@@ -41,6 +53,15 @@ import { computeCorrelations } from './surveillance/correlationEngine'
 import { buildSurveillanceContext, appendSurveillanceToMdmText } from './surveillance/promptAugmenter'
 import { selectRelevantRules } from './cdr/cdrSelector'
 import { buildCdrContext } from './cdr/cdrPromptAugmenter'
+import type { TestDefinition, TestCategory, TestLibraryResponse, CdrDefinition } from './types/libraries'
+import {
+  OrderSetCreateSchema,
+  OrderSetUpdateSchema,
+  DispositionFlowCreateSchema,
+  DispositionFlowUpdateSchema,
+  ReportTemplateCreateSchema,
+  CustomizableOptionsSchema,
+} from './types/userProfile'
 
 const app = express()
 
@@ -55,7 +76,7 @@ app.use((req, res, next) => {
   const isLocalhost = origin?.match(/^http:\/\/localhost:\d+$/)
   if (origin && (isLocalhost || allowedOrigins.includes(origin) || origin.match(/^https:\/\/mdm-generator[^.]*\.web\.app$/))) {
     res.header('Access-Control-Allow-Origin', origin)
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     res.header('Access-Control-Allow-Credentials', 'true')
   }
@@ -97,6 +118,113 @@ const parseLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Rate limit exceeded for parse operations' },
 })
+
+// In-memory cache for test library (rarely changes)
+const TEST_LIBRARY_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+let testLibraryCache: TestLibraryResponse | null = null
+let testLibraryCacheTime = 0
+
+// In-memory cache for CDR library (rarely changes — only via seed script)
+const CDR_LIBRARY_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+let cdrLibraryCache: { ok: true; cdrs: CdrDefinition[] } | null = null
+let cdrLibraryCacheTime = 0
+
+/**
+ * Shared helper: read CDR library from cache or Firestore.
+ * Used by GET /v1/libraries/cdrs and POST /v1/build-mode/match-cdrs.
+ */
+async function getCachedCdrLibrary(): Promise<CdrDefinition[]> {
+  const now = Date.now()
+  if (cdrLibraryCache && (now - cdrLibraryCacheTime) < CDR_LIBRARY_CACHE_TTL) {
+    return cdrLibraryCache.cdrs
+  }
+
+  const snapshot = await getDb().collection('cdrLibrary').get()
+  const cdrs: CdrDefinition[] = []
+  for (const doc of snapshot.docs) {
+    const d = doc.data()
+    if (d.id && d.name && d.components && d.scoring) {
+      cdrs.push(d as CdrDefinition)
+    } else {
+      console.warn({ action: 'cdr-cache-refresh', warning: 'skipped malformed doc', docId: doc.id })
+    }
+  }
+
+  cdrLibraryCache = { ok: true as const, cdrs }
+  cdrLibraryCacheTime = now
+  return cdrs
+}
+
+/**
+ * Shared helper: read test library from cache or Firestore.
+ * Used by GET /v1/libraries/tests and POST /v1/build-mode/parse-results.
+ */
+async function getCachedTestLibrary(): Promise<TestDefinition[]> {
+  const now = Date.now()
+  if (testLibraryCache && (now - testLibraryCacheTime) < TEST_LIBRARY_CACHE_TTL) {
+    return testLibraryCache.tests
+  }
+
+  const snapshot = await getDb().collection('testLibrary').get()
+  const tests: TestDefinition[] = []
+  for (const doc of snapshot.docs) {
+    const d = doc.data()
+    if (d.id && d.name && d.category) {
+      tests.push(d as TestDefinition)
+    }
+  }
+  const categories = [...new Set(tests.map(t => t.category))] as TestCategory[]
+
+  testLibraryCache = { ok: true, tests, categories, cachedAt: new Date().toISOString() }
+  testLibraryCacheTime = now
+  return tests
+}
+
+/**
+ * Build a structured cdrContext string from encounter cdrTracking for the finalize prompt.
+ * Skips dismissed CDRs. Returns undefined if no non-dismissed CDRs exist.
+ */
+function buildCdrContextString(cdrTracking: CdrTracking): string | undefined {
+  const entries = Object.entries(cdrTracking)
+  if (entries.length === 0) return undefined
+
+  const lines: string[] = []
+
+  for (const [, entry] of entries) {
+    if (entry.dismissed) continue
+
+    const components = Object.entries(entry.components)
+    const answeredCount = components.filter(([, c]) => c.answered).length
+    const totalCount = components.length
+
+    if (entry.status === 'completed' && entry.score != null) {
+      lines.push(`${entry.name}: Score ${entry.score} — ${entry.interpretation || 'No interpretation'}`)
+      for (const [compId, compState] of components) {
+        if (compState.answered) {
+          lines.push(`  - ${compId}: ${compState.value ?? 'N/A'} (source: ${compState.source || 'unknown'})`)
+        }
+      }
+    } else if (entry.status === 'partial') {
+      lines.push(`${entry.name}: Partial (${answeredCount}/${totalCount} answered)`)
+      for (const [compId, compState] of components) {
+        if (compState.answered) {
+          lines.push(`  - ${compId}: ${compState.value ?? 'N/A'} (source: ${compState.source || 'unknown'})`)
+        }
+      }
+      const pendingCount = totalCount - answeredCount
+      if (pendingCount > 0) {
+        lines.push(`  - (${pendingCount} pending)`)
+      }
+    } else if (entry.status === 'pending') {
+      lines.push(`${entry.name}: Pending (0/${totalCount} answered)`)
+    }
+
+    lines.push('')
+  }
+
+  const result = lines.join('\n').trim()
+  return result || undefined
+}
 
 // Initialize Firebase Admin (expects GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS or default creds in Cloud Run)
 async function initFirebase() {
@@ -158,6 +286,101 @@ function checkTokenSize(text: string, maxTokensPerRequest: number) {
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
 
+// ============================================================================
+// Library Endpoints
+// ============================================================================
+
+/**
+ * GET /v1/libraries/tests
+ * Returns the canonical ER test catalog from the testLibrary Firestore collection.
+ * In-memory cached for 5 minutes since test library data rarely changes.
+ */
+app.get('/v1/libraries/tests', async (req, res) => {
+  try {
+    // 1. AUTHENTICATE
+    const idToken = req.headers.authorization?.split('Bearer ')[1]
+    if (!idToken) return res.status(401).json({ error: 'Unauthorized' })
+    try {
+      await admin.auth().verifyIdToken(idToken)
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    // 2. No request body to VALIDATE (GET request)
+    // 3. No special AUTHORIZATION needed (any authenticated user can read tests)
+
+    // 4. EXECUTE — return from cache or read Firestore
+    const now = Date.now()
+    if (testLibraryCache && (now - testLibraryCacheTime) < TEST_LIBRARY_CACHE_TTL) {
+      console.log({ action: 'get-test-library', cached: true, timestamp: new Date().toISOString() })
+      return res.json(testLibraryCache)
+    }
+
+    const snapshot = await getDb().collection('testLibrary').get()
+    const tests: TestDefinition[] = []
+    for (const doc of snapshot.docs) {
+      const d = doc.data()
+      if (d.id && d.name && d.category) {
+        tests.push(d as TestDefinition)
+      } else {
+        console.warn({ action: 'get-test-library', warning: 'skipped malformed doc', docId: doc.id })
+      }
+    }
+    const categories = [...new Set(tests.map(t => t.category))] as TestCategory[]
+
+    const response: TestLibraryResponse = {
+      ok: true,
+      tests,
+      categories,
+      cachedAt: new Date().toISOString(),
+    }
+
+    testLibraryCache = response
+    testLibraryCacheTime = now
+
+    // 5. AUDIT
+    console.log({ action: 'get-test-library', testCount: tests.length, timestamp: new Date().toISOString() })
+
+    // 6. RESPOND
+    return res.json(response)
+  } catch (e: unknown) {
+    console.error('get-test-library error:', e instanceof Error ? e.message : 'unknown error')
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+/**
+ * GET /v1/libraries/cdrs
+ * Returns all CDR definitions from the cdrLibrary Firestore collection.
+ */
+app.get('/v1/libraries/cdrs', async (req, res) => {
+  try {
+    // 1. AUTHENTICATE
+    const idToken = req.headers.authorization?.split('Bearer ')[1]
+    if (!idToken) return res.status(401).json({ error: 'Unauthorized' })
+    try {
+      await admin.auth().verifyIdToken(idToken)
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    // 2. VALIDATE — no body for GET
+    // 3. AUTHORIZE — any authenticated user can read CDR library
+
+    // 4. EXECUTE — use shared cache helper
+    const cdrs = await getCachedCdrLibrary()
+
+    // 5. AUDIT
+    console.log({ action: 'list-cdrs', cdrCount: cdrs.length, timestamp: new Date().toISOString() })
+
+    // 6. RESPOND
+    return res.json({ ok: true, cdrs })
+  } catch (error) {
+    console.error('list-cdrs error:', error)
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
 // Admin endpoint to set user plan (protected by admin check)
 app.post('/v1/admin/set-plan', async (req, res) => {
   try {
@@ -188,8 +411,8 @@ app.post('/v1/admin/set-plan', async (req, res) => {
       ok: true, 
       message: `User ${parsed.data.targetUid} updated to ${parsed.data.plan} plan`
     })
-  } catch (e: any) {
-    console.error(e)
+  } catch (e: unknown) {
+    console.error('admin/set-plan error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -302,10 +525,11 @@ app.post('/v1/parse-narrative', parseLimiter, async (req, res) => {
       confidence: parsedNarrative.confidence,
       warnings: parsedNarrative.warnings
     })
-  } catch (e: any) {
-    const status = e.status || 500
-    if (status !== 500) return res.status(status).json({ error: e.message })
-    console.error(e)
+  } catch (e: unknown) {
+    const err = e instanceof Error ? e : new Error('unknown error')
+    const status = (e as { status?: number })?.status || 500
+    if (status !== 500) return res.status(status).json({ error: err.message })
+    console.error('parse-narrative error:', err.message)
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -414,10 +638,11 @@ app.post('/v1/generate', llmLimiter, async (req, res) => {
       used: updatedStats.used,
       limit: updatedStats.limit
     })
-  } catch (e: any) {
-    const status = e.status || 500
-    if (status !== 500) return res.status(status).json({ error: e.message })
-    console.error(e)
+  } catch (e: unknown) {
+    const err = e instanceof Error ? e : new Error('unknown error')
+    const status = (e as { status?: number })?.status || 500
+    if (status !== 500) return res.status(status).json({ error: err.message })
+    console.error('generate error:', err.message)
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -661,8 +886,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       isLocked,
       quotaRemaining,
     })
-  } catch (e: any) {
-    console.error('process-section1 error:', e)
+  } catch (e: unknown) {
+    console.error('process-section1 error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -688,7 +913,7 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    const { encounterId, content, workingDiagnosis } = parsed.data
+    const { encounterId, content, workingDiagnosis, selectedTests, testResults, structuredDiagnosis } = parsed.data
 
     // 3. Get encounter and verify ownership
     const encounterRef = getEncounterRef(uid, encounterId)
@@ -749,7 +974,14 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       console.warn('Section 2 CDR enrichment failed (non-blocking):', cdrError)
     }
 
-    const prompt = buildSection2Prompt(section1Content, section1Response, content, workingDiagnosis, section2CdrCtx, storedS1CdrCtx)
+    // Build structured data for the prompt (prefer request data, fall back to Firestore)
+    const s2StructuredData = {
+      selectedTests: selectedTests || encounter.section2?.selectedTests,
+      testResults: testResults || encounter.section2?.testResults,
+      structuredDiagnosis: structuredDiagnosis !== undefined ? structuredDiagnosis : encounter.section2?.workingDiagnosis,
+    }
+
+    const prompt = buildSection2Prompt(section1Content, section1Response, content, workingDiagnosis, section2CdrCtx, storedS1CdrCtx, s2StructuredData)
 
     let mdmPreview: MdmPreview
     try {
@@ -835,6 +1067,10 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       'section2.submissionCount': newSubmissionCount,
       'section2.status': 'completed',
       'section2.lastUpdated': admin.firestore.Timestamp.now(),
+      // Persist structured data from the request (if provided)
+      ...(selectedTests && { 'section2.selectedTests': selectedTests }),
+      ...(testResults && { 'section2.testResults': testResults }),
+      ...(structuredDiagnosis !== undefined && { 'section2.workingDiagnosis': structuredDiagnosis }),
       // Update CDR context with expanded S2 analysis (may include additional rules from workup)
       ...(section2CdrCtx && { cdrContext: section2CdrCtx }),
       status: 'section2_done',
@@ -857,8 +1093,8 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       submissionCount: newSubmissionCount,
       isLocked,
     })
-  } catch (e: any) {
-    console.error('process-section2 error:', e)
+  } catch (e: unknown) {
+    console.error('process-section2 error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -944,10 +1180,21 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     // Retrieve surveillance context stored during Section 1
     const storedSurveillanceCtx: string | undefined = encounter.surveillanceContext || undefined
 
-    // Retrieve CDR context stored during Section 1/2
-    const storedCdrCtx: string | undefined = encounter.cdrContext || undefined
+    // Build CDR context dynamically from cdrTracking (BM-3.3: replaces static encounter.cdrContext)
+    const storedCdrCtx: string | undefined = buildCdrContextString(encounter.cdrTracking ?? {})
 
-    const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx)
+    // Build structured data from S2/S3 fields (BM-6.3: enriches finalize prompt)
+    const structuredData: FinalizeStructuredData = {
+      selectedTests: encounter.section2?.selectedTests,
+      testResults: encounter.section2?.testResults,
+      workingDiagnosis: encounter.section2?.workingDiagnosis,
+      treatments: encounter.section3?.treatments,
+      cdrSuggestedTreatments: encounter.section3?.cdrSuggestedTreatments,
+      disposition: encounter.section3?.disposition,
+      followUp: encounter.section3?.followUp,
+    }
+
+    const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx, structuredData)
 
     let finalMdm: FinalMdm
     try {
@@ -1122,8 +1369,391 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       finalMdm,
       quotaRemaining: stats.remaining,
     })
-  } catch (e: any) {
-    console.error('finalize error:', e)
+  } catch (e: unknown) {
+    console.error('finalize error:', e instanceof Error ? e.message : 'unknown error')
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ============================================================================
+// CDR Matching Endpoint
+// ============================================================================
+
+/**
+ * POST /v1/build-mode/match-cdrs
+ * Match CDRs from S1 differential and auto-populate components from narrative.
+ */
+app.post('/v1/build-mode/match-cdrs', llmLimiter, async (req, res) => {
+  try {
+    // 1. VALIDATE
+    const parsed = MatchCdrsRequestSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    // 2. AUTHENTICATE
+    let uid: string
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
+      uid = decoded.uid
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    const { encounterId } = parsed.data
+
+    // 3. AUTHORIZE — verify encounter ownership
+    const encounterRef = getEncounterRef(uid, encounterId)
+    const encounterSnap = await encounterRef.get()
+
+    if (!encounterSnap.exists) {
+      return res.status(404).json({ error: 'Encounter not found' })
+    }
+
+    const encounter = encounterSnap.data()!
+
+    // Verify encounter has S1 completed (status check + data check)
+    const validStatuses = ['section1_done', 'section2_done', 'finalized']
+    if (!validStatuses.includes(encounter.status) || !encounter.section1?.llmResponse) {
+      return res.status(400).json({
+        error: 'Section 1 must be completed before CDR matching',
+      })
+    }
+
+    // 4. EXECUTE
+
+    // 4a. Extract differential from S1 response
+    const s1Response = encounter.section1.llmResponse
+    let differential: DifferentialItem[] = []
+    if (Array.isArray(s1Response)) {
+      differential = s1Response as DifferentialItem[]
+    } else if (s1Response?.differential && Array.isArray(s1Response.differential)) {
+      differential = s1Response.differential as DifferentialItem[]
+    }
+
+    if (differential.length === 0) {
+      // No differential to match against — return empty tracking
+      return res.json({
+        ok: true,
+        cdrTracking: {},
+        matchedCount: 0,
+      })
+    }
+
+    // 4b. Get CDR library (shared cache helper)
+    const cdrs = await getCachedCdrLibrary()
+
+    // 4c. Match CDRs against differential
+    const matchedCdrs = matchCdrsFromDifferential(differential, cdrs)
+
+    if (matchedCdrs.length === 0) {
+      // No matches — write empty tracking and return
+      await encounterRef.update({
+        cdrTracking: {},
+        updatedAt: admin.firestore.Timestamp.now(),
+      })
+
+      console.log({
+        action: 'match-cdrs',
+        uid,
+        encounterId,
+        matchedCount: 0,
+        timestamp: new Date().toISOString(),
+      })
+
+      return res.json({
+        ok: true,
+        cdrTracking: {},
+        matchedCount: 0,
+      })
+    }
+
+    // 4d. Auto-populate components from S1 narrative (supplementary — failures don't block)
+    let autoPopulated: AutoPopulatedValues | null = null
+    const s1Content = encounter.section1.content || ''
+
+    if (s1Content) {
+      try {
+        const prompt = buildCdrAutoPopulatePrompt(s1Content, matchedCdrs)
+
+        // Only call Gemini if there are extractable components
+        if (prompt.system) {
+          const result = await callGeminiFlash(prompt)
+
+          const cleanedText = result.text
+            .replace(/^```json\s*/gm, '')
+            .replace(/^```\s*$/gm, '')
+            .trim()
+
+          try {
+            autoPopulated = JSON.parse(cleanedText) as AutoPopulatedValues
+          } catch {
+            console.warn('CDR auto-populate JSON parse failed (non-blocking)')
+          }
+        }
+      } catch (autoPopError) {
+        console.warn('CDR auto-populate LLM call failed (non-blocking):', autoPopError)
+      }
+    }
+
+    // 4e. Build CdrTracking
+    const cdrTracking: CdrTracking = buildCdrTracking(matchedCdrs, autoPopulated)
+
+    // 4f. Write to Firestore
+    await encounterRef.update({
+      cdrTracking,
+      updatedAt: admin.firestore.Timestamp.now(),
+    })
+
+    // 5. AUDIT (no PHI)
+    console.log({
+      action: 'match-cdrs',
+      uid,
+      encounterId,
+      matchedCount: matchedCdrs.length,
+      autoPopulated: autoPopulated !== null,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 6. RESPOND
+    return res.json({
+      ok: true,
+      cdrTracking,
+      matchedCount: matchedCdrs.length,
+    })
+  } catch (e: unknown) {
+    console.error('match-cdrs error:', e instanceof Error ? e.message : 'unknown error')
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+/**
+ * POST /v1/build-mode/suggest-diagnosis
+ * Suggest ranked working diagnoses from S1 differential refined by S2 results.
+ * No quota deduction — UI helper only.
+ */
+app.post('/v1/build-mode/suggest-diagnosis', llmLimiter, async (req, res) => {
+  try {
+    // 1. VALIDATE
+    const parsed = SuggestDiagnosisRequestSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    // 2. AUTHENTICATE
+    let uid: string
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
+      uid = decoded.uid
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    const { encounterId } = parsed.data
+
+    // 3. AUTHORIZE — verify encounter ownership
+    const encounterRef = getEncounterRef(uid, encounterId)
+    const encounterSnap = await encounterRef.get()
+
+    if (!encounterSnap.exists) {
+      return res.status(404).json({ error: 'Encounter not found' })
+    }
+
+    const encounter = encounterSnap.data()!
+
+    // Verify S1 is completed
+    const validStatuses = ['section1_done', 'section2_done', 'finalized']
+    if (!validStatuses.includes(encounter.status) || !encounter.section1?.llmResponse) {
+      return res.status(400).json({
+        error: 'Section 1 must be completed before suggesting diagnoses',
+      })
+    }
+
+    // 4. EXECUTE
+
+    // 4a. Extract differential from S1 response
+    const s1Response = encounter.section1.llmResponse
+    let differential: DifferentialItem[] = []
+    if (Array.isArray(s1Response)) {
+      differential = s1Response as DifferentialItem[]
+    } else if (s1Response?.differential && Array.isArray(s1Response.differential)) {
+      differential = s1Response.differential as DifferentialItem[]
+    }
+
+    if (differential.length === 0) {
+      return res.status(400).json({ error: 'No differential available from Section 1' })
+    }
+
+    // 4b. Build test results summary from S2 structured data
+    const testResults: Record<string, TestResult> = encounter.section2?.testResults ?? {}
+    const testResultsSummary = Object.entries(testResults)
+      .filter(([, r]) => r.status !== 'pending')
+      .map(([testId, r]) => {
+        const parts = [`${testId}: ${r.status}`]
+        if (r.quickFindings?.length) parts.push(`(${r.quickFindings.join(', ')})`)
+        if (r.value) parts.push(`value: ${r.value}${r.unit ? ' ' + r.unit : ''}`)
+        if (r.notes) parts.push(`notes: ${r.notes}`)
+        return parts.join(' ')
+      })
+      .join('\n')
+
+    // 4c. Build prompt and call Gemini Flash
+    const chiefComplaint = encounter.chiefComplaint || 'Unknown'
+    const prompt = buildSuggestDiagnosisPrompt(differential, chiefComplaint, testResultsSummary)
+    const result = await callGeminiFlash(prompt)
+
+    // 4d. Parse response as JSON array of strings
+    const cleanedText = result.text
+      .replace(/^```json\s*/gm, '')
+      .replace(/^```\s*$/gm, '')
+      .trim()
+
+    let suggestions: string[]
+    try {
+      const parsed = JSON.parse(cleanedText)
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        throw new Error('Expected non-empty array')
+      }
+      suggestions = parsed
+        .filter((s: unknown) => typeof s === 'string' && s.trim().length > 0)
+        .slice(0, 7)
+    } catch {
+      // Fallback: use top 3 differential diagnoses as suggestions
+      suggestions = differential.slice(0, 3).map((d) => d.diagnosis)
+    }
+
+    if (suggestions.length === 0) {
+      suggestions = differential.slice(0, 3).map((d) => d.diagnosis)
+    }
+
+    // 5. AUDIT (no PHI)
+    console.log({
+      action: 'suggest-diagnosis',
+      uid,
+      encounterId,
+      suggestionCount: suggestions.length,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 6. RESPOND
+    return res.json({
+      ok: true,
+      suggestions,
+    })
+  } catch (e: unknown) {
+    console.error('suggest-diagnosis error:', e instanceof Error ? e.message : 'unknown error')
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+/**
+ * POST /v1/build-mode/parse-results
+ * AI parsing of pasted lab/EHR text into structured results mapped to ordered tests.
+ * No quota deduction — UI helper only.
+ */
+app.post('/v1/build-mode/parse-results', llmLimiter, async (req, res) => {
+  try {
+    // 1. VALIDATE
+    const parsed = ParseResultsRequestSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    // 2. AUTHENTICATE
+    let uid: string
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
+      uid = decoded.uid
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    const { encounterId, pastedText, orderedTestIds } = parsed.data
+
+    // 3. AUTHORIZE — verify encounter ownership
+    const encounterRef = getEncounterRef(uid, encounterId)
+    const encounterSnap = await encounterRef.get()
+
+    if (!encounterSnap.exists) {
+      return res.status(404).json({ error: 'Encounter not found' })
+    }
+
+    // 4. EXECUTE
+
+    // 4a. Load test definitions for ordered tests
+    const allTests = await getCachedTestLibrary()
+    const orderedTests = orderedTestIds
+      .map((id) => allTests.find((t) => t.id === id))
+      .filter((t): t is TestDefinition => t !== undefined)
+
+    if (orderedTests.length === 0) {
+      return res.status(400).json({ error: 'No valid ordered tests found' })
+    }
+
+    // 4b. Build prompt and call Gemini Flash
+    const prompt = buildParseResultsPrompt(
+      pastedText,
+      orderedTests.map((t) => ({ id: t.id, name: t.name, unit: t.unit, normalRange: t.normalRange }))
+    )
+    const result = await callGeminiFlash(prompt)
+
+    // 4c. Parse response
+    const cleanedText = result.text
+      .replace(/^```json\s*/gm, '')
+      .replace(/^```\s*$/gm, '')
+      .trim()
+
+    let parsedResults: ParsedResultItem[] = []
+    let unmatchedText: string[] = []
+
+    try {
+      const jsonResponse = JSON.parse(cleanedText)
+
+      if (Array.isArray(jsonResponse.parsed)) {
+        // Validate each item: only include items that map to an ordered test
+        const validTestIds = new Set(orderedTestIds)
+        parsedResults = jsonResponse.parsed
+          .filter((item: any) => item.testId && validTestIds.has(item.testId))
+          .map((item: any) => ({
+            testId: String(item.testId),
+            testName: String(item.testName || ''),
+            status: item.status === 'abnormal' ? 'abnormal' as const : 'unremarkable' as const,
+            ...(item.value ? { value: String(item.value) } : {}),
+            ...(item.unit ? { unit: String(item.unit) } : {}),
+            ...(item.notes ? { notes: String(item.notes) } : {}),
+          }))
+      }
+
+      if (Array.isArray(jsonResponse.unmatchedText)) {
+        unmatchedText = jsonResponse.unmatchedText.map(String)
+      }
+    } catch {
+      // LLM response parse failed — return empty results
+      return res.json({
+        ok: true,
+        parsed: [],
+        unmatchedText: ['Failed to parse results from the pasted text. Please try again.'],
+      })
+    }
+
+    // 5. AUDIT (no PHI)
+    console.log({
+      action: 'parse-results',
+      uid,
+      encounterId,
+      parsedCount: parsedResults.length,
+      unmatchedCount: unmatchedText.length,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 6. RESPOND
+    return res.json({
+      ok: true,
+      parsed: parsedResults,
+      ...(unmatchedText.length > 0 ? { unmatchedText } : {}),
+    })
+  } catch (e: unknown) {
+    console.error('parse-results error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -1348,8 +1978,434 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       patientIdentifier: result.patientIdentifier,
       quotaRemaining,
     })
-  } catch (e: any) {
-    console.error('quick-mode/generate error:', e)
+  } catch (e: unknown) {
+    console.error('quick-mode/generate error:', e instanceof Error ? e.message : 'unknown error')
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ============================================================================
+// User Profile CRUD Endpoints
+// ============================================================================
+
+const getOrderSetsCollection = (userId: string) =>
+  getDb().collection('customers').doc(userId).collection('orderSets')
+
+const getDispoFlowsCollection = (userId: string) =>
+  getDb().collection('customers').doc(userId).collection('dispoFlows')
+
+const getReportTemplatesCollection = (userId: string) =>
+  getDb().collection('customers').doc(userId).collection('reportTemplates')
+
+const getUserDoc = (userId: string) =>
+  getDb().collection('customers').doc(userId)
+
+/** Convert Firestore doc to JSON-safe object, serializing Timestamps to ISO strings */
+function serializeUserDoc(doc: admin.firestore.DocumentSnapshot): Record<string, unknown> {
+  const data = doc.data()
+  if (!data) return { id: doc.id }
+  const result: Record<string, unknown> = { id: doc.id }
+  for (const [key, value] of Object.entries(data)) {
+    if (value && typeof value === 'object' && typeof value.toDate === 'function') {
+      result[key] = value.toDate().toISOString()
+    } else {
+      result[key] = value
+    }
+  }
+  return result
+}
+
+/** Authenticate request and return uid, or send error response */
+async function authenticateRequest(req: express.Request, res: express.Response): Promise<string | null> {
+  const idToken = req.headers.authorization?.split('Bearer ')[1]
+  if (!idToken) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return null
+  }
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken)
+    return decoded.uid
+  } catch {
+    res.status(401).json({ error: 'Unauthorized' })
+    return null
+  }
+}
+
+// ── Order Sets CRUD ────────────────────────────────────────────────────
+
+app.get('/v1/user/order-sets', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const snapshot = await getOrderSetsCollection(uid).get()
+    const items = snapshot.docs.map(serializeUserDoc)
+    console.log({ userId: uid, action: 'list-order-sets', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, items })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.post('/v1/user/order-sets', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const parsed = OrderSetCreateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = await getOrderSetsCollection(uid).add({
+      ...parsed.data,
+      createdAt: admin.firestore.Timestamp.now(),
+      usageCount: 0,
+    })
+    const doc = await docRef.get()
+    console.log({ userId: uid, action: 'create-order-set', timestamp: new Date().toISOString() })
+    return res.status(201).json({ ok: true, item: serializeUserDoc(doc) })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.put('/v1/user/order-sets/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const parsed = OrderSetUpdateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = getOrderSetsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    const updateData = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, v]) => v !== undefined)
+    )
+    await docRef.update(updateData)
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'update-order-set', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, item: serializeUserDoc(updated) })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.delete('/v1/user/order-sets/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getOrderSetsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.delete()
+    console.log({ userId: uid, action: 'delete-order-set', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, id })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ── Disposition Flows CRUD ─────────────────────────────────────────────
+
+app.get('/v1/user/dispo-flows', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const snapshot = await getDispoFlowsCollection(uid).get()
+    const items = snapshot.docs.map(serializeUserDoc)
+    console.log({ userId: uid, action: 'list-dispo-flows', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, items })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.post('/v1/user/dispo-flows', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const parsed = DispositionFlowCreateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = await getDispoFlowsCollection(uid).add({
+      ...parsed.data,
+      createdAt: admin.firestore.Timestamp.now(),
+      usageCount: 0,
+    })
+    const doc = await docRef.get()
+    console.log({ userId: uid, action: 'create-dispo-flow', timestamp: new Date().toISOString() })
+    return res.status(201).json({ ok: true, item: serializeUserDoc(doc) })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.put('/v1/user/dispo-flows/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const parsed = DispositionFlowUpdateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = getDispoFlowsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    const updateData = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, v]) => v !== undefined)
+    )
+    await docRef.update(updateData)
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'update-dispo-flow', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, item: serializeUserDoc(updated) })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.delete('/v1/user/dispo-flows/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getDispoFlowsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.delete()
+    console.log({ userId: uid, action: 'delete-dispo-flow', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, id })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ── Report Templates CRUD ──────────────────────────────────────────────
+
+app.get('/v1/user/report-templates', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const snapshot = await getReportTemplatesCollection(uid).get()
+    const items = snapshot.docs.map(serializeUserDoc)
+    console.log({ userId: uid, action: 'list-report-templates', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, items })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.post('/v1/user/report-templates', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const parsed = ReportTemplateCreateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = await getReportTemplatesCollection(uid).add({
+      ...parsed.data,
+      createdAt: admin.firestore.Timestamp.now(),
+      usageCount: 0,
+    })
+    const doc = await docRef.get()
+    console.log({ userId: uid, action: 'create-report-template', timestamp: new Date().toISOString() })
+    return res.status(201).json({ ok: true, item: serializeUserDoc(doc) })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.put('/v1/user/report-templates/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const parsed = ReportTemplateCreateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = getReportTemplatesCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.update(parsed.data)
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'update-report-template', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, item: serializeUserDoc(updated) })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.delete('/v1/user/report-templates/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getReportTemplatesCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.delete()
+    console.log({ userId: uid, action: 'delete-report-template', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, id })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ── Usage Tracking ─────────────────────────────────────────────────────
+
+app.post('/v1/user/order-sets/:id/use', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getOrderSetsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.update({ usageCount: admin.firestore.FieldValue.increment(1) })
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'use-order-set', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, usageCount: updated.data()?.usageCount ?? 0 })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.post('/v1/user/dispo-flows/:id/use', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getDispoFlowsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.update({ usageCount: admin.firestore.FieldValue.increment(1) })
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'use-dispo-flow', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, usageCount: updated.data()?.usageCount ?? 0 })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.post('/v1/user/report-templates/:id/use', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getReportTemplatesCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.update({ usageCount: admin.firestore.FieldValue.increment(1) })
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'use-report-template', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, usageCount: updated.data()?.usageCount ?? 0 })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ── Customizable Options ───────────────────────────────────────────────
+
+app.get('/v1/user/options', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const doc = await getUserDoc(uid).get()
+    const data = doc.data()
+    const options = data?.customizableOptions ?? { dispositionOptions: [], followUpOptions: [] }
+    console.log({ userId: uid, action: 'get-options', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, options })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.put('/v1/user/options', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const parsed = CustomizableOptionsSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    await getUserDoc(uid).set({ customizableOptions: parsed.data }, { merge: true })
+    console.log({ userId: uid, action: 'update-options', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, options: parsed.data })
+  } catch (error) {
     return res.status(500).json({ error: 'Internal error' })
   }
 })

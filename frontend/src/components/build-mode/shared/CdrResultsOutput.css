@@ -1,0 +1,185 @@
+/* CdrResultsOutput Styles (BM-5.3) */
+
+.cdr-results {
+  padding: 1rem;
+  background: var(--color-surface, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.5rem;
+}
+
+/* Sections */
+.cdr-results__section {
+  margin-bottom: 1rem;
+}
+
+.cdr-results__section:last-of-type {
+  margin-bottom: 0.75rem;
+}
+
+.cdr-results__label {
+  margin: 0 0 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted, #9ca3af);
+}
+
+/* Working Diagnosis */
+.cdr-results__dx {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text, #111827);
+}
+
+/* Results Summary */
+.cdr-results__summary {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text, #374151);
+}
+
+.cdr-results__abnormal-count {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.cdr-results__abnormal-list {
+  margin: 0.375rem 0 0;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.cdr-results__abnormal-item {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  margin-bottom: 0.125rem;
+}
+
+/* CDR Score Cards */
+.cdr-results__scores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cdr-results__score-card {
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.cdr-results__score-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--color-text, #111827);
+  transition: background 0.15s;
+}
+
+.cdr-results__score-header:hover {
+  background: var(--color-hover, #f3f4f6);
+}
+
+.cdr-results__score-name {
+  font-weight: 600;
+  flex: 1;
+}
+
+.cdr-results__score-value {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-primary, #3b82f6);
+}
+
+.cdr-results__chevron {
+  font-size: 0.625rem;
+  color: var(--color-text-muted, #9ca3af);
+  transition: transform 0.2s;
+}
+
+.cdr-results__chevron--open {
+  transform: rotate(90deg);
+}
+
+.cdr-results__interpretation {
+  margin: 0;
+  padding: 0 0.75rem 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #6b7280);
+  font-style: italic;
+}
+
+/* Component Breakdown */
+.cdr-results__components {
+  padding: 0.375rem 0.75rem 0.5rem;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.cdr-results__comp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  font-size: 0.8125rem;
+}
+
+.cdr-results__comp-name {
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.cdr-results__comp-value {
+  font-weight: 500;
+  color: var(--color-text, #374151);
+  font-family: monospace;
+  font-size: 0.8125rem;
+}
+
+/* Pending CDRs */
+.cdr-results__pending-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cdr-results__pending-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.375rem 0;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  font-size: 0.8125rem;
+}
+
+.cdr-results__pending-item:last-child {
+  border-bottom: none;
+}
+
+.cdr-results__pending-name {
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.cdr-results__pending-progress {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #9ca3af);
+}
+
+/* Footer */
+.cdr-results__footer {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #9ca3af);
+  text-align: center;
+}

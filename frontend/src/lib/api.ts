@@ -1,5 +1,12 @@
 // Frontend API client for MDM Generator
 
+import type {
+  OrderSet,
+  DispositionFlow,
+  ReportTemplate,
+  CustomizableOptions,
+} from '../types/userProfile'
+
 /**
  * Custom API error class with user-friendly messages and error classification
  */
@@ -319,13 +326,26 @@ export async function processSection1(
 }
 
 /**
- * Process Section 2 (Workup & Results) - generates MDM preview
+ * Structured data for S2 submission (enriches the LLM prompt).
+ * All fields optional for backward compatibility.
+ */
+export interface Section2StructuredPayload {
+  selectedTests?: string[]
+  testResults?: Record<string, import('../types/encounter').TestResult>
+  structuredDiagnosis?: string | import('../types/encounter').WorkingDiagnosis | null
+}
+
+/**
+ * Process Section 2 (Workup & Results) - generates MDM preview.
+ * When structuredData is provided, it sends selected tests, test results,
+ * and structured diagnosis alongside the free-text content for a richer prompt.
  */
 export async function processSection2(
   encounterId: string,
   content: string,
   userIdToken: string,
-  workingDiagnosis?: string
+  workingDiagnosis?: string,
+  structuredData?: Section2StructuredPayload
 ): Promise<Section2Response> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -333,7 +353,15 @@ export async function processSection2(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, content, userIdToken, workingDiagnosis }),
+      body: JSON.stringify({
+        encounterId,
+        content,
+        userIdToken,
+        workingDiagnosis,
+        ...(structuredData?.selectedTests && { selectedTests: structuredData.selectedTests }),
+        ...(structuredData?.testResults && { testResults: structuredData.testResults }),
+        ...(structuredData?.structuredDiagnosis !== undefined && { structuredDiagnosis: structuredData.structuredDiagnosis }),
+      }),
     },
     'Section 2 processing',
     60_000
@@ -399,6 +427,448 @@ export async function generateQuickMode(
       body: JSON.stringify({ encounterId, narrative, userIdToken, ...(location && { location }) }),
     },
     'Quick mode MDM generation',
+    60_000
+  )
+}
+
+// =============================================================================
+// User Profile CRUD API Functions
+// =============================================================================
+
+// ── Order Sets ─────────────────────────────────────────────────────────
+
+export async function getOrderSets(userIdToken: string): Promise<{ ok: boolean; items: OrderSet[] }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/order-sets`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Fetching order sets'
+  )
+}
+
+export async function createOrderSet(
+  userIdToken: string,
+  data: { name: string; tests: string[]; tags?: string[] }
+): Promise<{ ok: boolean; item: OrderSet }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/order-sets`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+      body: JSON.stringify(data),
+    },
+    'Creating order set'
+  )
+}
+
+export async function updateOrderSet(
+  userIdToken: string,
+  id: string,
+  data: { name: string; tests: string[]; tags?: string[] }
+): Promise<{ ok: boolean; item: OrderSet }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/order-sets/${id}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+      body: JSON.stringify(data),
+    },
+    'Updating order set'
+  )
+}
+
+export async function deleteOrderSet(
+  userIdToken: string,
+  id: string
+): Promise<{ ok: boolean; id: string }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/order-sets/${id}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Deleting order set'
+  )
+}
+
+export async function useOrderSet(
+  userIdToken: string,
+  id: string
+): Promise<{ ok: boolean; usageCount: number }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/order-sets/${id}/use`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Recording order set usage'
+  )
+}
+
+// ── Disposition Flows ──────────────────────────────────────────────────
+
+export async function getDispoFlows(userIdToken: string): Promise<{ ok: boolean; items: DispositionFlow[] }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/dispo-flows`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Fetching disposition flows'
+  )
+}
+
+export async function createDispoFlow(
+  userIdToken: string,
+  data: { name: string; disposition: string; followUp?: string[] }
+): Promise<{ ok: boolean; item: DispositionFlow }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/dispo-flows`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+      body: JSON.stringify(data),
+    },
+    'Creating disposition flow'
+  )
+}
+
+export async function updateDispoFlow(
+  userIdToken: string,
+  id: string,
+  data: { name: string; disposition: string; followUp?: string[] }
+): Promise<{ ok: boolean; item: DispositionFlow }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/dispo-flows/${id}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+      body: JSON.stringify(data),
+    },
+    'Updating disposition flow'
+  )
+}
+
+export async function deleteDispoFlow(
+  userIdToken: string,
+  id: string
+): Promise<{ ok: boolean; id: string }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/dispo-flows/${id}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Deleting disposition flow'
+  )
+}
+
+export async function useDispoFlow(
+  userIdToken: string,
+  id: string
+): Promise<{ ok: boolean; usageCount: number }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/dispo-flows/${id}/use`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Recording disposition flow usage'
+  )
+}
+
+// ── Report Templates ───────────────────────────────────────────────────
+
+export async function getReportTemplates(userIdToken: string): Promise<{ ok: boolean; items: ReportTemplate[] }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/report-templates`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Fetching report templates'
+  )
+}
+
+export async function createReportTemplate(
+  userIdToken: string,
+  data: { testId: string; name: string; text: string; defaultStatus: 'unremarkable' | 'abnormal' }
+): Promise<{ ok: boolean; item: ReportTemplate }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/report-templates`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+      body: JSON.stringify(data),
+    },
+    'Creating report template'
+  )
+}
+
+export async function updateReportTemplate(
+  userIdToken: string,
+  id: string,
+  data: { testId: string; name: string; text: string; defaultStatus: 'unremarkable' | 'abnormal' }
+): Promise<{ ok: boolean; item: ReportTemplate }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/report-templates/${id}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+      body: JSON.stringify(data),
+    },
+    'Updating report template'
+  )
+}
+
+export async function deleteReportTemplate(
+  userIdToken: string,
+  id: string
+): Promise<{ ok: boolean; id: string }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/report-templates/${id}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Deleting report template'
+  )
+}
+
+export async function useReportTemplate(
+  userIdToken: string,
+  id: string
+): Promise<{ ok: boolean; usageCount: number }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/report-templates/${id}/use`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Recording report template usage'
+  )
+}
+
+// ── Customizable Options ───────────────────────────────────────────────
+
+export async function getCustomizableOptions(userIdToken: string): Promise<{ ok: boolean; options: CustomizableOptions }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/options`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Fetching customizable options'
+  )
+}
+
+export async function updateCustomizableOptions(
+  userIdToken: string,
+  data: CustomizableOptions
+): Promise<{ ok: boolean; options: CustomizableOptions }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/options`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+      body: JSON.stringify(data),
+    },
+    'Updating customizable options'
+  )
+}
+
+// =============================================================================
+// Test Library API Functions
+// =============================================================================
+
+/**
+ * Fetch the master test library (test definitions and categories)
+ */
+export async function fetchTestLibrary(
+  userIdToken: string
+): Promise<import('../types/libraries').TestLibraryResponse> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/libraries/tests`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Fetching test library'
+  )
+}
+
+// =============================================================================
+// CDR Library API Functions
+// =============================================================================
+
+/**
+ * Fetch the CDR library (clinical decision rule definitions)
+ */
+export async function fetchCdrLibrary(
+  userIdToken: string
+): Promise<import('../types/libraries').CdrLibraryResponse> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/libraries/cdrs`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Fetching CDR library'
+  )
+}
+
+/**
+ * Suggest ranked working diagnoses from S1 differential refined by S2 results.
+ * No quota deduction — UI helper only.
+ */
+export async function suggestDiagnosis(
+  encounterId: string,
+  userIdToken: string
+): Promise<{ ok: true; suggestions: string[] }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/build-mode/suggest-diagnosis`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encounterId, userIdToken }),
+    },
+    'Diagnosis suggestion',
+    15_000
+  )
+}
+
+// =============================================================================
+// Parsed Result Types (for Paste Lab Modal)
+// =============================================================================
+
+export interface ParsedResultItem {
+  testId: string
+  testName: string
+  status: 'unremarkable' | 'abnormal'
+  value?: string
+  unit?: string
+  notes?: string
+}
+
+/**
+ * Parse pasted lab/EHR text into structured results mapped to ordered tests.
+ * No quota deduction — UI helper only.
+ */
+export async function parseResults(
+  encounterId: string,
+  pastedText: string,
+  orderedTestIds: string[],
+  userIdToken: string
+): Promise<{ ok: true; parsed: ParsedResultItem[]; unmatchedText?: string[] }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/build-mode/parse-results`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encounterId, pastedText, orderedTestIds, userIdToken }),
+    },
+    'Lab results parsing',
+    20_000
+  )
+}
+
+/**
+ * Match CDRs from S1 differential and auto-populate components from narrative.
+ * Called after Section 1 completes to populate encounter cdrTracking.
+ */
+export async function matchCdrs(
+  encounterId: string,
+  userIdToken: string
+): Promise<{ ok: true; cdrTracking: import('../types/encounter').CdrTracking; matchedCount: number }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/build-mode/match-cdrs`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encounterId, userIdToken }),
+    },
+    'CDR matching',
     60_000
   )
 }

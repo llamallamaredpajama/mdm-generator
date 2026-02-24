@@ -1,4 +1,7 @@
 /**
+ * @deprecated Replaced by DashboardOutput + DifferentialList in BM-2.1.
+ * Kept for CSS pattern reference. Safe to delete after cleanup pass.
+ *
  * DifferentialPreview Component
  *
  * Displays the differential diagnosis list generated from Section 1.

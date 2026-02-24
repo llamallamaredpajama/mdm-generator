@@ -3,9 +3,9 @@ import { z } from 'zod'
 // ============================================================================
 // Character limits for each section
 // ============================================================================
-export const SECTION1_MAX_CHARS = 4000
-export const SECTION2_MAX_CHARS = 3000
-export const SECTION3_MAX_CHARS = 2500
+export const SECTION1_MAX_CHARS = 2000
+export const SECTION2_MAX_CHARS = 2000
+export const SECTION3_MAX_CHARS = 2000
 
 // ============================================================================
 // Request Schemas
@@ -29,13 +29,37 @@ export type Section1Request = z.infer<typeof Section1RequestSchema>
 
 /**
  * Section 2: Workup & Results
- * Labs, imaging, EKG, clinical decision rules, working diagnosis
+ * Labs, imaging, EKG, clinical decision rules, working diagnosis.
+ *
+ * Accepts optional structured data (selectedTests, testResults, workingDiagnosis)
+ * alongside the legacy free-text content field. When structured data is present,
+ * it enriches the LLM prompt with precise test results. The free-text `content`
+ * field remains required for backward compatibility and narrative context.
  */
 export const Section2RequestSchema = z.object({
   encounterId: z.string().min(1),
   content: z.string().min(1).max(SECTION2_MAX_CHARS),
   workingDiagnosis: z.string().optional(),
   userIdToken: z.string().min(10),
+  // Structured data fields (optional — backward compatible)
+  // Note: Uses z.any() / z.record for forward-ref types (TestResult, WorkingDiagnosis
+  // are defined later in this file). Actual shape validation happens at Firestore layer.
+  selectedTests: z.array(z.string()).optional(),
+  testResults: z.record(z.string(), z.object({
+    status: z.enum(['unremarkable', 'abnormal', 'pending']),
+    quickFindings: z.array(z.string()).optional(),
+    notes: z.string().nullable().optional(),
+    value: z.string().nullable().optional(),
+    unit: z.string().nullable().optional(),
+  })).optional(),
+  structuredDiagnosis: z.union([
+    z.string(),
+    z.object({
+      selected: z.string().nullable(),
+      custom: z.string().nullable().optional(),
+      suggestedOptions: z.array(z.string()).optional(),
+    }),
+  ]).nullable().optional(),
 })
 
 export type Section2Request = z.infer<typeof Section2RequestSchema>
@@ -140,6 +164,143 @@ export const FinalizeResponseSchema = z.object({
 export type FinalizeResponse = z.infer<typeof FinalizeResponseSchema>
 
 // ============================================================================
+// Structured Data Schemas (Build Mode v2 Extensions)
+// ============================================================================
+
+export const TestResultStatusSchema = z.enum(['unremarkable', 'abnormal', 'pending'])
+export type TestResultStatus = z.infer<typeof TestResultStatusSchema>
+
+export const TestResultSchema = z.object({
+  status: TestResultStatusSchema,
+  quickFindings: z.array(z.string()).optional(),
+  notes: z.string().nullable().optional(),
+  value: z.string().nullable().optional(),
+  unit: z.string().nullable().optional(),
+})
+export type TestResult = z.infer<typeof TestResultSchema>
+
+export const WorkingDiagnosisSchema = z.object({
+  selected: z.string().nullable(),
+  custom: z.string().nullable().optional(),
+  suggestedOptions: z.array(z.string()).optional(),
+})
+export type WorkingDiagnosis = z.infer<typeof WorkingDiagnosisSchema>
+
+export const CdrComponentSourceSchema = z.enum(['section1', 'section2', 'user_input'])
+export type CdrComponentSource = z.infer<typeof CdrComponentSourceSchema>
+
+export const CdrComponentStateSchema = z.object({
+  value: z.number().nullable().optional(),
+  source: CdrComponentSourceSchema.nullable().optional(),
+  answered: z.boolean(),
+})
+export type CdrComponentState = z.infer<typeof CdrComponentStateSchema>
+
+export const CdrStatusSchema = z.enum(['pending', 'partial', 'completed', 'dismissed'])
+export type CdrStatus = z.infer<typeof CdrStatusSchema>
+
+export const CdrTrackingEntrySchema = z.object({
+  name: z.string(),
+  status: CdrStatusSchema,
+  identifiedInSection: z.number().int().min(1).max(3).optional(),
+  completedInSection: z.number().int().min(1).max(3).nullable().optional(),
+  dismissed: z.boolean(),
+  components: z.record(z.string(), CdrComponentStateSchema),
+  score: z.number().nullable().optional(),
+  interpretation: z.string().nullable().optional(),
+})
+export type CdrTrackingEntry = z.infer<typeof CdrTrackingEntrySchema>
+
+export const CdrTrackingSchema = z.record(z.string(), CdrTrackingEntrySchema)
+export type CdrTracking = z.infer<typeof CdrTrackingSchema>
+
+export const DispositionOptionSchema = z.enum(['discharge', 'observation', 'admit', 'icu', 'transfer', 'ama', 'lwbs', 'deceased'])
+export type DispositionOption = z.infer<typeof DispositionOptionSchema>
+
+// ============================================================================
+// Match-CDRs Request/Response Schemas
+// ============================================================================
+
+/**
+ * POST /v1/build-mode/match-cdrs
+ * Matches CDRs from S1 differential and auto-populates components from narrative.
+ */
+export const MatchCdrsRequestSchema = z.object({
+  encounterId: z.string().min(1),
+  userIdToken: z.string().min(10),
+})
+
+export type MatchCdrsRequest = z.infer<typeof MatchCdrsRequestSchema>
+
+export const MatchCdrsResponseSchema = z.object({
+  ok: z.literal(true),
+  cdrTracking: CdrTrackingSchema,
+  matchedCount: z.number(),
+})
+
+export type MatchCdrsResponse = z.infer<typeof MatchCdrsResponseSchema>
+
+// ============================================================================
+// Suggest-Diagnosis Request/Response Schemas
+// ============================================================================
+
+/**
+ * POST /v1/build-mode/suggest-diagnosis
+ * Given S1 differential + S2 results, suggest ranked working diagnoses.
+ * No quota deduction — UI helper only.
+ */
+export const SuggestDiagnosisRequestSchema = z.object({
+  encounterId: z.string().min(1),
+  userIdToken: z.string().min(10),
+})
+
+export type SuggestDiagnosisRequest = z.infer<typeof SuggestDiagnosisRequestSchema>
+
+export const SuggestDiagnosisResponseSchema = z.object({
+  ok: z.literal(true),
+  suggestions: z.array(z.string()).min(1).max(7),
+})
+
+export type SuggestDiagnosisResponse = z.infer<typeof SuggestDiagnosisResponseSchema>
+
+// ============================================================================
+// Parse-Results Request/Response Schemas
+// ============================================================================
+
+/**
+ * POST /v1/build-mode/parse-results
+ * AI parsing of pasted lab/EHR text into structured results mapped to ordered tests.
+ * No quota deduction — UI helper only.
+ */
+export const ParseResultsRequestSchema = z.object({
+  encounterId: z.string().min(1),
+  pastedText: z.string().min(1).max(8000),
+  orderedTestIds: z.array(z.string().min(1)).min(1),
+  userIdToken: z.string().min(10),
+})
+
+export type ParseResultsRequest = z.infer<typeof ParseResultsRequestSchema>
+
+export const ParsedResultItemSchema = z.object({
+  testId: z.string(),
+  testName: z.string(),
+  status: z.enum(['unremarkable', 'abnormal']),
+  value: z.string().optional(),
+  unit: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+export type ParsedResultItem = z.infer<typeof ParsedResultItemSchema>
+
+export const ParseResultsResponseSchema = z.object({
+  ok: z.literal(true),
+  parsed: z.array(ParsedResultItemSchema),
+  unmatchedText: z.array(z.string()).optional(),
+})
+
+export type ParseResultsResponse = z.infer<typeof ParseResultsResponseSchema>
+
+// ============================================================================
 // Firestore Document Schemas (for validation)
 // ============================================================================
 
@@ -164,7 +325,11 @@ export const EncounterStatusSchema = z.enum([
 export type EncounterStatus = z.infer<typeof EncounterStatusSchema>
 
 /**
- * Section data structure for Firestore
+ * Section data structure for Firestore.
+ *
+ * `.nullable().optional()` fields accept both Firestore null and missing values.
+ * Frontend onSnapshot handlers convert null → undefined via `?? undefined` to
+ * match TypeScript optional (`?`) semantics. See useEncounter.ts.
  */
 export const SectionDataSchema = z.object({
   content: z.string().default(''),
@@ -172,6 +337,19 @@ export const SectionDataSchema = z.object({
   submissionCount: z.number().int().min(0).max(2).default(0),
   llmResponse: z.any().nullable().default(null),
   lastUpdated: z.any().nullable().default(null), // Firestore Timestamp
+  // S2 structured fields (ignored by S1/S3 when absent)
+  selectedTests: z.array(z.string()).optional(),
+  testResults: z.record(z.string(), TestResultSchema).optional(),
+  allUnremarkable: z.boolean().optional(),
+  pastedRawText: z.string().nullable().optional(),
+  appliedOrderSet: z.string().nullable().optional(),
+  workingDiagnosis: z.union([z.string(), WorkingDiagnosisSchema]).nullable().optional(),
+  // S3 structured fields (ignored by S1/S2 when absent)
+  treatments: z.string().optional(),
+  cdrSuggestedTreatments: z.array(z.string()).optional(),
+  disposition: DispositionOptionSchema.nullable().optional(),
+  followUp: z.array(z.string()).optional(),
+  appliedDispoFlow: z.string().nullable().optional(),
 })
 
 export type SectionData = z.infer<typeof SectionDataSchema>
@@ -188,6 +366,7 @@ export const EncounterDocumentSchema = z.object({
   section1: SectionDataSchema.default({}),
   section2: SectionDataSchema.default({}),
   section3: SectionDataSchema.default({}),
+  cdrTracking: CdrTrackingSchema.optional().default({}),
   createdAt: z.any(), // Firestore Timestamp
   updatedAt: z.any(), // Firestore Timestamp
   shiftStartedAt: z.any(), // Firestore Timestamp

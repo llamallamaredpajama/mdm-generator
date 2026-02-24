@@ -102,6 +102,10 @@ export interface DifferentialItem {
   urgency: UrgencyLevel
   /** Clinical reasoning supporting this diagnosis */
   reasoning: string
+  /** Regional surveillance context (e.g., "RSV activity elevated in region") */
+  regionalContext?: string
+  /** Clinical decision rule context (e.g., "HEART score applicable") */
+  cdrContext?: string
 }
 
 /**
@@ -135,6 +139,74 @@ export interface FinalMdm {
 }
 
 // ============================================================================
+// Foundational Types (used across sections and structured data)
+// ============================================================================
+
+/** Section number type for type-safe section references */
+export type SectionNumber = 1 | 2 | 3
+
+// ============================================================================
+// Structured Data Types (Build Mode v2 Extensions)
+// ============================================================================
+
+/** Status of an individual test result */
+export type TestResultStatus = 'unremarkable' | 'abnormal' | 'pending'
+
+/** Individual test result with structured findings */
+export interface TestResult {
+  status: TestResultStatus
+  quickFindings?: string[]
+  notes?: string | null
+  value?: string | null
+  unit?: string | null
+}
+
+/** Structured working diagnosis with AI suggestions */
+export interface WorkingDiagnosis {
+  selected: string | null
+  custom?: string | null
+  suggestedOptions?: string[]
+}
+
+/** Type guard: distinguishes structured WorkingDiagnosis from legacy plain string */
+export const isStructuredDiagnosis = (
+  wd: string | WorkingDiagnosis | undefined | null
+): wd is WorkingDiagnosis => {
+  return wd !== null && wd !== undefined && typeof wd === 'object'
+}
+
+/** Source of a CDR component value */
+export type CdrComponentSource = 'section1' | 'section2' | 'user_input'
+
+/** State of an individual CDR component */
+export interface CdrComponentState {
+  value?: number | null
+  source?: CdrComponentSource | null
+  answered: boolean
+}
+
+/** Status of a CDR tracking entry */
+export type CdrStatus = 'pending' | 'partial' | 'completed' | 'dismissed'
+
+/** Tracking entry for a single clinical decision rule */
+export interface CdrTrackingEntry {
+  name: string
+  status: CdrStatus
+  identifiedInSection?: SectionNumber
+  completedInSection?: SectionNumber | null
+  dismissed: boolean
+  components: Record<string, CdrComponentState>
+  score?: number | null
+  interpretation?: string | null
+}
+
+/** CDR tracking state, keyed by CDR ID (e.g., "heart", "wells_pe") */
+export type CdrTracking = Record<string, CdrTrackingEntry>
+
+/** Disposition option for patient */
+export type DispositionOption = 'discharge' | 'observation' | 'admit' | 'icu' | 'transfer' | 'ama' | 'lwbs' | 'deceased'
+
+// ============================================================================
 // Section Data Interfaces
 // ============================================================================
 
@@ -146,7 +218,7 @@ export interface FinalMdm {
 export interface Section1Data {
   /** Status of this section */
   status: SectionStatus
-  /** User dictation content (max 4000 chars) */
+  /** User dictation content (frontend: SECTION1_MAX_CHARS) */
   content: string
   /** Number of times this section has been submitted (0, 1, or 2) */
   submissionCount: number
@@ -169,14 +241,24 @@ export interface Section1Data {
 export interface Section2Data {
   /** Status of this section */
   status: SectionStatus
-  /** User dictation content (max 3000 chars) */
+  /** User dictation content (frontend: SECTION2_MAX_CHARS) */
   content: string
   /** Number of times this section has been submitted (0, 1, or 2) */
   submissionCount: number
   /** Whether this section is locked (true after 2nd submission) */
   isLocked: boolean
-  /** Optional working diagnosis specified by user */
-  workingDiagnosis?: string
+  /** Working diagnosis — plain string (legacy) or structured object (v2) */
+  workingDiagnosis?: string | WorkingDiagnosis
+  /** Selected test IDs from master test library (e.g., "ecg", "troponin") */
+  selectedTests?: string[]
+  /** Test results keyed by test ID */
+  testResults?: Record<string, TestResult>
+  /** Whether all test results are unremarkable */
+  allUnremarkable?: boolean
+  /** Raw pasted text from results (unstructured fallback) */
+  pastedRawText?: string | null
+  /** Applied order set ID, if any */
+  appliedOrderSet?: string | null
   /** LLM response after processing */
   llmResponse?: {
     /** Generated MDM preview */
@@ -194,12 +276,22 @@ export interface Section2Data {
 export interface Section3Data {
   /** Status of this section */
   status: SectionStatus
-  /** User dictation content (max 2500 chars) */
+  /** User dictation content (frontend: SECTION3_MAX_CHARS) */
   content: string
   /** Number of times this section has been submitted (0, 1, or 2) */
   submissionCount: number
   /** Whether this section is locked (true after 2nd submission) */
   isLocked: boolean
+  /** Free-text treatments description */
+  treatments?: string
+  /** CDR-suggested treatment IDs */
+  cdrSuggestedTreatments?: string[]
+  /** Patient disposition */
+  disposition?: DispositionOption | null
+  /** Follow-up instructions */
+  followUp?: string[]
+  /** Applied disposition flow ID, if any */
+  appliedDispoFlow?: string | null
   /** LLM response after processing */
   llmResponse?: {
     /** Final generated MDM */
@@ -252,6 +344,9 @@ export interface EncounterDocument {
   section2: Section2Data
   /** Section 3: Treatment & Disposition data (build mode) */
   section3: Section3Data
+
+  /** CDR tracking state, keyed by CDR ID (always hydrated to {} by onSnapshot) */
+  cdrTracking: CdrTracking
 
   /** Whether this encounter has been counted against user quota */
   quotaCounted: boolean
@@ -311,9 +406,6 @@ export interface FinalizeResponse {
 // ============================================================================
 // Utility Types
 // ============================================================================
-
-/** Section number type for type-safe section references */
-export type SectionNumber = 1 | 2 | 3
 
 /** Map section number to its data type */
 export type SectionDataMap = {

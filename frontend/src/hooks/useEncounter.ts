@@ -106,8 +106,25 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               // Quick mode data (only present for quick mode encounters)
               quickModeData: data.quickModeData,
               section1: data.section1,
-              section2: data.section2,
-              section3: data.section3,
+              // Defensive defaults: bridge Firestore null → TypeScript types (BM-1.3)
+              section2: {
+                ...data.section2,
+                selectedTests: data.section2?.selectedTests ?? [],
+                testResults: data.section2?.testResults ?? {},
+                allUnremarkable: data.section2?.allUnremarkable ?? false,
+                pastedRawText: data.section2?.pastedRawText ?? null,
+                appliedOrderSet: data.section2?.appliedOrderSet ?? null,
+                workingDiagnosis: data.section2?.workingDiagnosis ?? undefined, // null → undefined
+              },
+              section3: {
+                ...data.section3,
+                treatments: data.section3?.treatments ?? undefined, // null → undefined
+                cdrSuggestedTreatments: data.section3?.cdrSuggestedTreatments ?? [],
+                disposition: data.section3?.disposition ?? null,
+                followUp: data.section3?.followUp ?? [],
+                appliedDispoFlow: data.section3?.appliedDispoFlow ?? null,
+              },
+              cdrTracking: data.cdrTracking ?? {},
               quotaCounted: data.quotaCounted,
               quotaCountedAt: data.quotaCountedAt,
               createdAt: data.createdAt,
@@ -270,8 +287,14 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
             break
           }
 
-          case 2:
-            response = await processSection2(encounterId, content, token, workingDiagnosis)
+          case 2: {
+            // Collect structured data from the encounter for the S2 prompt
+            const s2Structured = {
+              selectedTests: encounter.section2.selectedTests,
+              testResults: encounter.section2.testResults,
+              structuredDiagnosis: encounter.section2.workingDiagnosis,
+            }
+            response = await processSection2(encounterId, content, token, workingDiagnosis, s2Structured)
             // Update Firestore with response
             await updateDoc(encounterRef, {
               'section2.content': content,
@@ -288,6 +311,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               updatedAt: serverTimestamp(),
             })
             break
+          }
 
           case 3:
             response = await finalizeEncounter(encounterId, content, token)
