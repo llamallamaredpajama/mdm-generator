@@ -34,6 +34,7 @@ import ProgressIndicator from './shared/ProgressIndicator'
 import OrderSelector from './shared/OrderSelector'
 import WorkingDiagnosisInput from './shared/WorkingDiagnosisInput'
 import PasteLabModal from './shared/PasteLabModal'
+import TreatmentInput from './shared/TreatmentInput'
 import { getRecommendedTestIds } from './shared/getRecommendedTestIds'
 import type { WorkingDiagnosis } from '../../types/encounter'
 import './EncounterEditor.css'
@@ -569,6 +570,20 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   const [dictationParsedResults, setDictationParsedResults] = useState<ParsedResultItem[]>([])
   const [dictationUnmatchedText, setDictationUnmatchedText] = useState<string[]>([])
 
+  // S3 treatment state (initialized from encounter, synced via handleTreatmentUpdate)
+  const [s3TreatmentText, setS3TreatmentText] = useState('')
+  const [s3SelectedTreatments, setS3SelectedTreatments] = useState<string[]>([])
+  const s3TreatmentInitRef = useRef(false)
+
+  // Initialize S3 treatment state from encounter data
+  useEffect(() => {
+    if (encounter && !s3TreatmentInitRef.current) {
+      setS3TreatmentText(encounter.section3?.treatments ?? encounter.section3?.content ?? '')
+      setS3SelectedTreatments(encounter.section3?.cdrSuggestedTreatments ?? [])
+      s3TreatmentInitRef.current = true
+    }
+  }, [encounter])
+
   // PHI confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [pendingSection, setPendingSection] = useState<SectionNumber | null>(null)
@@ -601,6 +616,29 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       updateSectionContent(section, content)
     },
     [updateSectionContent]
+  )
+
+  /**
+   * Handle S3 treatment input update — sync text to section content and persist selections
+   */
+  const handleTreatmentUpdate = useCallback(
+    (treatments: string, cdrSuggestions: string[]) => {
+      setS3TreatmentText(treatments)
+      setS3SelectedTreatments(cdrSuggestions)
+      // Sync treatment text into S3 content for submission
+      updateSectionContent(3, treatments)
+      // Persist CDR suggestion selections to Firestore
+      if (user && encounterId) {
+        const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+        updateDoc(encounterRef, {
+          'section3.treatments': treatments,
+          'section3.cdrSuggestedTreatments': cdrSuggestions,
+        }).catch((err) =>
+          console.error('Failed to persist S3 treatments:', err?.message || 'unknown error')
+        )
+      }
+    },
+    [user, encounterId, updateSectionContent]
   )
 
   /**
@@ -1039,6 +1077,20 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
             submissionCount={section3State.submissionCount}
             guide={getSectionGuide(3)}
             preview={getSectionPreview(3, encounter)}
+            customContent={
+              !isFinalized && !isArchived && encounter ? (
+                <TreatmentInput
+                  encounter={encounter}
+                  cdrLibrary={cdrLibrary}
+                  selectedTreatments={s3SelectedTreatments}
+                  treatmentText={s3TreatmentText}
+                  onUpdate={handleTreatmentUpdate}
+                  disabled={section3State.isLocked || isFinalized || isArchived}
+                />
+              ) : undefined
+            }
+            textareaPlaceholder="Additional notes for Section 3 (optional)..."
+            allowEmptySubmit={s3TreatmentText.trim().length > 0}
             onContentChange={(content: string) => handleContentChange(3, content)}
             onSubmit={() => handleSubmitClick(3)}
             isSubmitting={isSubmitting && submittingSection === 3}

@@ -67,8 +67,8 @@ development_status:
   5-3-brief-s2-cdr-output: done
   epic-5-retrospective: optional
 
-  epic-6: backlog
-  6-1-treatment-input-cdr-suggestions: backlog
+  epic-6: in-progress
+  6-1-treatment-input-cdr-suggestions: done
   6-2-disposition-selector-saved-flows: backlog
   6-3-finalize-prompt-structured-data: backlog
   epic-6-retrospective: optional
