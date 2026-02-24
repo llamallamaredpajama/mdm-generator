@@ -17,11 +17,14 @@ import type { TrendAnalysisResult } from '../../../types/surveillance'
 import DifferentialList from './DifferentialList'
 import WorkupCard from './WorkupCard'
 import OrderSelector from './OrderSelector'
+import OrderSetSuggestion from './OrderSetSuggestion'
+import SaveOrderSetModal from './SaveOrderSetModal'
 import CdrCard from './CdrCard'
 import CdrDetailView from './CdrDetailView'
 import RegionalTrendsCard from './RegionalTrendsCard'
 import { useTestLibrary } from '../../../hooks/useTestLibrary'
 import { useCdrLibrary } from '../../../hooks/useCdrLibrary'
+import { useOrderSets, type OrderSet } from '../../../hooks/useOrderSets'
 import { getRecommendedTestIds } from './getRecommendedTestIds'
 import { getIdentifiedCdrs } from './getIdentifiedCdrs'
 import { useIsMobile } from '../../../hooks/useMediaQuery'
@@ -80,8 +83,11 @@ export default function DashboardOutput({
   const differential = getDifferential(llmResponse)
   const [showOrderSelector, setShowOrderSelector] = useState(false)
   const [showCdrDetail, setShowCdrDetail] = useState(false)
+  const [showSaveOrderSet, setShowSaveOrderSet] = useState(false)
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false)
   const { tests, loading: testsLoading } = useTestLibrary()
   const { cdrs, loading: cdrsLoading, error: cdrsError } = useCdrLibrary()
+  const { saveOrderSet, incrementUsage, suggestOrderSet } = useOrderSets()
 
   const recommendedTestIds = useMemo(
     () => getRecommendedTestIds(differential, tests),
@@ -106,6 +112,40 @@ export default function DashboardOutput({
       onSelectedTestsChange(recommendedTestIds)
     }
   }, [recommendedTestIds, selectedTests.length, onSelectedTestsChange])
+
+  // Build a text summary of the differential for order set matching
+  const differentialText = useMemo(
+    () => differential.map((d) => `${d.diagnosis} ${d.reasoning || ''}`).join(' '),
+    [differential]
+  )
+
+  const suggestedOrderSet = useMemo(
+    () => (suggestionDismissed ? null : suggestOrderSet(differentialText)),
+    [suggestOrderSet, differentialText, suggestionDismissed]
+  )
+
+  const handleApplyOrderSet = (orderSet: OrderSet) => {
+    if (!onSelectedTestsChange) return
+    const merged = new Set([...selectedTests, ...orderSet.testIds])
+    onSelectedTestsChange(Array.from(merged))
+    incrementUsage(orderSet.id)
+    setSuggestionDismissed(true)
+  }
+
+  const handleCustomizeOrderSet = (orderSet: OrderSet) => {
+    if (!onSelectedTestsChange) return
+    // Pre-load order set tests then open the order selector
+    const merged = new Set([...selectedTests, ...orderSet.testIds])
+    onSelectedTestsChange(Array.from(merged))
+    incrementUsage(orderSet.id)
+    setSuggestionDismissed(true)
+    setShowOrderSelector(true)
+  }
+
+  const handleSaveOrderSet = (name: string, testIds: string[], tags: string[]) => {
+    saveOrderSet(name, testIds, tags)
+    setShowSaveOrderSet(false)
+  }
 
   if (differential.length === 0) return null
 
@@ -146,6 +186,16 @@ export default function DashboardOutput({
         <DifferentialList differential={differential} />
       </div>
 
+      {/* Order Set Suggestion */}
+      {suggestedOrderSet && onSelectedTestsChange && (
+        <OrderSetSuggestion
+          orderSet={suggestedOrderSet}
+          onApplyAll={handleApplyOrderSet}
+          onCustomize={handleCustomizeOrderSet}
+          onSkip={() => setSuggestionDismissed(true)}
+        />
+      )}
+
       {/* CDR + Workup: side-by-side on desktop, stacked on mobile */}
       <div className="dashboard-output__middle-row">
         <CdrCard identifiedCdrs={identifiedCdrs} loading={cdrsLoading} error={cdrsError} onViewCdrs={handleViewCdrs} />
@@ -156,6 +206,7 @@ export default function DashboardOutput({
             selectedTests={selectedTests}
             onSelectionChange={handleSelectionChange}
             onOpenOrderSelector={() => setShowOrderSelector(true)}
+            onSaveOrderSet={selectedTests.length > 0 ? () => setShowSaveOrderSet(true) : undefined}
             loading={testsLoading}
           />
         ) : (
@@ -165,6 +216,16 @@ export default function DashboardOutput({
           />
         )}
       </div>
+
+      {/* Save Order Set Modal */}
+      {showSaveOrderSet && (
+        <SaveOrderSetModal
+          selectedTestIds={selectedTests}
+          tests={tests}
+          onSave={handleSaveOrderSet}
+          onClose={() => setShowSaveOrderSet(false)}
+        />
+      )}
 
       {/* Trends: full-width, conditionally shown */}
       <RegionalTrendsCard analysis={trendAnalysis} isLoading={trendLoading} />

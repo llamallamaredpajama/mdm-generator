@@ -3,6 +3,7 @@ import { useAuthToken, useAuth, signOutUser } from '../lib/firebase'
 import { whoAmI } from '../lib/api'
 import { useSubscription } from '../hooks/useSubscription'
 import { useToast } from '../contexts/ToastContext'
+import { useOrderSets } from '../hooks/useOrderSets'
 import {
   createCheckoutSession,
   createCustomerPortalSession,
@@ -41,6 +42,7 @@ export default function Settings() {
   const { user } = useAuth()
   const { subscription, tier, loading: subLoading } = useSubscription()
   const { error: showError } = useToast()
+  const { orderSets, deleteOrderSet } = useOrderSets()
   const [info, setInfo] = useState<{ plan: string | null; usedThisPeriod: number; monthlyQuota: number; remaining: number } | null>(null)
   const [loading, setLoading] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
@@ -384,6 +386,54 @@ export default function Settings() {
                 )}
               </div>
             </>
+          )}
+        </section>
+      )}
+
+      {/* Order Sets */}
+      {user && (
+        <section className="settings-section">
+          <h2 className="settings-section-title">
+            <svg className="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+              <rect x="9" y="3" width="6" height="4" rx="1" />
+            </svg>
+            Order Sets
+          </h2>
+
+          {orderSets.length === 0 ? (
+            <div className="settings-card settings-card--static">
+              <p className="settings-status settings-status--info">
+                No saved order sets. Save one from the workup card during an encounter.
+              </p>
+            </div>
+          ) : (
+            <div className="settings-card">
+              <div className="settings-orderset-list" data-testid="settings-orderset-list">
+                {orderSets.map((os) => (
+                  <div key={os.id} className="settings-orderset-item">
+                    <div className="settings-orderset-info">
+                      <span className="settings-orderset-name">{os.name}</span>
+                      <span className="settings-orderset-meta">
+                        {os.testIds.length} tests | used {os.usageCount}x
+                      </span>
+                    </div>
+                    <button
+                      className="settings-btn settings-btn--icon-danger"
+                      onClick={() => deleteOrderSet(os.id)}
+                      data-testid={`delete-orderset-${os.id}`}
+                      type="button"
+                      title="Delete order set"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </section>
       )}

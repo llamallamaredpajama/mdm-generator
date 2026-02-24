@@ -14,6 +14,7 @@ interface WorkupCardProps {
   selectedTests: string[]
   onSelectionChange: (testIds: string[]) => void
   onOpenOrderSelector: () => void
+  onSaveOrderSet?: () => void
   loading: boolean
 }
 
@@ -23,6 +24,7 @@ export default function WorkupCard({
   selectedTests,
   onSelectionChange,
   onOpenOrderSelector,
+  onSaveOrderSet,
   loading,
 }: WorkupCardProps) {
   const recommendedTests = useMemo(
@@ -78,6 +80,16 @@ export default function WorkupCard({
           >
             Edit
           </button>
+          {onSaveOrderSet && selectedTests.length > 0 && (
+            <button
+              type="button"
+              className="workup-card__action-btn workup-card__action-btn--save"
+              onClick={onSaveOrderSet}
+              data-testid="save-orderset-btn"
+            >
+              Save Set
+            </button>
+          )}
         </div>
       </div>
 

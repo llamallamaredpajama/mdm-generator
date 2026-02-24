@@ -68,6 +68,17 @@
   background: var(--color-surface, #f8fafc);
 }
 
+.workup-card__action-btn--save {
+  color: var(--color-text-muted, #64748b);
+  background: transparent;
+  border: 1px dashed var(--color-border, #e2e8f0);
+}
+
+.workup-card__action-btn--save:hover {
+  border-color: var(--color-primary, #3b82f6);
+  color: var(--color-primary, #3b82f6);
+}
+
 .workup-card__list {
   display: flex;
   flex-direction: column;
