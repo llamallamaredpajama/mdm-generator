@@ -12,6 +12,18 @@ import DashboardOutput from '../components/build-mode/shared/DashboardOutput'
 import type { DifferentialItem } from '../types/encounter'
 import type { TrendAnalysisResult } from '../types/surveillance'
 
+// Mock Firebase (needed by CdrDetailView → useCdrTracking)
+vi.mock('../lib/firebase', () => ({
+  db: {},
+  useAuth: () => ({ user: { uid: 'test-uid' } }),
+  useAuthToken: () => 'test-token',
+}))
+
+vi.mock('firebase/firestore', () => ({
+  doc: vi.fn(),
+  updateDoc: vi.fn().mockResolvedValue(undefined),
+}))
+
 // Mock useIsMobile hook with controllable return value
 const { mockIsMobile } = vi.hoisted(() => ({
   mockIsMobile: vi.fn().mockReturnValue(false),

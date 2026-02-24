@@ -774,6 +774,27 @@ export async function fetchCdrLibrary(
   )
 }
 
+/**
+ * Match CDRs from S1 differential and auto-populate components from narrative.
+ * Called after Section 1 completes to populate encounter cdrTracking.
+ */
+export async function matchCdrs(
+  encounterId: string,
+  userIdToken: string
+): Promise<{ ok: true; cdrTracking: import('../types/encounter').CdrTracking; matchedCount: number }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/build-mode/match-cdrs`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encounterId, userIdToken }),
+    },
+    'CDR matching',
+    60_000
+  )
+}
+
 // =============================================================================
 // Surveillance Trend Analysis API Functions
 // =============================================================================

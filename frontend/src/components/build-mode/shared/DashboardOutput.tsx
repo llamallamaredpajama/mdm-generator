@@ -12,12 +12,13 @@
  */
 
 import { useState, useMemo, useEffect, useRef } from 'react'
-import type { DifferentialItem } from '../../../types/encounter'
+import type { DifferentialItem, EncounterDocument } from '../../../types/encounter'
 import type { TrendAnalysisResult } from '../../../types/surveillance'
 import DifferentialList from './DifferentialList'
 import WorkupCard from './WorkupCard'
 import OrderSelector from './OrderSelector'
 import CdrCard from './CdrCard'
+import CdrDetailView from './CdrDetailView'
 import RegionalTrendsCard from './RegionalTrendsCard'
 import { useTestLibrary } from '../../../hooks/useTestLibrary'
 import { useCdrLibrary } from '../../../hooks/useCdrLibrary'
@@ -37,6 +38,8 @@ interface DashboardOutputProps {
   selectedTests?: string[]
   /** Callback when test selection changes */
   onSelectedTestsChange?: (testIds: string[]) => void
+  /** Encounter document (required for CDR detail view) */
+  encounter?: EncounterDocument | null
 }
 
 /**
@@ -71,10 +74,12 @@ export default function DashboardOutput({
   trendLoading = false,
   selectedTests = [],
   onSelectedTestsChange,
+  encounter,
 }: DashboardOutputProps) {
   const isMobile = useIsMobile()
   const differential = getDifferential(llmResponse)
   const [showOrderSelector, setShowOrderSelector] = useState(false)
+  const [showCdrDetail, setShowCdrDetail] = useState(false)
   const { tests, loading: testsLoading } = useTestLibrary()
   const { cdrs, loading: cdrsLoading, error: cdrsError } = useCdrLibrary()
 
@@ -120,6 +125,20 @@ export default function DashboardOutput({
     )
   }
 
+  if (showCdrDetail && encounter) {
+    return (
+      <CdrDetailView
+        encounter={encounter}
+        cdrLibrary={cdrs}
+        onBack={() => setShowCdrDetail(false)}
+      />
+    )
+  }
+
+  // Determine if "View CDRs" should be enabled (need encounter with cdrTracking)
+  const hasCdrTracking = encounter && Object.keys(encounter.cdrTracking ?? {}).length > 0
+  const handleViewCdrs = hasCdrTracking ? () => setShowCdrDetail(true) : undefined
+
   return (
     <div className={`dashboard-output ${isMobile ? 'dashboard-output--mobile' : 'dashboard-output--desktop'}`}>
       {/* Differential: always full-width */}
@@ -129,7 +148,7 @@ export default function DashboardOutput({
 
       {/* CDR + Workup: side-by-side on desktop, stacked on mobile */}
       <div className="dashboard-output__middle-row">
-        <CdrCard identifiedCdrs={identifiedCdrs} loading={cdrsLoading} error={cdrsError} />
+        <CdrCard identifiedCdrs={identifiedCdrs} loading={cdrsLoading} error={cdrsError} onViewCdrs={handleViewCdrs} />
         {onSelectedTestsChange ? (
           <WorkupCard
             tests={tests}

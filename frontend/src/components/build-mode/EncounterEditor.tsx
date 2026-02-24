@@ -9,7 +9,7 @@
 
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
-import { db, useAuth } from '../../lib/firebase'
+import { db, useAuth, useAuthToken } from '../../lib/firebase'
 import { useEncounter, useSectionState } from '../../hooks/useEncounter'
 import { ShiftTimer } from './ShiftTimer'
 import SectionPanel from './SectionPanel'
@@ -21,7 +21,7 @@ import DashboardOutput from './shared/DashboardOutput'
 import type { SectionNumber, EncounterDocument, SectionStatus, MdmPreview, FinalMdm } from '../../types/encounter'
 import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
-import { ApiError } from '../../lib/api'
+import { ApiError, matchCdrs } from '../../lib/api'
 import ConfirmationModal from '../ConfirmationModal'
 import TrendAnalysisToggle from '../TrendAnalysisToggle'
 import TrendReportModal from '../TrendReportModal'
@@ -106,6 +106,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   } = useEncounter(encounterId)
 
   const { user } = useAuth()
+  const token = useAuthToken()
 
   // Working diagnosis input for Section 2
   const [workingDiagnosis, setWorkingDiagnosis] = useState('')
@@ -138,7 +139,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       firestoreWriteTimer.current = setTimeout(() => {
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
         updateDoc(encounterRef, { 'section2.selectedTests': testIds }).catch((err) =>
-          console.error('Failed to persist selectedTests:', err)
+          console.error('Failed to persist selectedTests:', err?.message || 'unknown error')
         )
         pendingTestsRef.current = null
       }, 300)
@@ -153,7 +154,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       if (pendingTestsRef.current !== null && user && encounterId) {
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
         updateDoc(encounterRef, { 'section2.selectedTests': pendingTestsRef.current }).catch((err) =>
-          console.error('Failed to flush selectedTests on unmount:', err)
+          console.error('Failed to flush selectedTests on unmount:', err?.message || 'unknown error')
         )
       }
     }
@@ -197,6 +198,23 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       }
     }
   }, [encounter?.id, encounter?.section1?.status, encounter?.section1?.llmResponse, encounter?.chiefComplaint, analyze])
+
+  // Trigger CDR matching when Section 1 completes (non-blocking, supplements trend analysis)
+  const cdrMatchedForRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (
+      encounter?.section1?.status === 'completed' &&
+      encounter.section1.llmResponse &&
+      token &&
+      cdrMatchedForRef.current !== encounter.id
+    ) {
+      cdrMatchedForRef.current = encounter.id
+      // Fire and forget — backend writes cdrTracking to Firestore, onSnapshot picks it up
+      matchCdrs(encounter.id, token).catch((err) => {
+        console.warn('CDR matching failed (non-blocking):', err?.message || 'unknown error')
+      })
+    }
+  }, [encounter?.id, encounter?.section1?.status, encounter?.section1?.llmResponse, token])
 
   // Trend report modal state
   const [showTrendReport, setShowTrendReport] = useState(false)
@@ -406,6 +424,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
               trendLoading={isAnalyzing}
               selectedTests={selectedTests}
               onSelectedTestsChange={handleSelectedTestsChange}
+              encounter={encounter}
             />
             {analysis && analysis.rankedFindings.length > 0 && (
               <button
