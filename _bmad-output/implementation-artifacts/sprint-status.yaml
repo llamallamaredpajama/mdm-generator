@@ -46,7 +46,7 @@ development_status:
   2-1-dashboard-output-layout: done
   2-2-workup-card-order-selection: done
   2-3-cdr-summary-card: done
-  2-4-regional-trends-card-integration: backlog
+  2-4-regional-trends-card-integration: done
   epic-2-retrospective: optional
 
   epic-3: backlog

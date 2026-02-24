@@ -18,6 +18,7 @@ import DifferentialList from './DifferentialList'
 import WorkupCard from './WorkupCard'
 import OrderSelector from './OrderSelector'
 import CdrCard from './CdrCard'
+import RegionalTrendsCard from './RegionalTrendsCard'
 import { useTestLibrary } from '../../../hooks/useTestLibrary'
 import { useCdrLibrary } from '../../../hooks/useCdrLibrary'
 import { getRecommendedTestIds } from './getRecommendedTestIds'
@@ -56,49 +57,6 @@ function StubCard({ title, description }: { title: string; description: string }
     <div className="dashboard-output__stub-card">
       <h4 className="dashboard-output__stub-title">{title}</h4>
       <p className="dashboard-output__stub-text">{description}</p>
-    </div>
-  )
-}
-
-function TrendsCard({
-  analysis,
-  isLoading,
-}: {
-  analysis: TrendAnalysisResult | null
-  isLoading?: boolean
-}) {
-  if (isLoading) {
-    return (
-      <div className="dashboard-output__trends-card">
-        <h4 className="dashboard-output__stub-title">Regional Trends</h4>
-        <p className="dashboard-output__stub-text">Analyzing regional surveillance data...</p>
-      </div>
-    )
-  }
-
-  if (!analysis || analysis.rankedFindings.length === 0) {
-    return null
-  }
-
-  return (
-    <div className="dashboard-output__trends-card">
-      <h4 className="dashboard-output__stub-title">Regional Trends</h4>
-      <div className="dashboard-output__trends-findings">
-        {analysis.rankedFindings.slice(0, 3).map((finding, i) => (
-          <p key={`${finding.condition}-${i}`} className="dashboard-output__trend-line">
-            <span className={`dashboard-output__trend-arrow dashboard-output__trend-arrow--${finding.trendDirection}`}>
-              {finding.trendDirection === 'rising' ? '\u2191' : finding.trendDirection === 'falling' ? '\u2193' : '\u2192'}
-            </span>
-            {' '}
-            <strong>{finding.condition}</strong>
-            {' \u2014 '}
-            {finding.summary}
-          </p>
-        ))}
-      </div>
-      <p className="dashboard-output__trends-attribution">
-        {analysis.regionLabel} | {analysis.dataSourcesQueried.join(', ')}
-      </p>
     </div>
   )
 }
@@ -190,7 +148,7 @@ export default function DashboardOutput({
       </div>
 
       {/* Trends: full-width, conditionally shown */}
-      <TrendsCard analysis={trendAnalysis} isLoading={trendLoading} />
+      <RegionalTrendsCard analysis={trendAnalysis} isLoading={trendLoading} />
 
       {/* Action */}
       <button
