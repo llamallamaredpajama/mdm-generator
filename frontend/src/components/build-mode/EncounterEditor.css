@@ -613,3 +613,92 @@
 .encounter-editor__add-test-btn:hover:not(:disabled) {
   background: rgba(59, 130, 246, 0.06);
 }
+
+/* ============================================================================
+   Mode Toggle: Structured / Dictation (BM-5.2)
+   ============================================================================ */
+
+.encounter-editor__mode-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.375rem;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.encounter-editor__mode-btn {
+  flex: 1;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #6b7280);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.encounter-editor__mode-btn:not(:last-child) {
+  border-right: 1px solid var(--color-border, #e5e7eb);
+}
+
+.encounter-editor__mode-btn--active {
+  background: var(--color-primary, #3b82f6);
+  color: #ffffff;
+}
+
+.encounter-editor__mode-btn:hover:not(:disabled):not(.encounter-editor__mode-btn--active) {
+  background: var(--color-hover, #f3f4f6);
+}
+
+.encounter-editor__mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   Dictation Mode (BM-5.2)
+   ============================================================================ */
+
+.encounter-editor__dictation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.encounter-editor__dictation-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #6b7280);
+  line-height: 1.4;
+}
+
+.encounter-editor__dictation-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.375rem;
+  background: var(--color-background, #ffffff);
+  color: var(--color-text, #111827);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.encounter-editor__dictation-textarea:focus {
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.encounter-editor__dictation-textarea::placeholder {
+  color: var(--color-text-muted, #9ca3af);
+}
+
+.encounter-editor__dictation-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

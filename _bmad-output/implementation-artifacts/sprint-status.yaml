@@ -63,7 +63,7 @@ development_status:
 
   epic-5: in-progress
   5-1-paste-lab-results-ai-parsing: done
-  5-2-dictation-structured-results: backlog
+  5-2-dictation-structured-results: done
   5-3-brief-s2-cdr-output: backlog
   epic-5-retrospective: optional
 

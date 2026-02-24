@@ -22,6 +22,12 @@ interface PasteLabModalProps {
   orderedTestIds: string[]
   testLibrary: TestDefinition[]
   onApply: (results: Record<string, TestResult>) => void
+  /** When provided, skip idle state and show preview directly (used by dictation mode) */
+  initialParsedResults?: ParsedResultItem[]
+  /** Unmatched text from external parse (used with initialParsedResults) */
+  initialUnmatchedText?: string[]
+  /** Override modal title (e.g., "Dictation Results" instead of "Paste Lab Results") */
+  title?: string
 }
 
 export default function PasteLabModal({
@@ -31,15 +37,19 @@ export default function PasteLabModal({
   orderedTestIds,
   testLibrary,
   onApply,
+  initialParsedResults,
+  initialUnmatchedText,
+  title,
 }: PasteLabModalProps) {
   const token = useAuthToken()
-  const [state, setState] = useState<ModalState>('idle')
+  const hasInitialResults = initialParsedResults && initialParsedResults.length > 0
+  const [state, setState] = useState<ModalState>(hasInitialResults ? 'preview' : 'idle')
   const [pastedText, setPastedText] = useState('')
-  const [parsedResults, setParsedResults] = useState<ParsedResultItem[]>([])
-  const [unmatchedText, setUnmatchedText] = useState<string[]>([])
+  const [parsedResults, setParsedResults] = useState<ParsedResultItem[]>(initialParsedResults ?? [])
+  const [unmatchedText, setUnmatchedText] = useState<string[]>(initialUnmatchedText ?? [])
   const [errorMessage, setErrorMessage] = useState('')
 
-  // Reset state when modal opens/closes
+  // Reset state when modal opens/closes, or initialize from external results
   useEffect(() => {
     if (!isOpen) {
       setState('idle')
@@ -47,8 +57,13 @@ export default function PasteLabModal({
       setParsedResults([])
       setUnmatchedText([])
       setErrorMessage('')
+    } else if (initialParsedResults && initialParsedResults.length > 0) {
+      // External results provided — jump to preview
+      setParsedResults(initialParsedResults)
+      setUnmatchedText(initialUnmatchedText ?? [])
+      setState('preview')
     }
-  }, [isOpen])
+  }, [isOpen, initialParsedResults, initialUnmatchedText])
 
   // Close on Escape
   useEffect(() => {
@@ -102,10 +117,10 @@ export default function PasteLabModal({
 
   return (
     <div className="paste-lab-overlay" onClick={onClose}>
-      <div className="paste-lab-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Paste Lab Results">
+      <div className="paste-lab-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title ?? 'Paste Lab Results'}>
         {/* Header */}
         <div className="paste-lab-modal__header">
-          <h3 className="paste-lab-modal__title">Paste Lab Results</h3>
+          <h3 className="paste-lab-modal__title">{title ?? 'Paste Lab Results'}</h3>
           <button type="button" className="paste-lab-modal__close" onClick={onClose} aria-label="Close">
             &times;
           </button>
@@ -215,9 +230,12 @@ export default function PasteLabModal({
               <button
                 type="button"
                 className="paste-lab-modal__btn"
-                onClick={() => { setState('idle'); setParsedResults([]); setUnmatchedText([]); setErrorMessage('') }}
+                onClick={hasInitialResults
+                  ? onClose
+                  : () => { setState('idle'); setParsedResults([]); setUnmatchedText([]); setErrorMessage('') }
+                }
               >
-                Back
+                {hasInitialResults ? 'Cancel' : 'Back'}
               </button>
               <button
                 type="button"

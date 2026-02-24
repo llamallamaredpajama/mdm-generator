@@ -21,7 +21,7 @@ import DashboardOutput from './shared/DashboardOutput'
 import type { SectionNumber, EncounterDocument, SectionStatus, MdmPreview, FinalMdm, CdrTracking, CdrTrackingEntry, TestResult } from '../../types/encounter'
 import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
-import { ApiError, matchCdrs, suggestDiagnosis } from '../../lib/api'
+import { ApiError, matchCdrs, suggestDiagnosis, parseResults, type ParsedResultItem } from '../../lib/api'
 import { useTestLibrary } from '../../hooks/useTestLibrary'
 import { useCdrLibrary } from '../../hooks/useCdrLibrary'
 import ConfirmationModal from '../ConfirmationModal'
@@ -244,6 +244,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   // "+ Add Test" order selector toggle (shown inline in S2 custom content)
   const [showS2OrderSelector, setShowS2OrderSelector] = useState(false)
 
+  // S2 entry mode: structured (per-test cards) vs dictation (free-text AI parse) (BM-5.2)
+  const [s2EntryMode, setS2EntryMode] = useState<'structured' | 'dictation'>('structured')
+  const [dictationText, setDictationText] = useState('')
+  const [dictationParsing, setDictationParsing] = useState(false)
+
   // Compute recommended test IDs for OrderSelector "AI" badges
   const s1Differential = useMemo(() => {
     const llm = encounter?.section1?.llmResponse
@@ -351,6 +356,31 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
   const { success: toastSuccess, error: toastError } = useToast()
   const { analysis, isAnalyzing, analyze } = useTrendAnalysis()
+
+  /**
+   * Process dictation text through AI parsing (BM-5.2).
+   * Calls the same parse-results endpoint as PasteLabModal, then opens
+   * the preview modal with pre-parsed results.
+   */
+  const handleProcessDictation = useCallback(async () => {
+    if (!token || !dictationText.trim() || selectedTests.length === 0) return
+
+    setDictationParsing(true)
+    try {
+      const res = await parseResults(encounterId, dictationText.trim(), selectedTests, token)
+      if (res.parsed.length > 0) {
+        setDictationParsedResults(res.parsed)
+        setDictationUnmatchedText(res.unmatchedText ?? [])
+        setShowDictationPreview(true)
+      } else {
+        toastError('No results matched your ordered tests. Try rephrasing your dictation.')
+      }
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : 'Failed to process dictation. Please try again.')
+    } finally {
+      setDictationParsing(false)
+    }
+  }, [token, dictationText, selectedTests, encounterId, toastError])
 
   // Track whether we've already triggered analysis for this encounter
   const analyzedForRef = useRef<string | null>(null)
@@ -537,6 +567,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
   // Paste Lab Results modal state (BM-5.1)
   const [showPasteModal, setShowPasteModal] = useState(false)
+
+  // Dictation preview modal state (BM-5.2)
+  const [showDictationPreview, setShowDictationPreview] = useState(false)
+  const [dictationParsedResults, setDictationParsedResults] = useState<ParsedResultItem[]>([])
+  const [dictationUnmatchedText, setDictationUnmatchedText] = useState<string[]>([])
 
   // PHI confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false)
@@ -833,31 +868,29 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                     />
                   ) : (
                     <div className="encounter-editor__result-entries">
-                      {/* Quick action: All Results Unremarkable + Paste Results */}
+                      {/* Mode toggle: Structured vs Dictation (BM-5.2) */}
                       {!isS2Locked && (
-                        <>
+                        <div className="encounter-editor__mode-toggle" data-testid="s2-mode-toggle">
                           <button
                             type="button"
-                            className="encounter-editor__quick-action encounter-editor__quick-action--all"
-                            onClick={handleMarkAllUnremarkable}
-                            disabled={isS2Submitting}
-                            data-testid="mark-all-unremarkable"
+                            className={`encounter-editor__mode-btn${s2EntryMode === 'structured' ? ' encounter-editor__mode-btn--active' : ''}`}
+                            onClick={() => setS2EntryMode('structured')}
+                            disabled={isS2Submitting || dictationParsing}
                           >
-                            All Results Unremarkable
+                            Structured
                           </button>
                           <button
                             type="button"
-                            className="encounter-editor__quick-action encounter-editor__quick-action--paste"
-                            onClick={() => setShowPasteModal(true)}
-                            disabled={isS2Submitting}
-                            data-testid="paste-results-btn"
+                            className={`encounter-editor__mode-btn${s2EntryMode === 'dictation' ? ' encounter-editor__mode-btn--active' : ''}`}
+                            onClick={() => setS2EntryMode('dictation')}
+                            disabled={isS2Submitting || dictationParsing}
                           >
-                            Paste Results
+                            Dictation
                           </button>
-                        </>
+                        </div>
                       )}
 
-                      {/* Progress indicator */}
+                      {/* Progress indicator (shown in both modes) */}
                       <ProgressIndicator
                         total={selectedTests.length}
                         responded={respondedCount}
@@ -865,51 +898,104 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                         statuses={progressStatuses}
                       />
 
-                      {/* Result entry cards */}
-                      {selectedTests.map((testId) => {
-                        const testDef = testLibrary.find((t) => t.id === testId)
-                        if (!testDef) return null
-                        const activeCdrNames = (testDef.feedsCdrs ?? [])
-                          .filter((cdrId) => {
-                            const entry = encounter.cdrTracking?.[cdrId]
-                            return entry && !entry.dismissed
-                          })
-                          .map((cdrId) => encounter.cdrTracking[cdrId].name)
-                        return (
-                          <ResultEntry
-                            key={testId}
-                            testDef={testDef}
-                            result={testResults[testId]}
-                            activeCdrNames={activeCdrNames}
-                            onResultChange={handleTestResultChange}
+                      {s2EntryMode === 'structured' ? (
+                        <>
+                          {/* Quick action: All Results Unremarkable + Paste Results */}
+                          {!isS2Locked && (
+                            <>
+                              <button
+                                type="button"
+                                className="encounter-editor__quick-action encounter-editor__quick-action--all"
+                                onClick={handleMarkAllUnremarkable}
+                                disabled={isS2Submitting}
+                                data-testid="mark-all-unremarkable"
+                              >
+                                All Results Unremarkable
+                              </button>
+                              <button
+                                type="button"
+                                className="encounter-editor__quick-action encounter-editor__quick-action--paste"
+                                onClick={() => setShowPasteModal(true)}
+                                disabled={isS2Submitting}
+                                data-testid="paste-results-btn"
+                              >
+                                Paste Results
+                              </button>
+                            </>
+                          )}
+
+                          {/* Result entry cards */}
+                          {selectedTests.map((testId) => {
+                            const testDef = testLibrary.find((t) => t.id === testId)
+                            if (!testDef) return null
+                            const activeCdrNames = (testDef.feedsCdrs ?? [])
+                              .filter((cdrId) => {
+                                const entry = encounter.cdrTracking?.[cdrId]
+                                return entry && !entry.dismissed
+                              })
+                              .map((cdrId) => encounter.cdrTracking[cdrId].name)
+                            return (
+                              <ResultEntry
+                                key={testId}
+                                testDef={testDef}
+                                result={testResults[testId]}
+                                activeCdrNames={activeCdrNames}
+                                onResultChange={handleTestResultChange}
+                              />
+                            )
+                          })}
+
+                          {/* Quick action: Mark remaining unremarkable */}
+                          {!isS2Locked && hasPendingTests && (
+                            <button
+                              type="button"
+                              className="encounter-editor__quick-action encounter-editor__quick-action--remaining"
+                              onClick={handleMarkRemainingUnremarkable}
+                              disabled={isS2Submitting}
+                              data-testid="mark-remaining-unremarkable"
+                            >
+                              Mark remaining unremarkable
+                            </button>
+                          )}
+
+                          {/* + Add Test button */}
+                          {!isS2Locked && (
+                            <button
+                              type="button"
+                              className="encounter-editor__add-test-btn"
+                              onClick={() => setShowS2OrderSelector(true)}
+                              disabled={isS2Submitting}
+                              data-testid="add-test-btn"
+                            >
+                              + Add Test
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        /* Dictation mode (BM-5.2) */
+                        <div className="encounter-editor__dictation" data-testid="dictation-mode">
+                          <p className="encounter-editor__dictation-hint">
+                            Describe your results in natural language. AI will map them to your ordered tests.
+                          </p>
+                          <textarea
+                            className="encounter-editor__dictation-textarea"
+                            value={dictationText}
+                            onChange={(e) => setDictationText(e.target.value)}
+                            placeholder='e.g., "ECG showed normal sinus rhythm, troponin negative at 0.01, CBC unremarkable, CT head no acute findings"'
+                            rows={4}
+                            disabled={isS2Locked || dictationParsing}
+                            data-testid="dictation-textarea"
                           />
-                        )
-                      })}
-
-                      {/* Quick action: Mark remaining unremarkable */}
-                      {!isS2Locked && hasPendingTests && (
-                        <button
-                          type="button"
-                          className="encounter-editor__quick-action encounter-editor__quick-action--remaining"
-                          onClick={handleMarkRemainingUnremarkable}
-                          disabled={isS2Submitting}
-                          data-testid="mark-remaining-unremarkable"
-                        >
-                          Mark remaining unremarkable
-                        </button>
-                      )}
-
-                      {/* + Add Test button */}
-                      {!isS2Locked && (
-                        <button
-                          type="button"
-                          className="encounter-editor__add-test-btn"
-                          onClick={() => setShowS2OrderSelector(true)}
-                          disabled={isS2Submitting}
-                          data-testid="add-test-btn"
-                        >
-                          + Add Test
-                        </button>
+                          <button
+                            type="button"
+                            className="encounter-editor__quick-action encounter-editor__quick-action--paste"
+                            onClick={handleProcessDictation}
+                            disabled={!dictationText.trim() || isS2Locked || isS2Submitting || dictationParsing}
+                            data-testid="process-dictation-btn"
+                          >
+                            {dictationParsing ? 'Processing...' : 'Process Results'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   )
@@ -1049,6 +1135,19 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         orderedTestIds={selectedTests}
         testLibrary={testLibrary}
         onApply={handleBatchResultUpdate}
+      />
+
+      {/* Dictation Preview Modal (BM-5.2) */}
+      <PasteLabModal
+        isOpen={showDictationPreview}
+        onClose={() => { setShowDictationPreview(false); setDictationParsedResults([]); setDictationUnmatchedText([]) }}
+        encounterId={encounterId}
+        orderedTestIds={selectedTests}
+        testLibrary={testLibrary}
+        onApply={handleBatchResultUpdate}
+        initialParsedResults={dictationParsedResults}
+        initialUnmatchedText={dictationUnmatchedText}
+        title="Dictation Results"
       />
 
       {/* PHI Confirmation Modal */}
