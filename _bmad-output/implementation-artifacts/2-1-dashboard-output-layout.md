@@ -313,6 +313,7 @@ This story is purely frontend UI. No medical content is created, logged, or tran
 |------|---------|-------------|--------|
 | 2026-02-23 | 0.1 | Initial draft — story creation task | Claude |
 | 2026-02-23 | 1.0 | Implementation complete — DashboardOutput, DifferentialList, type extension, EncounterEditor wiring, 19 unit tests | Claude Opus 4.6 |
+| 2026-02-23 | 1.1 | Adversarial code review — fix CSS breakpoint (640→767px), add detail padding, remove diagnosis truncation, add null/undefined tests | Claude Opus 4.6 |
 
 ---
 
@@ -420,3 +421,43 @@ No concerns. DifferentialList computes urgency counts via three `filter()` passe
 ### Final Status
 
 ✓ Approved - Ready for Done
+
+---
+
+## Code Review (Adversarial)
+
+### Review Date: 2026-02-23
+
+### Reviewed By: Claude Opus 4.6 (Adversarial Code Review)
+
+### Summary
+
+All 8 ACs verified as IMPLEMENTED. All 6 task groups confirmed against code. Git diff matches story File List with 0 discrepancies. Found 8 issues (1 HIGH, 3 MEDIUM, 4 LOW); fixed the 4 actionable issues (H1 + M1-M3).
+
+### Issues Found: 1 High, 3 Medium, 4 Low
+
+#### 🔴 HIGH — Fixed
+
+- **H1.** CSS breakpoint mismatch — `DifferentialList.css:232` used `@media (max-width: 640px)` but project standard is 767px (`useIsMobile()`). Devices 640-767px had dashboard in mobile layout but DifferentialList in desktop mode. **Fixed:** changed to `@media (max-width: 767px)`.
+
+#### 🟡 MEDIUM — Fixed
+
+- **M1.** Expanded detail section had zero top padding against border — `.diff-row__details` had `padding-top: 0` with `border-top`, causing text flush against separator. **Fixed:** changed to `padding-top: 0.5rem`.
+- **M2.** Diagnosis name truncation via `text-overflow: ellipsis` could hide critical medical info (e.g., "Acute Bacterial Me..." — in a medical tool, full diagnosis names are safety-critical). **Fixed:** replaced with `word-break: break-word` to allow natural wrapping.
+- **M3.** No test case for null/undefined `llmResponse` input. `getDifferential()` handles these correctly but behavior wasn't verified. **Fixed:** added 2 test cases (null + undefined), test count 62 → 64.
+
+#### 🟢 LOW — Deferred
+
+- **L1.** TrendsCard hardcodes 3-finding slice limit — acceptable for stub, BM-2.4 replaces.
+- **L2.** Tests use `toBeDefined()` instead of `toBeInTheDocument()` — matches existing project convention, not a BM-2.1 issue.
+- **L3.** Missing ARIA landmarks on dashboard sections — deferred to BM-8.3 (Accessibility Pass).
+- **L4.** DifferentialList renders header/footer with empty array — unreachable in practice (DashboardOutput guards), acceptable for now.
+
+### Files Changed
+
+- `frontend/src/components/build-mode/shared/DifferentialList.css` (3 edits: breakpoint, padding, diagnosis overflow)
+- `frontend/src/__tests__/DashboardOutput.test.tsx` (added 2 test cases)
+
+### Verification
+
+`pnpm check` passes: tsc + eslint + 64 tests (8 test files)

@@ -118,6 +118,28 @@ describe('DashboardOutput', () => {
     expect(container.innerHTML).toBe('')
   })
 
+  it('returns null when llmResponse is null', () => {
+    const { container } = render(
+      <DashboardOutput
+        llmResponse={null}
+        trendAnalysis={null}
+      />
+    )
+
+    expect(container.innerHTML).toBe('')
+  })
+
+  it('returns null when llmResponse is undefined', () => {
+    const { container } = render(
+      <DashboardOutput
+        llmResponse={undefined}
+        trendAnalysis={null}
+      />
+    )
+
+    expect(container.innerHTML).toBe('')
+  })
+
   it('shows CDR stub card', () => {
     render(
       <DashboardOutput
