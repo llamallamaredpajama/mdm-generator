@@ -1,7 +1,8 @@
 /**
  * DashboardOutput Component Tests
  *
- * Tests rendering, data shape handling, conditional trends, and scroll behavior.
+ * Tests rendering, data shape handling, conditional trends, scroll behavior,
+ * and WorkupCard/OrderSelector integration.
  */
 
 /// <reference types="vitest/globals" />
@@ -20,11 +21,37 @@ vi.mock('../hooks/useMediaQuery', () => ({
   useIsMobile: mockIsMobile,
 }))
 
+// Mock useTestLibrary — WorkupCard uses it internally
+const { mockUseTestLibrary } = vi.hoisted(() => ({
+  mockUseTestLibrary: vi.fn().mockReturnValue({
+    tests: [
+      {
+        id: 'troponin',
+        name: 'Troponin',
+        category: 'labs',
+        subcategory: 'cardiac',
+        commonIndications: ['chest pain'],
+        unit: null,
+        normalRange: null,
+        quickFindings: null,
+        feedsCdrs: ['heart'],
+      },
+    ],
+    categories: ['labs'],
+    loading: false,
+    error: null,
+  }),
+}))
+
+vi.mock('../hooks/useTestLibrary', () => ({
+  useTestLibrary: mockUseTestLibrary,
+}))
+
 const mockDifferential: DifferentialItem[] = [
   {
     diagnosis: 'Acute Coronary Syndrome',
     urgency: 'emergent',
-    reasoning: 'Chest pain with cardiac risk factors',
+    reasoning: 'Chest pain with cardiac risk factors. Recommend troponin.',
   },
   {
     diagnosis: 'Costochondritis',
@@ -91,7 +118,7 @@ describe('DashboardOutput', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('shows CDR and Workup stub cards', () => {
+  it('shows CDR stub card', () => {
     render(
       <DashboardOutput
         llmResponse={mockDifferential}
@@ -100,7 +127,71 @@ describe('DashboardOutput', () => {
     )
 
     expect(screen.getByText('Clinical Decision Rules')).toBeDefined()
+  })
+
+  it('shows WorkupCard when onSelectedTestsChange is provided', () => {
+    render(
+      <DashboardOutput
+        llmResponse={mockDifferential}
+        trendAnalysis={null}
+        selectedTests={[]}
+        onSelectedTestsChange={vi.fn()}
+      />
+    )
+
     expect(screen.getByText('Recommended Workup')).toBeDefined()
+    expect(screen.getByText('Accept All')).toBeDefined()
+  })
+
+  it('shows Workup stub card when onSelectedTestsChange is not provided', () => {
+    render(
+      <DashboardOutput
+        llmResponse={mockDifferential}
+        trendAnalysis={null}
+      />
+    )
+
+    expect(screen.getByText('Recommended Workup')).toBeDefined()
+    // No Accept All button when using stub card
+    expect(screen.queryByText('Accept All')).toBeNull()
+  })
+
+  it('toggles to OrderSelector when Edit is clicked', () => {
+    render(
+      <DashboardOutput
+        llmResponse={mockDifferential}
+        trendAnalysis={null}
+        selectedTests={[]}
+        onSelectedTestsChange={vi.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByText('Edit'))
+
+    // OrderSelector should now be shown
+    expect(screen.getByText('Order Selection')).toBeDefined()
+    expect(screen.getByText('← Back to Dashboard')).toBeDefined()
+    // Dashboard content should be hidden
+    expect(screen.queryByText('Differential Diagnosis')).toBeNull()
+  })
+
+  it('returns to dashboard from OrderSelector when Back is clicked', () => {
+    render(
+      <DashboardOutput
+        llmResponse={mockDifferential}
+        trendAnalysis={null}
+        selectedTests={[]}
+        onSelectedTestsChange={vi.fn()}
+      />
+    )
+
+    // Open order selector
+    fireEvent.click(screen.getByText('Edit'))
+    expect(screen.getByText('Order Selection')).toBeDefined()
+
+    // Go back
+    fireEvent.click(screen.getByText('← Back to Dashboard'))
+    expect(screen.getByText('Differential Diagnosis')).toBeDefined()
   })
 
   it('shows trends card when analysis data is present', () => {
@@ -155,7 +246,7 @@ describe('DashboardOutput', () => {
   it('scrolls to section-panel-2 on button click', () => {
     const scrollIntoView = vi.fn()
     const mockElement = { scrollIntoView }
-    vi.spyOn(document, 'getElementById').mockReturnValue(mockElement as unknown as HTMLElement)
+    const spy = vi.spyOn(document, 'getElementById').mockReturnValue(mockElement as unknown as HTMLElement)
 
     render(
       <DashboardOutput
@@ -168,7 +259,7 @@ describe('DashboardOutput', () => {
     expect(document.getElementById).toHaveBeenCalledWith('section-panel-2')
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' })
 
-    vi.restoreAllMocks()
+    spy.mockRestore()
   })
 
   it('applies desktop layout class', () => {
@@ -196,5 +287,35 @@ describe('DashboardOutput', () => {
     const dashboard = container.firstElementChild as HTMLElement
     expect(dashboard.classList.contains('dashboard-output--mobile')).toBe(true)
     expect(dashboard.classList.contains('dashboard-output--desktop')).toBe(false)
+  })
+
+  it('auto-populates recommended tests as pre-checked on fresh encounters', () => {
+    const onSelectedTestsChange = vi.fn()
+    render(
+      <DashboardOutput
+        llmResponse={mockDifferential}
+        trendAnalysis={null}
+        selectedTests={[]}
+        onSelectedTestsChange={onSelectedTestsChange}
+      />
+    )
+
+    // Should auto-populate with recommended test IDs (troponin matches reasoning)
+    expect(onSelectedTestsChange).toHaveBeenCalledWith(['troponin'])
+  })
+
+  it('does not auto-populate when selectedTests is already non-empty', () => {
+    const onSelectedTestsChange = vi.fn()
+    render(
+      <DashboardOutput
+        llmResponse={mockDifferential}
+        trendAnalysis={null}
+        selectedTests={['troponin']}
+        onSelectedTestsChange={onSelectedTestsChange}
+      />
+    )
+
+    // Should NOT auto-populate since selections already exist
+    expect(onSelectedTestsChange).not.toHaveBeenCalled()
   })
 })

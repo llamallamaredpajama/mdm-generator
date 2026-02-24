@@ -727,6 +727,30 @@ export async function updateCustomizableOptions(
 }
 
 // =============================================================================
+// Test Library API Functions
+// =============================================================================
+
+/**
+ * Fetch the master test library (test definitions and categories)
+ */
+export async function fetchTestLibrary(
+  userIdToken: string
+): Promise<import('../types/libraries').TestLibraryResponse> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/libraries/tests`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Fetching test library'
+  )
+}
+
+// =============================================================================
 // Surveillance Trend Analysis API Functions
 // =============================================================================
 

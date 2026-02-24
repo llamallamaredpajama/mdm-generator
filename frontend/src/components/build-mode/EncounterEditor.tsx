@@ -8,6 +8,8 @@
  */
 
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db, useAuth } from '../../lib/firebase'
 import { useEncounter, useSectionState } from '../../hooks/useEncounter'
 import { ShiftTimer } from './ShiftTimer'
 import SectionPanel from './SectionPanel'
@@ -103,8 +105,59 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     submittingSection,
   } = useEncounter(encounterId)
 
+  const { user } = useAuth()
+
   // Working diagnosis input for Section 2
   const [workingDiagnosis, setWorkingDiagnosis] = useState('')
+
+  // Selected tests state (initialized from encounter, persisted to Firestore)
+  const [selectedTests, setSelectedTests] = useState<string[]>([])
+  const selectedTestsInitRef = useRef(false)
+  const firestoreWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingTestsRef = useRef<string[] | null>(null)
+
+  // Initialize selectedTests from encounter data
+  useEffect(() => {
+    if (encounter && !selectedTestsInitRef.current) {
+      setSelectedTests(encounter.section2?.selectedTests ?? [])
+      selectedTestsInitRef.current = true
+    }
+  }, [encounter])
+
+  // Debounced Firestore write for selectedTests
+  const handleSelectedTestsChange = useCallback(
+    (testIds: string[]) => {
+      setSelectedTests(testIds)
+
+      if (!user || !encounterId) return
+
+      pendingTestsRef.current = testIds
+      if (firestoreWriteTimer.current) {
+        clearTimeout(firestoreWriteTimer.current)
+      }
+      firestoreWriteTimer.current = setTimeout(() => {
+        const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+        updateDoc(encounterRef, { 'section2.selectedTests': testIds }).catch((err) =>
+          console.error('Failed to persist selectedTests:', err)
+        )
+        pendingTestsRef.current = null
+      }, 300)
+    },
+    [user, encounterId]
+  )
+
+  // Flush pending write and cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (firestoreWriteTimer.current) clearTimeout(firestoreWriteTimer.current)
+      if (pendingTestsRef.current !== null && user && encounterId) {
+        const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+        updateDoc(encounterRef, { 'section2.selectedTests': pendingTestsRef.current }).catch((err) =>
+          console.error('Failed to flush selectedTests on unmount:', err)
+        )
+      }
+    }
+  }, [user, encounterId])
 
   // Section error states
   const [sectionErrors, setSectionErrors] = useState<Record<SectionNumber, SectionError | null>>({
@@ -351,6 +404,8 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
               llmResponse={encounter.section1.llmResponse}
               trendAnalysis={analysis}
               trendLoading={isAnalyzing}
+              selectedTests={selectedTests}
+              onSelectedTestsChange={handleSelectedTestsChange}
             />
             {analysis && analysis.rankedFindings.length > 0 && (
               <button

@@ -11,9 +11,14 @@
  * between Section 1 and Section 2.
  */
 
+import { useState, useMemo, useEffect, useRef } from 'react'
 import type { DifferentialItem } from '../../../types/encounter'
 import type { TrendAnalysisResult } from '../../../types/surveillance'
 import DifferentialList from './DifferentialList'
+import WorkupCard from './WorkupCard'
+import OrderSelector from './OrderSelector'
+import { useTestLibrary } from '../../../hooks/useTestLibrary'
+import { getRecommendedTestIds } from './getRecommendedTestIds'
 import { useIsMobile } from '../../../hooks/useMediaQuery'
 import './DashboardOutput.css'
 
@@ -24,6 +29,10 @@ interface DashboardOutputProps {
   trendAnalysis: TrendAnalysisResult | null
   /** Whether trend analysis is currently loading */
   trendLoading?: boolean
+  /** Currently selected test IDs */
+  selectedTests?: string[]
+  /** Callback when test selection changes */
+  onSelectedTestsChange?: (testIds: string[]) => void
 }
 
 /**
@@ -99,11 +108,50 @@ export default function DashboardOutput({
   llmResponse,
   trendAnalysis,
   trendLoading = false,
+  selectedTests = [],
+  onSelectedTestsChange,
 }: DashboardOutputProps) {
   const isMobile = useIsMobile()
   const differential = getDifferential(llmResponse)
+  const [showOrderSelector, setShowOrderSelector] = useState(false)
+  const { tests, loading: testsLoading } = useTestLibrary()
+
+  const recommendedTestIds = useMemo(
+    () => getRecommendedTestIds(differential, tests),
+    [differential, tests]
+  )
+
+  // Auto-populate recommended tests as pre-checked on fresh encounters (AC#1)
+  const autoPopulatedRef = useRef(false)
+  useEffect(() => {
+    if (
+      !autoPopulatedRef.current &&
+      recommendedTestIds.length > 0 &&
+      selectedTests.length === 0 &&
+      onSelectedTestsChange
+    ) {
+      autoPopulatedRef.current = true
+      onSelectedTestsChange(recommendedTestIds)
+    }
+  }, [recommendedTestIds, selectedTests.length, onSelectedTestsChange])
 
   if (differential.length === 0) return null
+
+  const handleSelectionChange = (testIds: string[]) => {
+    onSelectedTestsChange?.(testIds)
+  }
+
+  if (showOrderSelector) {
+    return (
+      <OrderSelector
+        tests={tests}
+        selectedTests={selectedTests}
+        recommendedTestIds={recommendedTestIds}
+        onSelectionChange={handleSelectionChange}
+        onBack={() => setShowOrderSelector(false)}
+      />
+    )
+  }
 
   return (
     <div className={`dashboard-output ${isMobile ? 'dashboard-output--mobile' : 'dashboard-output--desktop'}`}>
@@ -118,10 +166,21 @@ export default function DashboardOutput({
           title="Clinical Decision Rules"
           description="CDR matching available after workup \u2014 BM-2.3"
         />
-        <StubCard
-          title="Recommended Workup"
-          description="Order selection available \u2014 BM-2.2"
-        />
+        {onSelectedTestsChange ? (
+          <WorkupCard
+            tests={tests}
+            recommendedTestIds={recommendedTestIds}
+            selectedTests={selectedTests}
+            onSelectionChange={handleSelectionChange}
+            onOpenOrderSelector={() => setShowOrderSelector(true)}
+            loading={testsLoading}
+          />
+        ) : (
+          <StubCard
+            title="Recommended Workup"
+            description="Order selection available \u2014 BM-2.2"
+          />
+        )}
       </div>
 
       {/* Trends: full-width, conditionally shown */}
