@@ -196,11 +196,20 @@ app.get('/v1/libraries/tests', async (req, res) => {
     // 4. EXECUTE — return from cache or read Firestore
     const now = Date.now()
     if (testLibraryCache && (now - testLibraryCacheTime) < TEST_LIBRARY_CACHE_TTL) {
+      console.log({ action: 'get-test-library', cached: true, timestamp: new Date().toISOString() })
       return res.json(testLibraryCache)
     }
 
     const snapshot = await getDb().collection('testLibrary').get()
-    const tests = snapshot.docs.map(doc => doc.data() as TestDefinition)
+    const tests: TestDefinition[] = []
+    for (const doc of snapshot.docs) {
+      const d = doc.data()
+      if (d.id && d.name && d.category) {
+        tests.push(d as TestDefinition)
+      } else {
+        console.warn({ action: 'get-test-library', warning: 'skipped malformed doc', docId: doc.id })
+      }
+    }
     const categories = [...new Set(tests.map(t => t.category))] as TestCategory[]
 
     const response: TestLibraryResponse = {

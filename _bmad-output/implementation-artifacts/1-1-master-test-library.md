@@ -443,6 +443,7 @@ Since this is a foundational data layer story, testing focuses on:
 |------------|---------|---------------------------|-----------------|
 | 2026-02-23 | 0.1     | Initial draft from epic   | Technical SM    |
 | 2026-02-23 | 1.0     | Implementation complete    | Dev Agent (James) |
+| 2026-02-23 | 1.1     | Code review — 3 MEDIUM fixes applied | Code Review (Adversarial) |
 
 ---
 
@@ -467,6 +468,7 @@ Claude Opus 4.6 (claude-opus-4-6)
 - `frontend/src/types/libraries.ts` — **CREATED** — Mirror types for frontend consumption
 - `scripts/seed-test-library.ts` — **CREATED** — Idempotent Firestore seed script with 61 tests
 - `backend/src/index.ts` — **MODIFIED** — Added import, cache variables, GET /v1/libraries/tests endpoint
+- `docs/stories/1.1.master-test-library.md` — **CREATED** — Story file (alternate location)
 
 ---
 
@@ -526,3 +528,44 @@ The in-memory cache with 5-minute TTL is appropriate for this rarely-changing da
 ### Final Status
 
 ✓ **Approved — Ready for Done**
+
+---
+
+## Code Review (Adversarial)
+
+### Review Date: 2026-02-23
+
+### Reviewed By: Adversarial Code Reviewer
+
+### Findings Summary
+
+| Severity | Count | Fixed |
+|----------|-------|-------|
+| CRITICAL | 0 | — |
+| HIGH | 0 | — |
+| MEDIUM | 3 | 3 |
+| LOW | 5 | 0 (accepted) |
+
+### MEDIUM Issues — Fixed
+
+**M1: Cache hit bypassed audit logging** (`index.ts:198-199`)
+Cache-served responses skipped the audit log entirely. Added `console.log({ action: 'get-test-library', cached: true, timestamp })` before the cache return so all requests are visible in the audit trail.
+
+**M2: `as TestDefinition` type assertion without runtime validation** (`index.ts:203`)
+Firestore data was cast via `as` with no field-presence check. Replaced with a loop that validates `id`, `name`, and `category` exist before including the document, with a warning log for malformed docs.
+
+**M3: Undocumented file in git commit** (`docs/stories/1.1.master-test-library.md`)
+File was in git commit `c1fb6bc` but missing from the Dev Agent Record File List. Added to File List.
+
+### LOW Issues — Accepted
+
+- **L1**: Category array order non-deterministic (Firestore doc order). Accepted — no consumer depends on category order.
+- **L2**: `catch (e: any)` pattern. Codebase-wide convention; defer to future cleanup pass.
+- **L3**: Story T2 says "4 subcategories" — should be "3 categories". Documentation imprecision, not code issue.
+- **L4**: `commonIndications`/`normalRange` not in AC2 text. Extra fields beyond AC spec — useful, not harmful.
+- **L5**: No cache invalidation beyond TTL. 5-minute TTL is short enough; accepted for this data layer.
+
+### Files Modified by Review
+
+- `backend/src/index.ts` — Added cache-hit audit log (M1), added field-presence guard for Firestore docs (M2)
+- `_bmad-output/implementation-artifacts/1-1-master-test-library.md` — Added undocumented file to File List (M3), added Change Log entry, added this review section
