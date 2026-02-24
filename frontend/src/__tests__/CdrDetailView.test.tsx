@@ -290,4 +290,57 @@ describe('CdrDetailView', () => {
     expect(screen.getAllByText(/Present/).length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText(/Absent/).length).toBeGreaterThanOrEqual(1)
   })
+
+  it('shows completed CDR after S2 auto-population fills remaining components', () => {
+    // Simulate a HEART Score where all components are now answered (S2 troponin was auto-populated)
+    const encounter = makeEncounter({
+      heart: {
+        name: 'HEART Score',
+        status: 'completed',
+        identifiedInSection: 1,
+        completedInSection: 2,
+        dismissed: false,
+        components: {
+          history: { value: 1, source: 'section1', answered: true },
+          age: { value: 1, source: 'user_input', answered: true },
+          troponin: { value: 0, source: 'section2', answered: true },
+        },
+        score: 2,
+        interpretation: 'Low: Safe for discharge',
+      },
+    })
+
+    render(<CdrDetailView encounter={encounter} cdrLibrary={cdrLibrary} onBack={vi.fn()} />)
+
+    // Completed CDR should show score and interpretation
+    expect(screen.getByText(/Score: 2/)).toBeDefined()
+    expect(screen.getByText(/Low: Safe for discharge/)).toBeDefined()
+  })
+
+  it('does not show (AI) badge for section2-auto-populated components', () => {
+    // S2-sourced component that was auto-populated: source is 'section2', not 'section1'
+    const encounter = makeEncounter({
+      heart: {
+        name: 'HEART Score',
+        status: 'completed',
+        identifiedInSection: 1,
+        completedInSection: 2,
+        dismissed: false,
+        components: {
+          history: { value: 1, source: 'section1', answered: true },
+          age: { value: 1, source: 'user_input', answered: true },
+          troponin: { value: 0, source: 'section2', answered: true },
+        },
+        score: 2,
+        interpretation: 'Low: Safe for discharge',
+      },
+    })
+
+    render(<CdrDetailView encounter={encounter} cdrLibrary={cdrLibrary} onBack={vi.fn()} />)
+
+    // Only the section1-sourced component should have (AI) badge
+    const aiBadges = screen.getAllByText('(AI)')
+    // history has source: section1 → AI badge. Age has user_input → no badge. Troponin has section2 → no badge.
+    expect(aiBadges.length).toBe(1)
+  })
 })

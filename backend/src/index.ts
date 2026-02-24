@@ -148,6 +148,52 @@ async function getCachedCdrLibrary(): Promise<CdrDefinition[]> {
   return cdrs
 }
 
+/**
+ * Build a structured cdrContext string from encounter cdrTracking for the finalize prompt.
+ * Skips dismissed CDRs. Returns undefined if no non-dismissed CDRs exist.
+ */
+function buildCdrContextString(cdrTracking: CdrTracking): string | undefined {
+  const entries = Object.entries(cdrTracking)
+  if (entries.length === 0) return undefined
+
+  const lines: string[] = []
+
+  for (const [, entry] of entries) {
+    if (entry.dismissed) continue
+
+    const components = Object.entries(entry.components)
+    const answeredCount = components.filter(([, c]) => c.answered).length
+    const totalCount = components.length
+
+    if (entry.status === 'completed' && entry.score != null) {
+      lines.push(`${entry.name}: Score ${entry.score} — ${entry.interpretation || 'No interpretation'}`)
+      for (const [compId, compState] of components) {
+        if (compState.answered) {
+          lines.push(`  - ${compId}: ${compState.value ?? 'N/A'} (source: ${compState.source || 'unknown'})`)
+        }
+      }
+    } else if (entry.status === 'partial') {
+      lines.push(`${entry.name}: Partial (${answeredCount}/${totalCount} answered)`)
+      for (const [compId, compState] of components) {
+        if (compState.answered) {
+          lines.push(`  - ${compId}: ${compState.value ?? 'N/A'} (source: ${compState.source || 'unknown'})`)
+        }
+      }
+      const pendingCount = totalCount - answeredCount
+      if (pendingCount > 0) {
+        lines.push(`  - (${pendingCount} pending)`)
+      }
+    } else if (entry.status === 'pending') {
+      lines.push(`${entry.name}: Pending (0/${totalCount} answered)`)
+    }
+
+    lines.push('')
+  }
+
+  const result = lines.join('\n').trim()
+  return result || undefined
+}
+
 // Initialize Firebase Admin (expects GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS or default creds in Cloud Run)
 async function initFirebase() {
   try {
@@ -1089,8 +1135,8 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     // Retrieve surveillance context stored during Section 1
     const storedSurveillanceCtx: string | undefined = encounter.surveillanceContext || undefined
 
-    // Retrieve CDR context stored during Section 1/2
-    const storedCdrCtx: string | undefined = encounter.cdrContext || undefined
+    // Build CDR context dynamically from cdrTracking (BM-3.3: replaces static encounter.cdrContext)
+    const storedCdrCtx: string | undefined = buildCdrContextString(encounter.cdrTracking ?? {})
 
     const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx)
 

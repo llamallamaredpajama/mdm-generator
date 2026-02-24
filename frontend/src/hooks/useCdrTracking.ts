@@ -20,6 +20,8 @@ export interface UseCdrTrackingReturn {
   dismissCdr: (cdrId: string) => void
   /** Undo dismiss on a CDR */
   undismissCdr: (cdrId: string) => void
+  // Note: S2 auto-populate is handled by EncounterEditor effect (direct Firestore write)
+  // to avoid dual-state management when CdrDetailView is not mounted.
 }
 
 /**

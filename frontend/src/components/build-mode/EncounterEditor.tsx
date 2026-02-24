@@ -18,10 +18,12 @@ import Section2Guide from './Section2Guide'
 import Section3Guide from './Section3Guide'
 import MdmPreviewPanel from './MdmPreviewPanel'
 import DashboardOutput from './shared/DashboardOutput'
-import type { SectionNumber, EncounterDocument, SectionStatus, MdmPreview, FinalMdm } from '../../types/encounter'
+import type { SectionNumber, EncounterDocument, SectionStatus, MdmPreview, FinalMdm, CdrTracking, CdrTrackingEntry, TestResult } from '../../types/encounter'
 import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
 import { ApiError, matchCdrs } from '../../lib/api'
+import { useTestLibrary } from '../../hooks/useTestLibrary'
+import { useCdrLibrary } from '../../hooks/useCdrLibrary'
 import ConfirmationModal from '../ConfirmationModal'
 import TrendAnalysisToggle from '../TrendAnalysisToggle'
 import TrendReportModal from '../TrendReportModal'
@@ -107,6 +109,8 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
   const { user } = useAuth()
   const token = useAuthToken()
+  const { tests: testLibrary } = useTestLibrary()
+  const { cdrs: cdrLibrary } = useCdrLibrary()
 
   // Working diagnosis input for Section 2
   const [workingDiagnosis, setWorkingDiagnosis] = useState('')
@@ -215,6 +219,104 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       })
     }
   }, [encounter?.id, encounter?.section1?.status, encounter?.section1?.llmResponse, token])
+
+  // Auto-populate CDR components from S2 test results (BM-3.3)
+  const lastTestResultsHashRef = useRef<string | null>(null)
+  useEffect(() => {
+    const testResults = encounter?.section2?.testResults
+    const cdrTracking = encounter?.cdrTracking
+    if (!testResults || !cdrTracking || !user || !encounterId) return
+    if (Object.keys(testResults).length === 0) return
+    if (Object.keys(cdrTracking).length === 0) return
+    if (testLibrary.length === 0 || cdrLibrary.length === 0) return
+
+    // Compute a simple hash to detect changes (avoid re-running for same data)
+    const resultsHash = JSON.stringify(
+      Object.entries(testResults).map(([id, r]) => [id, r.status, r.value]).sort()
+    )
+    if (resultsHash === lastTestResultsHashRef.current) return
+    lastTestResultsHashRef.current = resultsHash
+
+    // Build updated cdrTracking with section2 auto-population
+    let updated: CdrTracking = { ...cdrTracking }
+    let changed = false
+
+    for (const [testId, result] of Object.entries(testResults) as [string, TestResult][]) {
+      if (result.status === 'pending') continue
+
+      const testDef = testLibrary.find((t) => t.id === testId)
+      if (!testDef?.feedsCdrs?.length) continue
+
+      for (const cdrId of testDef.feedsCdrs) {
+        // Re-read entry from updated (not stale) to handle multiple components per CDR
+        const entry = updated[cdrId]
+        if (!entry || entry.dismissed) continue
+
+        const cdrDef = cdrLibrary.find((c) => c.id === cdrId)
+        if (!cdrDef) continue
+
+        for (const comp of cdrDef.components) {
+          if (comp.source !== 'section2' || comp.id !== testId) continue
+
+          // Re-read from current updated state (entry may be stale after prior component update)
+          const currentEntry = updated[cdrId]
+          if (!currentEntry) continue
+
+          // Don't override user-input values
+          const existing = currentEntry.components[comp.id]
+          if (existing?.answered && existing.source === 'user_input') continue
+          // Don't re-write if already populated from section2
+          if (existing?.answered && existing.source === 'section2') continue
+
+          let value: number | null = null
+          if (comp.type === 'boolean') {
+            value = result.status === 'abnormal' ? (comp.value ?? 1) : 0
+          }
+          // Select/number_range: skip for v1 (needs heuristic or LLM mapping)
+
+          if (value === null) continue
+
+          const updatedComponents: Record<string, import('../../types/encounter').CdrComponentState> = {
+            ...currentEntry.components,
+            [comp.id]: { value, answered: true, source: 'section2' as const },
+          }
+
+          // Recompute status and score
+          const vals = Object.values(updatedComponents)
+          const answeredCount = vals.filter((c) => c.answered).length
+          const status: import('../../types/encounter').CdrStatus =
+            answeredCount === 0 ? 'pending' : answeredCount === vals.length ? 'completed' : 'partial'
+
+          let score: number | null = null
+          let interpretation: string | null = null
+          if (status === 'completed' && cdrDef.scoring.method === 'sum') {
+            score = vals.reduce((sum, c) => sum + (c.value ?? 0), 0)
+            const range = cdrDef.scoring.ranges.find((r) => score! >= r.min && score! <= r.max)
+            interpretation = range ? `${range.risk}: ${range.interpretation}` : null
+          }
+
+          const updatedEntry: CdrTrackingEntry = {
+            ...currentEntry,
+            components: updatedComponents,
+            status,
+            score,
+            interpretation,
+            completedInSection: status === 'completed' ? 2 : currentEntry.completedInSection,
+          }
+
+          updated = { ...updated, [cdrId]: updatedEntry }
+          changed = true
+        }
+      }
+    }
+
+    if (changed) {
+      const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+      updateDoc(encounterRef, { cdrTracking: updated }).catch((err) => {
+        console.error('Failed to auto-populate CDR from S2 results:', err?.message || 'unknown error')
+      })
+    }
+  }, [encounter?.section2?.testResults, encounter?.cdrTracking, testLibrary, cdrLibrary, user, encounterId])
 
   // Trend report modal state
   const [showTrendReport, setShowTrendReport] = useState(false)
