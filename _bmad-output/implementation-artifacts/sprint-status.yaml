@@ -73,9 +73,9 @@ development_status:
   6-3-finalize-prompt-structured-data: done
   epic-6-retrospective: optional
 
-  epic-7: in-progress
+  epic-7: done
   7-1-order-set-save-suggest: done
-  7-2-report-templates: backlog
+  7-2-report-templates: done
   epic-7-retrospective: optional
 
   epic-8: backlog
