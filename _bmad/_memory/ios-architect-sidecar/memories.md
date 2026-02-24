@@ -6,7 +6,7 @@
 
 | Date | Summary | Outcome |
 |------|---------|---------|
-| — | No sessions recorded yet | — |
+| 2026-02-23 | Initial planning session: evaluated build options (A: Spec-First vs B: Direct Path), chose Option B. Created `docs/ios-build-plan.md` with 4-step plan and MVP feature scope. | D-001 recorded. Build plan document created. Ready for Step 1 (Bootstrap). |
 
 ---
 
@@ -36,7 +36,7 @@ Records architectural decisions made during sessions. Each decision is immutable
 
 | Decision ID | Date | Decision | Rationale | Affected Stories/Files |
 |-------------|------|----------|-----------|----------------------|
-| — | — | No decisions recorded yet | — | — |
+| D-001 | 2026-02-23 | Chose Option B "Direct Path": Bootstrap → API Contract → Write Stories → Spawn Team | Spec wireframe + API contract already provide sufficient architectural context; generating 6 spec docs (CLAUDE.md, ARCHITECTURE.md, DESIGN_SYSTEM.md, AI_INTEGRATION.md, PRD_TEMPLATE.md, AGENT_SKILLS/) would delay implementation without proportional value. The spec wireframe constants and API contract Swift models are the two critical inputs the builder agent needs. | `docs/ios-build-plan.md` (created), all future iOS stories |
 
 ---
 
