@@ -5,8 +5,30 @@
  * Each function builds prompts that generate structured output for their section.
  */
 
-import type { DifferentialItem, MdmPreview, Section1Response, Section2Response, TestResult } from './buildModeSchemas'
+import type { DifferentialItem, DispositionOption, MdmPreview, Section1Response, Section2Response, TestResult, WorkingDiagnosis } from './buildModeSchemas'
 import type { CdrDefinition, TestDefinition } from './types/libraries'
+
+/**
+ * Structured data from S2/S3 that enriches the finalize prompt.
+ * All fields are optional for backward compatibility with encounters
+ * that don't have structured data yet.
+ */
+export interface FinalizeStructuredData {
+  /** S2: Selected test IDs (e.g., "troponin", "cbc") */
+  selectedTests?: string[]
+  /** S2: Test results keyed by test ID */
+  testResults?: Record<string, TestResult>
+  /** S2: Working diagnosis (structured object or legacy string) */
+  workingDiagnosis?: string | WorkingDiagnosis
+  /** S3: Free-text treatment description */
+  treatments?: string
+  /** S3: CDR-suggested treatment IDs (namespaced as "cdrId:treatmentId") */
+  cdrSuggestedTreatments?: string[]
+  /** S3: Selected disposition option */
+  disposition?: DispositionOption | null
+  /** S3: Follow-up instructions */
+  followUp?: string[]
+}
 
 /**
  * Section 1: Initial Evaluation
@@ -217,19 +239,88 @@ export function buildSection2Prompt(
 /**
  * Section 3: Treatment & Disposition
  * Compiles complete MDM from all sections for EHR copy-paste.
+ *
+ * The `structuredData` parameter provides typed S2/S3 fields (test results,
+ * treatments, disposition, follow-up) that are injected into the prompt so
+ * the LLM can produce a more accurate final MDM. All fields are optional
+ * for backward compatibility with older encounters.
  */
 export function buildFinalizePrompt(
   section1: { content: string; response: Pick<Section1Response, 'differential'> },
   section2: { content: string; response: Pick<Section2Response, 'mdmPreview'>; workingDiagnosis?: string },
   section3Content: string,
   surveillanceContext?: string,
-  cdrContext?: string
+  cdrContext?: string,
+  structuredData?: FinalizeStructuredData
 ): { system: string; user: string } {
   const differentialSummary = section1.response.differential
     .map((d: DifferentialItem) => `- ${d.diagnosis} (${d.urgency})`)
     .join('\n')
 
   const mdmPreview = section2.response.mdmPreview
+
+  // --- Build structured data sections ---
+  const structuredSections: string[] = []
+
+  // Structured test results from S2
+  if (structuredData?.testResults && Object.keys(structuredData.testResults).length > 0) {
+    const testLines: string[] = ['=== STRUCTURED TEST RESULTS ===']
+    for (const [testId, result] of Object.entries(structuredData.testResults)) {
+      const parts = [`- ${testId}: ${result.status.toUpperCase()}`]
+      if (result.value) parts.push(`Value: ${result.value}${result.unit ? ` ${result.unit}` : ''}`)
+      if (result.quickFindings && result.quickFindings.length > 0) {
+        parts.push(`Findings: ${result.quickFindings.join(', ')}`)
+      }
+      if (result.notes) parts.push(`Notes: ${result.notes}`)
+      testLines.push(parts.join(' | '))
+    }
+    if (structuredData.selectedTests && structuredData.selectedTests.length > 0) {
+      const resultIds = new Set(Object.keys(structuredData.testResults))
+      const pendingTests = structuredData.selectedTests.filter((t) => !resultIds.has(t))
+      if (pendingTests.length > 0) {
+        testLines.push(`Pending tests (ordered but no results): ${pendingTests.join(', ')}`)
+      }
+    }
+    structuredSections.push(testLines.join('\n'), '')
+  }
+
+  // Working diagnosis (enhanced handling for structured vs legacy)
+  const wdStr = resolveWorkingDiagnosis(structuredData?.workingDiagnosis, section2.workingDiagnosis)
+
+  // Structured treatments from S3
+  if (structuredData?.treatments || (structuredData?.cdrSuggestedTreatments && structuredData.cdrSuggestedTreatments.length > 0)) {
+    const treatLines: string[] = ['=== STRUCTURED TREATMENT SELECTIONS ===']
+    if (structuredData.treatments) {
+      treatLines.push(`Free-text treatments: ${structuredData.treatments}`)
+    }
+    if (structuredData.cdrSuggestedTreatments && structuredData.cdrSuggestedTreatments.length > 0) {
+      treatLines.push('CDR-suggested treatments selected:')
+      for (const t of structuredData.cdrSuggestedTreatments) {
+        // Format: "cdrId:treatment_id" → "CDR: Treatment Label"
+        const colonIdx = t.indexOf(':')
+        if (colonIdx > 0) {
+          const cdrId = t.slice(0, colonIdx)
+          const treatmentId = t.slice(colonIdx + 1)
+          treatLines.push(`  - ${cdrId}: ${formatTreatmentLabel(treatmentId)}`)
+        } else {
+          treatLines.push(`  - ${t}`)
+        }
+      }
+    }
+    structuredSections.push(treatLines.join('\n'), '')
+  }
+
+  // Disposition and follow-up from S3
+  if (structuredData?.disposition || (structuredData?.followUp && structuredData.followUp.length > 0)) {
+    const dispoLines: string[] = ['=== STRUCTURED DISPOSITION & FOLLOW-UP ===']
+    if (structuredData.disposition) {
+      dispoLines.push(`Disposition: ${structuredData.disposition.toUpperCase()}`)
+    }
+    if (structuredData.followUp && structuredData.followUp.length > 0) {
+      dispoLines.push(`Follow-up: ${structuredData.followUp.join('; ')}`)
+    }
+    structuredSections.push(dispoLines.join('\n'), '')
+  }
 
   const system = [
     'SECTION 3: TREATMENT & DISPOSITION - FINAL MDM GENERATION',
@@ -247,11 +338,12 @@ export function buildFinalizePrompt(
     '',
     '=== SECTION 2: WORKUP ===',
     section2.content,
-    section2.workingDiagnosis ? `Working Diagnosis: ${section2.workingDiagnosis}` : '',
+    wdStr ? `Working Diagnosis: ${wdStr}` : '',
     '',
     '=== MDM PREVIEW ===',
     JSON.stringify(mdmPreview, null, 2),
     '',
+    ...(structuredSections.length > 0 ? structuredSections : []),
     ...(surveillanceContext ? [
       '=== REGIONAL SURVEILLANCE DATA ===',
       surveillanceContext,
@@ -268,6 +360,13 @@ export function buildFinalizePrompt(
       '4. Include CDR-based exclusion reasoning (e.g., "Ottawa Ankle Rules negative — imaging deferred")',
       '',
     ] : []),
+    'STRUCTURED DATA INSTRUCTIONS:',
+    '1. When structured test results are provided, use them as the authoritative data source for the Data Reviewed section — they are more precise than free-text',
+    '2. When structured treatments are provided, document each treatment in the Treatment section with its CDR basis if applicable (e.g., "Aspirin 325mg — per HEART score protocol")',
+    '3. When a structured disposition is provided, use it as the primary disposition decision and document the clinical rationale supporting it',
+    '4. When follow-up instructions are provided, include them verbatim in the Disposition section',
+    '5. CDR-suggested treatments should reference the specific CDR that recommended them',
+    '',
     'CRITICAL REQUIREMENTS:',
     '1. Generate copy-pastable MDM text formatted for EHR documentation',
     '2. Include MDM complexity level determination (Low, Moderate, High)',
@@ -314,6 +413,33 @@ export function buildFinalizePrompt(
   ].join('\n')
 
   return { system, user }
+}
+
+/**
+ * Resolve working diagnosis from structured or legacy formats.
+ * Prefers structured WorkingDiagnosis.selected over legacy string.
+ */
+function resolveWorkingDiagnosis(
+  structured?: string | WorkingDiagnosis,
+  legacy?: string
+): string {
+  if (structured) {
+    if (typeof structured === 'string') return structured
+    // WorkingDiagnosis object
+    return structured.custom || structured.selected || ''
+  }
+  return legacy || ''
+}
+
+/**
+ * Convert a snake_case treatment ID to a human-readable label.
+ * e.g., "aspirin_325" → "Aspirin 325", "heparin_drip" → "Heparin Drip"
+ */
+function formatTreatmentLabel(treatmentId: string): string {
+  return treatmentId
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 /**

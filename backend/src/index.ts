@@ -35,6 +35,7 @@ import {
   buildCdrAutoPopulatePrompt,
   buildSuggestDiagnosisPrompt,
   buildParseResultsPrompt,
+  type FinalizeStructuredData,
 } from './promptBuilderBuildMode'
 import { matchCdrsFromDifferential } from './services/cdrMatcher'
 import { buildCdrTracking, type AutoPopulatedValues } from './services/cdrTrackingBuilder'
@@ -1169,7 +1170,18 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     // Build CDR context dynamically from cdrTracking (BM-3.3: replaces static encounter.cdrContext)
     const storedCdrCtx: string | undefined = buildCdrContextString(encounter.cdrTracking ?? {})
 
-    const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx)
+    // Build structured data from S2/S3 fields (BM-6.3: enriches finalize prompt)
+    const structuredData: FinalizeStructuredData = {
+      selectedTests: encounter.section2?.selectedTests,
+      testResults: encounter.section2?.testResults,
+      workingDiagnosis: encounter.section2?.workingDiagnosis,
+      treatments: encounter.section3?.treatments,
+      cdrSuggestedTreatments: encounter.section3?.cdrSuggestedTreatments,
+      disposition: encounter.section3?.disposition,
+      followUp: encounter.section3?.followUp,
+    }
+
+    const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx, structuredData)
 
     let finalMdm: FinalMdm
     try {
