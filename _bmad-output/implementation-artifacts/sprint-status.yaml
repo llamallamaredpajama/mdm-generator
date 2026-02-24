@@ -55,10 +55,10 @@ development_status:
   3-3-cdr-state-persistence: done
   epic-3-retrospective: optional
 
-  epic-4: in-progress
+  epic-4: done
   4-1-result-entry-component: done
   4-2-quick-status-actions-progress: done
-  4-3-working-diagnosis-selection: backlog
+  4-3-working-diagnosis-selection: done
   epic-4-retrospective: optional
 
   epic-5: backlog

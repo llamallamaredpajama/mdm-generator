@@ -21,7 +21,7 @@ import DashboardOutput from './shared/DashboardOutput'
 import type { SectionNumber, EncounterDocument, SectionStatus, MdmPreview, FinalMdm, CdrTracking, CdrTrackingEntry, TestResult } from '../../types/encounter'
 import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
-import { ApiError, matchCdrs } from '../../lib/api'
+import { ApiError, matchCdrs, suggestDiagnosis } from '../../lib/api'
 import { useTestLibrary } from '../../hooks/useTestLibrary'
 import { useCdrLibrary } from '../../hooks/useCdrLibrary'
 import ConfirmationModal from '../ConfirmationModal'
@@ -32,7 +32,9 @@ import { useToast } from '../../contexts/ToastContext'
 import ResultEntry from './shared/ResultEntry'
 import ProgressIndicator from './shared/ProgressIndicator'
 import OrderSelector from './shared/OrderSelector'
+import WorkingDiagnosisInput from './shared/WorkingDiagnosisInput'
 import { getRecommendedTestIds } from './shared/getRecommendedTestIds'
+import type { WorkingDiagnosis } from '../../types/encounter'
 import './EncounterEditor.css'
 
 /**
@@ -116,8 +118,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   const { tests: testLibrary } = useTestLibrary()
   const { cdrs: cdrLibrary } = useCdrLibrary()
 
-  // Working diagnosis input for Section 2
-  const [workingDiagnosis, setWorkingDiagnosis] = useState('')
+  // Working diagnosis input for Section 2 (structured)
+  const [workingDiagnosis, setWorkingDiagnosis] = useState<WorkingDiagnosis | null>(null)
+  const [dxSuggestions, setDxSuggestions] = useState<string[]>([])
+  const [dxSuggestionsLoading, setDxSuggestionsLoading] = useState(false)
+  const dxSuggestedForRef = useRef<string | null>(null)
 
   // Selected tests state (initialized from encounter, persisted to Firestore)
   const [selectedTests, setSelectedTests] = useState<string[]>([])
@@ -487,6 +492,45 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     }
   }, [encounter?.section2?.testResults, encounter?.cdrTracking, testLibrary, cdrLibrary, user, encounterId])
 
+  // Fetch working diagnosis suggestions when S1 is complete and S2 has responded results
+  useEffect(() => {
+    if (!encounter || !token || !encounterId) return
+    if (encounter.section1.status !== 'completed') return
+    if (!encounter.section1.llmResponse) return
+
+    // Compute responded count from test results
+    const results = encounter.section2?.testResults ?? {}
+    const responded = Object.values(results).filter(
+      (r) => r && (r as TestResult).status !== 'pending'
+    ).length
+    if (responded === 0) return
+
+    // Build a hash to avoid refetching for same results
+    const hash = Object.entries(results)
+      .filter(([, r]) => r && (r as TestResult).status !== 'pending')
+      .map(([id, r]) => `${id}:${(r as TestResult).status}`)
+      .sort()
+      .join(',')
+    if (hash === dxSuggestedForRef.current) return
+    dxSuggestedForRef.current = hash
+
+    // Fetch suggestions (non-blocking — failure is OK)
+    let cancelled = false
+    setDxSuggestionsLoading(true)
+    suggestDiagnosis(encounterId, token)
+      .then((res) => {
+        if (!cancelled) setDxSuggestions(res.suggestions)
+      })
+      .catch(() => {
+        // Silently fail — physician can still type a custom diagnosis
+      })
+      .finally(() => {
+        if (!cancelled) setDxSuggestionsLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [encounter, token, encounterId])
+
   // Trend report modal state
   const [showTrendReport, setShowTrendReport] = useState(false)
 
@@ -498,6 +542,21 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   const section1State = useSectionState(encounter, 1)
   const section2State = useSectionState(encounter, 2)
   const section3State = useSectionState(encounter, 3)
+
+  /**
+   * Handle working diagnosis change — update local state and persist to Firestore
+   */
+  const handleWorkingDiagnosisChange = useCallback(
+    (wd: WorkingDiagnosis) => {
+      setWorkingDiagnosis(wd)
+      if (!user || !encounterId) return
+      const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+      updateDoc(encounterRef, { 'section2.workingDiagnosis': wd }).catch((err) => {
+        console.error('Failed to persist working diagnosis:', err?.message || 'unknown error')
+      })
+    },
+    [user, encounterId]
+  )
 
   /**
    * Handle content change in a section
@@ -538,9 +597,10 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       setSectionErrors((prev) => ({ ...prev, [section]: null }))
 
       try {
-        // For section 2, pass the working diagnosis
+        // For section 2, pass the effective working diagnosis string
         if (section === 2) {
-          await submitSection(section, workingDiagnosis || undefined)
+          const effectiveDx = workingDiagnosis?.selected ?? workingDiagnosis?.custom ?? undefined
+          await submitSection(section, effectiveDx || undefined)
         } else {
           await submitSection(section)
         }
@@ -737,24 +797,15 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         )}
         {(isSection1Complete || isFinalized || isArchived) && (
           <div id="section-panel-2">
-            {/* Working Diagnosis Input (only for Section 2) */}
+            {/* Working Diagnosis Input (only for Section 2, when unlocked) */}
             {isSection1Complete && !encounter.section2.isLocked && !isFinalized && !isArchived && (
-              <div className="encounter-editor__working-diagnosis">
-                <label htmlFor="working-diagnosis">
-                  Working Diagnosis (optional)
-                  <span className="encounter-editor__working-diagnosis-hint">
-                    This helps guide the MDM generation
-                  </span>
-                </label>
-                <input
-                  id="working-diagnosis"
-                  type="text"
-                  value={workingDiagnosis}
-                  onChange={(e) => setWorkingDiagnosis(e.target.value)}
-                  placeholder="e.g., Acute coronary syndrome, Appendicitis"
-                  className="encounter-editor__working-diagnosis-input"
-                />
-              </div>
+              <WorkingDiagnosisInput
+                suggestions={dxSuggestions}
+                loading={dxSuggestionsLoading}
+                value={workingDiagnosis ?? encounter.section2.workingDiagnosis}
+                onChange={handleWorkingDiagnosisChange}
+                disabled={isS2Locked}
+              />
             )}
             <SectionPanel
               sectionNumber={2}

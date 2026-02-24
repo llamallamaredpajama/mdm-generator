@@ -5,7 +5,7 @@
  * Each function builds prompts that generate structured output for their section.
  */
 
-import type { DifferentialItem, MdmPreview, Section1Response, Section2Response } from './buildModeSchemas'
+import type { DifferentialItem, MdmPreview, Section1Response, Section2Response, TestResult } from './buildModeSchemas'
 import type { CdrDefinition } from './types/libraries'
 
 /**
@@ -311,6 +311,57 @@ export function buildFinalizePrompt(
     '',
     'Generate the complete final MDM document.',
     'The "text" field must be ready for direct copy-paste into an EHR.',
+  ].join('\n')
+
+  return { system, user }
+}
+
+/**
+ * Suggest Working Diagnosis Prompt
+ * Ranks 3-5 working diagnosis options from S1 differential refined by S2 results.
+ * Called by the suggest-diagnosis UI helper endpoint (no quota deduction).
+ */
+export function buildSuggestDiagnosisPrompt(
+  differential: DifferentialItem[],
+  chiefComplaint: string,
+  testResultsSummary: string
+): { system: string; user: string } {
+  const differentialSummary = differential
+    .map((d) => `- ${d.diagnosis} (${d.urgency}): ${d.reasoning}`)
+    .join('\n')
+
+  const system = [
+    'WORKING DIAGNOSIS SUGGESTION',
+    '',
+    'You are ranking the most likely working diagnoses for an Emergency Medicine encounter.',
+    'Use the Section 1 differential diagnosis refined by Section 2 workup results.',
+    '',
+    'RANKING CRITERIA (in priority order):',
+    '1. Consistency with S2 workup results (abnormal results support certain diagnoses)',
+    '2. Clinical likelihood given the overall picture',
+    '3. EM worst-first mentality — dangerous diagnoses rank higher when not excluded',
+    '',
+    'CRITICAL RULES:',
+    '1. Return ONLY a JSON array of 3-5 diagnosis strings',
+    '2. Use concise, standard medical terminology for each diagnosis',
+    '3. NEVER fabricate diagnoses not present in the differential',
+    '4. If results rule out a differential item, do NOT include it',
+    '5. Rank from most likely to least likely based on all available data',
+  ].join('\n')
+
+  const user = [
+    'CHIEF COMPLAINT: ' + chiefComplaint,
+    '',
+    'SECTION 1 DIFFERENTIAL:',
+    differentialSummary,
+    '',
+    'SECTION 2 WORKUP RESULTS:',
+    testResultsSummary || 'No structured test results provided.',
+    '',
+    'OUTPUT FORMAT (strict JSON, no wrapper):',
+    '["Most likely diagnosis", "Second most likely", "Third most likely"]',
+    '',
+    'Return 3-5 ranked working diagnosis options as a JSON string array.',
   ].join('\n')
 
   return { system, user }

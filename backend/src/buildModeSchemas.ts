@@ -217,6 +217,29 @@ export const MatchCdrsResponseSchema = z.object({
 export type MatchCdrsResponse = z.infer<typeof MatchCdrsResponseSchema>
 
 // ============================================================================
+// Suggest-Diagnosis Request/Response Schemas
+// ============================================================================
+
+/**
+ * POST /v1/build-mode/suggest-diagnosis
+ * Given S1 differential + S2 results, suggest ranked working diagnoses.
+ * No quota deduction — UI helper only.
+ */
+export const SuggestDiagnosisRequestSchema = z.object({
+  encounterId: z.string().min(1),
+  userIdToken: z.string().min(10),
+})
+
+export type SuggestDiagnosisRequest = z.infer<typeof SuggestDiagnosisRequestSchema>
+
+export const SuggestDiagnosisResponseSchema = z.object({
+  ok: z.literal(true),
+  suggestions: z.array(z.string()).min(1).max(7),
+})
+
+export type SuggestDiagnosisResponse = z.infer<typeof SuggestDiagnosisResponseSchema>
+
+// ============================================================================
 // Firestore Document Schemas (for validation)
 // ============================================================================
 

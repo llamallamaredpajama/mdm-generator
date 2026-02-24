@@ -16,6 +16,7 @@ import {
   Section2RequestSchema,
   FinalizeRequestSchema,
   MatchCdrsRequestSchema,
+  SuggestDiagnosisRequestSchema,
   DifferentialItemSchema,
   MdmPreviewSchema,
   FinalMdmSchema,
@@ -23,12 +24,14 @@ import {
   type MdmPreview,
   type FinalMdm,
   type CdrTracking,
+  type TestResult,
 } from './buildModeSchemas'
 import {
   buildSection1Prompt,
   buildSection2Prompt,
   buildFinalizePrompt,
   buildCdrAutoPopulatePrompt,
+  buildSuggestDiagnosisPrompt,
 } from './promptBuilderBuildMode'
 import { matchCdrsFromDifferential } from './services/cdrMatcher'
 import { buildCdrTracking, type AutoPopulatedValues } from './services/cdrTrackingBuilder'
@@ -1467,6 +1470,125 @@ app.post('/v1/build-mode/match-cdrs', llmLimiter, async (req, res) => {
     })
   } catch (e: any) {
     console.error('match-cdrs error:', e?.message || 'unknown error')
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+/**
+ * POST /v1/build-mode/suggest-diagnosis
+ * Suggest ranked working diagnoses from S1 differential refined by S2 results.
+ * No quota deduction — UI helper only.
+ */
+app.post('/v1/build-mode/suggest-diagnosis', llmLimiter, async (req, res) => {
+  try {
+    // 1. VALIDATE
+    const parsed = SuggestDiagnosisRequestSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    // 2. AUTHENTICATE
+    let uid: string
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
+      uid = decoded.uid
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    const { encounterId } = parsed.data
+
+    // 3. AUTHORIZE — verify encounter ownership
+    const encounterRef = getEncounterRef(uid, encounterId)
+    const encounterSnap = await encounterRef.get()
+
+    if (!encounterSnap.exists) {
+      return res.status(404).json({ error: 'Encounter not found' })
+    }
+
+    const encounter = encounterSnap.data()!
+
+    // Verify S1 is completed
+    const validStatuses = ['section1_done', 'section2_done', 'finalized']
+    if (!validStatuses.includes(encounter.status) || !encounter.section1?.llmResponse) {
+      return res.status(400).json({
+        error: 'Section 1 must be completed before suggesting diagnoses',
+      })
+    }
+
+    // 4. EXECUTE
+
+    // 4a. Extract differential from S1 response
+    const s1Response = encounter.section1.llmResponse
+    let differential: DifferentialItem[] = []
+    if (Array.isArray(s1Response)) {
+      differential = s1Response as DifferentialItem[]
+    } else if (s1Response?.differential && Array.isArray(s1Response.differential)) {
+      differential = s1Response.differential as DifferentialItem[]
+    }
+
+    if (differential.length === 0) {
+      return res.status(400).json({ error: 'No differential available from Section 1' })
+    }
+
+    // 4b. Build test results summary from S2 structured data
+    const testResults: Record<string, TestResult> = encounter.section2?.testResults ?? {}
+    const testResultsSummary = Object.entries(testResults)
+      .filter(([, r]) => r.status !== 'pending')
+      .map(([testId, r]) => {
+        const parts = [`${testId}: ${r.status}`]
+        if (r.quickFindings?.length) parts.push(`(${r.quickFindings.join(', ')})`)
+        if (r.value) parts.push(`value: ${r.value}${r.unit ? ' ' + r.unit : ''}`)
+        if (r.notes) parts.push(`notes: ${r.notes}`)
+        return parts.join(' ')
+      })
+      .join('\n')
+
+    // 4c. Build prompt and call Gemini Flash
+    const chiefComplaint = encounter.chiefComplaint || 'Unknown'
+    const prompt = buildSuggestDiagnosisPrompt(differential, chiefComplaint, testResultsSummary)
+    const result = await callGeminiFlash(prompt)
+
+    // 4d. Parse response as JSON array of strings
+    const cleanedText = result.text
+      .replace(/^```json\s*/gm, '')
+      .replace(/^```\s*$/gm, '')
+      .trim()
+
+    let suggestions: string[]
+    try {
+      const parsed = JSON.parse(cleanedText)
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        throw new Error('Expected non-empty array')
+      }
+      suggestions = parsed
+        .filter((s: unknown) => typeof s === 'string' && s.trim().length > 0)
+        .slice(0, 7)
+    } catch {
+      // Fallback: use top 3 differential diagnoses as suggestions
+      suggestions = differential.slice(0, 3).map((d) => d.diagnosis)
+    }
+
+    if (suggestions.length === 0) {
+      suggestions = differential.slice(0, 3).map((d) => d.diagnosis)
+    }
+
+    // 5. AUDIT (no PHI)
+    console.log({
+      action: 'suggest-diagnosis',
+      uid,
+      encounterId,
+      suggestionCount: suggestions.length,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 6. RESPOND
+    return res.json({
+      ok: true,
+      suggestions,
+    })
+  } catch (e: any) {
+    console.error('suggest-diagnosis error:', e?.message || 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })

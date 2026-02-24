@@ -775,6 +775,27 @@ export async function fetchCdrLibrary(
 }
 
 /**
+ * Suggest ranked working diagnoses from S1 differential refined by S2 results.
+ * No quota deduction — UI helper only.
+ */
+export async function suggestDiagnosis(
+  encounterId: string,
+  userIdToken: string
+): Promise<{ ok: true; suggestions: string[] }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/build-mode/suggest-diagnosis`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encounterId, userIdToken }),
+    },
+    'Diagnosis suggestion',
+    15_000
+  )
+}
+
+/**
  * Match CDRs from S1 differential and auto-populate components from narrative.
  * Called after Section 1 completes to populate encounter cdrTracking.
  */
