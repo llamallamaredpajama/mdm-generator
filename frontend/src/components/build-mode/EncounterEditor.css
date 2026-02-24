@@ -535,3 +535,70 @@
 .encounter-editor__report-btn:hover {
   background: rgba(23, 162, 184, 0.1);
 }
+
+/* ============================================================================
+   Quick Action Buttons (BM-4.2)
+   ============================================================================ */
+
+.encounter-editor__quick-action {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.encounter-editor__quick-action--all {
+  background: #16a34a;
+  border: 1px solid #16a34a;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+}
+
+.encounter-editor__quick-action--all:hover:not(:disabled) {
+  background: #15803d;
+  border-color: #15803d;
+}
+
+.encounter-editor__quick-action--remaining {
+  background: transparent;
+  border: 1px dashed #16a34a;
+  color: #16a34a;
+  margin-top: 0.5rem;
+}
+
+.encounter-editor__quick-action--remaining:hover:not(:disabled) {
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.encounter-editor__quick-action:disabled,
+.encounter-editor__add-test-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   Add Test Button (BM-4.2)
+   ============================================================================ */
+
+.encounter-editor__add-test-btn {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-primary, #3b82f6);
+  background: transparent;
+  border: 1px dashed var(--color-primary, #3b82f6);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.encounter-editor__add-test-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.06);
+}

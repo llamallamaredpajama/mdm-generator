@@ -7,7 +7,7 @@
  * Build Mode v2 - Phase 4
  */
 
-import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo, type ReactNode } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db, useAuth, useAuthToken } from '../../lib/firebase'
 import { useEncounter, useSectionState } from '../../hooks/useEncounter'
@@ -30,6 +30,9 @@ import TrendReportModal from '../TrendReportModal'
 import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
 import { useToast } from '../../contexts/ToastContext'
 import ResultEntry from './shared/ResultEntry'
+import ProgressIndicator from './shared/ProgressIndicator'
+import OrderSelector from './shared/OrderSelector'
+import { getRecommendedTestIds } from './shared/getRecommendedTestIds'
 import './EncounterEditor.css'
 
 /**
@@ -231,6 +234,104 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       }
     }
   }, [user, encounterId])
+
+  // "+ Add Test" order selector toggle (shown inline in S2 custom content)
+  const [showS2OrderSelector, setShowS2OrderSelector] = useState(false)
+
+  // Compute recommended test IDs for OrderSelector "AI" badges
+  const s1Differential = useMemo(() => {
+    const llm = encounter?.section1?.llmResponse
+    if (Array.isArray(llm)) return llm
+    if (llm && typeof llm === 'object' && 'differential' in llm) {
+      const wrapped = llm as { differential?: unknown }
+      if (Array.isArray(wrapped.differential)) return wrapped.differential
+    }
+    return []
+  }, [encounter?.section1?.llmResponse])
+
+  const recommendedTestIds = useMemo(
+    () => getRecommendedTestIds(s1Differential, testLibrary),
+    [s1Differential, testLibrary]
+  )
+
+  /**
+   * Batch update test results with immediate Firestore write.
+   * Used for explicit user actions (All Unremarkable, Mark Remaining) —
+   * no debounce since these are intentional bulk operations.
+   */
+  const handleBatchResultUpdate = useCallback(
+    (updates: Record<string, TestResult>) => {
+      setTestResults((prev) => {
+        const merged = { ...prev, ...updates }
+        pendingTestResultsRef.current = merged
+        return merged
+      })
+
+      if (!user || !encounterId) return
+
+      // Cancel any pending debounced write
+      if (testResultsWriteTimer.current) {
+        clearTimeout(testResultsWriteTimer.current)
+        testResultsWriteTimer.current = null
+      }
+
+      // Immediate write for explicit user action (read from ref after state update)
+      setTimeout(() => {
+        const toWrite = pendingTestResultsRef.current
+        if (!toWrite) return
+        const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+        updateDoc(encounterRef, { 'section2.testResults': toWrite }).catch((err) =>
+          console.error('Failed to persist batch testResults:', err?.message || 'unknown error')
+        )
+        pendingTestResultsRef.current = null
+      }, 0)
+    },
+    [user, encounterId]
+  )
+
+  /**
+   * Mark ALL tests as unremarkable (including already-abnormal ones).
+   * CDR-fed tests are also marked unremarkable — the CDR warning will
+   * persist if a specific numeric value is still needed.
+   */
+  const handleMarkAllUnremarkable = useCallback(() => {
+    const updates: Record<string, TestResult> = {}
+    for (const testId of selectedTests) {
+      const testDef = testLibrary.find((t) => t.id === testId)
+      updates[testId] = {
+        status: 'unremarkable',
+        quickFindings: [],
+        notes: null,
+        value: testResults[testId]?.value ?? null,
+        unit: testDef?.unit ?? null,
+      }
+    }
+    handleBatchResultUpdate(updates)
+  }, [selectedTests, testLibrary, testResults, handleBatchResultUpdate])
+
+  /**
+   * Mark only PENDING tests as unremarkable, leaving existing
+   * unremarkable/abnormal statuses unchanged.
+   */
+  const handleMarkRemainingUnremarkable = useCallback(() => {
+    const updates: Record<string, TestResult> = {}
+    for (const testId of selectedTests) {
+      const current = testResults[testId]
+      if (!current || current.status === 'pending') {
+        const testDef = testLibrary.find((t) => t.id === testId)
+        updates[testId] = {
+          status: 'unremarkable',
+          quickFindings: [],
+          notes: null,
+          value: null,
+          unit: testDef?.unit ?? null,
+        }
+      }
+    }
+    if (Object.keys(updates).length > 0) {
+      handleBatchResultUpdate(updates)
+    }
+  }, [selectedTests, testResults, testLibrary, handleBatchResultUpdate])
 
   // Section error states
   const [sectionErrors, setSectionErrors] = useState<Record<SectionNumber, SectionError | null>>({
@@ -530,6 +631,17 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   const isArchived = encounter.status === 'archived'
   const isSection1Complete = encounter.section1.status === 'completed'
   const isSection2Complete = encounter.section2.status === 'completed'
+  const isS2Locked = section2State.isLocked || isFinalized || isArchived
+  const isS2Submitting = isSubmitting && submittingSection === 2
+
+  // Compute progress indicator data from selectedTests and testResults
+  const progressStatuses = selectedTests.map((id) => {
+    const r = testResults[id]
+    return (r?.status ?? 'pending') as 'unremarkable' | 'abnormal' | 'pending'
+  })
+  const respondedCount = progressStatuses.filter((s) => s !== 'pending').length
+  const abnormalCount = progressStatuses.filter((s) => s === 'abnormal').length
+  const hasPendingTests = progressStatuses.includes('pending')
 
   // Defensive: handle both nested { finalMdm } and flat FinalMdm shapes (backward compat)
   const finalMdmData = (() => {
@@ -650,34 +762,91 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
               status={section2State.status as SectionStatus}
               content={section2State.content}
               maxChars={SECTION_CHAR_LIMITS[2]}
-              isLocked={section2State.isLocked || isFinalized || isArchived}
+              isLocked={isS2Locked}
               submissionCount={section2State.submissionCount}
               guide={getSectionGuide(2)}
               preview={getSectionPreview(2, encounter)}
               customContent={
                 selectedTests.length > 0 && !isFinalized && !isArchived ? (
-                  <div className="encounter-editor__result-entries">
-                    {selectedTests.map((testId) => {
-                      const testDef = testLibrary.find((t) => t.id === testId)
-                      if (!testDef) return null
-                      // Compute active CDR names this test feeds
-                      const activeCdrNames = (testDef.feedsCdrs ?? [])
-                        .filter((cdrId) => {
-                          const entry = encounter.cdrTracking?.[cdrId]
-                          return entry && !entry.dismissed
-                        })
-                        .map((cdrId) => encounter.cdrTracking[cdrId].name)
-                      return (
-                        <ResultEntry
-                          key={testId}
-                          testDef={testDef}
-                          result={testResults[testId]}
-                          activeCdrNames={activeCdrNames}
-                          onResultChange={handleTestResultChange}
-                        />
-                      )
-                    })}
-                  </div>
+                  showS2OrderSelector ? (
+                    <OrderSelector
+                      tests={testLibrary}
+                      selectedTests={selectedTests}
+                      recommendedTestIds={recommendedTestIds}
+                      onSelectionChange={handleSelectedTestsChange}
+                      onBack={() => setShowS2OrderSelector(false)}
+                    />
+                  ) : (
+                    <div className="encounter-editor__result-entries">
+                      {/* Quick action: All Results Unremarkable */}
+                      {!isS2Locked && (
+                        <button
+                          type="button"
+                          className="encounter-editor__quick-action encounter-editor__quick-action--all"
+                          onClick={handleMarkAllUnremarkable}
+                          disabled={isS2Submitting}
+                          data-testid="mark-all-unremarkable"
+                        >
+                          All Results Unremarkable
+                        </button>
+                      )}
+
+                      {/* Progress indicator */}
+                      <ProgressIndicator
+                        total={selectedTests.length}
+                        responded={respondedCount}
+                        abnormalCount={abnormalCount}
+                        statuses={progressStatuses}
+                      />
+
+                      {/* Result entry cards */}
+                      {selectedTests.map((testId) => {
+                        const testDef = testLibrary.find((t) => t.id === testId)
+                        if (!testDef) return null
+                        const activeCdrNames = (testDef.feedsCdrs ?? [])
+                          .filter((cdrId) => {
+                            const entry = encounter.cdrTracking?.[cdrId]
+                            return entry && !entry.dismissed
+                          })
+                          .map((cdrId) => encounter.cdrTracking[cdrId].name)
+                        return (
+                          <ResultEntry
+                            key={testId}
+                            testDef={testDef}
+                            result={testResults[testId]}
+                            activeCdrNames={activeCdrNames}
+                            onResultChange={handleTestResultChange}
+                          />
+                        )
+                      })}
+
+                      {/* Quick action: Mark remaining unremarkable */}
+                      {!isS2Locked && hasPendingTests && (
+                        <button
+                          type="button"
+                          className="encounter-editor__quick-action encounter-editor__quick-action--remaining"
+                          onClick={handleMarkRemainingUnremarkable}
+                          disabled={isS2Submitting}
+                          data-testid="mark-remaining-unremarkable"
+                        >
+                          Mark remaining unremarkable
+                        </button>
+                      )}
+
+                      {/* + Add Test button */}
+                      {!isS2Locked && (
+                        <button
+                          type="button"
+                          className="encounter-editor__add-test-btn"
+                          onClick={() => setShowS2OrderSelector(true)}
+                          disabled={isS2Submitting}
+                          data-testid="add-test-btn"
+                        >
+                          + Add Test
+                        </button>
+                      )}
+                    </div>
+                  )
                 ) : undefined
               }
               textareaPlaceholder={
@@ -685,13 +854,10 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                   ? 'Additional notes (optional)...'
                   : undefined
               }
-              allowEmptySubmit={
-                selectedTests.length > 0 &&
-                selectedTests.some((id) => testResults[id]?.status && testResults[id].status !== 'pending')
-              }
+              allowEmptySubmit={selectedTests.length > 0 && respondedCount > 0}
               onContentChange={(content: string) => handleContentChange(2, content)}
               onSubmit={() => handleSubmitClick(2)}
-              isSubmitting={isSubmitting && submittingSection === 2}
+              isSubmitting={isS2Submitting}
               submissionError={sectionErrors[2]?.message}
               isErrorRetryable={sectionErrors[2]?.isRetryable}
               onDismissError={() => dismissError(2)}

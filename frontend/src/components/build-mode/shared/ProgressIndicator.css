@@ -1,0 +1,49 @@
+.progress-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.progress-indicator__dots {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.progress-indicator__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+
+.progress-indicator__dot--unremarkable {
+  background: #16a34a;
+}
+
+.progress-indicator__dot--abnormal {
+  background: #dc2626;
+}
+
+.progress-indicator__dot--pending {
+  background: transparent;
+  border: 1.5px solid var(--color-border, #e2e8f0);
+}
+
+.progress-indicator__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.progress-indicator__count {
+  color: var(--color-text-muted, #94a3b8);
+}
+
+.progress-indicator__abnormal {
+  color: #dc2626;
+  font-weight: 500;
+}
