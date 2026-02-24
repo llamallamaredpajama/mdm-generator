@@ -48,3 +48,7 @@ firebase-adminsdk*.json
 
 # Playwright MCP screenshots
 .playwright-mcp/
+
+# BMAD ephemeral (session memory, outputs)
+_bmad/_memory/*/memories.md
+_bmad-output/
