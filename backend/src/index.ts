@@ -42,6 +42,12 @@ import { buildSurveillanceContext, appendSurveillanceToMdmText } from './surveil
 import { selectRelevantRules } from './cdr/cdrSelector'
 import { buildCdrContext } from './cdr/cdrPromptAugmenter'
 import type { TestDefinition, TestCategory, TestLibraryResponse, CdrDefinition } from './types/libraries'
+import {
+  OrderSetCreateSchema,
+  DispositionFlowCreateSchema,
+  ReportTemplateCreateSchema,
+  CustomizableOptionsSchema,
+} from './types/userProfile'
 
 const app = express()
 
@@ -56,7 +62,7 @@ app.use((req, res, next) => {
   const isLocalhost = origin?.match(/^http:\/\/localhost:\d+$/)
   if (origin && (isLocalhost || allowedOrigins.includes(origin) || origin.match(/^https:\/\/mdm-generator[^.]*\.web\.app$/))) {
     res.header('Access-Control-Allow-Origin', origin)
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     res.header('Access-Control-Allow-Credentials', 'true')
   }
@@ -1442,6 +1448,411 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
     })
   } catch (e: any) {
     console.error('quick-mode/generate error:', e)
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ============================================================================
+// User Profile CRUD Endpoints
+// ============================================================================
+
+const getOrderSetsCollection = (userId: string) =>
+  getDb().collection('customers').doc(userId).collection('orderSets')
+
+const getDispoFlowsCollection = (userId: string) =>
+  getDb().collection('customers').doc(userId).collection('dispoFlows')
+
+const getReportTemplatesCollection = (userId: string) =>
+  getDb().collection('customers').doc(userId).collection('reportTemplates')
+
+const getUserDoc = (userId: string) =>
+  getDb().collection('customers').doc(userId)
+
+/** Authenticate request and return uid, or send error response */
+async function authenticateRequest(req: express.Request, res: express.Response): Promise<string | null> {
+  const idToken = req.headers.authorization?.split('Bearer ')[1]
+  if (!idToken) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return null
+  }
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken)
+    return decoded.uid
+  } catch {
+    res.status(401).json({ error: 'Unauthorized' })
+    return null
+  }
+}
+
+// ── Order Sets CRUD ────────────────────────────────────────────────────
+
+app.get('/v1/user/order-sets', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const snapshot = await getOrderSetsCollection(uid).get()
+    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    console.log({ userId: uid, action: 'list-order-sets', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, items })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.post('/v1/user/order-sets', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const parsed = OrderSetCreateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = await getOrderSetsCollection(uid).add({
+      ...parsed.data,
+      createdAt: admin.firestore.Timestamp.now(),
+      usageCount: 0,
+    })
+    const doc = await docRef.get()
+    console.log({ userId: uid, action: 'create-order-set', timestamp: new Date().toISOString() })
+    return res.status(201).json({ ok: true, item: { id: doc.id, ...doc.data() } })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.put('/v1/user/order-sets/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const parsed = OrderSetCreateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = getOrderSetsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.update(parsed.data)
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'update-order-set', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, item: { id: updated.id, ...updated.data() } })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.delete('/v1/user/order-sets/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getOrderSetsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.delete()
+    console.log({ userId: uid, action: 'delete-order-set', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, id })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ── Disposition Flows CRUD ─────────────────────────────────────────────
+
+app.get('/v1/user/dispo-flows', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const snapshot = await getDispoFlowsCollection(uid).get()
+    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    console.log({ userId: uid, action: 'list-dispo-flows', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, items })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.post('/v1/user/dispo-flows', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const parsed = DispositionFlowCreateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = await getDispoFlowsCollection(uid).add({
+      ...parsed.data,
+      createdAt: admin.firestore.Timestamp.now(),
+      usageCount: 0,
+    })
+    const doc = await docRef.get()
+    console.log({ userId: uid, action: 'create-dispo-flow', timestamp: new Date().toISOString() })
+    return res.status(201).json({ ok: true, item: { id: doc.id, ...doc.data() } })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.put('/v1/user/dispo-flows/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const parsed = DispositionFlowCreateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = getDispoFlowsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.update(parsed.data)
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'update-dispo-flow', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, item: { id: updated.id, ...updated.data() } })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.delete('/v1/user/dispo-flows/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getDispoFlowsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.delete()
+    console.log({ userId: uid, action: 'delete-dispo-flow', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, id })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ── Report Templates CRUD ──────────────────────────────────────────────
+
+app.get('/v1/user/report-templates', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const snapshot = await getReportTemplatesCollection(uid).get()
+    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    console.log({ userId: uid, action: 'list-report-templates', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, items })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.post('/v1/user/report-templates', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const parsed = ReportTemplateCreateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = await getReportTemplatesCollection(uid).add({
+      ...parsed.data,
+      createdAt: admin.firestore.Timestamp.now(),
+      usageCount: 0,
+    })
+    const doc = await docRef.get()
+    console.log({ userId: uid, action: 'create-report-template', timestamp: new Date().toISOString() })
+    return res.status(201).json({ ok: true, item: { id: doc.id, ...doc.data() } })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.put('/v1/user/report-templates/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const parsed = ReportTemplateCreateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    const docRef = getReportTemplatesCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.update(parsed.data)
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'update-report-template', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, item: { id: updated.id, ...updated.data() } })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.delete('/v1/user/report-templates/:id', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getReportTemplatesCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.delete()
+    console.log({ userId: uid, action: 'delete-report-template', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, id })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ── Usage Tracking ─────────────────────────────────────────────────────
+
+app.post('/v1/user/order-sets/:id/use', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getOrderSetsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.update({ usageCount: admin.firestore.FieldValue.increment(1) })
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'use-order-set', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, usageCount: updated.data()?.usageCount ?? 0 })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.post('/v1/user/dispo-flows/:id/use', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getDispoFlowsCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.update({ usageCount: admin.firestore.FieldValue.increment(1) })
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'use-dispo-flow', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, usageCount: updated.data()?.usageCount ?? 0 })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.post('/v1/user/report-templates/:id/use', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'Missing id' })
+
+    const docRef = getReportTemplatesCollection(uid).doc(id)
+    const existing = await docRef.get()
+    if (!existing.exists) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+
+    await docRef.update({ usageCount: admin.firestore.FieldValue.increment(1) })
+    const updated = await docRef.get()
+    console.log({ userId: uid, action: 'use-report-template', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, usageCount: updated.data()?.usageCount ?? 0 })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ── Customizable Options ───────────────────────────────────────────────
+
+app.get('/v1/user/options', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const doc = await getUserDoc(uid).get()
+    const data = doc.data()
+    const options = data?.customizableOptions ?? { dispositionOptions: [], followUpOptions: [] }
+    console.log({ userId: uid, action: 'get-options', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, options })
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+app.put('/v1/user/options', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const parsed = CustomizableOptionsSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    await getUserDoc(uid).set({ customizableOptions: parsed.data }, { merge: true })
+    console.log({ userId: uid, action: 'update-options', timestamp: new Date().toISOString() })
+    return res.json({ ok: true, options: parsed.data })
+  } catch (error) {
     return res.status(500).json({ error: 'Internal error' })
   }
 })

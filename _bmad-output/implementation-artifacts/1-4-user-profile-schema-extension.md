@@ -2,7 +2,7 @@
 
 ## Status
 
-**ready-for-dev**
+**done**
 
 ## Story
 
@@ -22,61 +22,61 @@ As an **Emergency Medicine physician**, I want to **save reusable order sets, di
 
 ### Backend Types
 
-- [ ] Create `backend/src/types/userProfile.ts` with Zod schemas and inferred TypeScript types for `OrderSet`, `DispositionFlow`, `ReportTemplate`, and `CustomizableOptions` (AC: #2, #3, #4, #7)
-- [ ] Add `OrderSetCreateSchema`, `DispositionFlowCreateSchema`, `ReportTemplateCreateSchema`, `CustomizableOptionsSchema` validation schemas for POST/PUT request bodies (AC: #1, #7)
-- [ ] Export all types and schemas from the new file (AC: #1)
+- [x] Create `backend/src/types/userProfile.ts` with Zod schemas and inferred TypeScript types for `OrderSet`, `DispositionFlow`, `ReportTemplate`, and `CustomizableOptions` (AC: #2, #3, #4, #7)
+- [x] Add `OrderSetCreateSchema`, `DispositionFlowCreateSchema`, `ReportTemplateCreateSchema`, `CustomizableOptionsSchema` validation schemas for POST/PUT request bodies (AC: #1, #7)
+- [x] Export all types and schemas from the new file (AC: #1)
 
 ### CORS Update
 
-- [ ] Update CORS `Access-Control-Allow-Methods` header in `backend/src/index.ts` from `'GET, POST, OPTIONS'` to `'GET, POST, PUT, DELETE, OPTIONS'` (AC: #1)
+- [x] Update CORS `Access-Control-Allow-Methods` header in `backend/src/index.ts` from `'GET, POST, OPTIONS'` to `'GET, POST, PUT, DELETE, OPTIONS'` (AC: #1)
 
 ### Order Sets CRUD Endpoints (4 endpoints)
 
-- [ ] `GET /v1/user/order-sets` — list all order sets for authenticated user (AC: #1, #5)
-- [ ] `POST /v1/user/order-sets` — create new order set, return created doc with Firestore-generated ID (AC: #1, #2, #5)
-- [ ] `PUT /v1/user/order-sets/:id` — update existing order set by ID, verify ownership (AC: #1, #5)
-- [ ] `DELETE /v1/user/order-sets/:id` — delete order set by ID, verify ownership (AC: #1, #5)
+- [x] `GET /v1/user/order-sets` — list all order sets for authenticated user (AC: #1, #5)
+- [x] `POST /v1/user/order-sets` — create new order set, return created doc with Firestore-generated ID (AC: #1, #2, #5)
+- [x] `PUT /v1/user/order-sets/:id` — update existing order set by ID, verify ownership (AC: #1, #5)
+- [x] `DELETE /v1/user/order-sets/:id` — delete order set by ID, verify ownership (AC: #1, #5)
 
 ### Disposition Flows CRUD Endpoints (4 endpoints)
 
-- [ ] `GET /v1/user/dispo-flows` — list all disposition flows for authenticated user (AC: #1, #5)
-- [ ] `POST /v1/user/dispo-flows` — create new disposition flow (AC: #1, #3, #5)
-- [ ] `PUT /v1/user/dispo-flows/:id` — update existing disposition flow (AC: #1, #5)
-- [ ] `DELETE /v1/user/dispo-flows/:id` — delete disposition flow (AC: #1, #5)
+- [x] `GET /v1/user/dispo-flows` — list all disposition flows for authenticated user (AC: #1, #5)
+- [x] `POST /v1/user/dispo-flows` — create new disposition flow (AC: #1, #3, #5)
+- [x] `PUT /v1/user/dispo-flows/:id` — update existing disposition flow (AC: #1, #5)
+- [x] `DELETE /v1/user/dispo-flows/:id` — delete disposition flow (AC: #1, #5)
 
 ### Report Templates CRUD Endpoints (4 endpoints)
 
-- [ ] `GET /v1/user/report-templates` — list all report templates for authenticated user (AC: #1, #5)
-- [ ] `POST /v1/user/report-templates` — create new report template (AC: #1, #4, #5)
-- [ ] `PUT /v1/user/report-templates/:id` — update existing report template (AC: #1, #5)
-- [ ] `DELETE /v1/user/report-templates/:id` — delete report template (AC: #1, #5)
+- [x] `GET /v1/user/report-templates` — list all report templates for authenticated user (AC: #1, #5)
+- [x] `POST /v1/user/report-templates` — create new report template (AC: #1, #4, #5)
+- [x] `PUT /v1/user/report-templates/:id` — update existing report template (AC: #1, #5)
+- [x] `DELETE /v1/user/report-templates/:id` — delete report template (AC: #1, #5)
 
 ### Usage Tracking Endpoints
 
-- [ ] `POST /v1/user/order-sets/:id/use` — atomically increment `usageCount` on order set (AC: #2)
-- [ ] `POST /v1/user/dispo-flows/:id/use` — atomically increment `usageCount` on disposition flow (AC: #3)
-- [ ] `POST /v1/user/report-templates/:id/use` — atomically increment `usageCount` on report template (AC: #4)
+- [x] `POST /v1/user/order-sets/:id/use` — atomically increment `usageCount` on order set (AC: #2)
+- [x] `POST /v1/user/dispo-flows/:id/use` — atomically increment `usageCount` on disposition flow (AC: #3)
+- [x] `POST /v1/user/report-templates/:id/use` — atomically increment `usageCount` on report template (AC: #4)
 
 ### Customizable Options Endpoints (2 endpoints)
 
-- [ ] `GET /v1/user/options` — return the authenticated user's `customizableOptions` from `customers/{uid}` document (AC: #5, #7)
-- [ ] `PUT /v1/user/options` — update `customizableOptions` on `customers/{uid}` using `set({ customizableOptions }, { merge: true })` to avoid clobbering Stripe-managed fields (AC: #5, #7)
+- [x] `GET /v1/user/options` — return the authenticated user's `customizableOptions` from `customers/{uid}` document (AC: #5, #7)
+- [x] `PUT /v1/user/options` — update `customizableOptions` on `customers/{uid}` using `set({ customizableOptions }, { merge: true })` to avoid clobbering Stripe-managed fields (AC: #5, #7)
 
 ### Frontend Types
 
-- [ ] Create `frontend/src/types/userProfile.ts` with plain TypeScript interfaces (no Zod) mirroring backend types, including `CustomizableOptions`, with JSDoc comments (AC: #2, #3, #4, #7)
+- [x] Create `frontend/src/types/userProfile.ts` with plain TypeScript interfaces (no Zod) mirroring backend types, including `CustomizableOptions`, with JSDoc comments (AC: #2, #3, #4, #7)
 
 ### Frontend API Client
 
-- [ ] Add CRUD functions for order sets to `frontend/src/lib/api.ts`: `getOrderSets()`, `createOrderSet()`, `updateOrderSet()`, `deleteOrderSet()`, `useOrderSet()` (AC: #1)
-- [ ] Add CRUD functions for disposition flows to `frontend/src/lib/api.ts`: `getDispoFlows()`, `createDispoFlow()`, `updateDispoFlow()`, `deleteDispoFlow()`, `useDispoFlow()` (AC: #1)
-- [ ] Add CRUD functions for report templates to `frontend/src/lib/api.ts`: `getReportTemplates()`, `createReportTemplate()`, `updateReportTemplate()`, `deleteReportTemplate()`, `useReportTemplate()` (AC: #1)
-- [ ] Add functions for customizable options to `frontend/src/lib/api.ts`: `getCustomizableOptions()`, `updateCustomizableOptions()` (AC: #7)
+- [x] Add CRUD functions for order sets to `frontend/src/lib/api.ts`: `getOrderSets()`, `createOrderSet()`, `updateOrderSet()`, `deleteOrderSet()`, `useOrderSet()` (AC: #1)
+- [x] Add CRUD functions for disposition flows to `frontend/src/lib/api.ts`: `getDispoFlows()`, `createDispoFlow()`, `updateDispoFlow()`, `deleteDispoFlow()`, `useDispoFlow()` (AC: #1)
+- [x] Add CRUD functions for report templates to `frontend/src/lib/api.ts`: `getReportTemplates()`, `createReportTemplate()`, `updateReportTemplate()`, `deleteReportTemplate()`, `useReportTemplate()` (AC: #1)
+- [x] Add functions for customizable options to `frontend/src/lib/api.ts`: `getCustomizableOptions()`, `updateCustomizableOptions()` (AC: #7)
 
 ### Validation
 
-- [ ] Run `cd backend && pnpm build` — must pass with zero errors (AC: #6)
-- [ ] Run `cd frontend && pnpm check` — must pass with zero errors (AC: #6)
+- [x] Run `cd backend && pnpm build` — must pass with zero errors (AC: #6)
+- [x] Run `cd frontend && pnpm check` — must pass with zero errors (AC: #6)
 
 ## Dev Notes
 
@@ -452,25 +452,98 @@ None of these endpoints handle medical content. Order set names, test IDs, dispo
 |------|---------|-------------|--------|
 | 2026-02-23 | 0.1 | Initial draft from epic BM-REBUILD | Claude |
 | 2026-02-23 | 0.2 | Added CustomizableOptions in-scope (AC #7, tasks, dev notes); fixed Dev Agent Record template | Bob (SM) |
+| 2026-02-23 | 1.0 | Implementation complete — 17 endpoints, backend/frontend types, API client, CORS update | Claude Opus 4.6 |
 
 ## Dev Agent Record
 
 ### Agent Model Used
 
-_(To be filled by dev agent)_
+Claude Opus 4.6
 
 ### Debug Log References
 
-_(To be filled by dev agent)_
+No debug issues encountered. Backend build and frontend check passed on first attempt.
 
 ### Completion Notes List
 
-_(To be filled by dev agent)_
+- Created `backend/src/types/userProfile.ts` with 4 Zod validation schemas (`OrderSetCreateSchema`, `DispositionFlowCreateSchema`, `ReportTemplateCreateSchema`, `CustomizableOptionsSchema`) and corresponding TypeScript interfaces
+- Updated CORS `Access-Control-Allow-Methods` to include `PUT` and `DELETE`
+- Added `authenticateRequest()` helper to DRY up Bearer token auth across 17 endpoints
+- Added 4 Firestore collection/document helpers (`getOrderSetsCollection`, `getDispoFlowsCollection`, `getReportTemplatesCollection`, `getUserDoc`)
+- Implemented 12 CRUD endpoints (4 each for order sets, dispo flows, report templates) with proper auth, validation, 404 handling, and audit logging
+- Implemented 3 usage tracking endpoints using atomic `FieldValue.increment(1)`
+- Implemented 2 customizable options endpoints with `set({ merge: true })` to preserve Stripe fields
+- Created `frontend/src/types/userProfile.ts` with plain TypeScript interfaces and JSDoc comments
+- Added 17 frontend API client functions using existing `apiFetch()` wrapper with Bearer token auth
+- All endpoints registered before `surveillanceRouter` mount, covered by global rate limiter (no `llmLimiter` needed)
+- `cd backend && pnpm build` — PASSED (zero errors)
+- `cd frontend && pnpm check` — PASSED (typecheck + lint + 6 tests)
 
 ### File List
 
-_(To be filled by dev agent — all files created or modified)_
+- `backend/src/types/userProfile.ts` — **CREATED** — Zod schemas and TypeScript types for user profile entities
+- `backend/src/index.ts` — **MODIFIED** — CORS update, import, 17 endpoints with auth helper and collection helpers
+- `frontend/src/types/userProfile.ts` — **CREATED** — Plain TypeScript interfaces mirroring backend types
+- `frontend/src/lib/api.ts` — **MODIFIED** — 17 API client functions for user profile CRUD
 
 ## QA Results
 
-_(To be filled during QA)_
+### Review Date: 2026-02-23
+
+### Reviewed By: Quinn (Senior Developer QA)
+
+### Code Quality Assessment
+
+Strong implementation overall. The developer correctly followed the existing codebase patterns for auth, Firestore access, Zod validation, and API client structure. The introduction of the `authenticateRequest()` helper is a genuine improvement that DRYs up the 17-endpoint auth logic without over-abstracting. Endpoint logic is straightforward, correct, and readable.
+
+### Refactoring Performed
+
+- **File**: `backend/src/types/userProfile.ts`
+  - **Change**: Added `createdAt: FirebaseFirestore.Timestamp` to the `ReportTemplate` interface
+  - **Why**: The POST endpoint writes `createdAt: admin.firestore.Timestamp.now()` to every new report template, and both `OrderSet` and `DispositionFlow` declare `createdAt` in their interfaces, but `ReportTemplate` was missing it — making the stored field invisible to the type system
+  - **How**: Ensures type-safety for downstream consumers that may sort or display templates by creation date
+
+- **File**: `frontend/src/types/userProfile.ts`
+  - **Change**: Added `createdAt: string` with JSDoc to the `ReportTemplate` interface
+  - **Why**: Same inconsistency as backend — the field exists in Firestore documents but wasn't declared in the frontend type
+  - **How**: Matches the pattern of `OrderSet` and `DispositionFlow`, maintains frontend/backend type parity
+
+- **File**: `frontend/src/lib/api.ts`
+  - **Change**: Moved `import type { OrderSet, DispositionFlow, ReportTemplate, CustomizableOptions }` from line 410 (mid-file) to the top of the file with other module-level declarations
+  - **Why**: TypeScript convention places all imports at the top; mid-file imports are easy to miss during refactoring and violate the principle of least surprise
+  - **How**: Improves discoverability of dependencies when scanning the file header
+
+### Compliance Check
+
+- Coding Standards: ✓ — Follows existing codebase patterns for auth, validation, Firestore access, error responses, and audit logging
+- Project Structure: ✓ — New files placed in correct directories (`backend/src/types/`, `frontend/src/types/`); endpoints in `index.ts` before `surveillanceRouter` mount
+- Testing Strategy: ✓ — No automated tests required for this story (CRUD endpoints are straightforward Firestore operations; `pnpm build` + `pnpm check` serve as validation gates)
+- All ACs Met: ✓ — All 7 acceptance criteria verified (see details below)
+
+### AC Verification
+
+1. **All CRUD operations work for order sets, disposition flows, and report templates** — ✓ 12 CRUD endpoints implemented (4 per entity type) with correct HTTP methods and status codes
+2. **Order sets have: id, name, tests[], tags[], createdAt, usageCount** — ✓ Backend Zod schema validates create input; interface declares full shape; POST sets `createdAt` and `usageCount: 0` server-side
+3. **Disposition flows have: id, name, disposition, followUp[], createdAt, usageCount** — ✓ Same pattern as order sets
+4. **Report templates have: id, testId, name, text, defaultStatus, usageCount** — ✓ (QA added missing `createdAt` to type for consistency with other entities and actual stored data)
+5. **Endpoints require authentication and scope to authenticated user** — ✓ All 17 endpoints use `authenticateRequest()` which verifies Firebase ID token; subcollection paths `customers/{uid}/...` enforce user scoping
+6. **Backend builds cleanly** — ✓ `cd backend && pnpm build` passes with zero errors (verified post-QA refactoring)
+7. **Customizable options can be read and updated** — ✓ GET returns defaults when no options set; PUT uses `set({ merge: true })` to preserve Stripe fields
+
+### Improvements Checklist
+
+- [x] Added missing `createdAt` to `ReportTemplate` interface (backend + frontend)
+- [x] Moved mid-file import to top of `api.ts`
+- [ ] Consider extracting a generic CRUD factory for the 3 entity types to reduce the ~300 lines of repetitive endpoint code (future story — not worth the complexity for 3 entities)
+
+### Security Review
+
+No concerns. All endpoints enforce authentication via Bearer token verification. User data scoping is guaranteed by subcollection paths derived from the verified `uid`. Zod schemas constrain input sizes (max 50 tests, 20 tags/followUp, 30 options, 2000 char text). Atomic `FieldValue.increment()` prevents race conditions. `set({ merge: true })` protects Stripe-managed fields. No medical content is logged — only action metadata.
+
+### Performance Considerations
+
+POST (create) endpoints perform a read-back after write (`docRef.get()` after `add()`) to return the full document including the Firestore-generated ID and server-set `createdAt`. This is one extra Firestore read per create but is the standard pattern for returning the created resource. Usage tracking endpoints perform 3 Firestore operations (existence check, update, read-back) — the read-back is needed to return the new `usageCount`. These are acceptable for the expected volume (5-50 items per user, infrequent writes).
+
+### Final Status
+
+✓ Approved - Ready for Done
