@@ -160,7 +160,7 @@ export const WorkingDiagnosisSchema = z.object({
   custom: z.string().nullable().optional(),
   suggestedOptions: z.array(z.string()).optional(),
 })
-export type WorkingDiagnosisStructured = z.infer<typeof WorkingDiagnosisSchema>
+export type WorkingDiagnosis = z.infer<typeof WorkingDiagnosisSchema>
 
 export const CdrComponentSourceSchema = z.enum(['section1', 'section2', 'user_input'])
 export type CdrComponentSource = z.infer<typeof CdrComponentSourceSchema>
@@ -173,7 +173,7 @@ export const CdrComponentStateSchema = z.object({
 export type CdrComponentState = z.infer<typeof CdrComponentStateSchema>
 
 export const CdrStatusSchema = z.enum(['pending', 'partial', 'completed', 'dismissed'])
-export type CdrStatusType = z.infer<typeof CdrStatusSchema>
+export type CdrStatus = z.infer<typeof CdrStatusSchema>
 
 export const CdrTrackingEntrySchema = z.object({
   name: z.string(),
@@ -218,7 +218,11 @@ export const EncounterStatusSchema = z.enum([
 export type EncounterStatus = z.infer<typeof EncounterStatusSchema>
 
 /**
- * Section data structure for Firestore
+ * Section data structure for Firestore.
+ *
+ * `.nullable().optional()` fields accept both Firestore null and missing values.
+ * Frontend onSnapshot handlers convert null → undefined via `?? undefined` to
+ * match TypeScript optional (`?`) semantics. See useEncounter.ts.
  */
 export const SectionDataSchema = z.object({
   content: z.string().default(''),

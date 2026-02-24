@@ -106,6 +106,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               // Quick mode data (only present for quick mode encounters)
               quickModeData: data.quickModeData,
               section1: data.section1,
+              // Defensive defaults: bridge Firestore null → TypeScript types (BM-1.3)
               section2: {
                 ...data.section2,
                 selectedTests: data.section2?.selectedTests ?? [],
@@ -113,11 +114,11 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
                 allUnremarkable: data.section2?.allUnremarkable ?? false,
                 pastedRawText: data.section2?.pastedRawText ?? null,
                 appliedOrderSet: data.section2?.appliedOrderSet ?? null,
-                workingDiagnosis: data.section2?.workingDiagnosis ?? undefined,
+                workingDiagnosis: data.section2?.workingDiagnosis ?? undefined, // null → undefined
               },
               section3: {
                 ...data.section3,
-                treatments: data.section3?.treatments ?? undefined,
+                treatments: data.section3?.treatments ?? undefined, // null → undefined
                 cdrSuggestedTreatments: data.section3?.cdrSuggestedTreatments ?? [],
                 disposition: data.section3?.disposition ?? null,
                 followUp: data.section3?.followUp ?? [],

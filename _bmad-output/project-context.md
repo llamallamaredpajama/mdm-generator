@@ -236,11 +236,8 @@ Mock data objects defined at file top level. Use real types from `types/encounte
 
 ## 8. Type Alignment Gotchas
 
-### Known Frontend/Backend Name Divergences
-| Frontend (`types/encounter.ts`) | Backend (`buildModeSchemas.ts`) | Reason |
-|---|---|---|
-| `WorkingDiagnosis` (interface) | `WorkingDiagnosisStructured` (Zod inferred type) | Avoids Zod schema/type name collision |
-| `CdrStatus` (type alias) | `CdrStatusType` (Zod inferred type) | Same reason |
+### Frontend/Backend Type Names
+Frontend and backend type names are now aligned (`WorkingDiagnosis`, `CdrStatus`). The Zod schema names (`WorkingDiagnosisSchema`, `CdrStatusSchema`) don't collide with the inferred type names.
 
 ### Zod `z.any()` in Legacy Schemas
 `MdmPreviewSchema` uses `z.any()` for `problems`, `differential`, `dataReviewed` because LLM output varies (string, string[], object[]). Frontend `MdmPreview` interface types these as `string | string[] | Record<string, unknown>[]`. Always normalize before display (see `MdmPreviewPanel.normalizeToString`).

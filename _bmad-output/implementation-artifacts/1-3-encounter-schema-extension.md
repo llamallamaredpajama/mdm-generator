@@ -296,6 +296,7 @@ Note: `section1` is NOT modified in this story — S1 has no new structured fiel
 | 2026-02-23 | 0.1 | Initial draft | AI Story Writer |
 | 2026-02-23 | 1.0 | Implementation complete | Dev Agent |
 | 2026-02-23 | 1.1 | QA review + refactoring (SectionNumber ordering, CdrTrackingSchema reusability) | Quinn QA |
+| 2026-02-23 | 1.2 | Code review — fix cdrTracking optionality, remove dead DispositionData, align backend type names, add missing defaults to useEncounterList/useQuickEncounter, fix JSDoc limits, add type guard, clarify nullable bridging | Code Reviewer |
 
 ## File List
 
@@ -304,6 +305,8 @@ Note: `section1` is NOT modified in this story — S1 has no new structured fiel
 | Modified | `frontend/src/types/encounter.ts` |
 | Modified | `backend/src/buildModeSchemas.ts` |
 | Modified | `frontend/src/hooks/useEncounter.ts` |
+| Modified | `frontend/src/hooks/useEncounterList.ts` |
+| Modified | `frontend/src/hooks/useQuickEncounter.ts` |
 
 ## Dev Agent Record
 
@@ -361,7 +364,14 @@ Strong implementation. All 10 new types/interfaces defined cleanly with proper o
 
 - [x] Moved `SectionNumber` type above structured data types for readability (encounter.ts)
 - [x] Separated `CdrTrackingSchema` definition from field-level modifiers for reusability (buildModeSchemas.ts)
-- [ ] Consider aligning backend exported type names with frontend: `WorkingDiagnosisStructured` → `WorkingDiagnosis`, `CdrStatusType` → `CdrStatus` — currently divergent to avoid Zod schema/type name collisions, but downstream stories importing from both layers will need to know about this
+- [x] Aligned backend type names: `WorkingDiagnosisStructured` → `WorkingDiagnosis`, `CdrStatusType` → `CdrStatus` (code review v1.2)
+- [x] Made `cdrTracking` required on `EncounterDocument` (always hydrated by onSnapshot, was optional causing unnecessary null checks) (code review v1.2)
+- [x] Removed dead `DispositionData` interface (never imported; fields live directly on `Section3Data`) (code review v1.2)
+- [x] Added BM-1.3 defensive defaults to `useEncounterList.ts` and `useQuickEncounter.ts` (missed data gateways) (code review v1.2)
+- [x] Fixed JSDoc char limits on Section interfaces to reference constant names instead of stale hardcoded values (code review v1.2)
+- [x] Added `isStructuredDiagnosis()` type guard for `string | WorkingDiagnosis` union (code review v1.2)
+- [x] Added clarifying comments for `?? undefined` null→undefined bridging in useEncounter.ts (code review v1.2)
+- [x] Documented nullable/optional bridging pattern in SectionDataSchema JSDoc (code review v1.2)
 - [ ] Manual browser verification: load existing encounter without new fields, confirm no console errors (requires dev server)
 
 ### Security Review

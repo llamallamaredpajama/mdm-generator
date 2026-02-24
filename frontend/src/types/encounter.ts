@@ -168,6 +168,13 @@ export interface WorkingDiagnosis {
   suggestedOptions?: string[]
 }
 
+/** Type guard: distinguishes structured WorkingDiagnosis from legacy plain string */
+export const isStructuredDiagnosis = (
+  wd: string | WorkingDiagnosis | undefined | null
+): wd is WorkingDiagnosis => {
+  return wd !== null && wd !== undefined && typeof wd === 'object'
+}
+
 /** Source of a CDR component value */
 export type CdrComponentSource = 'section1' | 'section2' | 'user_input'
 
@@ -199,13 +206,6 @@ export type CdrTracking = Record<string, CdrTrackingEntry>
 /** Disposition option for patient */
 export type DispositionOption = 'discharge' | 'observation' | 'admit' | 'icu' | 'transfer' | 'ama' | 'lwbs' | 'deceased'
 
-/** Structured disposition data */
-export interface DispositionData {
-  disposition?: DispositionOption | null
-  followUp?: string[]
-  appliedDispoFlow?: string | null
-}
-
 // ============================================================================
 // Section Data Interfaces
 // ============================================================================
@@ -218,7 +218,7 @@ export interface DispositionData {
 export interface Section1Data {
   /** Status of this section */
   status: SectionStatus
-  /** User dictation content (max 4000 chars) */
+  /** User dictation content (frontend: SECTION1_MAX_CHARS) */
   content: string
   /** Number of times this section has been submitted (0, 1, or 2) */
   submissionCount: number
@@ -241,7 +241,7 @@ export interface Section1Data {
 export interface Section2Data {
   /** Status of this section */
   status: SectionStatus
-  /** User dictation content (max 3000 chars) */
+  /** User dictation content (frontend: SECTION2_MAX_CHARS) */
   content: string
   /** Number of times this section has been submitted (0, 1, or 2) */
   submissionCount: number
@@ -276,7 +276,7 @@ export interface Section2Data {
 export interface Section3Data {
   /** Status of this section */
   status: SectionStatus
-  /** User dictation content (max 2500 chars) */
+  /** User dictation content (frontend: SECTION3_MAX_CHARS) */
   content: string
   /** Number of times this section has been submitted (0, 1, or 2) */
   submissionCount: number
@@ -345,8 +345,8 @@ export interface EncounterDocument {
   /** Section 3: Treatment & Disposition data (build mode) */
   section3: Section3Data
 
-  /** CDR tracking state, keyed by CDR ID */
-  cdrTracking?: CdrTracking
+  /** CDR tracking state, keyed by CDR ID (always hydrated to {} by onSnapshot) */
+  cdrTracking: CdrTracking
 
   /** Whether this encounter has been counted against user quota */
   quotaCounted: boolean
