@@ -41,7 +41,7 @@ import { computeCorrelations } from './surveillance/correlationEngine'
 import { buildSurveillanceContext, appendSurveillanceToMdmText } from './surveillance/promptAugmenter'
 import { selectRelevantRules } from './cdr/cdrSelector'
 import { buildCdrContext } from './cdr/cdrPromptAugmenter'
-import type { TestDefinition, TestCategory, TestLibraryResponse } from './types/libraries'
+import type { TestDefinition, TestCategory, TestLibraryResponse, CdrDefinition } from './types/libraries'
 
 const app = express()
 
@@ -214,6 +214,38 @@ app.get('/v1/libraries/tests', async (req, res) => {
     return res.json(response)
   } catch (e: any) {
     console.error('get-test-library error:', e)
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+/**
+ * GET /v1/libraries/cdrs
+ * Returns all CDR definitions from the cdrLibrary Firestore collection.
+ */
+app.get('/v1/libraries/cdrs', async (req, res) => {
+  try {
+    // 1. AUTHENTICATE
+    const idToken = req.headers.authorization?.split('Bearer ')[1]
+    if (!idToken) return res.status(401).json({ error: 'Unauthorized' })
+    try {
+      await admin.auth().verifyIdToken(idToken)
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    // 2. VALIDATE — no body for GET
+    // 3. AUTHORIZE — any authenticated user can read CDR library
+    // 4. EXECUTE
+    const snapshot = await getDb().collection('cdrLibrary').get()
+    const cdrs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as CdrDefinition)
+
+    // 5. AUDIT
+    console.log({ action: 'list-cdrs', count: cdrs.length, timestamp: new Date().toISOString() })
+
+    // 6. RESPOND
+    return res.json({ ok: true, cdrs })
+  } catch (error) {
+    console.error('list-cdrs error:', error)
     return res.status(500).json({ error: 'Internal error' })
   }
 })

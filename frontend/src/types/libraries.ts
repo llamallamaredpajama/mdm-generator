@@ -40,3 +40,56 @@ export interface TestLibraryResponse {
   categories: TestCategory[]
   cachedAt: string
 }
+
+// ── CDR Types ───────────────────────────────────────────────────────────
+
+/** Option for a CDR select component */
+export interface CdrComponentOption {
+  label: string
+  value: number
+}
+
+/** Where a CDR component gets its data */
+export type CdrComponentSource = 'section1' | 'section2' | 'user_input'
+
+/** Type of CDR input component */
+export type CdrComponentType = 'select' | 'boolean' | 'number_range' | 'algorithm'
+
+/** Individual component of a Clinical Decision Rule */
+export interface CdrComponent {
+  id: string
+  label: string
+  type: CdrComponentType
+  options?: CdrComponentOption[]
+  min?: number
+  max?: number
+  /** Point weight for boolean components (e.g., Wells PE: DVT signs = 3 pts) */
+  value?: number
+  source: CdrComponentSource
+  autoPopulateFrom?: string
+}
+
+/** A scoring range with risk level and interpretation */
+export interface CdrScoringRange {
+  min: number
+  max: number
+  risk: string
+  interpretation: string
+}
+
+/** Scoring configuration for a CDR */
+export interface CdrScoring {
+  method: 'sum' | 'threshold' | 'algorithm'
+  ranges: CdrScoringRange[]
+}
+
+/** Complete Clinical Decision Rule definition */
+export interface CdrDefinition {
+  id: string
+  name: string
+  fullName: string
+  applicableChiefComplaints: string[]
+  components: CdrComponent[]
+  scoring: CdrScoring
+  suggestedTreatments?: Record<string, string[]>
+}
