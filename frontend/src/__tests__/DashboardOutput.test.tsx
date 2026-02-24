@@ -11,9 +11,13 @@ import DashboardOutput from '../components/build-mode/shared/DashboardOutput'
 import type { DifferentialItem } from '../types/encounter'
 import type { TrendAnalysisResult } from '../types/surveillance'
 
-// Mock useIsMobile hook
+// Mock useIsMobile hook with controllable return value
+const { mockIsMobile } = vi.hoisted(() => ({
+  mockIsMobile: vi.fn().mockReturnValue(false),
+}))
+
 vi.mock('../hooks/useMediaQuery', () => ({
-  useIsMobile: () => false,
+  useIsMobile: mockIsMobile,
 }))
 
 const mockDifferential: DifferentialItem[] = [
@@ -48,6 +52,10 @@ const mockTrendAnalysis: TrendAnalysisResult = {
 }
 
 describe('DashboardOutput', () => {
+  beforeEach(() => {
+    mockIsMobile.mockReturnValue(false)
+  })
+
   it('renders dashboard with differential data (wrapped shape)', () => {
     render(
       <DashboardOutput
@@ -173,5 +181,20 @@ describe('DashboardOutput', () => {
 
     const dashboard = container.firstElementChild as HTMLElement
     expect(dashboard.classList.contains('dashboard-output--desktop')).toBe(true)
+  })
+
+  it('applies mobile layout class when viewport is mobile', () => {
+    mockIsMobile.mockReturnValue(true)
+
+    const { container } = render(
+      <DashboardOutput
+        llmResponse={mockDifferential}
+        trendAnalysis={null}
+      />
+    )
+
+    const dashboard = container.firstElementChild as HTMLElement
+    expect(dashboard.classList.contains('dashboard-output--mobile')).toBe(true)
+    expect(dashboard.classList.contains('dashboard-output--desktop')).toBe(false)
   })
 })

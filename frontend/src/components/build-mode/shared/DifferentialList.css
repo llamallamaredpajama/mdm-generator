@@ -202,10 +202,6 @@
   gap: 0.5rem;
 }
 
-.diff-row__detail-section {
-  /* empty: just grouping */
-}
-
 .diff-row__detail-label {
   display: block;
   font-size: 0.75rem;

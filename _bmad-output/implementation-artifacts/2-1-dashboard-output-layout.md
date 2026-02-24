@@ -2,7 +2,7 @@
 
 ## Status
 
-**review**
+**done**
 
 | Field          | Value                                      |
 |----------------|--------------------------------------------|
@@ -351,4 +351,72 @@ Claude Opus 4.6
 ---
 
 ## QA Results
-_(To be filled during QA)_
+
+### Review Date: 2026-02-23
+
+### Reviewed By: Quinn (Senior Developer QA)
+
+### Code Quality Assessment
+
+Excellent implementation. The developer delivered a well-structured, accessible, and backward-compatible dashboard with clean separation between DifferentialList (reusable) and DashboardOutput (composition). Key strengths:
+
+- **Backward compatibility**: `getDifferential()` correctly handles both flat array and wrapped object data shapes from older/newer encounters
+- **Accessibility**: Color dots paired with text labels (Emergent/Urgent/Routine) for colorblind users, `aria-expanded`/`aria-controls` on collapsible rows, `aria-hidden` on decorative elements
+- **Component architecture**: `handleScrollToSection2` defined outside the component (no closure deps = no needless `useCallback`), `StubCard` and `TrendsCard` as focused sub-components
+- **Clean EncounterEditor wiring**: Removed `DifferentialPreview` and `TrendResultsPanel` from Build Mode flow, added `id="section-panel-2"` scroll target, preserved "View Chart Report" button
+
+### Refactoring Performed
+
+- **File**: `frontend/src/__tests__/DashboardOutput.test.tsx`
+  - **Change**: Replaced static `vi.mock` returning `false` with `vi.hoisted` + `vi.fn()` controllable mock, added `beforeEach` reset, added mobile layout test case
+  - **Why**: Original test suite only tested desktop layout class. No test verified the `dashboard-output--mobile` class was applied when `useIsMobile()` returns `true` — a gap in responsive layout coverage
+  - **How**: New test brings DashboardOutput test count from 10 to 11 (total suite from 25 to 26) and validates both layout paths
+
+- **File**: `frontend/src/components/build-mode/shared/DashboardOutput.tsx`
+  - **Change**: Replaced `&amp;` with `&` in button text
+  - **Why**: JSX handles literal `&` directly — HTML entities like `&amp;` are unnecessary in JSX text content and look out-of-place to React developers
+  - **How**: No functional change; rendered output is identical
+
+- **File**: `frontend/src/components/build-mode/shared/DifferentialList.css`
+  - **Change**: Removed empty `.diff-row__detail-section { /* empty: just grouping */ }` rule
+  - **Why**: Empty CSS rules add no styling; the `<div>` grouping is already clear from the HTML structure
+  - **How**: Eliminates dead CSS without affecting layout
+
+### Compliance Check
+
+- Coding Standards: ✓ — BEM CSS naming, CSS variables with fallbacks matching existing patterns, proper component composition, no PHI
+- Project Structure: ✓ — New components in `shared/` directory per story spec, tests in `__tests__/`, types extended in-place
+- Testing Strategy: ✓ — 20 unit tests across 2 files (9 DifferentialList + 11 DashboardOutput) covering rendering, interaction, data shapes, accessibility, and responsive layout
+- All ACs Met: ✓ — See verification below
+
+### AC Verification
+
+1. **S1 output renders as 4-area dashboard** — ✓ DashboardOutput renders differential, CDR stub, workup stub, and conditional trends card
+2. **Each differential item shows urgency color dot, diagnosis name, expand arrow** — ✓ DifferentialRow renders `.diff-row__dot`, `.diff-row__diagnosis`, `.diff-row__chevron` with urgency-specific CSS classes
+3. **Expanded item shows reasoning, CDR association, regional context** — ✓ Conditional rendering of `cdrContext` and `regionalContext` in expanded view; tested in DifferentialList.test.tsx
+4. **"Accept Workup & Continue" scrolls to Section 2** — ✓ `handleScrollToSection2()` calls `getElementById('section-panel-2').scrollIntoView({ behavior: 'smooth' })`; `id="section-panel-2"` added to EncounterEditor S2 wrapper
+5. **Mobile: single column stacked layout** — ✓ `useIsMobile()` toggles `dashboard-output--mobile` class; CSS uses flex column layout
+6. **Desktop: differential full-width, CDR + Workup side-by-side, Trends full-width** — ✓ `dashboard-output--desktop` class applies `grid-template-columns: 1fr 1fr` to middle row
+7. **No regression** — ✓ `getSectionPreview` returns null for S1 (dashboard renders separately), existing imports cleaned up, backward-compatible data shape handling, `pnpm check` passes
+8. **`pnpm check` passes** — ✓ typecheck + lint + 26 tests pass (26 = 5 formatTrendReport + 11 DashboardOutput + 9 DifferentialList + 1 App)
+
+### Improvements Checklist
+
+- [x] Added mobile layout test case (DashboardOutput.test.tsx)
+- [x] Simplified `&amp;` to `&` in JSX button text (DashboardOutput.tsx)
+- [x] Removed empty CSS rule (DifferentialList.css)
+- [ ] Consider extracting `getDifferential()` to a shared utility — the same data shape logic exists in EncounterEditor.tsx:135 for trend analysis (low priority, 2-line duplication)
+- [ ] CDR stub card could display aggregated `cdrContext` strings from differential items when present (story says "or display cdrContext strings" — current approach uses static placeholder, which is valid for a stub; enhancement can come with BM-2.3)
+- [ ] Visual browser QA recommended for mobile stacked layout and desktop grid layout (unit tests verify class names but not actual CSS rendering)
+
+### Security Review
+
+No concerns. This story is purely frontend UI with no API calls, no medical content creation, and no data transmission. Differential data displayed is AI-generated clinical vocabulary sourced from the existing Firestore encounter document. No PHI pathways introduced.
+
+### Performance Considerations
+
+No concerns. DifferentialList computes urgency counts via three `filter()` passes — negligible for typical 3-10 item differentials. State management uses `Set<number>` for O(1) expand/collapse lookups. CSS transitions are lightweight (0.15s ease on hover/rotate). No unnecessary re-renders — `toggleItem` is memoized via `useCallback`, `toggleAll` depends only on `allExpanded` and `differential`.
+
+### Final Status
+
+✓ Approved - Ready for Done

@@ -133,7 +133,7 @@ export default function DashboardOutput({
         onClick={handleScrollToSection2}
         type="button"
       >
-        Accept Workup &amp; Continue
+        Accept Workup & Continue
       </button>
     </div>
   )
