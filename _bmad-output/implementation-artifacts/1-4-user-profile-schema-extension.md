@@ -453,6 +453,7 @@ None of these endpoints handle medical content. Order set names, test IDs, dispo
 | 2026-02-23 | 0.1 | Initial draft from epic BM-REBUILD | Claude |
 | 2026-02-23 | 0.2 | Added CustomizableOptions in-scope (AC #7, tasks, dev notes); fixed Dev Agent Record template | Bob (SM) |
 | 2026-02-23 | 1.0 | Implementation complete — 17 endpoints, backend/frontend types, API client, CORS update | Claude Opus 4.6 |
+| 2026-02-23 | 1.1 | Code review — fix Timestamp serialization (H1), add update schemas to prevent silent array clearing (M1) | Claude Opus 4.6 |
 
 ## Dev Agent Record
 
@@ -547,3 +548,44 @@ POST (create) endpoints perform a read-back after write (`docRef.get()` after `a
 ### Final Status
 
 ✓ Approved - Ready for Done
+
+---
+
+## Code Review (Adversarial)
+
+### Review Date: 2026-02-23
+
+### Reviewed By: Senior Developer Code Review (AI — Claude Opus 4.6)
+
+### Findings Summary
+
+**Issues Found:** 1 High, 1 Medium, 4 Low (6 total)
+**Issues Fixed:** 2 (1 High, 1 Medium)
+**Action Items:** 0
+
+### Refactoring Performed
+
+- **File**: `backend/src/types/userProfile.ts`
+  - **Change**: Added `OrderSetUpdateSchema` and `DispositionFlowUpdateSchema` with `.optional()` arrays instead of `.default([])`
+  - **Why (M1)**: PUT endpoints reused create schemas; Zod's `.default([])` silently overwrites existing arrays with `[]` when clients omit optional fields like `tags` or `followUp`. Frontend TS types marked these as optional, creating a trap where "I didn't send this" became "delete everything"
+  - **How**: Separate update schemas use `.optional()` — undefined fields are stripped before `docRef.update()`, so only explicitly-provided fields are written
+
+- **File**: `backend/src/index.ts`
+  - **Change 1**: Added `serializeUserDoc()` helper and applied to all 9 doc-returning endpoints (3 GET lists, 3 POST creates, 3 PUT updates)
+  - **Why (H1)**: Firestore `Timestamp.now()` serializes via `res.json()` to `{"_seconds":...,"_nanoseconds":...}` but frontend types declare `createdAt: string`. Verified empirically: `JSON.stringify(admin.firestore.Timestamp.now())` → `{"_seconds":1771910083,"_nanoseconds":412000000}`. Any frontend display or sort by `createdAt` would see `[object Object]`
+  - **How**: Helper iterates doc fields and converts any value with a `toDate()` method to ISO string. Frontend `createdAt: string` type is now correct
+
+  - **Change 2**: PUT `/v1/user/order-sets/:id` and PUT `/v1/user/dispo-flows/:id` now use `OrderSetUpdateSchema` / `DispositionFlowUpdateSchema` + strip undefined keys before `docRef.update()`
+  - **Why**: Prevents silent array clearing on partial updates (see M1)
+
+### Low-Severity Findings (Not Fixed — Documented)
+
+- **L1**: No ordering on list queries — `getCollection(uid).get()` returns documents in arbitrary order. Add `.orderBy('createdAt', 'desc')` when UX requires sorted lists
+- **L2**: `Content-Type: application/json` on GET requests in frontend API functions — semantically incorrect (GET has no body), harmless in practice
+- **L3**: No `updatedAt` tracking — resources lack modification timestamps for display or debugging
+- **L4**: `authenticateRequest` catch block returns 401 for all `verifyIdToken` failures including Firebase Admin SDK infrastructure errors — makes infrastructure problems indistinguishable from bad tokens
+
+### Builds
+
+- `cd backend && pnpm build` — PASSED (zero errors, post-refactoring)
+- `cd frontend && pnpm check` — PASSED (8 test files, 62 tests, zero errors)

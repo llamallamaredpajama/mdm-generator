@@ -44,7 +44,9 @@ import { buildCdrContext } from './cdr/cdrPromptAugmenter'
 import type { TestDefinition, TestCategory, TestLibraryResponse, CdrDefinition } from './types/libraries'
 import {
   OrderSetCreateSchema,
+  OrderSetUpdateSchema,
   DispositionFlowCreateSchema,
+  DispositionFlowUpdateSchema,
   ReportTemplateCreateSchema,
   CustomizableOptionsSchema,
 } from './types/userProfile'
@@ -1501,6 +1503,21 @@ const getReportTemplatesCollection = (userId: string) =>
 const getUserDoc = (userId: string) =>
   getDb().collection('customers').doc(userId)
 
+/** Convert Firestore doc to JSON-safe object, serializing Timestamps to ISO strings */
+function serializeUserDoc(doc: admin.firestore.DocumentSnapshot): Record<string, unknown> {
+  const data = doc.data()
+  if (!data) return { id: doc.id }
+  const result: Record<string, unknown> = { id: doc.id }
+  for (const [key, value] of Object.entries(data)) {
+    if (value && typeof value === 'object' && typeof value.toDate === 'function') {
+      result[key] = value.toDate().toISOString()
+    } else {
+      result[key] = value
+    }
+  }
+  return result
+}
+
 /** Authenticate request and return uid, or send error response */
 async function authenticateRequest(req: express.Request, res: express.Response): Promise<string | null> {
   const idToken = req.headers.authorization?.split('Bearer ')[1]
@@ -1525,7 +1542,7 @@ app.get('/v1/user/order-sets', async (req, res) => {
     if (!uid) return
 
     const snapshot = await getOrderSetsCollection(uid).get()
-    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    const items = snapshot.docs.map(serializeUserDoc)
     console.log({ userId: uid, action: 'list-order-sets', timestamp: new Date().toISOString() })
     return res.json({ ok: true, items })
   } catch (error) {
@@ -1550,7 +1567,7 @@ app.post('/v1/user/order-sets', async (req, res) => {
     })
     const doc = await docRef.get()
     console.log({ userId: uid, action: 'create-order-set', timestamp: new Date().toISOString() })
-    return res.status(201).json({ ok: true, item: { id: doc.id, ...doc.data() } })
+    return res.status(201).json({ ok: true, item: serializeUserDoc(doc) })
   } catch (error) {
     return res.status(500).json({ error: 'Internal error' })
   }
@@ -1564,7 +1581,7 @@ app.put('/v1/user/order-sets/:id', async (req, res) => {
     const { id } = req.params
     if (!id) return res.status(400).json({ error: 'Missing id' })
 
-    const parsed = OrderSetCreateSchema.safeParse(req.body)
+    const parsed = OrderSetUpdateSchema.safeParse(req.body)
     if (!parsed.success) {
       return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
     }
@@ -1575,10 +1592,13 @@ app.put('/v1/user/order-sets/:id', async (req, res) => {
       return res.status(404).json({ error: 'Not found' })
     }
 
-    await docRef.update(parsed.data)
+    const updateData = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, v]) => v !== undefined)
+    )
+    await docRef.update(updateData)
     const updated = await docRef.get()
     console.log({ userId: uid, action: 'update-order-set', timestamp: new Date().toISOString() })
-    return res.json({ ok: true, item: { id: updated.id, ...updated.data() } })
+    return res.json({ ok: true, item: serializeUserDoc(updated) })
   } catch (error) {
     return res.status(500).json({ error: 'Internal error' })
   }
@@ -1614,7 +1634,7 @@ app.get('/v1/user/dispo-flows', async (req, res) => {
     if (!uid) return
 
     const snapshot = await getDispoFlowsCollection(uid).get()
-    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    const items = snapshot.docs.map(serializeUserDoc)
     console.log({ userId: uid, action: 'list-dispo-flows', timestamp: new Date().toISOString() })
     return res.json({ ok: true, items })
   } catch (error) {
@@ -1639,7 +1659,7 @@ app.post('/v1/user/dispo-flows', async (req, res) => {
     })
     const doc = await docRef.get()
     console.log({ userId: uid, action: 'create-dispo-flow', timestamp: new Date().toISOString() })
-    return res.status(201).json({ ok: true, item: { id: doc.id, ...doc.data() } })
+    return res.status(201).json({ ok: true, item: serializeUserDoc(doc) })
   } catch (error) {
     return res.status(500).json({ error: 'Internal error' })
   }
@@ -1653,7 +1673,7 @@ app.put('/v1/user/dispo-flows/:id', async (req, res) => {
     const { id } = req.params
     if (!id) return res.status(400).json({ error: 'Missing id' })
 
-    const parsed = DispositionFlowCreateSchema.safeParse(req.body)
+    const parsed = DispositionFlowUpdateSchema.safeParse(req.body)
     if (!parsed.success) {
       return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
     }
@@ -1664,10 +1684,13 @@ app.put('/v1/user/dispo-flows/:id', async (req, res) => {
       return res.status(404).json({ error: 'Not found' })
     }
 
-    await docRef.update(parsed.data)
+    const updateData = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, v]) => v !== undefined)
+    )
+    await docRef.update(updateData)
     const updated = await docRef.get()
     console.log({ userId: uid, action: 'update-dispo-flow', timestamp: new Date().toISOString() })
-    return res.json({ ok: true, item: { id: updated.id, ...updated.data() } })
+    return res.json({ ok: true, item: serializeUserDoc(updated) })
   } catch (error) {
     return res.status(500).json({ error: 'Internal error' })
   }
@@ -1703,7 +1726,7 @@ app.get('/v1/user/report-templates', async (req, res) => {
     if (!uid) return
 
     const snapshot = await getReportTemplatesCollection(uid).get()
-    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    const items = snapshot.docs.map(serializeUserDoc)
     console.log({ userId: uid, action: 'list-report-templates', timestamp: new Date().toISOString() })
     return res.json({ ok: true, items })
   } catch (error) {
@@ -1728,7 +1751,7 @@ app.post('/v1/user/report-templates', async (req, res) => {
     })
     const doc = await docRef.get()
     console.log({ userId: uid, action: 'create-report-template', timestamp: new Date().toISOString() })
-    return res.status(201).json({ ok: true, item: { id: doc.id, ...doc.data() } })
+    return res.status(201).json({ ok: true, item: serializeUserDoc(doc) })
   } catch (error) {
     return res.status(500).json({ error: 'Internal error' })
   }
@@ -1756,7 +1779,7 @@ app.put('/v1/user/report-templates/:id', async (req, res) => {
     await docRef.update(parsed.data)
     const updated = await docRef.get()
     console.log({ userId: uid, action: 'update-report-template', timestamp: new Date().toISOString() })
-    return res.json({ ok: true, item: { id: updated.id, ...updated.data() } })
+    return res.json({ ok: true, item: serializeUserDoc(updated) })
   } catch (error) {
     return res.status(500).json({ error: 'Internal error' })
   }

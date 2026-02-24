@@ -9,6 +9,13 @@ export const OrderSetCreateSchema = z.object({
 })
 export type OrderSetCreate = z.infer<typeof OrderSetCreateSchema>
 
+export const OrderSetUpdateSchema = z.object({
+  name: z.string().min(1).max(100),
+  tests: z.array(z.string().min(1)).min(1).max(50),
+  tags: z.array(z.string().min(1)).max(20).optional(),
+})
+export type OrderSetUpdate = z.infer<typeof OrderSetUpdateSchema>
+
 export interface OrderSet {
   id: string
   name: string
@@ -26,6 +33,13 @@ export const DispositionFlowCreateSchema = z.object({
   followUp: z.array(z.string().min(1)).max(20).default([]),
 })
 export type DispositionFlowCreate = z.infer<typeof DispositionFlowCreateSchema>
+
+export const DispositionFlowUpdateSchema = z.object({
+  name: z.string().min(1).max(100),
+  disposition: z.string().min(1),
+  followUp: z.array(z.string().min(1)).max(20).optional(),
+})
+export type DispositionFlowUpdate = z.infer<typeof DispositionFlowUpdateSchema>
 
 export interface DispositionFlow {
   id: string
