@@ -187,7 +187,7 @@ export const CdrTrackingEntrySchema = z.object({
 })
 export type CdrTrackingEntry = z.infer<typeof CdrTrackingEntrySchema>
 
-export const CdrTrackingSchema = z.record(z.string(), CdrTrackingEntrySchema).optional().default({})
+export const CdrTrackingSchema = z.record(z.string(), CdrTrackingEntrySchema)
 export type CdrTracking = z.infer<typeof CdrTrackingSchema>
 
 export const DispositionOptionSchema = z.enum(['discharge', 'observation', 'admit', 'icu', 'transfer', 'ama', 'lwbs', 'deceased'])
@@ -255,7 +255,7 @@ export const EncounterDocumentSchema = z.object({
   section1: SectionDataSchema.default({}),
   section2: SectionDataSchema.default({}),
   section3: SectionDataSchema.default({}),
-  cdrTracking: CdrTrackingSchema,
+  cdrTracking: CdrTrackingSchema.optional().default({}),
   createdAt: z.any(), // Firestore Timestamp
   updatedAt: z.any(), // Firestore Timestamp
   shiftStartedAt: z.any(), // Firestore Timestamp

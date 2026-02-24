@@ -2,7 +2,7 @@
 
 ## Status
 
-**Review**
+**Done**
 
 ## Story
 
@@ -295,6 +295,7 @@ Note: `section1` is NOT modified in this story — S1 has no new structured fiel
 |------|---------|-------------|--------|
 | 2026-02-23 | 0.1 | Initial draft | AI Story Writer |
 | 2026-02-23 | 1.0 | Implementation complete | Dev Agent |
+| 2026-02-23 | 1.1 | QA review + refactoring (SectionNumber ordering, CdrTrackingSchema reusability) | Quinn QA |
 
 ## File List
 
@@ -324,8 +325,55 @@ Note: `section1` is NOT modified in this story — S1 has no new structured fiel
 
 ## QA Results
 
-- **Frontend `pnpm check`**: PASS (typecheck + lint + 6/6 tests)
-- **Backend `pnpm build`**: PASS (TypeScript compilation)
-- **Backward compatibility**: All new fields are optional (`?` in TS, `.optional()` in Zod), defensive defaults applied in onSnapshot handler
-- **No request/response schema changes**: Section1RequestSchema, Section2RequestSchema, FinalizeRequestSchema, and all response schemas untouched
-- **Manual browser verification**: Pending (requires dev server + existing encounter)
+### Review Date: 2026-02-23
+
+### Reviewed By: Quinn (Senior Developer QA)
+
+### Code Quality Assessment
+
+Strong implementation. All 10 new types/interfaces defined cleanly with proper optional fields for backward compatibility. The union type approach for `workingDiagnosis` (`string | WorkingDiagnosis`) is pragmatic and well-documented. Defensive defaults in `useEncounter.ts` cover all new fields correctly. The single `SectionDataSchema` approach (rather than per-section schemas) is appropriate for this phase — the generic schema keeps the existing `EncounterDocumentSchema` intact.
+
+### Refactoring Performed
+
+- **File**: `frontend/src/types/encounter.ts`
+  - **Change**: Moved `SectionNumber` type from Utility Types section (line 400) to a new "Foundational Types" section before the Structured Data Types block (line 137)
+  - **Why**: `CdrTrackingEntry.identifiedInSection` and `.completedInSection` reference `SectionNumber` 220 lines before its definition. TypeScript hoists declarations so it compiles, but top-to-bottom readability suffers.
+  - **How**: Readers encountering `CdrTrackingEntry` now see `SectionNumber` already defined above, improving code navigation and comprehension.
+
+- **File**: `backend/src/buildModeSchemas.ts`
+  - **Change**: Removed `.optional().default({})` from `CdrTrackingSchema` definition; applied it at the field level in `EncounterDocumentSchema` instead (`cdrTracking: CdrTrackingSchema.optional().default({})`)
+  - **Why**: Baking `.optional().default({})` into the schema definition means every consumer inherits those modifiers. If a downstream story (e.g., BM-8.1) needs `CdrTrackingSchema` for request validation where missing data should be an error, it can't reuse the schema.
+  - **How**: The schema now describes the data shape only. Field-level concerns (optional, defaults) are applied at the point of use, making the schema reusable for both lenient (Firestore document) and strict (request validation) contexts.
+
+### Compliance Check
+
+- Coding Standards: ✓ — All new types follow existing naming conventions, JSDoc comments match existing style
+- Project Structure: ✓ — Types in `frontend/src/types/encounter.ts`, schemas in `backend/src/buildModeSchemas.ts`, defaults in `useEncounter.ts`
+- Testing Strategy: ✓ — Existing 6/6 tests pass, no new runtime behavior to test (schema-only story)
+- All ACs Met: ✓ — See detailed check below:
+  - AC1 (New types defined): ✓ `TestResult`, `CdrTracking`, `CdrComponentState`, `WorkingDiagnosis`, `DispositionData` all defined
+  - AC2 (Backward compat): ✓ All fields optional, defensive defaults in onSnapshot handler
+  - AC3 (Zod schemas): ✓ All 10 schemas added, SectionDataSchema extended, EncounterDocumentSchema extended
+  - AC4 (Frontend/backend aligned): ✓ with note (see below)
+  - AC5 (pnpm check/build pass): ✓ Both pass after refactoring
+
+### Improvements Checklist
+
+- [x] Moved `SectionNumber` type above structured data types for readability (encounter.ts)
+- [x] Separated `CdrTrackingSchema` definition from field-level modifiers for reusability (buildModeSchemas.ts)
+- [ ] Consider aligning backend exported type names with frontend: `WorkingDiagnosisStructured` → `WorkingDiagnosis`, `CdrStatusType` → `CdrStatus` — currently divergent to avoid Zod schema/type name collisions, but downstream stories importing from both layers will need to know about this
+- [ ] Manual browser verification: load existing encounter without new fields, confirm no console errors (requires dev server)
+
+### Security Review
+
+No security concerns. This is a schema-only change with no new endpoints, no new Firestore writes, and no user input handling. All new fields are validated by Zod schemas with appropriate constraints.
+
+### Performance Considerations
+
+No performance concerns. The spread+defaults in `useEncounter.ts` onSnapshot handler adds negligible overhead (object spread of ~6 fields per section, executed once per Firestore snapshot).
+
+### Final Status
+
+✓ Approved - Ready for Done
+
+All acceptance criteria met. Two minor items left unchecked (backend type name alignment and manual browser verification) are non-blocking — the naming divergence is a downstream concern, and the browser verification requires a running dev environment with existing encounter data.

@@ -135,6 +135,13 @@ export interface FinalMdm {
 }
 
 // ============================================================================
+// Foundational Types (used across sections and structured data)
+// ============================================================================
+
+/** Section number type for type-safe section references */
+export type SectionNumber = 1 | 2 | 3
+
+// ============================================================================
 // Structured Data Types (Build Mode v2 Extensions)
 // ============================================================================
 
@@ -395,9 +402,6 @@ export interface FinalizeResponse {
 // ============================================================================
 // Utility Types
 // ============================================================================
-
-/** Section number type for type-safe section references */
-export type SectionNumber = 1 | 2 | 3
 
 /** Map section number to its data type */
 export type SectionDataMap = {
