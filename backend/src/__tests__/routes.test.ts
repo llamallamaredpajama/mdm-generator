@@ -573,7 +573,7 @@ describe('POST /v1/build-mode/process-section1', () => {
    *
    * /v1/generate checks `Math.ceil(narrative.length / 4)` against
    * `stats.features.maxTokensPerRequest`, but build-mode endpoints do NOT.
-   * Only the Zod `.max(SECTION1_MAX_CHARS)` = 4000 char limit applies.
+   * Only the Zod `.max(SECTION1_MAX_CHARS)` = 2000 char limit applies.
    *
    * Expected: Should check token estimate against plan limit (like /v1/generate)
    * Actual: Only checks Zod character limit, ignoring plan token limits

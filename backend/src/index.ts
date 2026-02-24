@@ -343,8 +343,8 @@ app.get('/v1/libraries/tests', async (req, res) => {
 
     // 6. RESPOND
     return res.json(response)
-  } catch (e: any) {
-    console.error('get-test-library error:', e)
+  } catch (e: unknown) {
+    console.error('get-test-library error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -411,8 +411,8 @@ app.post('/v1/admin/set-plan', async (req, res) => {
       ok: true, 
       message: `User ${parsed.data.targetUid} updated to ${parsed.data.plan} plan`
     })
-  } catch (e: any) {
-    console.error(e)
+  } catch (e: unknown) {
+    console.error('admin/set-plan error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -525,10 +525,11 @@ app.post('/v1/parse-narrative', parseLimiter, async (req, res) => {
       confidence: parsedNarrative.confidence,
       warnings: parsedNarrative.warnings
     })
-  } catch (e: any) {
-    const status = e.status || 500
-    if (status !== 500) return res.status(status).json({ error: e.message })
-    console.error(e)
+  } catch (e: unknown) {
+    const err = e instanceof Error ? e : new Error('unknown error')
+    const status = (e as { status?: number })?.status || 500
+    if (status !== 500) return res.status(status).json({ error: err.message })
+    console.error('parse-narrative error:', err.message)
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -637,10 +638,11 @@ app.post('/v1/generate', llmLimiter, async (req, res) => {
       used: updatedStats.used,
       limit: updatedStats.limit
     })
-  } catch (e: any) {
-    const status = e.status || 500
-    if (status !== 500) return res.status(status).json({ error: e.message })
-    console.error(e)
+  } catch (e: unknown) {
+    const err = e instanceof Error ? e : new Error('unknown error')
+    const status = (e as { status?: number })?.status || 500
+    if (status !== 500) return res.status(status).json({ error: err.message })
+    console.error('generate error:', err.message)
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -884,8 +886,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       isLocked,
       quotaRemaining,
     })
-  } catch (e: any) {
-    console.error('process-section1 error:', e)
+  } catch (e: unknown) {
+    console.error('process-section1 error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -1091,8 +1093,8 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       submissionCount: newSubmissionCount,
       isLocked,
     })
-  } catch (e: any) {
-    console.error('process-section2 error:', e)
+  } catch (e: unknown) {
+    console.error('process-section2 error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -1367,8 +1369,8 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       finalMdm,
       quotaRemaining: stats.remaining,
     })
-  } catch (e: any) {
-    console.error('finalize error:', e)
+  } catch (e: unknown) {
+    console.error('finalize error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -1519,8 +1521,8 @@ app.post('/v1/build-mode/match-cdrs', llmLimiter, async (req, res) => {
       cdrTracking,
       matchedCount: matchedCdrs.length,
     })
-  } catch (e: any) {
-    console.error('match-cdrs error:', e?.message || 'unknown error')
+  } catch (e: unknown) {
+    console.error('match-cdrs error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -1638,8 +1640,8 @@ app.post('/v1/build-mode/suggest-diagnosis', llmLimiter, async (req, res) => {
       ok: true,
       suggestions,
     })
-  } catch (e: any) {
-    console.error('suggest-diagnosis error:', e?.message || 'unknown error')
+  } catch (e: unknown) {
+    console.error('suggest-diagnosis error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -1750,8 +1752,8 @@ app.post('/v1/build-mode/parse-results', llmLimiter, async (req, res) => {
       parsed: parsedResults,
       ...(unmatchedText.length > 0 ? { unmatchedText } : {}),
     })
-  } catch (e: any) {
-    console.error('parse-results error:', e?.message || 'unknown error')
+  } catch (e: unknown) {
+    console.error('parse-results error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })
@@ -1976,8 +1978,8 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       patientIdentifier: result.patientIdentifier,
       quotaRemaining,
     })
-  } catch (e: any) {
-    console.error('quick-mode/generate error:', e)
+  } catch (e: unknown) {
+    console.error('quick-mode/generate error:', e instanceof Error ? e.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })

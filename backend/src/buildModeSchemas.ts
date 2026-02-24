@@ -3,9 +3,9 @@ import { z } from 'zod'
 // ============================================================================
 // Character limits for each section
 // ============================================================================
-export const SECTION1_MAX_CHARS = 4000
-export const SECTION2_MAX_CHARS = 3000
-export const SECTION3_MAX_CHARS = 2500
+export const SECTION1_MAX_CHARS = 2000
+export const SECTION2_MAX_CHARS = 2000
+export const SECTION3_MAX_CHARS = 2000
 
 // ============================================================================
 // Request Schemas
