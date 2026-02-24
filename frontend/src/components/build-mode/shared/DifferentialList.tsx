@@ -107,31 +107,32 @@ export default function DifferentialList({ differential }: DifferentialListProps
   const routineCount = differential.filter((d) => d.urgency === 'routine').length
 
   return (
-    <div className="diff-list">
+    <div className="diff-list" role="region" aria-label="Differential Diagnosis">
       <div className="diff-list__header">
         <h4 className="diff-list__title">Differential Diagnosis</h4>
         <button
           className="diff-list__toggle-btn"
           onClick={toggleAll}
           type="button"
+          aria-label={allExpanded ? 'Collapse all diagnoses' : 'Expand all diagnoses'}
         >
           {allExpanded ? 'Collapse All' : 'Expand All'}
         </button>
       </div>
 
-      <div className="diff-list__summary">
+      <div className="diff-list__summary" role="status" aria-label="Diagnosis urgency summary">
         {emergentCount > 0 && (
-          <span className="diff-list__badge diff-list__badge--emergent">
+          <span className="diff-list__badge diff-list__badge--emergent" aria-label={`${emergentCount} emergent diagnoses`}>
             {emergentCount} emergent
           </span>
         )}
         {urgentCount > 0 && (
-          <span className="diff-list__badge diff-list__badge--urgent">
+          <span className="diff-list__badge diff-list__badge--urgent" aria-label={`${urgentCount} urgent diagnoses`}>
             {urgentCount} urgent
           </span>
         )}
         {routineCount > 0 && (
-          <span className="diff-list__badge diff-list__badge--routine">
+          <span className="diff-list__badge diff-list__badge--routine" aria-label={`${routineCount} routine diagnoses`}>
             {routineCount} routine
           </span>
         )}

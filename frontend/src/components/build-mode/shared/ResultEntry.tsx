@@ -107,7 +107,7 @@ export default function ResultEntry({
       </div>
 
       {activeCdrNames.length > 0 && isPending && (
-        <div className="result-entry__cdr-warning">
+        <div className="result-entry__cdr-warning" role="alert" aria-label={`Result needed: value required for ${activeCdrNames.join(', ')}`}>
           Value needed for {activeCdrNames.join(', ')}
         </div>
       )}

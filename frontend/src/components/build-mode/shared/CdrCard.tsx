@@ -10,26 +10,26 @@ interface CdrCardProps {
 
 export default function CdrCard({ identifiedCdrs, loading, error, onViewCdrs }: CdrCardProps) {
   return (
-    <div className="cdr-card">
+    <div className="cdr-card" role="region" aria-label="Clinical Decision Rules">
       <div className="cdr-card__header">
         <h4 className="cdr-card__title">Clinical Decision Rules</h4>
         {!loading && identifiedCdrs.length > 0 && (
-          <span className="cdr-card__badge">{identifiedCdrs.length} identified</span>
+          <span className="cdr-card__badge" aria-label={`${identifiedCdrs.length} clinical decision rules identified`}>{identifiedCdrs.length} identified</span>
         )}
       </div>
 
       {loading ? (
-        <p className="cdr-card__loading">Loading CDR library...</p>
+        <p className="cdr-card__loading" role="status">Loading CDR library...</p>
       ) : error ? (
-        <p className="cdr-card__error">Unable to load CDR library</p>
+        <p className="cdr-card__error" role="alert">Unable to load CDR library</p>
       ) : identifiedCdrs.length === 0 ? (
         <p className="cdr-card__empty">No CDRs identified for this differential</p>
       ) : (
         <>
-          <ul className="cdr-card__list">
+          <ul className="cdr-card__list" aria-label="Identified clinical decision rules">
             {identifiedCdrs.map((item) => (
               <li key={item.cdr.id} className="cdr-card__row">
-                <span className={`cdr-card__dot cdr-card__dot--${item.readiness}`} />
+                <span className={`cdr-card__dot cdr-card__dot--${item.readiness}`} aria-hidden="true" />
                 <span className="cdr-card__name">{item.cdr.name}</span>
                 <span className="cdr-card__readiness">
                   ({item.readiness === 'completable' ? 'completable' : 'needs results'})
@@ -37,7 +37,7 @@ export default function CdrCard({ identifiedCdrs, loading, error, onViewCdrs }: 
               </li>
             ))}
           </ul>
-          <div className="cdr-card__legend">
+          <div className="cdr-card__legend" aria-hidden="true">
             <span className="cdr-card__legend-item">
               <span className="cdr-card__dot cdr-card__dot--completable" /> completable now
             </span>

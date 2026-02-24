@@ -28,7 +28,12 @@ export default function ProgressIndicator({
   if (total === 0) return null
 
   return (
-    <div className="progress-indicator" data-testid="progress-indicator">
+    <div
+      className="progress-indicator"
+      data-testid="progress-indicator"
+      role="status"
+      aria-label={`Test progress: ${responded} of ${total} resulted${abnormalCount > 0 ? `, ${abnormalCount} abnormal` : ''}`}
+    >
       <div className="progress-indicator__dots" aria-hidden="true">
         {statuses.map((status, idx) => (
           <span
