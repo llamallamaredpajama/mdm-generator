@@ -41,6 +41,12 @@ export interface TestLibraryResponse {
   cachedAt: string
 }
 
+/** Response shape from GET /v1/libraries/cdrs */
+export interface CdrLibraryResponse {
+  ok: true
+  cdrs: CdrDefinition[]
+}
+
 // ── CDR Types ───────────────────────────────────────────────────────────
 
 /** Option for a CDR select component */

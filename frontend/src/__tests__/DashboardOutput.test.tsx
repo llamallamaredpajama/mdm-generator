@@ -47,6 +47,31 @@ vi.mock('../hooks/useTestLibrary', () => ({
   useTestLibrary: mockUseTestLibrary,
 }))
 
+// Mock useCdrLibrary — DashboardOutput uses it for CDR identification
+const { mockUseCdrLibrary } = vi.hoisted(() => ({
+  mockUseCdrLibrary: vi.fn().mockReturnValue({
+    cdrs: [
+      {
+        id: 'heart',
+        name: 'HEART Score',
+        fullName: 'HEART Score for Major Cardiac Events',
+        applicableChiefComplaints: ['chest pain', 'acute coronary syndrome'],
+        components: [
+          { id: 'history', label: 'History', type: 'select', source: 'section1' },
+          { id: 'troponin', label: 'Troponin', type: 'select', source: 'section2' },
+        ],
+        scoring: { method: 'sum', ranges: [{ min: 0, max: 3, risk: 'low', interpretation: 'Low risk' }] },
+      },
+    ],
+    loading: false,
+    error: null,
+  }),
+}))
+
+vi.mock('../hooks/useCdrLibrary', () => ({
+  useCdrLibrary: mockUseCdrLibrary,
+}))
+
 const mockDifferential: DifferentialItem[] = [
   {
     diagnosis: 'Acute Coronary Syndrome',
@@ -81,6 +106,23 @@ const mockTrendAnalysis: TrendAnalysisResult = {
 describe('DashboardOutput', () => {
   beforeEach(() => {
     mockIsMobile.mockReturnValue(false)
+    mockUseCdrLibrary.mockReturnValue({
+      cdrs: [
+        {
+          id: 'heart',
+          name: 'HEART Score',
+          fullName: 'HEART Score for Major Cardiac Events',
+          applicableChiefComplaints: ['chest pain', 'acute coronary syndrome'],
+          components: [
+            { id: 'history', label: 'History', type: 'select', source: 'section1' },
+            { id: 'troponin', label: 'Troponin', type: 'select', source: 'section2' },
+          ],
+          scoring: { method: 'sum', ranges: [{ min: 0, max: 3, risk: 'low', interpretation: 'Low risk' }] },
+        },
+      ],
+      loading: false,
+      error: null,
+    })
   })
 
   it('renders dashboard with differential data (wrapped shape)', () => {
@@ -140,7 +182,7 @@ describe('DashboardOutput', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('shows CDR stub card', () => {
+  it('shows CdrCard with identified CDRs', () => {
     render(
       <DashboardOutput
         llmResponse={mockDifferential}
@@ -148,7 +190,39 @@ describe('DashboardOutput', () => {
       />
     )
 
+    // CdrCard renders with title and matched CDR
     expect(screen.getByText('Clinical Decision Rules')).toBeDefined()
+    // HEART Score matches via applicableChiefComplaints containing 'acute coronary syndrome'
+    // which is a substring of diagnosis 'Acute Coronary Syndrome'
+    expect(screen.getByText('HEART Score')).toBeDefined()
+    expect(screen.getByText('1 identified')).toBeDefined()
+  })
+
+  it('shows CdrCard error state when CDR library fails to load', () => {
+    mockUseCdrLibrary.mockReturnValue({ cdrs: [], loading: false, error: 'Server error' })
+
+    render(
+      <DashboardOutput
+        llmResponse={mockDifferential}
+        trendAnalysis={null}
+      />
+    )
+
+    expect(screen.getByText('Unable to load CDR library')).toBeDefined()
+    expect(screen.queryByText('No CDRs identified for this differential')).toBeNull()
+  })
+
+  it('shows CdrCard empty state when no CDRs match', () => {
+    mockUseCdrLibrary.mockReturnValue({ cdrs: [], loading: false, error: null })
+
+    render(
+      <DashboardOutput
+        llmResponse={mockDifferential}
+        trendAnalysis={null}
+      />
+    )
+
+    expect(screen.getByText('No CDRs identified for this differential')).toBeDefined()
   })
 
   it('shows WorkupCard when onSelectedTestsChange is provided', () => {

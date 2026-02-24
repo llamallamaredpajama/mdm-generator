@@ -45,7 +45,7 @@ development_status:
   epic-2: in-progress
   2-1-dashboard-output-layout: done
   2-2-workup-card-order-selection: done
-  2-3-cdr-summary-card: backlog
+  2-3-cdr-summary-card: done
   2-4-regional-trends-card-integration: backlog
   epic-2-retrospective: optional
 

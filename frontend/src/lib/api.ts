@@ -751,6 +751,30 @@ export async function fetchTestLibrary(
 }
 
 // =============================================================================
+// CDR Library API Functions
+// =============================================================================
+
+/**
+ * Fetch the CDR library (clinical decision rule definitions)
+ */
+export async function fetchCdrLibrary(
+  userIdToken: string
+): Promise<import('../types/libraries').CdrLibraryResponse> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/libraries/cdrs`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userIdToken}`,
+      },
+    },
+    'Fetching CDR library'
+  )
+}
+
+// =============================================================================
 // Surveillance Trend Analysis API Functions
 // =============================================================================
 

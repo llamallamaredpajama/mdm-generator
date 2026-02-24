@@ -1,0 +1,120 @@
+.cdr-card {
+  background: var(--color-surface, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.cdr-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cdr-card__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+}
+
+.cdr-card__badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #64748b);
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 0.125rem 0.5rem;
+}
+
+.cdr-card__loading,
+.cdr-card__empty,
+.cdr-card__error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #94a3b8);
+}
+
+.cdr-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cdr-card__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.cdr-card__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cdr-card__dot--completable {
+  background-color: #16a34a;
+}
+
+.cdr-card__dot--needs_results {
+  background-color: #d97706;
+}
+
+.cdr-card__name {
+  color: var(--color-text, #1e293b);
+  font-weight: 500;
+}
+
+.cdr-card__readiness {
+  color: var(--color-text-muted, #94a3b8);
+  font-size: 0.8rem;
+}
+
+.cdr-card__legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #94a3b8);
+}
+
+.cdr-card__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.cdr-card__view-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-primary, #3b82f6);
+  background: transparent;
+  border: 1px solid var(--color-primary, #3b82f6);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.cdr-card__view-btn:hover:not(:disabled) {
+  background: var(--color-primary, #3b82f6);
+  color: var(--color-background, #ffffff);
+}
+
+.cdr-card__view-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

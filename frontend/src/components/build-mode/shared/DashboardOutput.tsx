@@ -3,7 +3,7 @@
  *
  * 4-area dashboard displayed after Section 1 completion:
  *   - Differential (full-width top)
- *   - CDR stub + Workup stub (side-by-side on desktop, stacked on mobile)
+ *   - CdrCard + WorkupCard (side-by-side on desktop, stacked on mobile)
  *   - Trends (full-width bottom, conditionally shown)
  *   - "Accept Workup & Continue" button
  *
@@ -17,8 +17,11 @@ import type { TrendAnalysisResult } from '../../../types/surveillance'
 import DifferentialList from './DifferentialList'
 import WorkupCard from './WorkupCard'
 import OrderSelector from './OrderSelector'
+import CdrCard from './CdrCard'
 import { useTestLibrary } from '../../../hooks/useTestLibrary'
+import { useCdrLibrary } from '../../../hooks/useCdrLibrary'
 import { getRecommendedTestIds } from './getRecommendedTestIds'
+import { getIdentifiedCdrs } from './getIdentifiedCdrs'
 import { useIsMobile } from '../../../hooks/useMediaQuery'
 import './DashboardOutput.css'
 
@@ -115,10 +118,16 @@ export default function DashboardOutput({
   const differential = getDifferential(llmResponse)
   const [showOrderSelector, setShowOrderSelector] = useState(false)
   const { tests, loading: testsLoading } = useTestLibrary()
+  const { cdrs, loading: cdrsLoading, error: cdrsError } = useCdrLibrary()
 
   const recommendedTestIds = useMemo(
     () => getRecommendedTestIds(differential, tests),
     [differential, tests]
+  )
+
+  const identifiedCdrs = useMemo(
+    () => getIdentifiedCdrs(differential, cdrs),
+    [differential, cdrs]
   )
 
   // Auto-populate recommended tests as pre-checked on fresh encounters (AC#1)
@@ -162,10 +171,7 @@ export default function DashboardOutput({
 
       {/* CDR + Workup: side-by-side on desktop, stacked on mobile */}
       <div className="dashboard-output__middle-row">
-        <StubCard
-          title="Clinical Decision Rules"
-          description="CDR matching available after workup \u2014 BM-2.3"
-        />
+        <CdrCard identifiedCdrs={identifiedCdrs} loading={cdrsLoading} error={cdrsError} />
         {onSelectedTestsChange ? (
           <WorkupCard
             tests={tests}
