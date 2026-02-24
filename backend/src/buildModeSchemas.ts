@@ -140,6 +140,60 @@ export const FinalizeResponseSchema = z.object({
 export type FinalizeResponse = z.infer<typeof FinalizeResponseSchema>
 
 // ============================================================================
+// Structured Data Schemas (Build Mode v2 Extensions)
+// ============================================================================
+
+export const TestResultStatusSchema = z.enum(['unremarkable', 'abnormal', 'pending'])
+export type TestResultStatus = z.infer<typeof TestResultStatusSchema>
+
+export const TestResultSchema = z.object({
+  status: TestResultStatusSchema,
+  quickFindings: z.array(z.string()).optional(),
+  notes: z.string().nullable().optional(),
+  value: z.string().nullable().optional(),
+  unit: z.string().nullable().optional(),
+})
+export type TestResult = z.infer<typeof TestResultSchema>
+
+export const WorkingDiagnosisSchema = z.object({
+  selected: z.string().nullable(),
+  custom: z.string().nullable().optional(),
+  suggestedOptions: z.array(z.string()).optional(),
+})
+export type WorkingDiagnosisStructured = z.infer<typeof WorkingDiagnosisSchema>
+
+export const CdrComponentSourceSchema = z.enum(['section1', 'section2', 'user_input'])
+export type CdrComponentSource = z.infer<typeof CdrComponentSourceSchema>
+
+export const CdrComponentStateSchema = z.object({
+  value: z.number().nullable().optional(),
+  source: CdrComponentSourceSchema.nullable().optional(),
+  answered: z.boolean(),
+})
+export type CdrComponentState = z.infer<typeof CdrComponentStateSchema>
+
+export const CdrStatusSchema = z.enum(['pending', 'partial', 'completed', 'dismissed'])
+export type CdrStatusType = z.infer<typeof CdrStatusSchema>
+
+export const CdrTrackingEntrySchema = z.object({
+  name: z.string(),
+  status: CdrStatusSchema,
+  identifiedInSection: z.number().int().min(1).max(3).optional(),
+  completedInSection: z.number().int().min(1).max(3).nullable().optional(),
+  dismissed: z.boolean(),
+  components: z.record(z.string(), CdrComponentStateSchema),
+  score: z.number().nullable().optional(),
+  interpretation: z.string().nullable().optional(),
+})
+export type CdrTrackingEntry = z.infer<typeof CdrTrackingEntrySchema>
+
+export const CdrTrackingSchema = z.record(z.string(), CdrTrackingEntrySchema).optional().default({})
+export type CdrTracking = z.infer<typeof CdrTrackingSchema>
+
+export const DispositionOptionSchema = z.enum(['discharge', 'observation', 'admit', 'icu', 'transfer', 'ama', 'lwbs', 'deceased'])
+export type DispositionOption = z.infer<typeof DispositionOptionSchema>
+
+// ============================================================================
 // Firestore Document Schemas (for validation)
 // ============================================================================
 
@@ -172,6 +226,19 @@ export const SectionDataSchema = z.object({
   submissionCount: z.number().int().min(0).max(2).default(0),
   llmResponse: z.any().nullable().default(null),
   lastUpdated: z.any().nullable().default(null), // Firestore Timestamp
+  // S2 structured fields (ignored by S1/S3 when absent)
+  selectedTests: z.array(z.string()).optional(),
+  testResults: z.record(z.string(), TestResultSchema).optional(),
+  allUnremarkable: z.boolean().optional(),
+  pastedRawText: z.string().nullable().optional(),
+  appliedOrderSet: z.string().nullable().optional(),
+  workingDiagnosis: z.union([z.string(), WorkingDiagnosisSchema]).nullable().optional(),
+  // S3 structured fields (ignored by S1/S2 when absent)
+  treatments: z.string().optional(),
+  cdrSuggestedTreatments: z.array(z.string()).optional(),
+  disposition: DispositionOptionSchema.nullable().optional(),
+  followUp: z.array(z.string()).optional(),
+  appliedDispoFlow: z.string().nullable().optional(),
 })
 
 export type SectionData = z.infer<typeof SectionDataSchema>
@@ -188,6 +255,7 @@ export const EncounterDocumentSchema = z.object({
   section1: SectionDataSchema.default({}),
   section2: SectionDataSchema.default({}),
   section3: SectionDataSchema.default({}),
+  cdrTracking: CdrTrackingSchema,
   createdAt: z.any(), // Firestore Timestamp
   updatedAt: z.any(), // Firestore Timestamp
   shiftStartedAt: z.any(), // Firestore Timestamp
