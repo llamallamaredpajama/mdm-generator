@@ -110,6 +110,11 @@ const TEST_LIBRARY_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 let testLibraryCache: TestLibraryResponse | null = null
 let testLibraryCacheTime = 0
 
+// In-memory cache for CDR library (rarely changes — only via seed script)
+const CDR_LIBRARY_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+let cdrLibraryCache: { ok: true; cdrs: CdrDefinition[] } | null = null
+let cdrLibraryCacheTime = 0
+
 // Initialize Firebase Admin (expects GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS or default creds in Cloud Run)
 async function initFirebase() {
   try {
@@ -250,15 +255,34 @@ app.get('/v1/libraries/cdrs', async (req, res) => {
 
     // 2. VALIDATE — no body for GET
     // 3. AUTHORIZE — any authenticated user can read CDR library
-    // 4. EXECUTE
+
+    // 4. EXECUTE — return from cache or read Firestore
+    const now = Date.now()
+    if (cdrLibraryCache && (now - cdrLibraryCacheTime) < CDR_LIBRARY_CACHE_TTL) {
+      console.log({ action: 'list-cdrs', cached: true, timestamp: new Date().toISOString() })
+      return res.json(cdrLibraryCache)
+    }
+
     const snapshot = await getDb().collection('cdrLibrary').get()
-    const cdrs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as CdrDefinition)
+    const cdrs: CdrDefinition[] = []
+    for (const doc of snapshot.docs) {
+      const d = doc.data()
+      if (d.id && d.name && d.components && d.scoring) {
+        cdrs.push(d as CdrDefinition)
+      } else {
+        console.warn({ action: 'list-cdrs', warning: 'skipped malformed doc', docId: doc.id })
+      }
+    }
+
+    const response = { ok: true as const, cdrs }
+    cdrLibraryCache = response
+    cdrLibraryCacheTime = now
 
     // 5. AUDIT
-    console.log({ action: 'list-cdrs', count: cdrs.length, timestamp: new Date().toISOString() })
+    console.log({ action: 'list-cdrs', cdrCount: cdrs.length, timestamp: new Date().toISOString() })
 
     // 6. RESPOND
-    return res.json({ ok: true, cdrs })
+    return res.json(response)
   } catch (error) {
     console.error('list-cdrs error:', error)
     return res.status(500).json({ error: 'Internal error' })

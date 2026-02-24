@@ -692,6 +692,7 @@ curl -H "Authorization: Bearer <valid-firebase-id-token>" \
 |------|---------|-------------|--------|
 | 2026-02-23 | 0.1.0 | Initial draft | Technical Scrum Master |
 | 2026-02-23 | 1.0.0 | Implementation complete — 13 CDRs, types, endpoint, seed script | Dev Agent (Claude Opus 4.6) |
+| 2026-02-23 | 1.0.1 | Code review — fixed 6 issues (3 HIGH, 3 MEDIUM): Ottawa Knee/Ankle id-label swaps, centor feedsCdrs mismatch, endpoint caching, malformed doc guard, boolean value consistency | QA Agent (Claude Opus 4.6) |
 
 ---
 
@@ -716,10 +717,35 @@ Claude Opus 4.6 (claude-opus-4-6)
 ### File List
 - `backend/src/types/libraries.ts` — **MODIFIED** — Added Zod import, CDR Zod schemas (CdrComponentOptionSchema, CdrComponentSourceSchema, CdrComponentTypeSchema, CdrComponentSchema, CdrScoringRangeSchema, CdrScoringSchema, CdrDefinitionSchema) and inferred types
 - `frontend/src/types/libraries.ts` — **MODIFIED** — Added CDR plain TypeScript interfaces (CdrComponentOption, CdrComponentSource, CdrComponentType, CdrComponent, CdrScoringRange, CdrScoring, CdrDefinition)
-- `backend/src/index.ts` — **MODIFIED** — Added CdrDefinition import, GET /v1/libraries/cdrs endpoint
-- `scripts/seed-cdr-library.ts` — **CREATED** — Idempotent Firestore seed script with 13 CDR definitions
+- `backend/src/index.ts` — **MODIFIED** — Added CdrDefinition import, GET /v1/libraries/cdrs endpoint; [QA] added 5-min in-memory cache + malformed doc guard
+- `scripts/seed-cdr-library.ts` — **CREATED** — Idempotent Firestore seed script with 13 CDR definitions; [QA] fixed Ottawa Knee/Ankle id-label swaps, added explicit `value: 1` to threshold-scored booleans
+- `scripts/seed-test-library.ts` — **MODIFIED** — [QA] Fixed `feedsCdrs: ['centor']` → `['centor_mcisaac']` to match CDR library id
 
 ---
 
 ## QA Results
-_(To be populated during QA phase)_
+
+**Reviewer:** QA Agent (Claude Opus 4.6)
+**Date:** 2026-02-23
+**Verdict:** PASS (after fixes)
+
+### Issues Found & Fixed (6 total)
+
+#### HIGH — Fixed
+1. **Ottawa Knee id/label swap** — `isolated_patella_tenderness` had label "Tenderness at head of fibula" and vice versa. Swapped ids to match anatomical labels. Medical accuracy issue affecting downstream `cdrTracking` keys.
+2. **Ottawa Ankle id/label swap** — `midfoot_bone_tenderness_navicular` had label about 5th metatarsal; `midfoot_bone_tenderness_cuboid` had label about navicular. Renamed ids to `midfoot_bone_tenderness_5th_met` and `midfoot_bone_tenderness_navicular`.
+3. **feedsCdrs cross-reference broken** — BM-1.1 `rapid_strep` used `feedsCdrs: ['centor']` but CDR id is `centor_mcisaac`. Fixed in `seed-test-library.ts`.
+
+#### MEDIUM — Fixed
+4. **No caching on CDR endpoint** — Added 5-minute in-memory cache matching test library pattern.
+5. **No malformed document validation** — Added field existence check (`id`, `name`, `components`, `scoring`) with `console.warn` for skipped docs, matching test library guard pattern.
+6. **Boolean `value` field inconsistency** — Threshold-scored CDRs (PERC, Ottawa Ankle, Ottawa Knee, NEXUS) now include explicit `value: 1` on boolean components for consistency with sum-scored CDRs.
+
+#### LOW — Not Fixed (acceptable)
+7. No `CdrLibraryResponse` type — minor, can be added when frontend consumption is wired.
+8. Redundant `id` spread in endpoint — cosmetic, both values identical.
+9. `docs/stories/` file not in File List — documentation artifact, not source code.
+
+### Build Verification
+- `cd backend && pnpm build` — PASS
+- `cd frontend && pnpm check` (typecheck + lint + 62 tests) — PASS

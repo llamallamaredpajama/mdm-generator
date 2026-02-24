@@ -90,6 +90,7 @@ interface CdrSeed {
 // - Some feedsCdrs IDs in BM-1.1 (sepsis, rumack_matthew, canadian_ct_head, sgarbossa)
 //   reference the old markdown-based CDR system and are NOT covered by these 13 definitions.
 //   The old system coexists until a future migration story.
+// - BM-1.1 `rapid_strep` uses `feedsCdrs: ['centor_mcisaac']` matching this library's CDR id.
 // ---------------------------------------------------------------------------
 
 const cdrs: CdrSeed[] = [
@@ -163,14 +164,14 @@ const cdrs: CdrSeed[] = [
     fullName: 'Pulmonary Embolism Rule-out Criteria',
     applicableChiefComplaints: ['chest_pain', 'dyspnea', 'pleuritic_chest_pain', 'tachycardia'],
     components: [
-      { id: 'age_gte_50', label: 'Age >= 50', type: 'boolean', source: 'section1', autoPopulateFrom: 'narrative_analysis' },
-      { id: 'hr_gte_100', label: 'Heart rate >= 100', type: 'boolean', source: 'section1', autoPopulateFrom: 'vital_signs' },
-      { id: 'sao2_lt_95', label: 'SpO2 < 95% on room air', type: 'boolean', source: 'section1', autoPopulateFrom: 'vital_signs' },
-      { id: 'unilateral_leg_swelling', label: 'Unilateral leg swelling', type: 'boolean', source: 'section1', autoPopulateFrom: 'physical_exam' },
-      { id: 'hemoptysis', label: 'Hemoptysis', type: 'boolean', source: 'section1', autoPopulateFrom: 'narrative_analysis' },
-      { id: 'recent_surgery_trauma', label: 'Surgery or trauma within 4 weeks', type: 'boolean', source: 'section1', autoPopulateFrom: 'narrative_analysis' },
-      { id: 'prior_pe_dvt', label: 'Prior PE or DVT', type: 'boolean', source: 'section1', autoPopulateFrom: 'narrative_analysis' },
-      { id: 'hormone_use', label: 'Hormone use (OCP, HRT)', type: 'boolean', source: 'section1', autoPopulateFrom: 'narrative_analysis' },
+      { id: 'age_gte_50', label: 'Age >= 50', type: 'boolean', source: 'section1', autoPopulateFrom: 'narrative_analysis', value: 1 },
+      { id: 'hr_gte_100', label: 'Heart rate >= 100', type: 'boolean', source: 'section1', autoPopulateFrom: 'vital_signs', value: 1 },
+      { id: 'sao2_lt_95', label: 'SpO2 < 95% on room air', type: 'boolean', source: 'section1', autoPopulateFrom: 'vital_signs', value: 1 },
+      { id: 'unilateral_leg_swelling', label: 'Unilateral leg swelling', type: 'boolean', source: 'section1', autoPopulateFrom: 'physical_exam', value: 1 },
+      { id: 'hemoptysis', label: 'Hemoptysis', type: 'boolean', source: 'section1', autoPopulateFrom: 'narrative_analysis', value: 1 },
+      { id: 'recent_surgery_trauma', label: 'Surgery or trauma within 4 weeks', type: 'boolean', source: 'section1', autoPopulateFrom: 'narrative_analysis', value: 1 },
+      { id: 'prior_pe_dvt', label: 'Prior PE or DVT', type: 'boolean', source: 'section1', autoPopulateFrom: 'narrative_analysis', value: 1 },
+      { id: 'hormone_use', label: 'Hormone use (OCP, HRT)', type: 'boolean', source: 'section1', autoPopulateFrom: 'narrative_analysis', value: 1 },
     ],
     scoring: {
       method: 'threshold',
@@ -290,10 +291,10 @@ const cdrs: CdrSeed[] = [
     fullName: 'Ottawa Ankle Rules',
     applicableChiefComplaints: ['ankle_pain', 'ankle_injury', 'foot_pain', 'foot_injury', 'ankle_swelling'],
     components: [
-      { id: 'malleolar_bone_tenderness_posterior', label: 'Bone tenderness along distal 6cm of posterior edge of tibia/fibula or tip of malleolus', type: 'boolean', source: 'section1' },
-      { id: 'inability_to_bear_weight', label: 'Inability to bear weight immediately and in ED (4 steps)', type: 'boolean', source: 'section1' },
-      { id: 'midfoot_bone_tenderness_navicular', label: 'Bone tenderness at base of 5th metatarsal', type: 'boolean', source: 'section1' },
-      { id: 'midfoot_bone_tenderness_cuboid', label: 'Bone tenderness at navicular', type: 'boolean', source: 'section1' },
+      { id: 'malleolar_bone_tenderness_posterior', label: 'Bone tenderness along distal 6cm of posterior edge of tibia/fibula or tip of malleolus', type: 'boolean', source: 'section1', value: 1 },
+      { id: 'inability_to_bear_weight', label: 'Inability to bear weight immediately and in ED (4 steps)', type: 'boolean', source: 'section1', value: 1 },
+      { id: 'midfoot_bone_tenderness_5th_met', label: 'Bone tenderness at base of 5th metatarsal', type: 'boolean', source: 'section1', value: 1 },
+      { id: 'midfoot_bone_tenderness_navicular', label: 'Bone tenderness at navicular', type: 'boolean', source: 'section1', value: 1 },
     ],
     scoring: {
       method: 'threshold',
@@ -314,11 +315,11 @@ const cdrs: CdrSeed[] = [
     fullName: 'Ottawa Knee Rules',
     applicableChiefComplaints: ['knee_pain', 'knee_injury', 'knee_swelling'],
     components: [
-      { id: 'age_gte_55', label: 'Age >= 55', type: 'boolean', source: 'section1' },
-      { id: 'isolated_patella_tenderness', label: 'Tenderness at head of fibula', type: 'boolean', source: 'section1' },
-      { id: 'fibula_head_tenderness', label: 'Isolated patellar tenderness', type: 'boolean', source: 'section1' },
-      { id: 'inability_to_flex_90', label: 'Inability to flex to 90 degrees', type: 'boolean', source: 'section1' },
-      { id: 'inability_to_bear_weight', label: 'Inability to bear weight immediately and in ED (4 steps)', type: 'boolean', source: 'section1' },
+      { id: 'age_gte_55', label: 'Age >= 55', type: 'boolean', source: 'section1', value: 1 },
+      { id: 'fibula_head_tenderness', label: 'Tenderness at head of fibula', type: 'boolean', source: 'section1', value: 1 },
+      { id: 'isolated_patella_tenderness', label: 'Isolated patellar tenderness', type: 'boolean', source: 'section1', value: 1 },
+      { id: 'inability_to_flex_90', label: 'Inability to flex to 90 degrees', type: 'boolean', source: 'section1', value: 1 },
+      { id: 'inability_to_bear_weight', label: 'Inability to bear weight immediately and in ED (4 steps)', type: 'boolean', source: 'section1', value: 1 },
     ],
     scoring: {
       method: 'threshold',
@@ -368,11 +369,11 @@ const cdrs: CdrSeed[] = [
     fullName: 'National Emergency X-Radiography Utilization Study Criteria',
     applicableChiefComplaints: ['neck_pain', 'neck_injury', 'trauma', 'mvc', 'fall'],
     components: [
-      { id: 'midline_tenderness', label: 'Posterior midline cervical-spine tenderness', type: 'boolean', source: 'section1' },
-      { id: 'focal_neurologic_deficit', label: 'Focal neurologic deficit', type: 'boolean', source: 'section1' },
-      { id: 'decreased_alertness', label: 'Decreased level of alertness', type: 'boolean', source: 'section1' },
-      { id: 'intoxication', label: 'Evidence of intoxication', type: 'boolean', source: 'section1' },
-      { id: 'distracting_injury', label: 'Clinically apparent painful distracting injury', type: 'boolean', source: 'section1' },
+      { id: 'midline_tenderness', label: 'Posterior midline cervical-spine tenderness', type: 'boolean', source: 'section1', value: 1 },
+      { id: 'focal_neurologic_deficit', label: 'Focal neurologic deficit', type: 'boolean', source: 'section1', value: 1 },
+      { id: 'decreased_alertness', label: 'Decreased level of alertness', type: 'boolean', source: 'section1', value: 1 },
+      { id: 'intoxication', label: 'Evidence of intoxication', type: 'boolean', source: 'section1', value: 1 },
+      { id: 'distracting_injury', label: 'Clinically apparent painful distracting injury', type: 'boolean', source: 'section1', value: 1 },
     ],
     scoring: {
       method: 'threshold',
