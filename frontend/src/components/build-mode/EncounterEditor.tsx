@@ -1040,26 +1040,28 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                             </>
                           )}
 
-                          {/* Result entry cards */}
-                          {selectedTests.map((testId) => {
-                            const testDef = testLibrary.find((t) => t.id === testId)
-                            if (!testDef) return null
-                            const activeCdrNames = (testDef.feedsCdrs ?? [])
-                              .filter((cdrId) => {
-                                const entry = encounter.cdrTracking?.[cdrId]
-                                return entry && !entry.dismissed
-                              })
-                              .map((cdrId) => encounter.cdrTracking[cdrId].name)
-                            return (
-                              <ResultEntry
-                                key={testId}
-                                testDef={testDef}
-                                result={testResults[testId]}
-                                activeCdrNames={activeCdrNames}
-                                onResultChange={handleTestResultChange}
-                              />
-                            )
-                          })}
+                          {/* Result entry cards (2-col grid on desktop) */}
+                          <div className="encounter-editor__result-grid">
+                            {selectedTests.map((testId) => {
+                              const testDef = testLibrary.find((t) => t.id === testId)
+                              if (!testDef) return null
+                              const activeCdrNames = (testDef.feedsCdrs ?? [])
+                                .filter((cdrId) => {
+                                  const entry = encounter.cdrTracking?.[cdrId]
+                                  return entry && !entry.dismissed
+                                })
+                                .map((cdrId) => encounter.cdrTracking[cdrId].name)
+                              return (
+                                <ResultEntry
+                                  key={testId}
+                                  testDef={testDef}
+                                  result={testResults[testId]}
+                                  activeCdrNames={activeCdrNames}
+                                  onResultChange={handleTestResultChange}
+                                />
+                              )
+                            })}
+                          </div>
 
                           {/* Quick action: Mark remaining unremarkable */}
                           {!isS2Locked && hasPendingTests && (
@@ -1161,7 +1163,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
             preview={getSectionPreview(3, encounter)}
             customContent={
               !isFinalized && !isArchived && encounter ? (
-                <>
+                <div className="encounter-editor__s3-layout">
                   <TreatmentInput
                     encounter={encounter}
                     cdrLibrary={cdrLibrary}
@@ -1181,7 +1183,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                     onDeleteFlow={deleteDispoFlow}
                     disabled={section3State.isLocked || isFinalized || isArchived}
                   />
-                </>
+                </div>
               ) : undefined
             }
             textareaPlaceholder="Additional notes for Section 3 (optional)..."

@@ -181,9 +181,12 @@ export default function DashboardOutput({
 
   return (
     <div className={`dashboard-output ${isMobile ? 'dashboard-output--mobile' : 'dashboard-output--desktop'}`}>
-      {/* Differential: always full-width */}
-      <div className="dashboard-output__differential">
-        <DifferentialList differential={differential} />
+      {/* Top row: Differential + CDR side-by-side on desktop, stacked on mobile */}
+      <div className="dashboard-output__top-row">
+        <div className="dashboard-output__differential">
+          <DifferentialList differential={differential} />
+        </div>
+        <CdrCard identifiedCdrs={identifiedCdrs} loading={cdrsLoading} error={cdrsError} onViewCdrs={handleViewCdrs} />
       </div>
 
       {/* Order Set Suggestion */}
@@ -196,9 +199,8 @@ export default function DashboardOutput({
         />
       )}
 
-      {/* CDR + Workup: side-by-side on desktop, stacked on mobile */}
+      {/* Workup: full-width */}
       <div className="dashboard-output__middle-row">
-        <CdrCard identifiedCdrs={identifiedCdrs} loading={cdrsLoading} error={cdrsError} onViewCdrs={handleViewCdrs} />
         {onSelectedTestsChange ? (
           <WorkupCard
             tests={tests}

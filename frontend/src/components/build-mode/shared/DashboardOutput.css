@@ -2,7 +2,7 @@
  * DashboardOutput Styles
  *
  * 4-area responsive grid:
- *   Desktop: Differential (full-width), CDR+Workup (side-by-side), Trends (full-width)
+ *   Desktop: 2-column layout — Differential + CDR side-by-side (top), Workup (full-width), Trends (full-width)
  *   Mobile:  All stacked vertically
  */
 
@@ -13,13 +13,22 @@
   padding: 0.5rem 0;
 }
 
-/* Middle row: CDR + Workup */
-.dashboard-output--desktop .dashboard-output__middle-row {
+/* Desktop: 2-column top row for differential + CDR */
+.dashboard-output--desktop .dashboard-output__top-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.dashboard-output--mobile .dashboard-output__top-row {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
 }
 
+/* Middle row: Workup (full-width on both) */
+.dashboard-output--desktop .dashboard-output__middle-row,
 .dashboard-output--mobile .dashboard-output__middle-row {
   display: flex;
   flex-direction: column;
