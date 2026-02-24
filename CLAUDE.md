@@ -254,6 +254,14 @@ xcrun simctl status_bar booted override --time "9:41" --batteryState charged --b
 
 Screenshots are 3x Retina. If using AXe for tap interactions, divide pixel coordinates by 3 for point coordinates.
 
+## Worktree Awareness
+
+This project uses git worktrees under `.claude/worktrees/`. When operating in a worktree:
+- The working directory is the worktree root (e.g., `.claude/worktrees/SwiftUI/`)
+- All relative paths (`_bmad/`, `.bmad-core/`, `docs/`) resolve from the worktree root
+- `{project-root}` in BMAD files means the current working directory, NOT the main worktree
+- If BMAD files are missing, the worktree branch likely needs to be rebased onto `main`
+
 ## Important Reminders
 
 1. **Medical tool** - Accuracy and safety are paramount
