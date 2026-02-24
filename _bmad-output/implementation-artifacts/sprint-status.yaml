@@ -42,7 +42,7 @@ development_status:
   1-4-user-profile-schema-extension: done
   epic-1-retrospective: optional
 
-  epic-2: in-progress
+  epic-2: done
   2-1-dashboard-output-layout: done
   2-2-workup-card-order-selection: done
   2-3-cdr-summary-card: done
