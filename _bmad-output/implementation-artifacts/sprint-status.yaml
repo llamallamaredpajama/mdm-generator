@@ -78,8 +78,8 @@ development_status:
   7-2-report-templates: done
   epic-7-retrospective: optional
 
-  epic-8: backlog
-  8-1-s2-submission-flow-refactor: backlog
+  epic-8: in-progress
+  8-1-s2-submission-flow-refactor: done
   8-2-desktop-layout-optimization: backlog
   8-3-accessibility-pass: backlog
   epic-8-retrospective: optional

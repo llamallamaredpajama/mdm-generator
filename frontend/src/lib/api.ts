@@ -326,13 +326,26 @@ export async function processSection1(
 }
 
 /**
- * Process Section 2 (Workup & Results) - generates MDM preview
+ * Structured data for S2 submission (enriches the LLM prompt).
+ * All fields optional for backward compatibility.
+ */
+export interface Section2StructuredPayload {
+  selectedTests?: string[]
+  testResults?: Record<string, import('../types/encounter').TestResult>
+  structuredDiagnosis?: string | import('../types/encounter').WorkingDiagnosis | null
+}
+
+/**
+ * Process Section 2 (Workup & Results) - generates MDM preview.
+ * When structuredData is provided, it sends selected tests, test results,
+ * and structured diagnosis alongside the free-text content for a richer prompt.
  */
 export async function processSection2(
   encounterId: string,
   content: string,
   userIdToken: string,
-  workingDiagnosis?: string
+  workingDiagnosis?: string,
+  structuredData?: Section2StructuredPayload
 ): Promise<Section2Response> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -340,7 +353,15 @@ export async function processSection2(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, content, userIdToken, workingDiagnosis }),
+      body: JSON.stringify({
+        encounterId,
+        content,
+        userIdToken,
+        workingDiagnosis,
+        ...(structuredData?.selectedTests && { selectedTests: structuredData.selectedTests }),
+        ...(structuredData?.testResults && { testResults: structuredData.testResults }),
+        ...(structuredData?.structuredDiagnosis !== undefined && { structuredDiagnosis: structuredData.structuredDiagnosis }),
+      }),
     },
     'Section 2 processing',
     60_000

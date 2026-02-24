@@ -911,7 +911,7 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    const { encounterId, content, workingDiagnosis } = parsed.data
+    const { encounterId, content, workingDiagnosis, selectedTests, testResults, structuredDiagnosis } = parsed.data
 
     // 3. Get encounter and verify ownership
     const encounterRef = getEncounterRef(uid, encounterId)
@@ -972,7 +972,14 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       console.warn('Section 2 CDR enrichment failed (non-blocking):', cdrError)
     }
 
-    const prompt = buildSection2Prompt(section1Content, section1Response, content, workingDiagnosis, section2CdrCtx, storedS1CdrCtx)
+    // Build structured data for the prompt (prefer request data, fall back to Firestore)
+    const s2StructuredData = {
+      selectedTests: selectedTests || encounter.section2?.selectedTests,
+      testResults: testResults || encounter.section2?.testResults,
+      structuredDiagnosis: structuredDiagnosis !== undefined ? structuredDiagnosis : encounter.section2?.workingDiagnosis,
+    }
+
+    const prompt = buildSection2Prompt(section1Content, section1Response, content, workingDiagnosis, section2CdrCtx, storedS1CdrCtx, s2StructuredData)
 
     let mdmPreview: MdmPreview
     try {
@@ -1058,6 +1065,10 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       'section2.submissionCount': newSubmissionCount,
       'section2.status': 'completed',
       'section2.lastUpdated': admin.firestore.Timestamp.now(),
+      // Persist structured data from the request (if provided)
+      ...(selectedTests && { 'section2.selectedTests': selectedTests }),
+      ...(testResults && { 'section2.testResults': testResults }),
+      ...(structuredDiagnosis !== undefined && { 'section2.workingDiagnosis': structuredDiagnosis }),
       // Update CDR context with expanded S2 analysis (may include additional rules from workup)
       ...(section2CdrCtx && { cdrContext: section2CdrCtx }),
       status: 'section2_done',

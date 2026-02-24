@@ -29,13 +29,37 @@ export type Section1Request = z.infer<typeof Section1RequestSchema>
 
 /**
  * Section 2: Workup & Results
- * Labs, imaging, EKG, clinical decision rules, working diagnosis
+ * Labs, imaging, EKG, clinical decision rules, working diagnosis.
+ *
+ * Accepts optional structured data (selectedTests, testResults, workingDiagnosis)
+ * alongside the legacy free-text content field. When structured data is present,
+ * it enriches the LLM prompt with precise test results. The free-text `content`
+ * field remains required for backward compatibility and narrative context.
  */
 export const Section2RequestSchema = z.object({
   encounterId: z.string().min(1),
   content: z.string().min(1).max(SECTION2_MAX_CHARS),
   workingDiagnosis: z.string().optional(),
   userIdToken: z.string().min(10),
+  // Structured data fields (optional — backward compatible)
+  // Note: Uses z.any() / z.record for forward-ref types (TestResult, WorkingDiagnosis
+  // are defined later in this file). Actual shape validation happens at Firestore layer.
+  selectedTests: z.array(z.string()).optional(),
+  testResults: z.record(z.string(), z.object({
+    status: z.enum(['unremarkable', 'abnormal', 'pending']),
+    quickFindings: z.array(z.string()).optional(),
+    notes: z.string().nullable().optional(),
+    value: z.string().nullable().optional(),
+    unit: z.string().nullable().optional(),
+  })).optional(),
+  structuredDiagnosis: z.union([
+    z.string(),
+    z.object({
+      selected: z.string().nullable(),
+      custom: z.string().nullable().optional(),
+      suggestedOptions: z.array(z.string()).optional(),
+    }),
+  ]).nullable().optional(),
 })
 
 export type Section2Request = z.infer<typeof Section2RequestSchema>

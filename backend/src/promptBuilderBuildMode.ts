@@ -125,8 +125,25 @@ export function buildSection1Prompt(
 }
 
 /**
+ * Structured test results from the S2 workup, used to enrich the S2 prompt.
+ * All fields are optional for backward compatibility.
+ */
+export interface Section2StructuredData {
+  /** Selected test IDs (e.g., "troponin", "cbc") */
+  selectedTests?: string[]
+  /** Test results keyed by test ID */
+  testResults?: Record<string, TestResult>
+  /** Working diagnosis (structured object or legacy string) */
+  structuredDiagnosis?: string | WorkingDiagnosis | null
+}
+
+/**
  * Section 2: Workup & Results
  * Builds MDM preview incorporating workup data and refining the differential.
+ *
+ * When `structuredData` is provided, the prompt includes formatted test results
+ * that give the LLM precise, structured information in addition to the free-text
+ * content. This produces more accurate MDM previews.
  */
 export function buildSection2Prompt(
   section1Content: string,
@@ -134,7 +151,8 @@ export function buildSection2Prompt(
   section2Content: string,
   workingDiagnosis?: string,
   cdrContext?: string,
-  section1CdrAnalysis?: string
+  section1CdrAnalysis?: string,
+  structuredData?: Section2StructuredData
 ): { system: string; user: string } {
   const differentialSummary = section1Response.differential
     .map((d: DifferentialItem) => `- ${d.diagnosis} (${d.urgency}): ${d.reasoning}`)
@@ -191,15 +209,51 @@ export function buildSection2Prompt(
     ].join('\n')
   }
 
-  const workingDxInstruction = workingDiagnosis
-    ? `\nWORKING DIAGNOSIS (physician-specified): ${workingDiagnosis}`
+  // Resolve working diagnosis: prefer structured → legacy string → none
+  // Convert null to undefined since resolveWorkingDiagnosis accepts string | WorkingDiagnosis | undefined
+  const rawStructuredDx = structuredData?.structuredDiagnosis
+  const resolvedDx = resolveWorkingDiagnosis(rawStructuredDx === null ? undefined : rawStructuredDx, workingDiagnosis)
+  const workingDxInstruction = resolvedDx
+    ? `\nWORKING DIAGNOSIS (physician-specified): ${resolvedDx}`
     : '\nNo working diagnosis specified - derive from workup results.'
+
+  // Build structured test results block (if available)
+  const structuredResultsBlock: string[] = []
+  if (structuredData?.testResults && Object.keys(structuredData.testResults).length > 0) {
+    structuredResultsBlock.push('', '=== STRUCTURED TEST RESULTS ===')
+    for (const [testId, result] of Object.entries(structuredData.testResults)) {
+      const parts = [`- ${testId}: ${result.status.toUpperCase()}`]
+      if (result.value) parts.push(`Value: ${result.value}${result.unit ? ` ${result.unit}` : ''}`)
+      if (result.quickFindings && result.quickFindings.length > 0) {
+        parts.push(`Findings: ${result.quickFindings.join(', ')}`)
+      }
+      if (result.notes) parts.push(`Notes: ${result.notes}`)
+      structuredResultsBlock.push(parts.join(' | '))
+    }
+    // Note pending tests (ordered but no results yet)
+    if (structuredData.selectedTests && structuredData.selectedTests.length > 0) {
+      const resultIds = new Set(Object.keys(structuredData.testResults))
+      const pendingTests = structuredData.selectedTests.filter((t) => !resultIds.has(t))
+      if (pendingTests.length > 0) {
+        structuredResultsBlock.push(`Pending tests (ordered but no results): ${pendingTests.join(', ')}`)
+      }
+    }
+    structuredResultsBlock.push(
+      '',
+      'STRUCTURED DATA INSTRUCTIONS:',
+      '1. When structured test results are provided, use them as the authoritative data source — they are more precise than free-text',
+      '2. Reference specific test values and findings in the Data Reviewed section',
+      '3. Cross-reference results with the differential to update probabilities',
+      ''
+    )
+  }
 
   const user = [
     'WORKUP AND RESULTS:',
     '---',
     section2Content,
     '---',
+    ...structuredResultsBlock,
     workingDxInstruction,
     '',
     'OUTPUT FORMAT (strict JSON):',

@@ -287,8 +287,14 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
             break
           }
 
-          case 2:
-            response = await processSection2(encounterId, content, token, workingDiagnosis)
+          case 2: {
+            // Collect structured data from the encounter for the S2 prompt
+            const s2Structured = {
+              selectedTests: encounter.section2.selectedTests,
+              testResults: encounter.section2.testResults,
+              structuredDiagnosis: encounter.section2.workingDiagnosis,
+            }
+            response = await processSection2(encounterId, content, token, workingDiagnosis, s2Structured)
             // Update Firestore with response
             await updateDoc(encounterRef, {
               'section2.content': content,
@@ -305,6 +311,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               updatedAt: serverTimestamp(),
             })
             break
+          }
 
           case 3:
             response = await finalizeEncounter(encounterId, content, token)
