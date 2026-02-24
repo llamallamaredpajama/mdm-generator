@@ -29,6 +29,7 @@ import TrendAnalysisToggle from '../TrendAnalysisToggle'
 import TrendReportModal from '../TrendReportModal'
 import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
 import { useToast } from '../../contexts/ToastContext'
+import ResultEntry from './shared/ResultEntry'
 import './EncounterEditor.css'
 
 /**
@@ -159,6 +160,73 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
         updateDoc(encounterRef, { 'section2.selectedTests': pendingTestsRef.current }).catch((err) =>
           console.error('Failed to flush selectedTests on unmount:', err?.message || 'unknown error')
+        )
+      }
+    }
+  }, [user, encounterId])
+
+  // Test results state (initialized from encounter, persisted to Firestore)
+  const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
+  const testResultsInitRef = useRef(false)
+  const testResultsWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingTestResultsRef = useRef<Record<string, TestResult> | null>(null)
+
+  // Initialize testResults from encounter data
+  useEffect(() => {
+    if (encounter && !testResultsInitRef.current) {
+      setTestResults(encounter.section2?.testResults ?? {})
+      testResultsInitRef.current = true
+    }
+  }, [encounter])
+
+  // Sync testResults from Firestore onSnapshot (external changes)
+  const testResultsExternalRef = useRef(encounter?.section2?.testResults)
+  useEffect(() => {
+    const external = encounter?.section2?.testResults
+    if (external !== testResultsExternalRef.current) {
+      testResultsExternalRef.current = external
+      // Only overwrite if no pending local write
+      if (!pendingTestResultsRef.current && external) {
+        setTestResults(external)
+      }
+    }
+  }, [encounter?.section2?.testResults])
+
+  // Debounced Firestore write for testResults
+  const handleTestResultChange = useCallback(
+    (testId: string, result: TestResult) => {
+      setTestResults((prev) => {
+        const updated = { ...prev, [testId]: result }
+        pendingTestResultsRef.current = updated
+        return updated
+      })
+
+      if (!user || !encounterId) return
+
+      if (testResultsWriteTimer.current) {
+        clearTimeout(testResultsWriteTimer.current)
+      }
+      testResultsWriteTimer.current = setTimeout(() => {
+        const toWrite = pendingTestResultsRef.current
+        if (!toWrite) return
+        const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+        updateDoc(encounterRef, { 'section2.testResults': toWrite }).catch((err) =>
+          console.error('Failed to persist testResults:', err?.message || 'unknown error')
+        )
+        pendingTestResultsRef.current = null
+      }, 300)
+    },
+    [user, encounterId]
+  )
+
+  // Flush pending testResults write on unmount
+  useEffect(() => {
+    return () => {
+      if (testResultsWriteTimer.current) clearTimeout(testResultsWriteTimer.current)
+      if (pendingTestResultsRef.current !== null && user && encounterId) {
+        const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+        updateDoc(encounterRef, { 'section2.testResults': pendingTestResultsRef.current }).catch((err) =>
+          console.error('Failed to flush testResults on unmount:', err?.message || 'unknown error')
         )
       }
     }
@@ -586,6 +654,41 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
               submissionCount={section2State.submissionCount}
               guide={getSectionGuide(2)}
               preview={getSectionPreview(2, encounter)}
+              customContent={
+                selectedTests.length > 0 && !isFinalized && !isArchived ? (
+                  <div className="encounter-editor__result-entries">
+                    {selectedTests.map((testId) => {
+                      const testDef = testLibrary.find((t) => t.id === testId)
+                      if (!testDef) return null
+                      // Compute active CDR names this test feeds
+                      const activeCdrNames = (testDef.feedsCdrs ?? [])
+                        .filter((cdrId) => {
+                          const entry = encounter.cdrTracking?.[cdrId]
+                          return entry && !entry.dismissed
+                        })
+                        .map((cdrId) => encounter.cdrTracking[cdrId].name)
+                      return (
+                        <ResultEntry
+                          key={testId}
+                          testDef={testDef}
+                          result={testResults[testId]}
+                          activeCdrNames={activeCdrNames}
+                          onResultChange={handleTestResultChange}
+                        />
+                      )
+                    })}
+                  </div>
+                ) : undefined
+              }
+              textareaPlaceholder={
+                selectedTests.length > 0
+                  ? 'Additional notes (optional)...'
+                  : undefined
+              }
+              allowEmptySubmit={
+                selectedTests.length > 0 &&
+                selectedTests.some((id) => testResults[id]?.status && testResults[id].status !== 'pending')
+              }
               onContentChange={(content: string) => handleContentChange(2, content)}
               onSubmit={() => handleSubmitClick(2)}
               isSubmitting={isSubmitting && submittingSection === 2}

@@ -20,6 +20,12 @@ interface SectionPanelProps {
   submissionCount: number
   guide: ReactNode
   preview?: ReactNode
+  /** Custom content rendered above the textarea (e.g., result entry cards for S2) */
+  customContent?: ReactNode
+  /** Custom placeholder for the textarea (overrides default) */
+  textareaPlaceholder?: string
+  /** Allow submit even when textarea content is empty (e.g., when customContent handles input) */
+  allowEmptySubmit?: boolean
   onContentChange: (content: string) => void
   onSubmit: () => void
   isSubmitting: boolean
@@ -115,6 +121,9 @@ export default function SectionPanel({
   submissionCount,
   guide,
   preview,
+  customContent,
+  textareaPlaceholder,
+  allowEmptySubmit,
   onContentChange,
   onSubmit,
   isSubmitting,
@@ -126,7 +135,8 @@ export default function SectionPanel({
   const [isGuideVisible, setIsGuideVisible] = useState(false)
 
   const safeContent = content ?? ''
-  const canSubmit = !isLocked && submissionCount < MAX_SUBMISSIONS_PER_SECTION && safeContent.trim().length > 0
+  const hasContent = allowEmptySubmit || safeContent.trim().length > 0
+  const canSubmit = !isLocked && submissionCount < MAX_SUBMISSIONS_PER_SECTION && hasContent
   const isOverLimit = safeContent.length > maxChars
 
   const handleToggle = () => {
@@ -208,15 +218,22 @@ export default function SectionPanel({
           </div>
         )}
 
+        {/* Custom Content (above textarea, e.g., result entry cards for S2) */}
+        {customContent && (
+          <div className="custom-content-container">
+            {customContent}
+          </div>
+        )}
+
         {/* Content Input */}
         <div className="input-container">
           <textarea
-            className={`section-textarea ${isOverLimit ? 'textarea-error' : ''}`}
+            className={`section-textarea ${isOverLimit ? 'textarea-error' : ''} ${customContent ? 'section-textarea--supplementary' : ''}`}
             value={content}
             onChange={handleContentChange}
             maxLength={maxChars}
             disabled={isLocked}
-            placeholder={isLocked ? 'This section is locked' : SECTION_PLACEHOLDERS[sectionNumber]}
+            placeholder={isLocked ? 'This section is locked' : (textareaPlaceholder ?? SECTION_PLACEHOLDERS[sectionNumber])}
             aria-label={`Section ${sectionNumber}: ${title}`}
             aria-describedby={`section-status-${sectionNumber}`}
           />
