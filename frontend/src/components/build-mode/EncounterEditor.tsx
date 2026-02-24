@@ -14,15 +14,14 @@ import SectionPanel from './SectionPanel'
 import Section1Guide from './Section1Guide'
 import Section2Guide from './Section2Guide'
 import Section3Guide from './Section3Guide'
-import DifferentialPreview from './DifferentialPreview'
 import MdmPreviewPanel from './MdmPreviewPanel'
+import DashboardOutput from './shared/DashboardOutput'
 import type { SectionNumber, EncounterDocument, SectionStatus, MdmPreview, FinalMdm } from '../../types/encounter'
 import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
 import { ApiError } from '../../lib/api'
 import ConfirmationModal from '../ConfirmationModal'
 import TrendAnalysisToggle from '../TrendAnalysisToggle'
-import TrendResultsPanel from '../TrendResultsPanel'
 import TrendReportModal from '../TrendReportModal'
 import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
 import { useToast } from '../../contexts/ToastContext'
@@ -68,18 +67,9 @@ function getSectionPreview(
   if (!encounter) return null
 
   switch (section) {
-    case 1: {
-      // Show differential preview if section 1 has LLM response
-      // Handle both flat DifferentialItem[] and wrapped { differential: [...] } shapes
-      const llmResponse = encounter.section1.llmResponse
-      const differential = Array.isArray(llmResponse)
-        ? llmResponse
-        : llmResponse?.differential
-      if (Array.isArray(differential) && differential.length > 0) {
-        return <DifferentialPreview differential={differential} />
-      }
+    case 1:
+      // Dashboard output renders as standalone component between S1 and S2
       return null
-    }
     case 2: {
       // Handle both nested { mdmPreview } and flat MdmPreview shapes (backward compat)
       const s2Response = encounter.section2.llmResponse
@@ -127,7 +117,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   const [showQuotaExceeded, setShowQuotaExceeded] = useState(false)
 
   const { success: toastSuccess, error: toastError } = useToast()
-  const { analysis, isAnalyzing, analyze, downloadPdf } = useTrendAnalysis()
+  const { analysis, isAnalyzing, analyze } = useTrendAnalysis()
 
   // Track whether we've already triggered analysis for this encounter
   const analyzedForRef = useRef<string | null>(null)
@@ -354,14 +344,13 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           onDismissError={() => dismissError(1)}
         />
 
-        {/* Trend Analysis Results (after Section 1) */}
-        {encounter.section1.status === 'completed' && (
+        {/* Dashboard Output (after Section 1 completion) */}
+        {encounter.section1.status === 'completed' && encounter.section1.llmResponse && (
           <>
-            <TrendResultsPanel
-              analysis={analysis}
-              isLoading={isAnalyzing}
-              showPdfDownload
-              onDownloadPdf={() => analysis && downloadPdf(analysis.analysisId)}
+            <DashboardOutput
+              llmResponse={encounter.section1.llmResponse}
+              trendAnalysis={analysis}
+              trendLoading={isAnalyzing}
             />
             {analysis && analysis.rankedFindings.length > 0 && (
               <button
@@ -369,7 +358,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                 className="encounter-editor__report-btn"
                 onClick={() => setShowTrendReport(true)}
               >
-                📋 View Chart Report
+                View Chart Report
               </button>
             )}
           </>
@@ -391,7 +380,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           </div>
         )}
         {(isSection1Complete || isFinalized || isArchived) && (
-          <>
+          <div id="section-panel-2">
             {/* Working Diagnosis Input (only for Section 2) */}
             {isSection1Complete && !encounter.section2.isLocked && !isFinalized && !isArchived && (
               <div className="encounter-editor__working-diagnosis">
@@ -428,7 +417,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
               isErrorRetryable={sectionErrors[2]?.isRetryable}
               onDismissError={() => dismissError(2)}
             />
-          </>
+          </div>
         )}
 
         {/* Section 3: Treatment & Disposition (blocked) */}

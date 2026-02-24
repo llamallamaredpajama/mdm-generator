@@ -1,0 +1,258 @@
+/**
+ * DifferentialList Styles
+ *
+ * Urgency colors:
+ *   Emergent: #dc2626 (red)
+ *   Urgent:   #d97706 (amber)
+ *   Routine:  #16a34a (green)
+ */
+
+.diff-list {
+  background: var(--color-surface, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+/* Header */
+.diff-list__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+.diff-list__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+}
+
+.diff-list__toggle-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 4px;
+  color: var(--color-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.diff-list__toggle-btn:hover {
+  background: var(--color-surface, #f8fafc);
+  color: var(--color-text, #1e293b);
+}
+
+/* Summary badges */
+.diff-list__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.diff-list__badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+}
+
+.diff-list__badge--emergent {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.diff-list__badge--urgent {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.diff-list__badge--routine {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+/* Row list */
+.diff-list__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Individual row */
+.diff-row {
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease;
+}
+
+.diff-row:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.diff-row--emergent {
+  border-left: 3px solid #dc2626;
+}
+
+.diff-row--urgent {
+  border-left: 3px solid #d97706;
+}
+
+.diff-row--routine {
+  border-left: 3px solid #16a34a;
+}
+
+/* Row header (clickable) */
+.diff-row__header {
+  width: 100%;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.diff-row__header:hover {
+  background: var(--color-surface, #f8fafc);
+}
+
+/* Color dot */
+.diff-row__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.diff-row__dot--emergent {
+  background: #dc2626;
+}
+
+.diff-row__dot--urgent {
+  background: #d97706;
+}
+
+.diff-row__dot--routine {
+  background: #16a34a;
+}
+
+/* Diagnosis name */
+.diff-row__diagnosis {
+  flex: 1;
+  font-weight: 500;
+  color: var(--color-text, #1e293b);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Text label */
+.diff-row__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  flex-shrink: 0;
+}
+
+.diff-row__label--emergent {
+  color: #dc2626;
+}
+
+.diff-row__label--urgent {
+  color: #d97706;
+}
+
+.diff-row__label--routine {
+  color: #16a34a;
+}
+
+/* Chevron */
+.diff-row__chevron {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #64748b);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.diff-row__chevron--open {
+  transform: rotate(90deg);
+}
+
+/* Expanded details */
+.diff-row__details {
+  padding: 0.75rem;
+  padding-top: 0;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #f8fafc);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.diff-row__detail-section {
+  /* empty: just grouping */
+}
+
+.diff-row__detail-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #64748b);
+  margin-bottom: 0.125rem;
+}
+
+.diff-row__detail-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text, #1e293b);
+  line-height: 1.5;
+}
+
+/* Footer note */
+.diff-list__note {
+  margin: 0.75rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #94a3b8);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .diff-list {
+    padding: 0.75rem;
+  }
+
+  .diff-list__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .diff-row__header {
+    padding: 0.5rem;
+  }
+
+  .diff-row__diagnosis {
+    font-size: 0.875rem;
+  }
+
+  .diff-row__label {
+    font-size: 0.5625rem;
+  }
+}

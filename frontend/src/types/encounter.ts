@@ -102,6 +102,10 @@ export interface DifferentialItem {
   urgency: UrgencyLevel
   /** Clinical reasoning supporting this diagnosis */
   reasoning: string
+  /** Regional surveillance context (e.g., "RSV activity elevated in region") */
+  regionalContext?: string
+  /** Clinical decision rule context (e.g., "HEART score applicable") */
+  cdrContext?: string
 }
 
 /**
