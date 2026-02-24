@@ -18,7 +18,7 @@ import Section2Guide from './Section2Guide'
 import Section3Guide from './Section3Guide'
 import CdrResultsOutput from './shared/CdrResultsOutput'
 import DashboardOutput from './shared/DashboardOutput'
-import type { SectionNumber, EncounterDocument, SectionStatus, FinalMdm, CdrTracking, CdrTrackingEntry, TestResult } from '../../types/encounter'
+import type { SectionNumber, EncounterDocument, SectionStatus, FinalMdm, CdrTracking, CdrTrackingEntry, TestResult, DispositionOption } from '../../types/encounter'
 import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
 import { ApiError, matchCdrs, suggestDiagnosis, parseResults, type ParsedResultItem } from '../../lib/api'
@@ -35,6 +35,8 @@ import OrderSelector from './shared/OrderSelector'
 import WorkingDiagnosisInput from './shared/WorkingDiagnosisInput'
 import PasteLabModal from './shared/PasteLabModal'
 import TreatmentInput from './shared/TreatmentInput'
+import DispositionSelector from './shared/DispositionSelector'
+import { useDispoFlows } from '../../hooks/useDispoFlows'
 import { getRecommendedTestIds } from './shared/getRecommendedTestIds'
 import type { WorkingDiagnosis } from '../../types/encounter'
 import './EncounterEditor.css'
@@ -584,6 +586,21 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     }
   }, [encounter])
 
+  // S3 disposition state
+  const [s3Disposition, setS3Disposition] = useState<DispositionOption | null>(null)
+  const [s3FollowUp, setS3FollowUp] = useState<string[]>([])
+  const s3DispoInitRef = useRef(false)
+  const { flows: savedDispoFlows, saveFlow: saveDispoFlow, deleteFlow: deleteDispoFlow } = useDispoFlows()
+
+  // Initialize S3 disposition state from encounter data
+  useEffect(() => {
+    if (encounter && !s3DispoInitRef.current) {
+      setS3Disposition(encounter.section3?.disposition ?? null)
+      setS3FollowUp(encounter.section3?.followUp ?? [])
+      s3DispoInitRef.current = true
+    }
+  }, [encounter])
+
   // PHI confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [pendingSection, setPendingSection] = useState<SectionNumber | null>(null)
@@ -639,6 +656,71 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       }
     },
     [user, encounterId, updateSectionContent]
+  )
+
+  /**
+   * Handle S3 disposition change — persist to Firestore
+   */
+  const handleDispositionChange = useCallback(
+    (disposition: DispositionOption) => {
+      setS3Disposition(disposition)
+      if (user && encounterId) {
+        const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+        updateDoc(encounterRef, { 'section3.disposition': disposition }).catch((err) =>
+          console.error('Failed to persist disposition:', err?.message || 'unknown error')
+        )
+      }
+    },
+    [user, encounterId]
+  )
+
+  /**
+   * Handle S3 follow-up change — persist to Firestore
+   */
+  const handleFollowUpChange = useCallback(
+    (followUp: string[]) => {
+      setS3FollowUp(followUp)
+      if (user && encounterId) {
+        const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+        updateDoc(encounterRef, { 'section3.followUp': followUp }).catch((err) =>
+          console.error('Failed to persist followUp:', err?.message || 'unknown error')
+        )
+      }
+    },
+    [user, encounterId]
+  )
+
+  /**
+   * Apply a saved disposition flow — sets disposition + follow-up in one action
+   */
+  const handleApplyDispoFlow = useCallback(
+    (flow: { id: string; name: string; disposition: DispositionOption; followUp: string[] }) => {
+      setS3Disposition(flow.disposition)
+      setS3FollowUp(flow.followUp)
+      if (user && encounterId) {
+        const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+        updateDoc(encounterRef, {
+          'section3.disposition': flow.disposition,
+          'section3.followUp': flow.followUp,
+          'section3.appliedDispoFlow': flow.id,
+        }).catch((err) =>
+          console.error('Failed to apply dispo flow:', err?.message || 'unknown error')
+        )
+      }
+    },
+    [user, encounterId]
+  )
+
+  /**
+   * Save current disposition + follow-up as a reusable flow
+   */
+  const handleSaveDispoFlow = useCallback(
+    (name: string) => {
+      if (s3Disposition) {
+        saveDispoFlow(name, s3Disposition, s3FollowUp)
+      }
+    },
+    [s3Disposition, s3FollowUp, saveDispoFlow]
   )
 
   /**
@@ -1079,18 +1161,31 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
             preview={getSectionPreview(3, encounter)}
             customContent={
               !isFinalized && !isArchived && encounter ? (
-                <TreatmentInput
-                  encounter={encounter}
-                  cdrLibrary={cdrLibrary}
-                  selectedTreatments={s3SelectedTreatments}
-                  treatmentText={s3TreatmentText}
-                  onUpdate={handleTreatmentUpdate}
-                  disabled={section3State.isLocked || isFinalized || isArchived}
-                />
+                <>
+                  <TreatmentInput
+                    encounter={encounter}
+                    cdrLibrary={cdrLibrary}
+                    selectedTreatments={s3SelectedTreatments}
+                    treatmentText={s3TreatmentText}
+                    onUpdate={handleTreatmentUpdate}
+                    disabled={section3State.isLocked || isFinalized || isArchived}
+                  />
+                  <DispositionSelector
+                    disposition={s3Disposition}
+                    followUp={s3FollowUp}
+                    savedFlows={savedDispoFlows}
+                    onDispositionChange={handleDispositionChange}
+                    onFollowUpChange={handleFollowUpChange}
+                    onApplyFlow={handleApplyDispoFlow}
+                    onSaveFlow={handleSaveDispoFlow}
+                    onDeleteFlow={deleteDispoFlow}
+                    disabled={section3State.isLocked || isFinalized || isArchived}
+                  />
+                </>
               ) : undefined
             }
             textareaPlaceholder="Additional notes for Section 3 (optional)..."
-            allowEmptySubmit={s3TreatmentText.trim().length > 0}
+            allowEmptySubmit={s3TreatmentText.trim().length > 0 || s3Disposition !== null}
             onContentChange={(content: string) => handleContentChange(3, content)}
             onSubmit={() => handleSubmitClick(3)}
             isSubmitting={isSubmitting && submittingSection === 3}
