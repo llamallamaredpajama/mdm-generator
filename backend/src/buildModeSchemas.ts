@@ -240,6 +240,43 @@ export const SuggestDiagnosisResponseSchema = z.object({
 export type SuggestDiagnosisResponse = z.infer<typeof SuggestDiagnosisResponseSchema>
 
 // ============================================================================
+// Parse-Results Request/Response Schemas
+// ============================================================================
+
+/**
+ * POST /v1/build-mode/parse-results
+ * AI parsing of pasted lab/EHR text into structured results mapped to ordered tests.
+ * No quota deduction — UI helper only.
+ */
+export const ParseResultsRequestSchema = z.object({
+  encounterId: z.string().min(1),
+  pastedText: z.string().min(1).max(8000),
+  orderedTestIds: z.array(z.string().min(1)).min(1),
+  userIdToken: z.string().min(10),
+})
+
+export type ParseResultsRequest = z.infer<typeof ParseResultsRequestSchema>
+
+export const ParsedResultItemSchema = z.object({
+  testId: z.string(),
+  testName: z.string(),
+  status: z.enum(['unremarkable', 'abnormal']),
+  value: z.string().optional(),
+  unit: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+export type ParsedResultItem = z.infer<typeof ParsedResultItemSchema>
+
+export const ParseResultsResponseSchema = z.object({
+  ok: z.literal(true),
+  parsed: z.array(ParsedResultItemSchema),
+  unmatchedText: z.array(z.string()).optional(),
+})
+
+export type ParseResultsResponse = z.infer<typeof ParseResultsResponseSchema>
+
+// ============================================================================
 // Firestore Document Schemas (for validation)
 // ============================================================================
 

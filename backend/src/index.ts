@@ -17,6 +17,7 @@ import {
   FinalizeRequestSchema,
   MatchCdrsRequestSchema,
   SuggestDiagnosisRequestSchema,
+  ParseResultsRequestSchema,
   DifferentialItemSchema,
   MdmPreviewSchema,
   FinalMdmSchema,
@@ -25,6 +26,7 @@ import {
   type FinalMdm,
   type CdrTracking,
   type TestResult,
+  type ParsedResultItem,
 } from './buildModeSchemas'
 import {
   buildSection1Prompt,
@@ -32,6 +34,7 @@ import {
   buildFinalizePrompt,
   buildCdrAutoPopulatePrompt,
   buildSuggestDiagnosisPrompt,
+  buildParseResultsPrompt,
 } from './promptBuilderBuildMode'
 import { matchCdrsFromDifferential } from './services/cdrMatcher'
 import { buildCdrTracking, type AutoPopulatedValues } from './services/cdrTrackingBuilder'
@@ -149,6 +152,31 @@ async function getCachedCdrLibrary(): Promise<CdrDefinition[]> {
   cdrLibraryCache = { ok: true as const, cdrs }
   cdrLibraryCacheTime = now
   return cdrs
+}
+
+/**
+ * Shared helper: read test library from cache or Firestore.
+ * Used by GET /v1/libraries/tests and POST /v1/build-mode/parse-results.
+ */
+async function getCachedTestLibrary(): Promise<TestDefinition[]> {
+  const now = Date.now()
+  if (testLibraryCache && (now - testLibraryCacheTime) < TEST_LIBRARY_CACHE_TTL) {
+    return testLibraryCache.tests
+  }
+
+  const snapshot = await getDb().collection('testLibrary').get()
+  const tests: TestDefinition[] = []
+  for (const doc of snapshot.docs) {
+    const d = doc.data()
+    if (d.id && d.name && d.category) {
+      tests.push(d as TestDefinition)
+    }
+  }
+  const categories = [...new Set(tests.map(t => t.category))] as TestCategory[]
+
+  testLibraryCache = { ok: true, tests, categories, cachedAt: new Date().toISOString() }
+  testLibraryCacheTime = now
+  return tests
 }
 
 /**
@@ -1589,6 +1617,118 @@ app.post('/v1/build-mode/suggest-diagnosis', llmLimiter, async (req, res) => {
     })
   } catch (e: any) {
     console.error('suggest-diagnosis error:', e?.message || 'unknown error')
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+/**
+ * POST /v1/build-mode/parse-results
+ * AI parsing of pasted lab/EHR text into structured results mapped to ordered tests.
+ * No quota deduction — UI helper only.
+ */
+app.post('/v1/build-mode/parse-results', llmLimiter, async (req, res) => {
+  try {
+    // 1. VALIDATE
+    const parsed = ParseResultsRequestSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    // 2. AUTHENTICATE
+    let uid: string
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
+      uid = decoded.uid
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    const { encounterId, pastedText, orderedTestIds } = parsed.data
+
+    // 3. AUTHORIZE — verify encounter ownership
+    const encounterRef = getEncounterRef(uid, encounterId)
+    const encounterSnap = await encounterRef.get()
+
+    if (!encounterSnap.exists) {
+      return res.status(404).json({ error: 'Encounter not found' })
+    }
+
+    // 4. EXECUTE
+
+    // 4a. Load test definitions for ordered tests
+    const allTests = await getCachedTestLibrary()
+    const orderedTests = orderedTestIds
+      .map((id) => allTests.find((t) => t.id === id))
+      .filter((t): t is TestDefinition => t !== undefined)
+
+    if (orderedTests.length === 0) {
+      return res.status(400).json({ error: 'No valid ordered tests found' })
+    }
+
+    // 4b. Build prompt and call Gemini Flash
+    const prompt = buildParseResultsPrompt(
+      pastedText,
+      orderedTests.map((t) => ({ id: t.id, name: t.name, unit: t.unit, normalRange: t.normalRange }))
+    )
+    const result = await callGeminiFlash(prompt)
+
+    // 4c. Parse response
+    const cleanedText = result.text
+      .replace(/^```json\s*/gm, '')
+      .replace(/^```\s*$/gm, '')
+      .trim()
+
+    let parsedResults: ParsedResultItem[] = []
+    let unmatchedText: string[] = []
+
+    try {
+      const jsonResponse = JSON.parse(cleanedText)
+
+      if (Array.isArray(jsonResponse.parsed)) {
+        // Validate each item: only include items that map to an ordered test
+        const validTestIds = new Set(orderedTestIds)
+        parsedResults = jsonResponse.parsed
+          .filter((item: any) => item.testId && validTestIds.has(item.testId))
+          .map((item: any) => ({
+            testId: String(item.testId),
+            testName: String(item.testName || ''),
+            status: item.status === 'abnormal' ? 'abnormal' as const : 'unremarkable' as const,
+            ...(item.value ? { value: String(item.value) } : {}),
+            ...(item.unit ? { unit: String(item.unit) } : {}),
+            ...(item.notes ? { notes: String(item.notes) } : {}),
+          }))
+      }
+
+      if (Array.isArray(jsonResponse.unmatchedText)) {
+        unmatchedText = jsonResponse.unmatchedText.map(String)
+      }
+    } catch {
+      // LLM response parse failed — return empty results
+      return res.json({
+        ok: true,
+        parsed: [],
+        unmatchedText: ['Failed to parse results from the pasted text. Please try again.'],
+      })
+    }
+
+    // 5. AUDIT (no PHI)
+    console.log({
+      action: 'parse-results',
+      uid,
+      encounterId,
+      parsedCount: parsedResults.length,
+      unmatchedCount: unmatchedText.length,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 6. RESPOND
+    return res.json({
+      ok: true,
+      parsed: parsedResults,
+      ...(unmatchedText.length > 0 ? { unmatchedText } : {}),
+    })
+  } catch (e: any) {
+    console.error('parse-results error:', e?.message || 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })

@@ -33,6 +33,7 @@ import ResultEntry from './shared/ResultEntry'
 import ProgressIndicator from './shared/ProgressIndicator'
 import OrderSelector from './shared/OrderSelector'
 import WorkingDiagnosisInput from './shared/WorkingDiagnosisInput'
+import PasteLabModal from './shared/PasteLabModal'
 import { getRecommendedTestIds } from './shared/getRecommendedTestIds'
 import type { WorkingDiagnosis } from '../../types/encounter'
 import './EncounterEditor.css'
@@ -534,6 +535,9 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   // Trend report modal state
   const [showTrendReport, setShowTrendReport] = useState(false)
 
+  // Paste Lab Results modal state (BM-5.1)
+  const [showPasteModal, setShowPasteModal] = useState(false)
+
   // PHI confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [pendingSection, setPendingSection] = useState<SectionNumber | null>(null)
@@ -829,17 +833,28 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                     />
                   ) : (
                     <div className="encounter-editor__result-entries">
-                      {/* Quick action: All Results Unremarkable */}
+                      {/* Quick action: All Results Unremarkable + Paste Results */}
                       {!isS2Locked && (
-                        <button
-                          type="button"
-                          className="encounter-editor__quick-action encounter-editor__quick-action--all"
-                          onClick={handleMarkAllUnremarkable}
-                          disabled={isS2Submitting}
-                          data-testid="mark-all-unremarkable"
-                        >
-                          All Results Unremarkable
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            className="encounter-editor__quick-action encounter-editor__quick-action--all"
+                            onClick={handleMarkAllUnremarkable}
+                            disabled={isS2Submitting}
+                            data-testid="mark-all-unremarkable"
+                          >
+                            All Results Unremarkable
+                          </button>
+                          <button
+                            type="button"
+                            className="encounter-editor__quick-action encounter-editor__quick-action--paste"
+                            onClick={() => setShowPasteModal(true)}
+                            disabled={isS2Submitting}
+                            data-testid="paste-results-btn"
+                          >
+                            Paste Results
+                          </button>
+                        </>
                       )}
 
                       {/* Progress indicator */}
@@ -1025,6 +1040,16 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           onClose={() => setShowTrendReport(false)}
         />
       )}
+
+      {/* Paste Lab Results Modal (BM-5.1) */}
+      <PasteLabModal
+        isOpen={showPasteModal}
+        onClose={() => setShowPasteModal(false)}
+        encounterId={encounterId}
+        orderedTestIds={selectedTests}
+        testLibrary={testLibrary}
+        onApply={handleBatchResultUpdate}
+      />
 
       {/* PHI Confirmation Modal */}
       <ConfirmationModal

@@ -795,6 +795,42 @@ export async function suggestDiagnosis(
   )
 }
 
+// =============================================================================
+// Parsed Result Types (for Paste Lab Modal)
+// =============================================================================
+
+export interface ParsedResultItem {
+  testId: string
+  testName: string
+  status: 'unremarkable' | 'abnormal'
+  value?: string
+  unit?: string
+  notes?: string
+}
+
+/**
+ * Parse pasted lab/EHR text into structured results mapped to ordered tests.
+ * No quota deduction — UI helper only.
+ */
+export async function parseResults(
+  encounterId: string,
+  pastedText: string,
+  orderedTestIds: string[],
+  userIdToken: string
+): Promise<{ ok: true; parsed: ParsedResultItem[]; unmatchedText?: string[] }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/build-mode/parse-results`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encounterId, pastedText, orderedTestIds, userIdToken }),
+    },
+    'Lab results parsing',
+    20_000
+  )
+}
+
 /**
  * Match CDRs from S1 differential and auto-populate components from narrative.
  * Called after Section 1 completes to populate encounter cdrTracking.

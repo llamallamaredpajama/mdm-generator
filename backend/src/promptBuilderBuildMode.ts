@@ -6,7 +6,7 @@
  */
 
 import type { DifferentialItem, MdmPreview, Section1Response, Section2Response, TestResult } from './buildModeSchemas'
-import type { CdrDefinition } from './types/libraries'
+import type { CdrDefinition, TestDefinition } from './types/libraries'
 
 /**
  * Section 1: Initial Evaluation
@@ -362,6 +362,74 @@ export function buildSuggestDiagnosisPrompt(
     '["Most likely diagnosis", "Second most likely", "Third most likely"]',
     '',
     'Return 3-5 ranked working diagnosis options as a JSON string array.',
+  ].join('\n')
+
+  return { system, user }
+}
+
+/**
+ * Parse Pasted Lab Results Prompt
+ * Extracts structured test results from raw EHR/lab text and maps them
+ * to the physician's ordered test list. Called by the parse-results UI helper.
+ */
+export function buildParseResultsPrompt(
+  pastedText: string,
+  orderedTests: Pick<TestDefinition, 'id' | 'name' | 'unit' | 'normalRange'>[]
+): { system: string; user: string } {
+  const testList = orderedTests
+    .map((t) => {
+      const parts = [`- "${t.id}" (${t.name})`]
+      if (t.unit) parts.push(`unit: ${t.unit}`)
+      if (t.normalRange) parts.push(`normal: ${t.normalRange}`)
+      return parts.join(', ')
+    })
+    .join('\n')
+
+  const system = [
+    'LAB RESULTS PARSING',
+    '',
+    'You are extracting structured test results from raw lab/EHR text pasted by a physician.',
+    'Map each extracted result to the ordered test list below.',
+    '',
+    'ORDERED TESTS (only map to these — do NOT invent new tests):',
+    testList,
+    '',
+    'EXTRACTION RULES:',
+    '1. Only extract results that match an ordered test from the list above',
+    '2. Determine status based on normalRange: if value is within normal range → "unremarkable", otherwise → "abnormal"',
+    '3. If no normalRange is available, mark abnormal only if the text explicitly says "abnormal", "high", "low", "elevated", "positive", or similar',
+    '4. Extract the numeric or text value if present',
+    '5. Include the unit if present in the text (use the test definition unit as fallback)',
+    '6. Include brief notes for abnormal results describing the finding',
+    '7. Collect any text fragments that could not be mapped to ordered tests in "unmatchedText"',
+    '8. NEVER fabricate values — only extract what is explicitly in the text',
+    '9. For imaging results: "normal" / "no acute findings" → unremarkable; any positive findings → abnormal',
+    '10. For EKG: "normal sinus rhythm" / "NSR" → unremarkable; any ST changes, arrhythmia → abnormal',
+  ].join('\n')
+
+  const user = [
+    'PASTED LAB/EHR TEXT:',
+    '---',
+    pastedText,
+    '---',
+    '',
+    'OUTPUT FORMAT (strict JSON, no wrapper):',
+    '{',
+    '  "parsed": [',
+    '    {',
+    '      "testId": "test_id_from_ordered_list",',
+    '      "testName": "Display name",',
+    '      "status": "unremarkable" | "abnormal",',
+    '      "value": "extracted value (optional)",',
+    '      "unit": "unit (optional)",',
+    '      "notes": "brief note for abnormal results (optional)"',
+    '    }',
+    '  ],',
+    '  "unmatchedText": ["text that could not be mapped (optional)"]',
+    '}',
+    '',
+    'Extract all results from the pasted text that match ordered tests.',
+    'If NO results match any ordered test, return { "parsed": [], "unmatchedText": ["entire text"] }.',
   ].join('\n')
 
   return { system, user }
