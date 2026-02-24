@@ -16,9 +16,9 @@ import SectionPanel from './SectionPanel'
 import Section1Guide from './Section1Guide'
 import Section2Guide from './Section2Guide'
 import Section3Guide from './Section3Guide'
-import MdmPreviewPanel from './MdmPreviewPanel'
+import CdrResultsOutput from './shared/CdrResultsOutput'
 import DashboardOutput from './shared/DashboardOutput'
-import type { SectionNumber, EncounterDocument, SectionStatus, MdmPreview, FinalMdm, CdrTracking, CdrTrackingEntry, TestResult } from '../../types/encounter'
+import type { SectionNumber, EncounterDocument, SectionStatus, FinalMdm, CdrTracking, CdrTrackingEntry, TestResult } from '../../types/encounter'
 import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
 import { ApiError, matchCdrs, suggestDiagnosis, parseResults, type ParsedResultItem } from '../../lib/api'
@@ -81,16 +81,12 @@ function getSectionPreview(
     case 1:
       // Dashboard output renders as standalone component between S1 and S2
       return null
-    case 2: {
-      // Handle both nested { mdmPreview } and flat MdmPreview shapes (backward compat)
-      const s2Response = encounter.section2.llmResponse
-      const mdmPreview = s2Response?.mdmPreview ??
-        ((s2Response as unknown as MdmPreview)?.problems !== undefined ? s2Response as unknown as MdmPreview : null)
-      if (mdmPreview) {
-        return <MdmPreviewPanel mdmPreview={mdmPreview} />
+    case 2:
+      // BM-5.3: Brief CDR results output replaces MdmPreviewPanel
+      if (encounter.section2.status === 'completed') {
+        return <CdrResultsOutput encounter={encounter} />
       }
       return null
-    }
     case 3:
       // Section 3 doesn't have an inline preview (final MDM shows in output)
       return null

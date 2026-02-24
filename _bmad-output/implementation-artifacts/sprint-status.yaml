@@ -61,10 +61,10 @@ development_status:
   4-3-working-diagnosis-selection: done
   epic-4-retrospective: optional
 
-  epic-5: in-progress
+  epic-5: done
   5-1-paste-lab-results-ai-parsing: done
   5-2-dictation-structured-results: done
-  5-3-brief-s2-cdr-output: backlog
+  5-3-brief-s2-cdr-output: done
   epic-5-retrospective: optional
 
   epic-6: backlog
