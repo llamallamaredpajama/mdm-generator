@@ -194,6 +194,29 @@ export const DispositionOptionSchema = z.enum(['discharge', 'observation', 'admi
 export type DispositionOption = z.infer<typeof DispositionOptionSchema>
 
 // ============================================================================
+// Match-CDRs Request/Response Schemas
+// ============================================================================
+
+/**
+ * POST /v1/build-mode/match-cdrs
+ * Matches CDRs from S1 differential and auto-populates components from narrative.
+ */
+export const MatchCdrsRequestSchema = z.object({
+  encounterId: z.string().min(1),
+  userIdToken: z.string().min(10),
+})
+
+export type MatchCdrsRequest = z.infer<typeof MatchCdrsRequestSchema>
+
+export const MatchCdrsResponseSchema = z.object({
+  ok: z.literal(true),
+  cdrTracking: CdrTrackingSchema,
+  matchedCount: z.number(),
+})
+
+export type MatchCdrsResponse = z.infer<typeof MatchCdrsResponseSchema>
+
+// ============================================================================
 // Firestore Document Schemas (for validation)
 // ============================================================================
 

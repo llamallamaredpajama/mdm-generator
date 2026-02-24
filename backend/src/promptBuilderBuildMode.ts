@@ -6,6 +6,7 @@
  */
 
 import type { DifferentialItem, MdmPreview, Section1Response, Section2Response } from './buildModeSchemas'
+import type { CdrDefinition } from './types/libraries'
 
 /**
  * Section 1: Initial Evaluation
@@ -310,6 +311,79 @@ export function buildFinalizePrompt(
     '',
     'Generate the complete final MDM document.',
     'The "text" field must be ready for direct copy-paste into an EHR.',
+  ].join('\n')
+
+  return { system, user }
+}
+
+/**
+ * CDR Auto-Population Prompt
+ * Extracts component values from S1 narrative for matched CDRs.
+ * Only targets section1-sourced and user_input-sourced components.
+ */
+export function buildCdrAutoPopulatePrompt(
+  narrative: string,
+  matchedCdrs: CdrDefinition[]
+): { system: string; user: string } {
+  // Build component extraction targets
+  const targets = matchedCdrs.map((cdr) => {
+    const extractableComponents = cdr.components
+      .filter((c) => c.source === 'section1' || c.source === 'user_input')
+      .map((c) => {
+        const optionsList = c.options
+          ? c.options.map((o) => `${o.label} (value: ${o.value})`).join(', ')
+          : c.type === 'boolean'
+            ? `Present (value: ${c.value ?? 1}), Absent (value: 0)`
+            : `numeric value`
+        return `    - "${c.id}" (${c.label}): ${optionsList}`
+      })
+
+    if (extractableComponents.length === 0) return null
+
+    return [
+      `  "${cdr.id}" (${cdr.name}):`,
+      ...extractableComponents,
+    ].join('\n')
+  }).filter(Boolean)
+
+  if (targets.length === 0) {
+    // No extractable components — should not call Gemini
+    return { system: '', user: '' }
+  }
+
+  const system = [
+    'CDR COMPONENT AUTO-POPULATION',
+    '',
+    'You are extracting clinical data from an Emergency Medicine patient narrative',
+    'to auto-populate Clinical Decision Rule (CDR) scoring components.',
+    '',
+    'CRITICAL RULES:',
+    '1. Only extract data EXPLICITLY stated in the narrative — NEVER infer or assume',
+    '2. If a data point is not clearly stated, do NOT include it in the output',
+    '3. Return ONLY the JSON object, no explanations',
+    '4. Use the exact component IDs and value numbers provided below',
+    '5. For select-type components, choose the option whose label best matches the narrative data',
+    '6. For boolean components, return the specified point value if the condition is present, 0 if absent',
+    '',
+    'TARGET CDRs AND COMPONENTS:',
+    ...targets,
+  ].join('\n')
+
+  const user = [
+    'PATIENT NARRATIVE:',
+    '---',
+    narrative,
+    '---',
+    '',
+    'OUTPUT FORMAT (strict JSON, no wrapper):',
+    '{',
+    '  "cdrId": {',
+    '    "componentId": { "value": <number> }',
+    '  }',
+    '}',
+    '',
+    'Extract ONLY components with clear data in the narrative.',
+    'Omit any component where the data is ambiguous or absent.',
   ].join('\n')
 
   return { system, user }

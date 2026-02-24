@@ -15,18 +15,23 @@ import {
   Section1RequestSchema,
   Section2RequestSchema,
   FinalizeRequestSchema,
+  MatchCdrsRequestSchema,
   DifferentialItemSchema,
   MdmPreviewSchema,
   FinalMdmSchema,
   type DifferentialItem,
   type MdmPreview,
   type FinalMdm,
+  type CdrTracking,
 } from './buildModeSchemas'
 import {
   buildSection1Prompt,
   buildSection2Prompt,
   buildFinalizePrompt,
+  buildCdrAutoPopulatePrompt,
 } from './promptBuilderBuildMode'
+import { matchCdrsFromDifferential } from './services/cdrMatcher'
+import { buildCdrTracking, type AutoPopulatedValues } from './services/cdrTrackingBuilder'
 import {
   buildQuickModePrompt,
   parseQuickModeResponse,
@@ -116,6 +121,32 @@ let testLibraryCacheTime = 0
 const CDR_LIBRARY_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 let cdrLibraryCache: { ok: true; cdrs: CdrDefinition[] } | null = null
 let cdrLibraryCacheTime = 0
+
+/**
+ * Shared helper: read CDR library from cache or Firestore.
+ * Used by GET /v1/libraries/cdrs and POST /v1/build-mode/match-cdrs.
+ */
+async function getCachedCdrLibrary(): Promise<CdrDefinition[]> {
+  const now = Date.now()
+  if (cdrLibraryCache && (now - cdrLibraryCacheTime) < CDR_LIBRARY_CACHE_TTL) {
+    return cdrLibraryCache.cdrs
+  }
+
+  const snapshot = await getDb().collection('cdrLibrary').get()
+  const cdrs: CdrDefinition[] = []
+  for (const doc of snapshot.docs) {
+    const d = doc.data()
+    if (d.id && d.name && d.components && d.scoring) {
+      cdrs.push(d as CdrDefinition)
+    } else {
+      console.warn({ action: 'cdr-cache-refresh', warning: 'skipped malformed doc', docId: doc.id })
+    }
+  }
+
+  cdrLibraryCache = { ok: true as const, cdrs }
+  cdrLibraryCacheTime = now
+  return cdrs
+}
 
 // Initialize Firebase Admin (expects GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS or default creds in Cloud Run)
 async function initFirebase() {
@@ -258,33 +289,14 @@ app.get('/v1/libraries/cdrs', async (req, res) => {
     // 2. VALIDATE — no body for GET
     // 3. AUTHORIZE — any authenticated user can read CDR library
 
-    // 4. EXECUTE — return from cache or read Firestore
-    const now = Date.now()
-    if (cdrLibraryCache && (now - cdrLibraryCacheTime) < CDR_LIBRARY_CACHE_TTL) {
-      console.log({ action: 'list-cdrs', cached: true, timestamp: new Date().toISOString() })
-      return res.json(cdrLibraryCache)
-    }
-
-    const snapshot = await getDb().collection('cdrLibrary').get()
-    const cdrs: CdrDefinition[] = []
-    for (const doc of snapshot.docs) {
-      const d = doc.data()
-      if (d.id && d.name && d.components && d.scoring) {
-        cdrs.push(d as CdrDefinition)
-      } else {
-        console.warn({ action: 'list-cdrs', warning: 'skipped malformed doc', docId: doc.id })
-      }
-    }
-
-    const response = { ok: true as const, cdrs }
-    cdrLibraryCache = response
-    cdrLibraryCacheTime = now
+    // 4. EXECUTE — use shared cache helper
+    const cdrs = await getCachedCdrLibrary()
 
     // 5. AUDIT
     console.log({ action: 'list-cdrs', cdrCount: cdrs.length, timestamp: new Date().toISOString() })
 
     // 6. RESPOND
-    return res.json(response)
+    return res.json({ ok: true, cdrs })
   } catch (error) {
     console.error('list-cdrs error:', error)
     return res.status(500).json({ error: 'Internal error' })
@@ -1257,6 +1269,158 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     })
   } catch (e: any) {
     console.error('finalize error:', e)
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ============================================================================
+// CDR Matching Endpoint
+// ============================================================================
+
+/**
+ * POST /v1/build-mode/match-cdrs
+ * Match CDRs from S1 differential and auto-populate components from narrative.
+ */
+app.post('/v1/build-mode/match-cdrs', llmLimiter, async (req, res) => {
+  try {
+    // 1. VALIDATE
+    const parsed = MatchCdrsRequestSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    // 2. AUTHENTICATE
+    let uid: string
+    try {
+      const decoded = await admin.auth().verifyIdToken(parsed.data.userIdToken)
+      uid = decoded.uid
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    const { encounterId } = parsed.data
+
+    // 3. AUTHORIZE — verify encounter ownership
+    const encounterRef = getEncounterRef(uid, encounterId)
+    const encounterSnap = await encounterRef.get()
+
+    if (!encounterSnap.exists) {
+      return res.status(404).json({ error: 'Encounter not found' })
+    }
+
+    const encounter = encounterSnap.data()!
+
+    // Verify encounter has S1 completed (status check + data check)
+    const validStatuses = ['section1_done', 'section2_done', 'finalized']
+    if (!validStatuses.includes(encounter.status) || !encounter.section1?.llmResponse) {
+      return res.status(400).json({
+        error: 'Section 1 must be completed before CDR matching',
+      })
+    }
+
+    // 4. EXECUTE
+
+    // 4a. Extract differential from S1 response
+    const s1Response = encounter.section1.llmResponse
+    let differential: DifferentialItem[] = []
+    if (Array.isArray(s1Response)) {
+      differential = s1Response as DifferentialItem[]
+    } else if (s1Response?.differential && Array.isArray(s1Response.differential)) {
+      differential = s1Response.differential as DifferentialItem[]
+    }
+
+    if (differential.length === 0) {
+      // No differential to match against — return empty tracking
+      return res.json({
+        ok: true,
+        cdrTracking: {},
+        matchedCount: 0,
+      })
+    }
+
+    // 4b. Get CDR library (shared cache helper)
+    const cdrs = await getCachedCdrLibrary()
+
+    // 4c. Match CDRs against differential
+    const matchedCdrs = matchCdrsFromDifferential(differential, cdrs)
+
+    if (matchedCdrs.length === 0) {
+      // No matches — write empty tracking and return
+      await encounterRef.update({
+        cdrTracking: {},
+        updatedAt: admin.firestore.Timestamp.now(),
+      })
+
+      console.log({
+        action: 'match-cdrs',
+        uid,
+        encounterId,
+        matchedCount: 0,
+        timestamp: new Date().toISOString(),
+      })
+
+      return res.json({
+        ok: true,
+        cdrTracking: {},
+        matchedCount: 0,
+      })
+    }
+
+    // 4d. Auto-populate components from S1 narrative (supplementary — failures don't block)
+    let autoPopulated: AutoPopulatedValues | null = null
+    const s1Content = encounter.section1.content || ''
+
+    if (s1Content) {
+      try {
+        const prompt = buildCdrAutoPopulatePrompt(s1Content, matchedCdrs)
+
+        // Only call Gemini if there are extractable components
+        if (prompt.system) {
+          const result = await callGeminiFlash(prompt)
+
+          const cleanedText = result.text
+            .replace(/^```json\s*/gm, '')
+            .replace(/^```\s*$/gm, '')
+            .trim()
+
+          try {
+            autoPopulated = JSON.parse(cleanedText) as AutoPopulatedValues
+          } catch {
+            console.warn('CDR auto-populate JSON parse failed (non-blocking)')
+          }
+        }
+      } catch (autoPopError) {
+        console.warn('CDR auto-populate LLM call failed (non-blocking):', autoPopError)
+      }
+    }
+
+    // 4e. Build CdrTracking
+    const cdrTracking: CdrTracking = buildCdrTracking(matchedCdrs, autoPopulated)
+
+    // 4f. Write to Firestore
+    await encounterRef.update({
+      cdrTracking,
+      updatedAt: admin.firestore.Timestamp.now(),
+    })
+
+    // 5. AUDIT (no PHI)
+    console.log({
+      action: 'match-cdrs',
+      uid,
+      encounterId,
+      matchedCount: matchedCdrs.length,
+      autoPopulated: autoPopulated !== null,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 6. RESPOND
+    return res.json({
+      ok: true,
+      cdrTracking,
+      matchedCount: matchedCdrs.length,
+    })
+  } catch (e: any) {
+    console.error('match-cdrs error:', e?.message || 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })

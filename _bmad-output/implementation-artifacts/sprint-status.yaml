@@ -49,8 +49,8 @@ development_status:
   2-4-regional-trends-card-integration: done
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-cdr-matching-endpoint: backlog
+  epic-3: in-progress
+  3-1-cdr-matching-endpoint: done
   3-2-cdr-detail-views: backlog
   3-3-cdr-state-persistence: backlog
   epic-3-retrospective: optional
