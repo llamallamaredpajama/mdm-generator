@@ -569,25 +569,25 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   /**
-   * BUG TEST: No token-size check on section content.
+   * Regression: token-size check added and Zod char limit aligned to 2000.
    *
-   * /v1/generate checks `Math.ceil(narrative.length / 4)` against
-   * `stats.features.maxTokensPerRequest`, but build-mode endpoints do NOT.
-   * Only the Zod `.max(SECTION1_MAX_CHARS)` = 2000 char limit applies.
+   * Previously, build-mode had no token-size check and a higher Zod char limit,
+   * allowing oversized content through. Now both defenses are in place:
+   * - Zod limit = SECTION1_MAX_CHARS (2000 chars)
+   * - checkTokenSize() added at route level
    *
-   * Expected: Should check token estimate against plan limit (like /v1/generate)
-   * Actual: Only checks Zod character limit, ignoring plan token limits
+   * The Zod limit is the tighter constraint (2000 chars ≈ 500 tokens, well
+   * under the free plan's 2000-token limit), so oversized content is now
+   * correctly rejected at the Zod validation layer.
    */
-  it('BUG: oversized section content passes without token-size check', async () => {
-    const nearMaxContent = 'A'.repeat(3996) // within Zod limit, but ~999 tokens
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
+  it('rejects content exceeding SECTION1_MAX_CHARS', async () => {
+    const oversizedContent = 'A'.repeat(2001) // exceeds SECTION1_MAX_CHARS = 2000
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
-      .send({ ...validBody, content: nearMaxContent })
+      .send({ ...validBody, content: oversizedContent })
 
-    // Succeeds because there's no token-based validation — only Zod max char
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(400)
   })
 })
 
