@@ -1,4 +1,4 @@
-import type { DifferentialItem } from '../../../types/encounter'
+import type { DifferentialItem, WorkupRecommendation } from '../../../types/encounter'
 import type { TestDefinition } from '../../../types/libraries'
 
 /**
@@ -13,7 +13,7 @@ import type { TestDefinition } from '../../../types/libraries'
  */
 export function getRecommendedTestIds(
   differential: DifferentialItem[],
-  testLibrary: TestDefinition[]
+  testLibrary: TestDefinition[],
 ): string[] {
   if (differential.length === 0 || testLibrary.length === 0) return []
 
@@ -35,6 +35,47 @@ export function getRecommendedTestIds(
     for (const indication of test.commonIndications) {
       const indicationLower = indication.toLowerCase()
       if (allDiagnoses.some((dx) => dx.includes(indicationLower))) {
+        matched.add(test.id)
+        break
+      }
+    }
+  }
+
+  return Array.from(matched)
+}
+
+/**
+ * Match LLM workup recommendations against the test library by name.
+ *
+ * Uses case-insensitive matching with two strategies:
+ * 1. Exact name match (recommendation testName === test library name)
+ * 2. Substring containment (recommendation testName contains or is contained in test name)
+ *
+ * Returns a deduplicated array of matching test IDs.
+ */
+export function getTestIdsFromWorkupRecommendations(
+  workupRecommendations: WorkupRecommendation[],
+  testLibrary: TestDefinition[],
+): string[] {
+  if (workupRecommendations.length === 0 || testLibrary.length === 0) return []
+
+  const matched = new Set<string>()
+
+  for (const rec of workupRecommendations) {
+    const recNameLower = rec.testName.toLowerCase()
+
+    for (const test of testLibrary) {
+      if (matched.has(test.id)) continue
+      const testNameLower = test.name.toLowerCase()
+
+      // Exact match
+      if (recNameLower === testNameLower) {
+        matched.add(test.id)
+        break
+      }
+
+      // Substring containment (either direction)
+      if (recNameLower.includes(testNameLower) || testNameLower.includes(recNameLower)) {
         matched.add(test.id)
         break
       }

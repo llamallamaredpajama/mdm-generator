@@ -52,7 +52,10 @@ import PasteLabModal from './shared/PasteLabModal'
 import TreatmentInput from './shared/TreatmentInput'
 import DispositionSelector from './shared/DispositionSelector'
 import { useDispoFlows } from '../../hooks/useDispoFlows'
-import { getRecommendedTestIds } from './shared/getRecommendedTestIds'
+import {
+  getRecommendedTestIds,
+  getTestIdsFromWorkupRecommendations,
+} from './shared/getRecommendedTestIds'
 import { buildCdrColorMap } from './shared/cdrColorPalette'
 import type { WorkingDiagnosis } from '../../types/encounter'
 import './EncounterEditor.css'
@@ -284,10 +287,23 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     return []
   }, [encounter?.section1?.llmResponse])
 
-  const recommendedTestIds = useMemo(
-    () => getRecommendedTestIds(s1Differential, testLibrary),
-    [s1Differential, testLibrary],
-  )
+  // Extract workup recommendations from S1 response
+  const s1WorkupRecommendations = useMemo(() => {
+    const llm = encounter?.section1?.llmResponse
+    if (llm && typeof llm === 'object' && 'workupRecommendations' in llm) {
+      const wrapped = llm as { workupRecommendations?: unknown }
+      if (Array.isArray(wrapped.workupRecommendations)) return wrapped.workupRecommendations
+    }
+    return []
+  }, [encounter?.section1?.llmResponse])
+
+  // Bug 4 fix: Combine client-side matching AND LLM workup recommendations
+  const recommendedTestIds = useMemo(() => {
+    const fromDifferential = getRecommendedTestIds(s1Differential, testLibrary)
+    const fromWorkup = getTestIdsFromWorkupRecommendations(s1WorkupRecommendations, testLibrary)
+    const merged = new Set([...fromWorkup, ...fromDifferential])
+    return Array.from(merged)
+  }, [s1Differential, testLibrary, s1WorkupRecommendations])
 
   /**
    * Batch update test results with immediate Firestore write.
@@ -620,7 +636,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   // Trend report modal state
   const [showTrendReport, setShowTrendReport] = useState(false)
 
-  // D3: Workup accepted state — S2 gated behind "Accept All & Continue"
+  // D3: Workup accepted state — S2 gated behind "Accept All / Continue"
   const [workupAccepted, setWorkupAccepted] = useState(false)
   // Auto-accept if encounter already has S2 progress (backward compat)
   const workupAcceptedInitRef = useRef(false)

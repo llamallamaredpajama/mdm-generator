@@ -257,3 +257,26 @@
 .cdr-detail-view__dismiss-no:hover {
   background: var(--color-surface, #f8fafc);
 }
+
+/* Bug 1 fallback: Read-only CDR display styles */
+.cdr-detail-view__fallback-reasoning {
+  margin: 0 0 0.375rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #64748b);
+  line-height: 1.4;
+}
+
+.cdr-detail-view__fallback-missing {
+  margin: 0 0 0.375rem;
+  font-size: 0.8rem;
+  color: #92400e;
+  background: #fef3c7;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.cdr-detail-view__fallback-components {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #94a3b8);
+}

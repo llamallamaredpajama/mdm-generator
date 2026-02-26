@@ -231,7 +231,7 @@ export default function WorkupCard({
             onAcceptContinue()
           }}
         >
-          Accept All & Continue
+          Accept All / Continue
         </button>
       )}
     </div>

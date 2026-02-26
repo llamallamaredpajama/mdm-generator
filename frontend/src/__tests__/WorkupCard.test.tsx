@@ -70,7 +70,7 @@ describe('WorkupCard', () => {
     expect((ecgCheckbox as HTMLInputElement).checked).toBe(true)
   })
 
-  it('"Accept All & Continue" checks all recommended tests and calls onAcceptContinue (B2)', () => {
+  it('"Accept All / Continue" checks all recommended tests and calls onAcceptContinue (B2)', () => {
     const onSelectionChange = vi.fn()
     const onAcceptContinue = vi.fn()
     render(
@@ -81,7 +81,7 @@ describe('WorkupCard', () => {
       />,
     )
 
-    fireEvent.click(screen.getByText('Accept All & Continue'))
+    fireEvent.click(screen.getByText('Accept All / Continue'))
 
     expect(onSelectionChange).toHaveBeenCalledWith(expect.arrayContaining(['troponin', 'ecg']))
     expect(onAcceptContinue).toHaveBeenCalledOnce()

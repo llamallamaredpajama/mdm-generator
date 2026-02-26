@@ -5,7 +5,7 @@
  *   - Differential (full-width top)
  *   - CdrCard + WorkupCard (side-by-side on desktop, stacked on mobile)
  *   - Trends (full-width bottom, conditionally shown)
- *   - "Accept Workup & Continue" button
+ *   - "Accept All / Continue" button
  *
  * Replaces both DifferentialPreview (inline) and standalone TrendResultsPanel
  * between Section 1 and Section 2.
@@ -31,7 +31,7 @@ import { useTestLibrary } from '../../../hooks/useTestLibrary'
 import { useCdrLibrary } from '../../../hooks/useCdrLibrary'
 import { useCdrTracking } from '../../../hooks/useCdrTracking'
 import { useOrderSets, type OrderSet } from '../../../hooks/useOrderSets'
-import { getRecommendedTestIds } from './getRecommendedTestIds'
+import { getRecommendedTestIds, getTestIdsFromWorkupRecommendations } from './getRecommendedTestIds'
 import { getIdentifiedCdrs } from './getIdentifiedCdrs'
 import { useIsMobile } from '../../../hooks/useMediaQuery'
 import './DashboardOutput.css'
@@ -136,10 +136,14 @@ export default function DashboardOutput({
     toggleExcluded,
   } = useCdrTracking(encounter?.id ?? null, encounter?.cdrTracking ?? {}, cdrs)
 
-  const recommendedTestIds = useMemo(
-    () => getRecommendedTestIds(differential, tests),
-    [differential, tests],
-  )
+  // Bug 4 fix: Combine client-side matching AND LLM workup recommendations.
+  // LLM recs are the primary source; client-side matching fills gaps.
+  const recommendedTestIds = useMemo(() => {
+    const fromDifferential = getRecommendedTestIds(differential, tests)
+    const fromWorkup = getTestIdsFromWorkupRecommendations(workupRecommendations, tests)
+    const merged = new Set([...fromWorkup, ...fromDifferential])
+    return Array.from(merged)
+  }, [differential, tests, workupRecommendations])
 
   const identifiedCdrs = useMemo(() => getIdentifiedCdrs(differential, cdrs), [differential, cdrs])
 
@@ -191,27 +195,39 @@ export default function DashboardOutput({
     setShowSaveOrderSet(false)
   }
 
-  // Issue 3: Lock body scroll while OrderSelector overlay is open
+  // Lock body scroll while any overlay is open (OrderSelector or CdrDetailView)
   useEffect(() => {
-    if (!showOrderSelector) return
+    if (!showOrderSelector && !showCdrDetail) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prev
     }
-  }, [showOrderSelector])
+  }, [showOrderSelector, showCdrDetail])
 
-  // Issue 3: Escape key handler for OrderSelector overlay
-  const handleOverlayKeyDown = useCallback((e: React.KeyboardEvent) => {
+  // Escape key handler for overlays (OrderSelector and CdrDetailView)
+  const handleOrderOverlayKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setShowOrderSelector(false)
     }
   }, [])
 
-  // Issue 3: Backdrop click handler for OrderSelector overlay
-  const handleBackdropClick = useCallback((e: React.MouseEvent) => {
+  const handleCdrOverlayKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowCdrDetail(false)
+    }
+  }, [])
+
+  // Backdrop click handlers for overlays
+  const handleOrderBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       setShowOrderSelector(false)
+    }
+  }, [])
+
+  const handleCdrBackdropClick = useCallback((e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      setShowCdrDetail(false)
     }
   }, [])
 
@@ -219,16 +235,6 @@ export default function DashboardOutput({
 
   const handleSelectionChange = (testIds: string[]) => {
     onSelectedTestsChange?.(testIds)
-  }
-
-  if (showCdrDetail && encounter) {
-    return (
-      <CdrDetailView
-        encounter={encounter}
-        cdrLibrary={cdrs}
-        onBack={() => setShowCdrDetail(false)}
-      />
-    )
   }
 
   // Determine if "View CDRs" should be enabled
@@ -314,6 +320,28 @@ export default function DashboardOutput({
         />
       )}
 
+      {/* Bug 2+3 fix: CdrDetailView rendered as overlay instead of replacing dashboard */}
+      {showCdrDetail && encounter && (
+        <div
+          className="dashboard-output__overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Clinical Decision Rules Detail"
+          onKeyDown={handleCdrOverlayKeyDown}
+          onClick={handleCdrBackdropClick}
+        >
+          <div className="dashboard-output__overlay-content dashboard-output__overlay-content--wide">
+            <CdrDetailView
+              encounter={encounter}
+              cdrLibrary={cdrs}
+              identifiedCdrs={identifiedCdrs}
+              cdrAnalysis={cdrAnalysis}
+              onBack={() => setShowCdrDetail(false)}
+            />
+          </div>
+        </div>
+      )}
+
       {/* B1 fix: OrderSelector rendered as overlay instead of replacing dashboard */}
       {showOrderSelector && (
         <div
@@ -321,8 +349,8 @@ export default function DashboardOutput({
           role="dialog"
           aria-modal="true"
           aria-label="Order Selection"
-          onKeyDown={handleOverlayKeyDown}
-          onClick={handleBackdropClick}
+          onKeyDown={handleOrderOverlayKeyDown}
+          onClick={handleOrderBackdropClick}
         >
           <div className="dashboard-output__overlay-content">
             <OrderSelector

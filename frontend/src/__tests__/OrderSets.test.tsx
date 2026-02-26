@@ -292,7 +292,7 @@ describe('OrderSetSuggestion', () => {
   })
 })
 
-describe('WorkupCard - Accept All & Continue button (B2)', () => {
+describe('WorkupCard - Accept All / Continue button (B2)', () => {
   const defaultProps = {
     tests: mockTests,
     recommendedTestIds: ['troponin', 'ecg'],
@@ -302,12 +302,12 @@ describe('WorkupCard - Accept All & Continue button (B2)', () => {
     loading: false,
   }
 
-  it('does not show Accept All & Continue when onAcceptContinue is not provided', () => {
+  it('does not show Accept All / Continue when onAcceptContinue is not provided', () => {
     render(<WorkupCard {...defaultProps} />)
-    expect(screen.queryByText('Accept All & Continue')).toBeNull()
+    expect(screen.queryByText('Accept All / Continue')).toBeNull()
   })
 
-  it('shows Accept All & Continue button when onAcceptContinue is provided', () => {
+  it('shows Accept All / Continue button when onAcceptContinue is provided', () => {
     render(
       <WorkupCard
         {...defaultProps}
@@ -315,10 +315,10 @@ describe('WorkupCard - Accept All & Continue button (B2)', () => {
         onAcceptContinue={vi.fn()}
       />,
     )
-    expect(screen.getByText('Accept All & Continue')).toBeDefined()
+    expect(screen.getByText('Accept All / Continue')).toBeDefined()
   })
 
-  it('calls onAcceptContinue when Accept All & Continue is clicked', () => {
+  it('calls onAcceptContinue when Accept All / Continue is clicked', () => {
     const onAcceptContinue = vi.fn()
     render(
       <WorkupCard
@@ -328,7 +328,7 @@ describe('WorkupCard - Accept All & Continue button (B2)', () => {
       />,
     )
 
-    fireEvent.click(screen.getByText('Accept All & Continue'))
+    fireEvent.click(screen.getByText('Accept All / Continue'))
     expect(onAcceptContinue).toHaveBeenCalledOnce()
   })
 

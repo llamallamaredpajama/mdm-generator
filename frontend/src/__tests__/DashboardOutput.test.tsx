@@ -222,8 +222,8 @@ describe('DashboardOutput', () => {
     )
 
     expect(screen.getByText('Recommended Workup')).toBeDefined()
-    // B2: "Accept All" standalone header button replaced by "Accept All & Continue" at card bottom
-    expect(screen.getByText('Accept All & Continue')).toBeDefined()
+    // B2: "Accept All" standalone header button replaced by "Accept All / Continue" at card bottom
+    expect(screen.getByText('Accept All / Continue')).toBeDefined()
   })
 
   it('shows Workup stub card when onSelectedTestsChange is not provided', () => {
@@ -294,7 +294,7 @@ describe('DashboardOutput', () => {
     expect(screen.getByText('Analyzing regional surveillance data...')).toBeDefined()
   })
 
-  it('renders "Accept All & Continue" button in WorkupCard (B2)', () => {
+  it('renders "Accept All / Continue" button in WorkupCard (B2)', () => {
     render(
       <DashboardOutput
         llmResponse={mockDifferential}
@@ -304,12 +304,12 @@ describe('DashboardOutput', () => {
       />,
     )
 
-    const btn = screen.getByText('Accept All & Continue')
+    const btn = screen.getByText('Accept All / Continue')
     expect(btn).toBeDefined()
     expect(btn.tagName).toBe('BUTTON')
   })
 
-  it('calls onAcceptContinue when Accept All & Continue is clicked', () => {
+  it('calls onAcceptContinue when Accept All / Continue is clicked', () => {
     const onAcceptContinue = vi.fn()
 
     render(
@@ -322,7 +322,7 @@ describe('DashboardOutput', () => {
       />,
     )
 
-    fireEvent.click(screen.getByText('Accept All & Continue'))
+    fireEvent.click(screen.getByText('Accept All / Continue'))
     expect(onAcceptContinue).toHaveBeenCalledOnce()
   })
 
