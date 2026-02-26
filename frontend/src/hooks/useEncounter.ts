@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore'
-import { db, useAuth, useAuthToken } from '../lib/firebase'
+import { getAppDb, useAuth, useAuthToken } from '../lib/firebase'
 import { processSection1, processSection2, finalizeEncounter } from '../lib/api'
 import { useTrendAnalysisContext } from '../contexts/TrendAnalysisContext'
 import type {
@@ -50,6 +50,7 @@ export interface UseEncounterReturn {
  * @returns Encounter state and mutation functions
  */
 export function useEncounter(encounterId: string | null): UseEncounterReturn {
+  const db = getAppDb()
   const { user } = useAuth()
   const token = useAuthToken()
   const {

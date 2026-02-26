@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
-import { db, useAuth } from '../lib/firebase'
+import { getAppDb, useAuth } from '../lib/firebase'
 import type {
   CdrTracking,
   CdrTrackingEntry,
@@ -85,6 +85,7 @@ export function useCdrTracking(
   initialTracking: CdrTracking,
   cdrLibrary: CdrDefinition[],
 ): UseCdrTrackingReturn {
+  const db = getAppDb()
   const { user } = useAuth()
   const [tracking, setTracking] = useState<CdrTracking>(initialTracking)
   const firestoreWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null)

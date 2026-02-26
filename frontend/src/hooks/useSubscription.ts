@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot, type QuerySnapshot, type DocumentData, Timestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { getAppDb } from '../lib/firebase';
 import { useAuth } from '../lib/firebase';
 
 export type SubscriptionStatus = 
@@ -102,6 +102,7 @@ function convertTimestamp(timestamp: unknown): Date | null {
 }
 
 export function useSubscription(): SubscriptionHookReturn {
+  const db = getAppDb();
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);

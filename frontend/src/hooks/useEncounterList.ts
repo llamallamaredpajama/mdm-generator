@@ -10,7 +10,7 @@ import {
   type QuerySnapshot,
   type DocumentData,
 } from 'firebase/firestore'
-import { db, useAuth } from '../lib/firebase'
+import { getAppDb, useAuth } from '../lib/firebase'
 import type {
   EncounterDocument,
   EncounterStatus,
@@ -150,6 +150,7 @@ export interface UseEncounterListReturn {
  * @param mode - The encounter mode to filter by ('quick' or 'build')
  */
 export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterListReturn {
+  const db = getAppDb()
   const { user } = useAuth()
   const [encounters, setEncounters] = useState<EncounterDocument[]>([])
   const [loading, setLoading] = useState(true)

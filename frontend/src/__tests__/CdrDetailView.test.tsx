@@ -15,6 +15,7 @@ import type { CdrDefinition } from '../types/libraries'
 // Mock Firebase (useCdrTracking needs it)
 vi.mock('../lib/firebase', () => ({
   db: {},
+  getAppDb: vi.fn(() => ({})),
   useAuth: () => ({ user: { uid: 'test-uid' } }),
   useAuthToken: () => 'test-token',
 }))

@@ -20,6 +20,7 @@ import type { IdentifiedCdr } from '../components/build-mode/shared/getIdentifie
 // Mock Firebase (needed by CdrCard -> CdrDetailView -> useCdrTracking)
 vi.mock('../lib/firebase', () => ({
   db: {},
+  getAppDb: vi.fn(() => ({})),
   useAuth: () => ({ user: { uid: 'test-uid' } }),
   useAuthToken: () => 'test-token',
 }))

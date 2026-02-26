@@ -6,7 +6,11 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
+    globalSetup: './src/vitestGlobalSetup.ts',
     globals: true,
-    css: true,
+    css: false,
+    testTimeout: 10000,
+    hookTimeout: 10000,
+    teardownTimeout: 1000,
   },
 })

@@ -9,7 +9,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo, type ReactNode } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
-import { db, useAuth, useAuthToken } from '../../lib/firebase'
+import { getAppDb, useAuth, useAuthToken } from '../../lib/firebase'
 import { useEncounter, useSectionState } from '../../hooks/useEncounter'
 import { ShiftTimer } from './ShiftTimer'
 import SectionPanel from './SectionPanel'
@@ -119,6 +119,7 @@ function getSectionPreview(
  * Each SectionPanel manages its own expand/collapse state.
  */
 export default function EncounterEditor({ encounterId, onBack }: EncounterEditorProps) {
+  const db = getAppDb()
   const {
     encounter,
     loading,

@@ -105,11 +105,14 @@ describe('useTestLibrary', () => {
   })
 
   it('sets loading true while fetching', () => {
-    mockFetchTestLibrary.mockReturnValueOnce(new Promise(() => {}))
+    let resolve: (v?: unknown) => void = () => {}
+    mockFetchTestLibrary.mockReturnValueOnce(new Promise(r => { resolve = r }))
 
-    const { result } = renderHook(() => useTestLibrary())
+    const { result, unmount } = renderHook(() => useTestLibrary())
 
     expect(result.current.loading).toBe(true)
+    unmount()
+    resolve()
   })
 
   it('fetches when token becomes available', async () => {
