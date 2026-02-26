@@ -211,3 +211,28 @@
   color: var(--color-text-muted, #94a3b8);
   padding: 0.5rem 0;
 }
+
+/* B2: Accept All / Continue button at bottom of WorkupCard */
+.workup-card__accept-continue-btn {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--color-primary, #3b82f6);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.workup-card__accept-continue-btn:hover {
+  background: var(--color-primary-hover, #2563eb);
+}
+
+.workup-card__accept-continue-btn:focus-visible {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: 2px;
+}

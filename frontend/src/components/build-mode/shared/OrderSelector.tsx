@@ -16,6 +16,10 @@ interface OrderSelectorProps {
   recommendedTestIds: string[]
   onSelectionChange: (testIds: string[]) => void
   onBack: () => void
+  /** B4: Optional accept+continue callback — selects all recommended and advances */
+  onAcceptContinue?: () => void
+  /** B3: Optional callback to save current selection as an order set */
+  onSaveOrderSet?: () => void
 }
 
 export default function OrderSelector({
@@ -24,6 +28,8 @@ export default function OrderSelector({
   recommendedTestIds,
   onSelectionChange,
   onBack,
+  onAcceptContinue,
+  onSaveOrderSet,
 }: OrderSelectorProps) {
   const testsByCategory = useMemo(() => {
     const grouped: Record<TestCategory, TestDefinition[]> = {
@@ -67,7 +73,7 @@ export default function OrderSelector({
 
   // All categories default to open
   const [openCategories, setOpenCategories] = useState<Set<TestCategory>>(
-    () => new Set(CATEGORY_ORDER)
+    () => new Set(CATEGORY_ORDER),
   )
 
   function toggleCategory(category: TestCategory) {
@@ -83,9 +89,9 @@ export default function OrderSelector({
   }
 
   const totalSelected = selectedTests.length
-  const breakdownParts = CATEGORY_ORDER
-    .filter((cat) => categoryCounts[cat] > 0)
-    .map((cat) => `${categoryCounts[cat]} ${CATEGORY_LABELS[cat]}`)
+  const breakdownParts = CATEGORY_ORDER.filter((cat) => categoryCounts[cat] > 0).map(
+    (cat) => `${categoryCounts[cat]} ${CATEGORY_LABELS[cat]}`,
+  )
 
   return (
     <div className="order-selector">
@@ -108,12 +114,12 @@ export default function OrderSelector({
                 onClick={() => toggleCategory(category)}
                 aria-expanded={isOpen}
               >
-                <span className={`order-selector__chevron ${isOpen ? 'order-selector__chevron--open' : ''}`}>
+                <span
+                  className={`order-selector__chevron ${isOpen ? 'order-selector__chevron--open' : ''}`}
+                >
                   &#9654;
                 </span>
-                <h5 className="order-selector__category-name">
-                  {CATEGORY_LABELS[category]}
-                </h5>
+                <h5 className="order-selector__category-name">{CATEGORY_LABELS[category]}</h5>
               </button>
               <div className="order-selector__category-actions">
                 <button
@@ -163,6 +169,20 @@ export default function OrderSelector({
           {totalSelected} total: {breakdownParts.join(', ')}
         </div>
       )}
+
+      {/* B3/B4: Footer actions */}
+      <div className="order-selector__footer">
+        {onSaveOrderSet && totalSelected > 0 && (
+          <button type="button" className="order-selector__save-set-btn" onClick={onSaveOrderSet}>
+            Save as Order Set
+          </button>
+        )}
+        {onAcceptContinue && (
+          <button type="button" className="order-selector__accept-btn" onClick={onAcceptContinue}>
+            Accept & Continue
+          </button>
+        )}
+      </div>
     </div>
   )
 }

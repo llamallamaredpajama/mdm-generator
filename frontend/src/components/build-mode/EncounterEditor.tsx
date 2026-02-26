@@ -18,10 +18,25 @@ import Section2Guide from './Section2Guide'
 import Section3Guide from './Section3Guide'
 import CdrResultsOutput from './shared/CdrResultsOutput'
 import DashboardOutput from './shared/DashboardOutput'
-import type { SectionNumber, EncounterDocument, SectionStatus, FinalMdm, CdrTracking, CdrTrackingEntry, TestResult, DispositionOption } from '../../types/encounter'
+import type {
+  SectionNumber,
+  EncounterDocument,
+  SectionStatus,
+  FinalMdm,
+  CdrTracking,
+  CdrTrackingEntry,
+  TestResult,
+  DispositionOption,
+} from '../../types/encounter'
 import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
-import { ApiError, matchCdrs, suggestDiagnosis, parseResults, type ParsedResultItem } from '../../lib/api'
+import {
+  ApiError,
+  matchCdrs,
+  suggestDiagnosis,
+  parseResults,
+  type ParsedResultItem,
+} from '../../lib/api'
 import { useTestLibrary } from '../../hooks/useTestLibrary'
 import { useCdrLibrary } from '../../hooks/useCdrLibrary'
 import ConfirmationModal from '../ConfirmationModal'
@@ -76,7 +91,7 @@ function getSectionGuide(section: SectionNumber): ReactNode {
  */
 function getSectionPreview(
   section: SectionNumber,
-  encounter: EncounterDocument | null
+  encounter: EncounterDocument | null,
 ): ReactNode | null {
   if (!encounter) return null
 
@@ -152,12 +167,12 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       firestoreWriteTimer.current = setTimeout(() => {
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
         updateDoc(encounterRef, { 'section2.selectedTests': testIds }).catch((err) =>
-          console.error('Failed to persist selectedTests:', err?.message || 'unknown error')
+          console.error('Failed to persist selectedTests:', err?.message || 'unknown error'),
         )
         pendingTestsRef.current = null
       }, 300)
     },
-    [user, encounterId]
+    [user, encounterId],
   )
 
   // Flush pending write and cleanup on unmount
@@ -166,8 +181,12 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       if (firestoreWriteTimer.current) clearTimeout(firestoreWriteTimer.current)
       if (pendingTestsRef.current !== null && user && encounterId) {
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
-        updateDoc(encounterRef, { 'section2.selectedTests': pendingTestsRef.current }).catch((err) =>
-          console.error('Failed to flush selectedTests on unmount:', err?.message || 'unknown error')
+        updateDoc(encounterRef, { 'section2.selectedTests': pendingTestsRef.current }).catch(
+          (err) =>
+            console.error(
+              'Failed to flush selectedTests on unmount:',
+              err?.message || 'unknown error',
+            ),
         )
       }
     }
@@ -219,12 +238,12 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         if (!toWrite) return
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
         updateDoc(encounterRef, { 'section2.testResults': toWrite }).catch((err) =>
-          console.error('Failed to persist testResults:', err?.message || 'unknown error')
+          console.error('Failed to persist testResults:', err?.message || 'unknown error'),
         )
         pendingTestResultsRef.current = null
       }, 300)
     },
-    [user, encounterId]
+    [user, encounterId],
   )
 
   // Flush pending testResults write on unmount
@@ -233,8 +252,12 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       if (testResultsWriteTimer.current) clearTimeout(testResultsWriteTimer.current)
       if (pendingTestResultsRef.current !== null && user && encounterId) {
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
-        updateDoc(encounterRef, { 'section2.testResults': pendingTestResultsRef.current }).catch((err) =>
-          console.error('Failed to flush testResults on unmount:', err?.message || 'unknown error')
+        updateDoc(encounterRef, { 'section2.testResults': pendingTestResultsRef.current }).catch(
+          (err) =>
+            console.error(
+              'Failed to flush testResults on unmount:',
+              err?.message || 'unknown error',
+            ),
         )
       }
     }
@@ -261,7 +284,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
   const recommendedTestIds = useMemo(
     () => getRecommendedTestIds(s1Differential, testLibrary),
-    [s1Differential, testLibrary]
+    [s1Differential, testLibrary],
   )
 
   /**
@@ -291,12 +314,12 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         if (!toWrite) return
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
         updateDoc(encounterRef, { 'section2.testResults': toWrite }).catch((err) =>
-          console.error('Failed to persist batch testResults:', err?.message || 'unknown error')
+          console.error('Failed to persist batch testResults:', err?.message || 'unknown error'),
         )
         pendingTestResultsRef.current = null
       }, 0)
     },
-    [user, encounterId]
+    [user, encounterId],
   )
 
   /**
@@ -375,7 +398,9 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         toastError('No results matched your ordered tests. Try rephrasing your dictation.')
       }
     } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Failed to process dictation. Please try again.')
+      toastError(
+        err instanceof Error ? err.message : 'Failed to process dictation. Please try again.',
+      )
     } finally {
       setDictationParsing(false)
     }
@@ -397,7 +422,9 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       const differential = Array.isArray(llmResponse) ? llmResponse : llmResponse?.differential
       if (Array.isArray(differential)) {
         const dxList = differential
-          .map((d: string | { diagnosis?: string }) => (typeof d === 'string' ? d : d.diagnosis || ''))
+          .map((d: string | { diagnosis?: string }) =>
+            typeof d === 'string' ? d : d.diagnosis || '',
+          )
           .filter(Boolean)
         if (dxList.length > 0) {
           analyzedForRef.current = encounter.id
@@ -405,7 +432,13 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         }
       }
     }
-  }, [encounter?.id, encounter?.section1?.status, encounter?.section1?.llmResponse, encounter?.chiefComplaint, analyze])
+  }, [
+    encounter?.id,
+    encounter?.section1?.status,
+    encounter?.section1?.llmResponse,
+    encounter?.chiefComplaint,
+    analyze,
+  ])
 
   // Trigger CDR matching when Section 1 completes (non-blocking, supplements trend analysis)
   const cdrMatchedForRef = useRef<string | null>(null)
@@ -436,7 +469,9 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
     // Compute a simple hash to detect changes (avoid re-running for same data)
     const resultsHash = JSON.stringify(
-      Object.entries(testResults).map(([id, r]) => [id, r.status, r.value]).sort()
+      Object.entries(testResults)
+        .map(([id, r]) => [id, r.status, r.value])
+        .sort(),
     )
     if (resultsHash === lastTestResultsHashRef.current) return
     lastTestResultsHashRef.current = resultsHash
@@ -480,7 +515,10 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
           if (value === null) continue
 
-          const updatedComponents: Record<string, import('../../types/encounter').CdrComponentState> = {
+          const updatedComponents: Record<
+            string,
+            import('../../types/encounter').CdrComponentState
+          > = {
             ...currentEntry.components,
             [comp.id]: { value, answered: true, source: 'section2' as const },
           }
@@ -489,7 +527,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           const vals = Object.values(updatedComponents)
           const answeredCount = vals.filter((c) => c.answered).length
           const status: import('../../types/encounter').CdrStatus =
-            answeredCount === 0 ? 'pending' : answeredCount === vals.length ? 'completed' : 'partial'
+            answeredCount === 0
+              ? 'pending'
+              : answeredCount === vals.length
+                ? 'completed'
+                : 'partial'
 
           let score: number | null = null
           let interpretation: string | null = null
@@ -517,10 +559,20 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     if (changed) {
       const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
       updateDoc(encounterRef, { cdrTracking: updated }).catch((err) => {
-        console.error('Failed to auto-populate CDR from S2 results:', err?.message || 'unknown error')
+        console.error(
+          'Failed to auto-populate CDR from S2 results:',
+          err?.message || 'unknown error',
+        )
       })
     }
-  }, [encounter?.section2?.testResults, encounter?.cdrTracking, testLibrary, cdrLibrary, user, encounterId])
+  }, [
+    encounter?.section2?.testResults,
+    encounter?.cdrTracking,
+    testLibrary,
+    cdrLibrary,
+    user,
+    encounterId,
+  ])
 
   // Fetch working diagnosis suggestions when S1 is complete and S2 has responded results
   useEffect(() => {
@@ -531,7 +583,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     // Compute responded count from test results
     const results = encounter.section2?.testResults ?? {}
     const responded = Object.values(results).filter(
-      (r) => r && (r as TestResult).status !== 'pending'
+      (r) => r && (r as TestResult).status !== 'pending',
     ).length
     if (responded === 0) return
 
@@ -558,11 +610,33 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         if (!cancelled) setDxSuggestionsLoading(false)
       })
 
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [encounter, token, encounterId])
 
   // Trend report modal state
   const [showTrendReport, setShowTrendReport] = useState(false)
+
+  // D3: Workup accepted state — S2 gated behind "Accept All & Continue"
+  const [workupAccepted, setWorkupAccepted] = useState(false)
+  // Auto-accept if encounter already has S2 progress (backward compat)
+  const workupAcceptedInitRef = useRef(false)
+  useEffect(() => {
+    if (encounter && !workupAcceptedInitRef.current) {
+      workupAcceptedInitRef.current = true
+      // If S2 already has content or is completed, auto-accept
+      if (
+        encounter.section2.status === 'completed' ||
+        encounter.section2.status === 'in_progress' ||
+        encounter.section2.submissionCount > 0 ||
+        encounter.section2.content.length > 0 ||
+        (encounter.section2.testResults && Object.keys(encounter.section2.testResults).length > 0)
+      ) {
+        setWorkupAccepted(true)
+      }
+    }
+  }, [encounter])
 
   // Paste Lab Results modal state (BM-5.1)
   const [showPasteModal, setShowPasteModal] = useState(false)
@@ -590,7 +664,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   const [s3Disposition, setS3Disposition] = useState<DispositionOption | null>(null)
   const [s3FollowUp, setS3FollowUp] = useState<string[]>([])
   const s3DispoInitRef = useRef(false)
-  const { flows: savedDispoFlows, saveFlow: saveDispoFlow, deleteFlow: deleteDispoFlow } = useDispoFlows()
+  const {
+    flows: savedDispoFlows,
+    saveFlow: saveDispoFlow,
+    deleteFlow: deleteDispoFlow,
+  } = useDispoFlows()
 
   // Initialize S3 disposition state from encounter data
   useEffect(() => {
@@ -612,17 +690,18 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
   /**
    * Handle working diagnosis change — update local state and persist to Firestore
+   * D1: Now writes to section3.workingDiagnosis (moved from S2 to S3)
    */
   const handleWorkingDiagnosisChange = useCallback(
     (wd: WorkingDiagnosis) => {
       setWorkingDiagnosis(wd)
       if (!user || !encounterId) return
       const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
-      updateDoc(encounterRef, { 'section2.workingDiagnosis': wd }).catch((err) => {
+      updateDoc(encounterRef, { 'section3.workingDiagnosis': wd }).catch((err) => {
         console.error('Failed to persist working diagnosis:', err?.message || 'unknown error')
       })
     },
-    [user, encounterId]
+    [user, encounterId],
   )
 
   /**
@@ -632,7 +711,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     (section: SectionNumber, content: string) => {
       updateSectionContent(section, content)
     },
-    [updateSectionContent]
+    [updateSectionContent],
   )
 
   /**
@@ -651,11 +730,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           'section3.treatments': treatments,
           'section3.cdrSuggestedTreatments': cdrSuggestions,
         }).catch((err) =>
-          console.error('Failed to persist S3 treatments:', err?.message || 'unknown error')
+          console.error('Failed to persist S3 treatments:', err?.message || 'unknown error'),
         )
       }
     },
-    [user, encounterId, updateSectionContent]
+    [user, encounterId, updateSectionContent],
   )
 
   /**
@@ -667,11 +746,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       if (user && encounterId) {
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
         updateDoc(encounterRef, { 'section3.disposition': disposition }).catch((err) =>
-          console.error('Failed to persist disposition:', err?.message || 'unknown error')
+          console.error('Failed to persist disposition:', err?.message || 'unknown error'),
         )
       }
     },
-    [user, encounterId]
+    [user, encounterId],
   )
 
   /**
@@ -683,11 +762,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       if (user && encounterId) {
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
         updateDoc(encounterRef, { 'section3.followUp': followUp }).catch((err) =>
-          console.error('Failed to persist followUp:', err?.message || 'unknown error')
+          console.error('Failed to persist followUp:', err?.message || 'unknown error'),
         )
       }
     },
-    [user, encounterId]
+    [user, encounterId],
   )
 
   /**
@@ -704,11 +783,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
           'section3.followUp': flow.followUp,
           'section3.appliedDispoFlow': flow.id,
         }).catch((err) =>
-          console.error('Failed to apply dispo flow:', err?.message || 'unknown error')
+          console.error('Failed to apply dispo flow:', err?.message || 'unknown error'),
         )
       }
     },
-    [user, encounterId]
+    [user, encounterId],
   )
 
   /**
@@ -720,7 +799,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         saveDispoFlow(name, s3Disposition, s3FollowUp)
       }
     },
-    [s3Disposition, s3FollowUp, saveDispoFlow]
+    [s3Disposition, s3FollowUp, saveDispoFlow],
   )
 
   /**
@@ -741,61 +820,56 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   /**
    * Handle confirmed section submission after PHI acknowledgment
    */
-  const handleConfirmedSubmit = useCallback(
-    async () => {
-      if (pendingSection === null) return
-      const section = pendingSection
-      setShowConfirmModal(false)
-      setPendingSection(null)
+  const handleConfirmedSubmit = useCallback(async () => {
+    if (pendingSection === null) return
+    const section = pendingSection
+    setShowConfirmModal(false)
+    setPendingSection(null)
 
-      // Clear previous error for this section
-      setSectionErrors((prev) => ({ ...prev, [section]: null }))
+    // Clear previous error for this section
+    setSectionErrors((prev) => ({ ...prev, [section]: null }))
 
-      try {
-        // For section 2, pass the effective working diagnosis string
-        if (section === 2) {
-          const effectiveDx = workingDiagnosis?.selected ?? workingDiagnosis?.custom ?? undefined
-          await submitSection(section, effectiveDx || undefined)
-        } else {
-          await submitSection(section)
-        }
-
-
-      } catch (err) {
-        console.error('Submission failed:', err)
-
-        // Parse error and set appropriate state
-        if (err instanceof ApiError) {
-          setSectionErrors((prev) => ({
-            ...prev,
-            [section]: {
-              message: err.message,
-              isRetryable: err.isRetryable,
-              errorType: err.errorType,
-            },
-          }))
-
-          // Show quota exceeded modal if quota error
-          if (err.errorType === 'quota') {
-            setShowQuotaExceeded(true)
-          }
-        } else {
-          // Generic error handling
-          const message =
-            err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.'
-          setSectionErrors((prev) => ({
-            ...prev,
-            [section]: {
-              message,
-              isRetryable: true,
-              errorType: 'unknown',
-            },
-          }))
-        }
+    try {
+      // D1: Working diagnosis moved from S2 to S3 — pass it on finalize
+      if (section === 3) {
+        const effectiveDx = workingDiagnosis?.selected ?? workingDiagnosis?.custom ?? undefined
+        await submitSection(section, effectiveDx || undefined)
+      } else {
+        await submitSection(section)
       }
-    },
-    [pendingSection, submitSection, workingDiagnosis]
-  )
+    } catch (err) {
+      console.error('Submission failed:', err)
+
+      // Parse error and set appropriate state
+      if (err instanceof ApiError) {
+        setSectionErrors((prev) => ({
+          ...prev,
+          [section]: {
+            message: err.message,
+            isRetryable: err.isRetryable,
+            errorType: err.errorType,
+          },
+        }))
+
+        // Show quota exceeded modal if quota error
+        if (err.errorType === 'quota') {
+          setShowQuotaExceeded(true)
+        }
+      } else {
+        // Generic error handling
+        const message =
+          err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.'
+        setSectionErrors((prev) => ({
+          ...prev,
+          [section]: {
+            message,
+            isRetryable: true,
+            errorType: 'unknown',
+          },
+        }))
+      }
+    }
+  }, [pendingSection, submitSection, workingDiagnosis])
 
   // Loading state
   if (loading) {
@@ -914,54 +988,46 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
         {/* Dashboard Output (after Section 1 completion) */}
         {encounter.section1.status === 'completed' && encounter.section1.llmResponse && (
-          <>
-            <DashboardOutput
-              llmResponse={encounter.section1.llmResponse}
-              trendAnalysis={analysis}
-              trendLoading={isAnalyzing}
-              selectedTests={selectedTests}
-              onSelectedTestsChange={handleSelectedTestsChange}
-              encounter={encounter}
-            />
-            {analysis && analysis.rankedFindings.length > 0 && (
-              <button
-                type="button"
-                className="encounter-editor__report-btn"
-                onClick={() => setShowTrendReport(true)}
-              >
-                View Chart Report
-              </button>
-            )}
-          </>
+          <DashboardOutput
+            llmResponse={encounter.section1.llmResponse}
+            trendAnalysis={analysis}
+            trendLoading={isAnalyzing}
+            selectedTests={selectedTests}
+            onSelectedTestsChange={handleSelectedTestsChange}
+            encounter={encounter}
+            onAcceptContinue={() => setWorkupAccepted(true)}
+            onOpenTrendReport={analysis ? () => setShowTrendReport(true) : undefined}
+          />
         )}
 
-        {/* Section 2: Workup & Results (blocked) */}
-        {!isSection1Complete && !isFinalized && !isArchived && (
+        {/* Section 2: Results and Data Review (blocked until S1 complete + workup accepted) */}
+        {(!isSection1Complete || !workupAccepted) && !isFinalized && !isArchived && (
           <div className="encounter-editor__section-blocked">
             <span className="encounter-editor__blocked-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
             </span>
             <div className="encounter-editor__blocked-text">
-              <h4 className="encounter-editor__blocked-title">Workup and Results</h4>
-              <p className="encounter-editor__blocked-subtitle">Dictate when your workup is complete and you are reviewing your results</p>
+              <h4 className="encounter-editor__blocked-title">Results and Data Review</h4>
+              <p className="encounter-editor__blocked-subtitle">
+                {isSection1Complete
+                  ? 'Accept the recommended workup above to begin entering results'
+                  : 'Complete the initial evaluation to unlock this section'}
+              </p>
             </div>
           </div>
         )}
-        {(isSection1Complete || isFinalized || isArchived) && (
+        {((isSection1Complete && workupAccepted) || isFinalized || isArchived) && (
           <div id="section-panel-2">
-            {/* Working Diagnosis Input (only for Section 2, when unlocked) */}
-            {isSection1Complete && !encounter.section2.isLocked && !isFinalized && !isArchived && (
-              <WorkingDiagnosisInput
-                suggestions={dxSuggestions}
-                loading={dxSuggestionsLoading}
-                value={workingDiagnosis ?? encounter.section2.workingDiagnosis}
-                onChange={handleWorkingDiagnosisChange}
-                disabled={isS2Locked}
-              />
-            )}
             <SectionPanel
               sectionNumber={2}
               title={SECTION_TITLES[2]}
@@ -1093,7 +1159,8 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                         /* Dictation mode (BM-5.2) */
                         <div className="encounter-editor__dictation" data-testid="dictation-mode">
                           <p className="encounter-editor__dictation-hint">
-                            Describe your results in natural language. AI will map them to your ordered tests.
+                            Describe your results in natural language. AI will map them to your
+                            ordered tests.
                           </p>
                           <textarea
                             className="encounter-editor__dictation-textarea"
@@ -1108,7 +1175,12 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                             type="button"
                             className="encounter-editor__quick-action encounter-editor__quick-action--paste"
                             onClick={handleProcessDictation}
-                            disabled={!dictationText.trim() || isS2Locked || isS2Submitting || dictationParsing}
+                            disabled={
+                              !dictationText.trim() ||
+                              isS2Locked ||
+                              isS2Submitting ||
+                              dictationParsing
+                            }
                             data-testid="process-dictation-btn"
                           >
                             {dictationParsing ? 'Processing...' : 'Process Results'}
@@ -1120,9 +1192,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                 ) : undefined
               }
               textareaPlaceholder={
-                selectedTests.length > 0
-                  ? 'Additional notes (optional)...'
-                  : undefined
+                selectedTests.length > 0 ? 'Additional notes (optional)...' : undefined
               }
               allowEmptySubmit={selectedTests.length > 0 && respondedCount > 0}
               onContentChange={(content: string) => handleContentChange(2, content)}
@@ -1139,14 +1209,26 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         {!isSection2Complete && !isFinalized && !isArchived && (
           <div className="encounter-editor__section-blocked">
             <span className="encounter-editor__blocked-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
             </span>
             <div className="encounter-editor__blocked-text">
-              <h4 className="encounter-editor__blocked-title">Working Diagnosis, Treatment and Disposition</h4>
-              <p className="encounter-editor__blocked-subtitle">Dictate what you think the problem really is, what you did about it and what you're going to do... let our AI worry about the why</p>
+              <h4 className="encounter-editor__blocked-title">
+                Working Diagnosis, Treatment and Disposition
+              </h4>
+              <p className="encounter-editor__blocked-subtitle">
+                Dictate what you think the problem really is, what you did about it and what you're
+                going to do... let our AI worry about the why
+              </p>
             </div>
           </div>
         )}
@@ -1164,6 +1246,20 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
             customContent={
               !isFinalized && !isArchived && encounter ? (
                 <div className="encounter-editor__s3-layout">
+                  {/* D1: Working Diagnosis moved from S2 to S3 */}
+                  {!section3State.isLocked && (
+                    <WorkingDiagnosisInput
+                      suggestions={dxSuggestions}
+                      loading={dxSuggestionsLoading}
+                      value={
+                        workingDiagnosis ??
+                        encounter.section3?.workingDiagnosis ??
+                        encounter.section2?.workingDiagnosis
+                      }
+                      onChange={handleWorkingDiagnosisChange}
+                      disabled={section3State.isLocked || isFinalized || isArchived}
+                    />
+                  )}
                   <TreatmentInput
                     encounter={encounter}
                     cdrLibrary={cdrLibrary}
@@ -1214,10 +1310,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
             </div>
           </div>
           <div className="encounter-editor__quota-actions">
-            <a
-              href="/settings"
-              className="encounter-editor__upgrade-button"
-            >
+            <a href="/settings" className="encounter-editor__upgrade-button">
               Upgrade Plan
             </a>
             <button
@@ -1285,7 +1378,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       {/* Dictation Preview Modal (BM-5.2) */}
       <PasteLabModal
         isOpen={showDictationPreview}
-        onClose={() => { setShowDictationPreview(false); setDictationParsedResults([]); setDictationUnmatchedText([]) }}
+        onClose={() => {
+          setShowDictationPreview(false)
+          setDictationParsedResults([])
+          setDictationUnmatchedText([])
+        }}
         encounterId={encounterId}
         orderedTestIds={selectedTests}
         testLibrary={testLibrary}
@@ -1298,7 +1395,10 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       {/* PHI Confirmation Modal */}
       <ConfirmationModal
         isOpen={showConfirmModal}
-        onClose={() => { setShowConfirmModal(false); setPendingSection(null) }}
+        onClose={() => {
+          setShowConfirmModal(false)
+          setPendingSection(null)
+        }}
         onConfirm={handleConfirmedSubmit}
       />
     </div>

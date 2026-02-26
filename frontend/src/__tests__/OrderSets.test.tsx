@@ -21,9 +21,15 @@ const localStorageMock = (() => {
   let store: Record<string, string> = {}
   return {
     getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => { store[key] = value },
-    removeItem: (key: string) => { delete store[key] },
-    clear: () => { store = {} },
+    setItem: (key: string, value: string) => {
+      store[key] = value
+    },
+    removeItem: (key: string) => {
+      delete store[key]
+    },
+    clear: () => {
+      store = {}
+    },
   }
 })()
 
@@ -162,7 +168,7 @@ describe('SaveOrderSetModal', () => {
         tests={mockTests}
         onSave={vi.fn()}
         onClose={vi.fn()}
-      />
+      />,
     )
 
     expect(screen.getByTestId('save-orderset-modal')).toBeDefined()
@@ -180,7 +186,7 @@ describe('SaveOrderSetModal', () => {
         tests={mockTests}
         onSave={onSave}
         onClose={vi.fn()}
-      />
+      />,
     )
 
     fireEvent.change(screen.getByTestId('orderset-name-input'), {
@@ -191,11 +197,7 @@ describe('SaveOrderSetModal', () => {
     })
     fireEvent.click(screen.getByTestId('confirm-save-orderset'))
 
-    expect(onSave).toHaveBeenCalledWith(
-      'My Workup',
-      ['troponin', 'ecg'],
-      ['chest pain', 'cardiac']
-    )
+    expect(onSave).toHaveBeenCalledWith('My Workup', ['troponin', 'ecg'], ['chest pain', 'cardiac'])
   })
 
   it('save button disabled without name', () => {
@@ -205,7 +207,7 @@ describe('SaveOrderSetModal', () => {
         tests={mockTests}
         onSave={vi.fn()}
         onClose={vi.fn()}
-      />
+      />,
     )
 
     const saveBtn = screen.getByTestId('confirm-save-orderset')
@@ -220,7 +222,7 @@ describe('SaveOrderSetModal', () => {
         tests={mockTests}
         onSave={vi.fn()}
         onClose={onClose}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByText('Cancel'))
@@ -236,7 +238,7 @@ describe('OrderSetSuggestion', () => {
         onApplyAll={vi.fn()}
         onCustomize={vi.fn()}
         onSkip={vi.fn()}
-      />
+      />,
     )
 
     expect(screen.getByText('Chest Pain Workup')).toBeDefined()
@@ -252,7 +254,7 @@ describe('OrderSetSuggestion', () => {
         onApplyAll={onApplyAll}
         onCustomize={vi.fn()}
         onSkip={vi.fn()}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByTestId('orderset-apply-all'))
@@ -267,7 +269,7 @@ describe('OrderSetSuggestion', () => {
         onApplyAll={vi.fn()}
         onCustomize={onCustomize}
         onSkip={vi.fn()}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByTestId('orderset-customize'))
@@ -282,7 +284,7 @@ describe('OrderSetSuggestion', () => {
         onApplyAll={vi.fn()}
         onCustomize={vi.fn()}
         onSkip={onSkip}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByTestId('orderset-skip'))
@@ -290,7 +292,7 @@ describe('OrderSetSuggestion', () => {
   })
 })
 
-describe('WorkupCard - Save Set button', () => {
+describe('WorkupCard - Accept All & Continue button (B2)', () => {
   const defaultProps = {
     tests: mockTests,
     recommendedTestIds: ['troponin', 'ecg'],
@@ -300,43 +302,41 @@ describe('WorkupCard - Save Set button', () => {
     loading: false,
   }
 
-  it('does not show Save Set button when no tests selected', () => {
-    render(<WorkupCard {...defaultProps} onSaveOrderSet={vi.fn()} />)
-    expect(screen.queryByTestId('save-orderset-btn')).toBeNull()
+  it('does not show Accept All & Continue when onAcceptContinue is not provided', () => {
+    render(<WorkupCard {...defaultProps} />)
+    expect(screen.queryByText('Accept All & Continue')).toBeNull()
   })
 
-  it('shows Save Set button when tests are selected', () => {
+  it('shows Accept All & Continue button when onAcceptContinue is provided', () => {
     render(
       <WorkupCard
         {...defaultProps}
         selectedTests={['troponin', 'ecg']}
-        onSaveOrderSet={vi.fn()}
-      />
+        onAcceptContinue={vi.fn()}
+      />,
     )
-    expect(screen.getByTestId('save-orderset-btn')).toBeDefined()
+    expect(screen.getByText('Accept All & Continue')).toBeDefined()
   })
 
-  it('calls onSaveOrderSet when Save Set is clicked', () => {
-    const onSaveOrderSet = vi.fn()
+  it('calls onAcceptContinue when Accept All & Continue is clicked', () => {
+    const onAcceptContinue = vi.fn()
     render(
       <WorkupCard
         {...defaultProps}
         selectedTests={['troponin', 'ecg']}
-        onSaveOrderSet={onSaveOrderSet}
-      />
+        onAcceptContinue={onAcceptContinue}
+      />,
     )
 
-    fireEvent.click(screen.getByTestId('save-orderset-btn'))
-    expect(onSaveOrderSet).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByText('Accept All & Continue'))
+    expect(onAcceptContinue).toHaveBeenCalledOnce()
   })
 
-  it('does not show Save Set button without onSaveOrderSet prop', () => {
+  it('Save Set button removed from WorkupCard header (B2 — moved to DashboardOutput)', () => {
     render(
-      <WorkupCard
-        {...defaultProps}
-        selectedTests={['troponin', 'ecg']}
-      />
+      <WorkupCard {...defaultProps} selectedTests={['troponin', 'ecg']} onSaveOrderSet={vi.fn()} />,
     )
+    // Save Set button was removed from WorkupCard in B2 consolidation
     expect(screen.queryByTestId('save-orderset-btn')).toBeNull()
   })
 })

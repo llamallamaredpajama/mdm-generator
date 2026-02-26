@@ -25,6 +25,8 @@ interface WorkupCardProps {
   onSelectionChange: (testIds: string[]) => void
   onOpenOrderSelector: () => void
   onSaveOrderSet?: () => void
+  /** B2: Combined accept all + continue callback */
+  onAcceptContinue?: () => void
   loading: boolean
 }
 
@@ -35,7 +37,8 @@ export default function WorkupCard({
   selectedTests,
   onSelectionChange,
   onOpenOrderSelector,
-  onSaveOrderSet,
+  // onSaveOrderSet reserved for future Save Set button (B3)
+  onAcceptContinue,
   loading,
 }: WorkupCardProps) {
   const recommendedTests = useMemo(
@@ -95,6 +98,7 @@ export default function WorkupCard({
 
   return (
     <div className="workup-card">
+      {/* B2: Consolidated header — title + count left, Edit button right */}
       <div className="workup-card__header">
         <div className="workup-card__title-group">
           <h4 className="workup-card__title">Recommended Workup</h4>
@@ -102,32 +106,13 @@ export default function WorkupCard({
             <span className="workup-card__count-badge">{selectedTests.length} selected</span>
           )}
         </div>
-        <div className="workup-card__actions">
-          <button
-            type="button"
-            className="workup-card__action-btn workup-card__action-btn--accept"
-            onClick={handleAcceptAll}
-          >
-            Accept All
-          </button>
-          <button
-            type="button"
-            className="workup-card__action-btn workup-card__action-btn--edit"
-            onClick={onOpenOrderSelector}
-          >
-            Edit
-          </button>
-          {onSaveOrderSet && selectedTests.length > 0 && (
-            <button
-              type="button"
-              className="workup-card__action-btn workup-card__action-btn--save"
-              onClick={onSaveOrderSet}
-              data-testid="save-orderset-btn"
-            >
-              Save Set
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          className="workup-card__action-btn workup-card__action-btn--edit"
+          onClick={onOpenOrderSelector}
+        >
+          Edit
+        </button>
       </div>
 
       {!hasRecommendations ? (
@@ -190,6 +175,20 @@ export default function WorkupCard({
             </div>
           )}
         </>
+      )}
+
+      {/* B2: Combined Accept All / Continue button at bottom */}
+      {onAcceptContinue && (
+        <button
+          type="button"
+          className="workup-card__accept-continue-btn"
+          onClick={() => {
+            handleAcceptAll()
+            onAcceptContinue()
+          }}
+        >
+          Accept All & Continue
+        </button>
       )}
     </div>
   )

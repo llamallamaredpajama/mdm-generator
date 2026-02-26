@@ -330,7 +330,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
           }
 
           case 3:
-            response = await finalizeEncounter(encounterId, content, token)
+            response = await finalizeEncounter(encounterId, content, token, workingDiagnosis)
             // Backend already updates Firestore with section3 data and status: 'finalized'.
             // The onSnapshot listener will pick up changes automatically.
             // Client-side write is skipped to avoid race with Firestore rule

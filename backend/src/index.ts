@@ -195,7 +195,7 @@ function buildCdrContextString(cdrTracking: CdrTracking): string | undefined {
   const lines: string[] = []
 
   for (const [, entry] of entries) {
-    if (entry.dismissed) continue
+    if (entry.dismissed || entry.excluded) continue
 
     const components = Object.entries(entry.components)
     const answeredCount = components.filter(([, c]) => c.answered).length
@@ -1168,7 +1168,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    const { encounterId, content } = parsed.data
+    const { encounterId, content, workingDiagnosis: s3WorkingDiagnosis } = parsed.data
 
     // 3. Get encounter and verify ownership
     const encounterRef = getEncounterRef(uid, encounterId)
@@ -1232,10 +1232,11 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     const storedCdrCtx: string | undefined = buildCdrContextString(encounter.cdrTracking ?? {})
 
     // Build structured data from S2/S3 fields (BM-6.3: enriches finalize prompt)
+    // D1: Prefer workingDiagnosis from S3 request body, fall back to S2 Firestore data
     const structuredData: FinalizeStructuredData = {
       selectedTests: encounter.section2?.selectedTests,
       testResults: encounter.section2?.testResults,
-      workingDiagnosis: encounter.section2?.workingDiagnosis,
+      workingDiagnosis: s3WorkingDiagnosis ?? encounter.section3?.workingDiagnosis ?? encounter.section2?.workingDiagnosis,
       treatments: encounter.section3?.treatments,
       cdrSuggestedTreatments: encounter.section3?.cdrSuggestedTreatments,
       disposition: encounter.section3?.disposition,

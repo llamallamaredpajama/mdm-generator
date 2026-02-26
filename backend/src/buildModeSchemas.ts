@@ -72,6 +72,15 @@ export const FinalizeRequestSchema = z.object({
   encounterId: z.string().min(1),
   content: z.string().min(1).max(SECTION3_MAX_CHARS),
   userIdToken: z.string().min(10),
+  /** Working diagnosis moved to S3 (D1) — accepts both legacy string and structured object */
+  workingDiagnosis: z.union([
+    z.string(),
+    z.object({
+      selected: z.string().nullable(),
+      custom: z.string().nullable().optional(),
+      suggestedOptions: z.array(z.string()).optional(),
+    }),
+  ]).nullable().optional(),
 })
 
 export type FinalizeRequest = z.infer<typeof FinalizeRequestSchema>
@@ -250,6 +259,8 @@ export const CdrTrackingEntrySchema = z.object({
   identifiedInSection: z.number().int().min(1).max(3).optional(),
   completedInSection: z.number().int().min(1).max(3).nullable().optional(),
   dismissed: z.boolean(),
+  /** Lightweight exclude toggle — CDR stays visible but omitted from finalize prompt */
+  excluded: z.boolean().optional(),
   components: z.record(z.string(), CdrComponentStateSchema),
   score: z.number().nullable().optional(),
   interpretation: z.string().nullable().optional(),

@@ -72,7 +72,10 @@ const { mockUseCdrLibrary } = vi.hoisted(() => ({
           { id: 'history', label: 'History', type: 'select', source: 'section1' },
           { id: 'troponin', label: 'Troponin', type: 'select', source: 'section2' },
         ],
-        scoring: { method: 'sum', ranges: [{ min: 0, max: 3, risk: 'low', interpretation: 'Low risk' }] },
+        scoring: {
+          method: 'sum',
+          ranges: [{ min: 0, max: 3, risk: 'low', interpretation: 'Low risk' }],
+        },
       },
     ],
     loading: false,
@@ -129,7 +132,10 @@ describe('DashboardOutput', () => {
             { id: 'history', label: 'History', type: 'select', source: 'section1' },
             { id: 'troponin', label: 'Troponin', type: 'select', source: 'section2' },
           ],
-          scoring: { method: 'sum', ranges: [{ min: 0, max: 3, risk: 'low', interpretation: 'Low risk' }] },
+          scoring: {
+            method: 'sum',
+            ranges: [{ min: 0, max: 3, risk: 'low', interpretation: 'Low risk' }],
+          },
         },
       ],
       loading: false,
@@ -142,7 +148,7 @@ describe('DashboardOutput', () => {
       <DashboardOutput
         llmResponse={{ differential: mockDifferential, processedAt: {} }}
         trendAnalysis={null}
-      />
+      />,
     )
 
     expect(screen.getByText('Differential Diagnosis')).toBeDefined()
@@ -151,56 +157,33 @@ describe('DashboardOutput', () => {
   })
 
   it('renders dashboard with differential data (flat array shape)', () => {
-    render(
-      <DashboardOutput
-        llmResponse={mockDifferential}
-        trendAnalysis={null}
-      />
-    )
+    render(<DashboardOutput llmResponse={mockDifferential} trendAnalysis={null} />)
 
     expect(screen.getByText('Acute Coronary Syndrome')).toBeDefined()
   })
 
   it('returns null when no differential data', () => {
     const { container } = render(
-      <DashboardOutput
-        llmResponse={{ differential: [] }}
-        trendAnalysis={null}
-      />
+      <DashboardOutput llmResponse={{ differential: [] }} trendAnalysis={null} />,
     )
 
     expect(container.innerHTML).toBe('')
   })
 
   it('returns null when llmResponse is null', () => {
-    const { container } = render(
-      <DashboardOutput
-        llmResponse={null}
-        trendAnalysis={null}
-      />
-    )
+    const { container } = render(<DashboardOutput llmResponse={null} trendAnalysis={null} />)
 
     expect(container.innerHTML).toBe('')
   })
 
   it('returns null when llmResponse is undefined', () => {
-    const { container } = render(
-      <DashboardOutput
-        llmResponse={undefined}
-        trendAnalysis={null}
-      />
-    )
+    const { container } = render(<DashboardOutput llmResponse={undefined} trendAnalysis={null} />)
 
     expect(container.innerHTML).toBe('')
   })
 
   it('shows CdrCard with identified CDRs', () => {
-    render(
-      <DashboardOutput
-        llmResponse={mockDifferential}
-        trendAnalysis={null}
-      />
-    )
+    render(<DashboardOutput llmResponse={mockDifferential} trendAnalysis={null} />)
 
     // CdrCard renders with title and matched CDR
     expect(screen.getByText('Clinical Decision Rules')).toBeDefined()
@@ -213,12 +196,7 @@ describe('DashboardOutput', () => {
   it('shows CdrCard error state when CDR library fails to load', () => {
     mockUseCdrLibrary.mockReturnValue({ cdrs: [], loading: false, error: 'Server error' })
 
-    render(
-      <DashboardOutput
-        llmResponse={mockDifferential}
-        trendAnalysis={null}
-      />
-    )
+    render(<DashboardOutput llmResponse={mockDifferential} trendAnalysis={null} />)
 
     expect(screen.getByText('Unable to load CDR library')).toBeDefined()
     expect(screen.queryByText('No CDRs identified for this differential')).toBeNull()
@@ -227,12 +205,7 @@ describe('DashboardOutput', () => {
   it('shows CdrCard empty state when no CDRs match', () => {
     mockUseCdrLibrary.mockReturnValue({ cdrs: [], loading: false, error: null })
 
-    render(
-      <DashboardOutput
-        llmResponse={mockDifferential}
-        trendAnalysis={null}
-      />
-    )
+    render(<DashboardOutput llmResponse={mockDifferential} trendAnalysis={null} />)
 
     expect(screen.getByText('No CDRs identified for this differential')).toBeDefined()
   })
@@ -244,43 +217,39 @@ describe('DashboardOutput', () => {
         trendAnalysis={null}
         selectedTests={[]}
         onSelectedTestsChange={vi.fn()}
-      />
+      />,
     )
 
     expect(screen.getByText('Recommended Workup')).toBeDefined()
-    expect(screen.getByText('Accept All')).toBeDefined()
+    // B2: "Accept All" standalone header button replaced by "Accept All & Continue" at card bottom
+    expect(screen.getByText('Accept All & Continue')).toBeDefined()
   })
 
   it('shows Workup stub card when onSelectedTestsChange is not provided', () => {
-    render(
-      <DashboardOutput
-        llmResponse={mockDifferential}
-        trendAnalysis={null}
-      />
-    )
+    render(<DashboardOutput llmResponse={mockDifferential} trendAnalysis={null} />)
 
     expect(screen.getByText('Recommended Workup')).toBeDefined()
     // No Accept All button when using stub card
     expect(screen.queryByText('Accept All')).toBeNull()
   })
 
-  it('toggles to OrderSelector when Edit is clicked', () => {
+  it('opens OrderSelector as overlay when Edit is clicked (B1 fix)', () => {
     render(
       <DashboardOutput
         llmResponse={mockDifferential}
         trendAnalysis={null}
         selectedTests={[]}
         onSelectedTestsChange={vi.fn()}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByText('Edit'))
 
-    // OrderSelector should now be shown
+    // OrderSelector should be shown as overlay
     expect(screen.getByText('Order Selection')).toBeDefined()
-    expect(screen.getByText('← Back to Dashboard')).toBeDefined()
-    // Dashboard content should be hidden
-    expect(screen.queryByText('Differential Diagnosis')).toBeNull()
+    expect(screen.getByText('\u2190 Back to Dashboard')).toBeDefined()
+    // B1 fix: Dashboard content should STILL be visible (overlay, not replacement)
+    expect(screen.getByText('Differential Diagnosis')).toBeDefined()
   })
 
   it('returns to dashboard from OrderSelector when Back is clicked', () => {
@@ -290,7 +259,7 @@ describe('DashboardOutput', () => {
         trendAnalysis={null}
         selectedTests={[]}
         onSelectedTestsChange={vi.fn()}
-      />
+      />,
     )
 
     // Open order selector
@@ -303,79 +272,62 @@ describe('DashboardOutput', () => {
   })
 
   it('shows trends card when analysis data is present', () => {
-    render(
-      <DashboardOutput
-        llmResponse={mockDifferential}
-        trendAnalysis={mockTrendAnalysis}
-      />
-    )
+    render(<DashboardOutput llmResponse={mockDifferential} trendAnalysis={mockTrendAnalysis} />)
 
     expect(screen.getByText('Regional Trends')).toBeDefined()
     expect(screen.getByText('RSV')).toBeDefined()
   })
 
   it('hides trends card when no analysis data', () => {
-    render(
-      <DashboardOutput
-        llmResponse={mockDifferential}
-        trendAnalysis={null}
-      />
-    )
+    render(<DashboardOutput llmResponse={mockDifferential} trendAnalysis={null} />)
 
     expect(screen.queryByText('Regional Trends')).toBeNull()
   })
 
   it('shows loading state for trends', () => {
     render(
-      <DashboardOutput
-        llmResponse={mockDifferential}
-        trendAnalysis={null}
-        trendLoading={true}
-      />
+      <DashboardOutput llmResponse={mockDifferential} trendAnalysis={null} trendLoading={true} />,
     )
 
     expect(screen.getByText('Regional Trends')).toBeDefined()
     expect(screen.getByText('Analyzing regional surveillance data...')).toBeDefined()
   })
 
-  it('renders "Accept Workup & Continue" button', () => {
+  it('renders "Accept All & Continue" button in WorkupCard (B2)', () => {
     render(
       <DashboardOutput
         llmResponse={mockDifferential}
         trendAnalysis={null}
-      />
+        selectedTests={[]}
+        onSelectedTestsChange={vi.fn()}
+      />,
     )
 
-    const btn = screen.getByText('Accept Workup & Continue')
+    const btn = screen.getByText('Accept All & Continue')
     expect(btn).toBeDefined()
     expect(btn.tagName).toBe('BUTTON')
   })
 
-  it('scrolls to section-panel-2 on button click', () => {
-    const scrollIntoView = vi.fn()
-    const mockElement = { scrollIntoView }
-    const spy = vi.spyOn(document, 'getElementById').mockReturnValue(mockElement as unknown as HTMLElement)
+  it('calls onAcceptContinue when Accept All & Continue is clicked', () => {
+    const onAcceptContinue = vi.fn()
 
     render(
       <DashboardOutput
         llmResponse={mockDifferential}
         trendAnalysis={null}
-      />
+        selectedTests={[]}
+        onSelectedTestsChange={vi.fn()}
+        onAcceptContinue={onAcceptContinue}
+      />,
     )
 
-    fireEvent.click(screen.getByText('Accept Workup & Continue'))
-    expect(document.getElementById).toHaveBeenCalledWith('section-panel-2')
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' })
-
-    spy.mockRestore()
+    fireEvent.click(screen.getByText('Accept All & Continue'))
+    expect(onAcceptContinue).toHaveBeenCalledOnce()
   })
 
   it('applies desktop layout class', () => {
     const { container } = render(
-      <DashboardOutput
-        llmResponse={mockDifferential}
-        trendAnalysis={null}
-      />
+      <DashboardOutput llmResponse={mockDifferential} trendAnalysis={null} />,
     )
 
     const dashboard = container.firstElementChild as HTMLElement
@@ -386,10 +338,7 @@ describe('DashboardOutput', () => {
     mockIsMobile.mockReturnValue(true)
 
     const { container } = render(
-      <DashboardOutput
-        llmResponse={mockDifferential}
-        trendAnalysis={null}
-      />
+      <DashboardOutput llmResponse={mockDifferential} trendAnalysis={null} />,
     )
 
     const dashboard = container.firstElementChild as HTMLElement
@@ -405,7 +354,7 @@ describe('DashboardOutput', () => {
         trendAnalysis={null}
         selectedTests={[]}
         onSelectedTestsChange={onSelectedTestsChange}
-      />
+      />,
     )
 
     // Should auto-populate with recommended test IDs (troponin matches reasoning)
@@ -420,7 +369,7 @@ describe('DashboardOutput', () => {
         trendAnalysis={null}
         selectedTests={['troponin']}
         onSelectedTestsChange={onSelectedTestsChange}
-      />
+      />,
     )
 
     // Should NOT auto-populate since selections already exist

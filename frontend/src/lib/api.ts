@@ -19,7 +19,7 @@ export class ApiError extends Error {
     message: string,
     statusCode: number,
     errorType: 'network' | 'auth' | 'validation' | 'quota' | 'server' | 'unknown',
-    isRetryable: boolean = false
+    isRetryable: boolean = false,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -37,28 +37,28 @@ export class ApiError extends Error {
           `${prefix}Your session has expired. Please sign in again.`,
           401,
           'auth',
-          false
+          false,
         )
       case 403:
         return new ApiError(
           `${prefix}You don't have permission to perform this action.`,
           403,
           'auth',
-          false
+          false,
         )
       case 400:
         return new ApiError(
           `${prefix}Invalid request. Please check your input and try again.`,
           400,
           'validation',
-          false
+          false,
         )
       case 429:
         return new ApiError(
           `${prefix}You've reached your usage limit. Please upgrade your plan or wait until your quota resets.`,
           429,
           'quota',
-          false
+          false,
         )
       case 500:
       case 502:
@@ -67,21 +67,21 @@ export class ApiError extends Error {
           `${prefix}The server is temporarily unavailable. Please try again in a moment.`,
           res.status,
           'server',
-          true
+          true,
         )
       case 504:
         return new ApiError(
           `${prefix}The request timed out. Please try again.`,
           504,
           'server',
-          true
+          true,
         )
       default:
         return new ApiError(
           `${prefix}An unexpected error occurred. Please try again.`,
           res.status,
           'unknown',
-          res.status >= 500
+          res.status >= 500,
         )
     }
   }
@@ -92,7 +92,7 @@ export class ApiError extends Error {
       `${prefix}Unable to connect. Please check your internet connection and try again.`,
       0,
       'network',
-      true
+      true,
     )
   }
 }
@@ -104,7 +104,7 @@ async function apiFetch<T>(
   url: string,
   options: RequestInit,
   context?: string,
-  timeoutMs: number = 30_000
+  timeoutMs: number = 30_000,
 ): Promise<T> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
@@ -138,7 +138,7 @@ async function apiFetch<T>(
         `${context ? `${context}: ` : ''}Request timed out. Please try again.`,
         0,
         'network',
-        true
+        true,
       )
     }
     if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -190,7 +190,7 @@ export async function whoAmI(userIdToken: string): Promise<{
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userIdToken }),
     },
-    'Authentication check'
+    'Authentication check',
   )
 }
 
@@ -204,7 +204,7 @@ export async function generateMDM(body: GenerateRequest): Promise<GenerateRespon
       body: JSON.stringify(body),
     },
     'MDM generation',
-    60_000
+    60_000,
   )
 }
 
@@ -248,7 +248,7 @@ export interface ParseNarrativeResponse {
 
 export async function parseNarrative(
   narrative: string,
-  userIdToken: string
+  userIdToken: string,
 ): Promise<ParseNarrativeResponse> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -259,7 +259,7 @@ export async function parseNarrative(
       body: JSON.stringify({ narrative, userIdToken }),
     },
     'Narrative parsing',
-    60_000
+    60_000,
   )
 }
 
@@ -310,7 +310,7 @@ export async function processSection1(
   encounterId: string,
   content: string,
   userIdToken: string,
-  location?: { zipCode?: string; state?: string }
+  location?: { zipCode?: string; state?: string },
 ): Promise<Section1Response> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -321,7 +321,7 @@ export async function processSection1(
       body: JSON.stringify({ encounterId, content, userIdToken, ...(location && { location }) }),
     },
     'Section 1 processing',
-    60_000
+    60_000,
   )
 }
 
@@ -345,7 +345,7 @@ export async function processSection2(
   content: string,
   userIdToken: string,
   workingDiagnosis?: string,
-  structuredData?: Section2StructuredPayload
+  structuredData?: Section2StructuredPayload,
 ): Promise<Section2Response> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -360,11 +360,13 @@ export async function processSection2(
         workingDiagnosis,
         ...(structuredData?.selectedTests && { selectedTests: structuredData.selectedTests }),
         ...(structuredData?.testResults && { testResults: structuredData.testResults }),
-        ...(structuredData?.structuredDiagnosis !== undefined && { structuredDiagnosis: structuredData.structuredDiagnosis }),
+        ...(structuredData?.structuredDiagnosis !== undefined && {
+          structuredDiagnosis: structuredData.structuredDiagnosis,
+        }),
       }),
     },
     'Section 2 processing',
-    60_000
+    60_000,
   )
 }
 
@@ -374,7 +376,8 @@ export async function processSection2(
 export async function finalizeEncounter(
   encounterId: string,
   content: string,
-  userIdToken: string
+  userIdToken: string,
+  workingDiagnosis?: string,
 ): Promise<FinalizeResponse> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -382,10 +385,15 @@ export async function finalizeEncounter(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, content, userIdToken }),
+      body: JSON.stringify({
+        encounterId,
+        content,
+        userIdToken,
+        ...(workingDiagnosis && { workingDiagnosis }),
+      }),
     },
     'Encounter finalization',
-    120_000
+    120_000,
   )
 }
 
@@ -416,7 +424,7 @@ export async function generateQuickMode(
   encounterId: string,
   narrative: string,
   userIdToken: string,
-  location?: { zipCode?: string; state?: string }
+  location?: { zipCode?: string; state?: string },
 ): Promise<QuickModeResponse> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -427,7 +435,7 @@ export async function generateQuickMode(
       body: JSON.stringify({ encounterId, narrative, userIdToken, ...(location && { location }) }),
     },
     'Quick mode MDM generation',
-    60_000
+    60_000,
   )
 }
 
@@ -437,7 +445,9 @@ export async function generateQuickMode(
 
 // ── Order Sets ─────────────────────────────────────────────────────────
 
-export async function getOrderSets(userIdToken: string): Promise<{ ok: boolean; items: OrderSet[] }> {
+export async function getOrderSets(
+  userIdToken: string,
+): Promise<{ ok: boolean; items: OrderSet[] }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
     `${apiBaseUrl}/v1/user/order-sets`,
@@ -445,16 +455,16 @@ export async function getOrderSets(userIdToken: string): Promise<{ ok: boolean; 
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Fetching order sets'
+    'Fetching order sets',
   )
 }
 
 export async function createOrderSet(
   userIdToken: string,
-  data: { name: string; tests: string[]; tags?: string[] }
+  data: { name: string; tests: string[]; tags?: string[] },
 ): Promise<{ ok: boolean; item: OrderSet }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -463,18 +473,18 @@ export async function createOrderSet(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
       body: JSON.stringify(data),
     },
-    'Creating order set'
+    'Creating order set',
   )
 }
 
 export async function updateOrderSet(
   userIdToken: string,
   id: string,
-  data: { name: string; tests: string[]; tags?: string[] }
+  data: { name: string; tests: string[]; tags?: string[] },
 ): Promise<{ ok: boolean; item: OrderSet }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -483,17 +493,17 @@ export async function updateOrderSet(
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
       body: JSON.stringify(data),
     },
-    'Updating order set'
+    'Updating order set',
   )
 }
 
 export async function deleteOrderSet(
   userIdToken: string,
-  id: string
+  id: string,
 ): Promise<{ ok: boolean; id: string }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -502,16 +512,16 @@ export async function deleteOrderSet(
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Deleting order set'
+    'Deleting order set',
   )
 }
 
 export async function useOrderSet(
   userIdToken: string,
-  id: string
+  id: string,
 ): Promise<{ ok: boolean; usageCount: number }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -520,16 +530,18 @@ export async function useOrderSet(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Recording order set usage'
+    'Recording order set usage',
   )
 }
 
 // ── Disposition Flows ──────────────────────────────────────────────────
 
-export async function getDispoFlows(userIdToken: string): Promise<{ ok: boolean; items: DispositionFlow[] }> {
+export async function getDispoFlows(
+  userIdToken: string,
+): Promise<{ ok: boolean; items: DispositionFlow[] }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
     `${apiBaseUrl}/v1/user/dispo-flows`,
@@ -537,16 +549,16 @@ export async function getDispoFlows(userIdToken: string): Promise<{ ok: boolean;
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Fetching disposition flows'
+    'Fetching disposition flows',
   )
 }
 
 export async function createDispoFlow(
   userIdToken: string,
-  data: { name: string; disposition: string; followUp?: string[] }
+  data: { name: string; disposition: string; followUp?: string[] },
 ): Promise<{ ok: boolean; item: DispositionFlow }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -555,18 +567,18 @@ export async function createDispoFlow(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
       body: JSON.stringify(data),
     },
-    'Creating disposition flow'
+    'Creating disposition flow',
   )
 }
 
 export async function updateDispoFlow(
   userIdToken: string,
   id: string,
-  data: { name: string; disposition: string; followUp?: string[] }
+  data: { name: string; disposition: string; followUp?: string[] },
 ): Promise<{ ok: boolean; item: DispositionFlow }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -575,17 +587,17 @@ export async function updateDispoFlow(
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
       body: JSON.stringify(data),
     },
-    'Updating disposition flow'
+    'Updating disposition flow',
   )
 }
 
 export async function deleteDispoFlow(
   userIdToken: string,
-  id: string
+  id: string,
 ): Promise<{ ok: boolean; id: string }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -594,16 +606,16 @@ export async function deleteDispoFlow(
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Deleting disposition flow'
+    'Deleting disposition flow',
   )
 }
 
 export async function useDispoFlow(
   userIdToken: string,
-  id: string
+  id: string,
 ): Promise<{ ok: boolean; usageCount: number }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -612,16 +624,18 @@ export async function useDispoFlow(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Recording disposition flow usage'
+    'Recording disposition flow usage',
   )
 }
 
 // ── Report Templates ───────────────────────────────────────────────────
 
-export async function getReportTemplates(userIdToken: string): Promise<{ ok: boolean; items: ReportTemplate[] }> {
+export async function getReportTemplates(
+  userIdToken: string,
+): Promise<{ ok: boolean; items: ReportTemplate[] }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
     `${apiBaseUrl}/v1/user/report-templates`,
@@ -629,16 +643,16 @@ export async function getReportTemplates(userIdToken: string): Promise<{ ok: boo
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Fetching report templates'
+    'Fetching report templates',
   )
 }
 
 export async function createReportTemplate(
   userIdToken: string,
-  data: { testId: string; name: string; text: string; defaultStatus: 'unremarkable' | 'abnormal' }
+  data: { testId: string; name: string; text: string; defaultStatus: 'unremarkable' | 'abnormal' },
 ): Promise<{ ok: boolean; item: ReportTemplate }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -647,18 +661,18 @@ export async function createReportTemplate(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
       body: JSON.stringify(data),
     },
-    'Creating report template'
+    'Creating report template',
   )
 }
 
 export async function updateReportTemplate(
   userIdToken: string,
   id: string,
-  data: { testId: string; name: string; text: string; defaultStatus: 'unremarkable' | 'abnormal' }
+  data: { testId: string; name: string; text: string; defaultStatus: 'unremarkable' | 'abnormal' },
 ): Promise<{ ok: boolean; item: ReportTemplate }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -667,17 +681,17 @@ export async function updateReportTemplate(
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
       body: JSON.stringify(data),
     },
-    'Updating report template'
+    'Updating report template',
   )
 }
 
 export async function deleteReportTemplate(
   userIdToken: string,
-  id: string
+  id: string,
 ): Promise<{ ok: boolean; id: string }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -686,16 +700,16 @@ export async function deleteReportTemplate(
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Deleting report template'
+    'Deleting report template',
   )
 }
 
 export async function useReportTemplate(
   userIdToken: string,
-  id: string
+  id: string,
 ): Promise<{ ok: boolean; usageCount: number }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -704,16 +718,18 @@ export async function useReportTemplate(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Recording report template usage'
+    'Recording report template usage',
   )
 }
 
 // ── Customizable Options ───────────────────────────────────────────────
 
-export async function getCustomizableOptions(userIdToken: string): Promise<{ ok: boolean; options: CustomizableOptions }> {
+export async function getCustomizableOptions(
+  userIdToken: string,
+): Promise<{ ok: boolean; options: CustomizableOptions }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
     `${apiBaseUrl}/v1/user/options`,
@@ -721,16 +737,16 @@ export async function getCustomizableOptions(userIdToken: string): Promise<{ ok:
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Fetching customizable options'
+    'Fetching customizable options',
   )
 }
 
 export async function updateCustomizableOptions(
   userIdToken: string,
-  data: CustomizableOptions
+  data: CustomizableOptions,
 ): Promise<{ ok: boolean; options: CustomizableOptions }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -739,11 +755,11 @@ export async function updateCustomizableOptions(
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
       body: JSON.stringify(data),
     },
-    'Updating customizable options'
+    'Updating customizable options',
   )
 }
 
@@ -755,7 +771,7 @@ export async function updateCustomizableOptions(
  * Fetch the master test library (test definitions and categories)
  */
 export async function fetchTestLibrary(
-  userIdToken: string
+  userIdToken: string,
 ): Promise<import('../types/libraries').TestLibraryResponse> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -764,10 +780,10 @@ export async function fetchTestLibrary(
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Fetching test library'
+    'Fetching test library',
   )
 }
 
@@ -779,7 +795,7 @@ export async function fetchTestLibrary(
  * Fetch the CDR library (clinical decision rule definitions)
  */
 export async function fetchCdrLibrary(
-  userIdToken: string
+  userIdToken: string,
 ): Promise<import('../types/libraries').CdrLibraryResponse> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -788,10 +804,10 @@ export async function fetchCdrLibrary(
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userIdToken}`,
+        Authorization: `Bearer ${userIdToken}`,
       },
     },
-    'Fetching CDR library'
+    'Fetching CDR library',
   )
 }
 
@@ -801,7 +817,7 @@ export async function fetchCdrLibrary(
  */
 export async function suggestDiagnosis(
   encounterId: string,
-  userIdToken: string
+  userIdToken: string,
 ): Promise<{ ok: true; suggestions: string[] }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -812,7 +828,7 @@ export async function suggestDiagnosis(
       body: JSON.stringify({ encounterId, userIdToken }),
     },
     'Diagnosis suggestion',
-    15_000
+    15_000,
   )
 }
 
@@ -837,7 +853,7 @@ export async function parseResults(
   encounterId: string,
   pastedText: string,
   orderedTestIds: string[],
-  userIdToken: string
+  userIdToken: string,
 ): Promise<{ ok: true; parsed: ParsedResultItem[]; unmatchedText?: string[] }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -848,7 +864,7 @@ export async function parseResults(
       body: JSON.stringify({ encounterId, pastedText, orderedTestIds, userIdToken }),
     },
     'Lab results parsing',
-    20_000
+    20_000,
   )
 }
 
@@ -858,8 +874,12 @@ export async function parseResults(
  */
 export async function matchCdrs(
   encounterId: string,
-  userIdToken: string
-): Promise<{ ok: true; cdrTracking: import('../types/encounter').CdrTracking; matchedCount: number }> {
+  userIdToken: string,
+): Promise<{
+  ok: true
+  cdrTracking: import('../types/encounter').CdrTracking
+  matchedCount: number
+}> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
     `${apiBaseUrl}/v1/build-mode/match-cdrs`,
@@ -869,7 +889,7 @@ export async function matchCdrs(
       body: JSON.stringify({ encounterId, userIdToken }),
     },
     'CDR matching',
-    60_000
+    60_000,
   )
 }
 
@@ -882,7 +902,7 @@ export async function analyzeSurveillance(
   differential: string[],
   location: { zipCode?: string; state?: string },
   userIdToken: string,
-  encounterId?: string
+  encounterId?: string,
 ): Promise<{
   ok: boolean
   analysis: import('../types/surveillance').TrendAnalysisResult | null
@@ -897,13 +917,13 @@ export async function analyzeSurveillance(
       body: JSON.stringify({ chiefComplaint, differential, location, userIdToken, encounterId }),
     },
     'Surveillance analysis',
-    30_000
+    30_000,
   )
 }
 
 export async function downloadSurveillanceReport(
   analysisId: string,
-  userIdToken: string
+  userIdToken: string,
 ): Promise<Blob> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   const controller = new AbortController()

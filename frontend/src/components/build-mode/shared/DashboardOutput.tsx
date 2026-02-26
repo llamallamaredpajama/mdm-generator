@@ -48,6 +48,10 @@ interface DashboardOutputProps {
   onSelectedTestsChange?: (testIds: string[]) => void
   /** Encounter document (required for CDR detail view) */
   encounter?: EncounterDocument | null
+  /** B2/D3: Callback when user accepts workup and continues to S2 */
+  onAcceptContinue?: () => void
+  /** C2: Callback to open trend report modal */
+  onOpenTrendReport?: () => void
 }
 
 /**
@@ -106,6 +110,8 @@ export default function DashboardOutput({
   selectedTests = [],
   onSelectedTestsChange,
   encounter,
+  onAcceptContinue,
+  onOpenTrendReport,
 }: DashboardOutputProps) {
   const isMobile = useIsMobile()
   const differential = getDifferential(llmResponse)
@@ -180,18 +186,6 @@ export default function DashboardOutput({
     onSelectedTestsChange?.(testIds)
   }
 
-  if (showOrderSelector) {
-    return (
-      <OrderSelector
-        tests={tests}
-        selectedTests={selectedTests}
-        recommendedTestIds={recommendedTestIds}
-        onSelectionChange={handleSelectionChange}
-        onBack={() => setShowOrderSelector(false)}
-      />
-    )
-  }
-
   if (showCdrDetail && encounter) {
     return (
       <CdrDetailView
@@ -202,26 +196,38 @@ export default function DashboardOutput({
     )
   }
 
-  // Determine if "View CDRs" should be enabled (need encounter with cdrTracking)
-  const hasCdrTracking = encounter && Object.keys(encounter.cdrTracking ?? {}).length > 0
-  const handleViewCdrs = hasCdrTracking ? () => setShowCdrDetail(true) : undefined
+  // Determine if "View CDRs" should be enabled
+  // A1 fix: enable based on identifiedCdrs or cdrAnalysis presence, not just cdrTracking
+  const hasCdrData =
+    identifiedCdrs.length > 0 ||
+    cdrAnalysis.length > 0 ||
+    (encounter && Object.keys(encounter.cdrTracking ?? {}).length > 0)
+  const handleViewCdrs = hasCdrData && encounter ? () => setShowCdrDetail(true) : undefined
 
   return (
     <div
       className={`dashboard-output ${isMobile ? 'dashboard-output--mobile' : 'dashboard-output--desktop'}`}
     >
-      {/* Top row: Differential + CDR side-by-side on desktop, stacked on mobile */}
+      {/* Top row: Differential left, CDR + Trends stacked right (C1) */}
       <div className="dashboard-output__top-row">
         <div className="dashboard-output__differential">
           <DifferentialList differential={differential} />
         </div>
-        <CdrCard
-          identifiedCdrs={identifiedCdrs}
-          cdrAnalysis={cdrAnalysis}
-          loading={cdrsLoading}
-          error={cdrsError}
-          onViewCdrs={handleViewCdrs}
-        />
+        <div className="dashboard-output__right-col">
+          <CdrCard
+            identifiedCdrs={identifiedCdrs}
+            cdrAnalysis={cdrAnalysis}
+            loading={cdrsLoading}
+            error={cdrsError}
+            onViewCdrs={handleViewCdrs}
+          />
+          {/* C1: Trends positioned next to CDR card (right column) */}
+          <RegionalTrendsCard
+            analysis={trendAnalysis}
+            isLoading={trendLoading}
+            onOpenReport={onOpenTrendReport}
+          />
+        </div>
       </div>
 
       {/* Order Set Suggestion */}
@@ -245,6 +251,7 @@ export default function DashboardOutput({
             onSelectionChange={handleSelectionChange}
             onOpenOrderSelector={() => setShowOrderSelector(true)}
             onSaveOrderSet={selectedTests.length > 0 ? () => setShowSaveOrderSet(true) : undefined}
+            onAcceptContinue={onAcceptContinue ?? handleScrollToSection2}
             loading={testsLoading}
           />
         ) : (
@@ -265,17 +272,24 @@ export default function DashboardOutput({
         />
       )}
 
-      {/* Trends: full-width, conditionally shown */}
-      <RegionalTrendsCard analysis={trendAnalysis} isLoading={trendLoading} />
-
-      {/* Action */}
-      <button
-        className="dashboard-output__continue-btn"
-        onClick={handleScrollToSection2}
-        type="button"
-      >
-        Accept Workup & Continue
-      </button>
+      {/* B1 fix: OrderSelector rendered as overlay instead of replacing dashboard */}
+      {showOrderSelector && (
+        <div className="dashboard-output__overlay" role="dialog" aria-label="Order Selection">
+          <div className="dashboard-output__overlay-content">
+            <OrderSelector
+              tests={tests}
+              selectedTests={selectedTests}
+              recommendedTestIds={recommendedTestIds}
+              onSelectionChange={handleSelectionChange}
+              onBack={() => setShowOrderSelector(false)}
+              onAcceptContinue={() => {
+                setShowOrderSelector(false)
+                handleScrollToSection2()
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

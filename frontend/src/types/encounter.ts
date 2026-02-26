@@ -228,6 +228,8 @@ export interface CdrTrackingEntry {
   identifiedInSection?: SectionNumber
   completedInSection?: SectionNumber | null
   dismissed: boolean
+  /** A4: Lightweight exclude toggle — CDR stays visible but omitted from finalize prompt */
+  excluded?: boolean
   components: Record<string, CdrComponentState>
   score?: number | null
   interpretation?: string | null
@@ -327,6 +329,8 @@ export interface Section3Data {
   submissionCount: number
   /** Whether this section is locked (true after 2nd submission) */
   isLocked: boolean
+  /** D1: Working diagnosis moved from S2 to S3 */
+  workingDiagnosis?: string | WorkingDiagnosis
   /** Free-text treatments description */
   treatments?: string
   /** CDR-suggested treatment IDs */
@@ -473,8 +477,8 @@ export const SECTION_CHAR_LIMITS: Record<SectionNumber, number> = {
 /** Section titles for display */
 export const SECTION_TITLES: Record<SectionNumber, string> = {
   1: 'Initial Evaluation',
-  2: 'Workup & Results',
-  3: 'Treatment & Disposition',
+  2: 'Results and Data Review',
+  3: 'Working Diagnosis, Treatment & Disposition',
 }
 
 // ============================================================================

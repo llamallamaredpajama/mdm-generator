@@ -70,15 +70,21 @@ describe('WorkupCard', () => {
     expect((ecgCheckbox as HTMLInputElement).checked).toBe(true)
   })
 
-  it('"Accept All" checks all recommended tests', () => {
+  it('"Accept All & Continue" checks all recommended tests and calls onAcceptContinue (B2)', () => {
     const onSelectionChange = vi.fn()
-    render(<WorkupCard {...defaultProps} onSelectionChange={onSelectionChange} />)
-
-    fireEvent.click(screen.getByText('Accept All'))
-
-    expect(onSelectionChange).toHaveBeenCalledWith(
-      expect.arrayContaining(['troponin', 'ecg'])
+    const onAcceptContinue = vi.fn()
+    render(
+      <WorkupCard
+        {...defaultProps}
+        onSelectionChange={onSelectionChange}
+        onAcceptContinue={onAcceptContinue}
+      />,
     )
+
+    fireEvent.click(screen.getByText('Accept All & Continue'))
+
+    expect(onSelectionChange).toHaveBeenCalledWith(expect.arrayContaining(['troponin', 'ecg']))
+    expect(onAcceptContinue).toHaveBeenCalledOnce()
   })
 
   it('individual checkbox toggle updates selection', () => {
@@ -88,7 +94,7 @@ describe('WorkupCard', () => {
         {...defaultProps}
         selectedTests={['troponin']}
         onSelectionChange={onSelectionChange}
-      />
+      />,
     )
 
     // Uncheck troponin
