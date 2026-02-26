@@ -12,7 +12,12 @@
  */
 
 import { useState, useMemo, useEffect, useRef } from 'react'
-import type { DifferentialItem, EncounterDocument } from '../../../types/encounter'
+import type {
+  DifferentialItem,
+  CdrAnalysisItem,
+  WorkupRecommendation,
+  EncounterDocument,
+} from '../../../types/encounter'
 import type { TrendAnalysisResult } from '../../../types/surveillance'
 import DifferentialList from './DifferentialList'
 import WorkupCard from './WorkupCard'
@@ -58,6 +63,29 @@ function getDifferential(llmResponse: unknown): DifferentialItem[] {
   return []
 }
 
+/**
+ * Extract CDR analysis from S1 llmResponse (optional, new field).
+ */
+function getCdrAnalysis(llmResponse: unknown): CdrAnalysisItem[] {
+  if (llmResponse && typeof llmResponse === 'object' && 'cdrAnalysis' in llmResponse) {
+    const wrapped = llmResponse as { cdrAnalysis?: unknown }
+    if (Array.isArray(wrapped.cdrAnalysis)) return wrapped.cdrAnalysis as CdrAnalysisItem[]
+  }
+  return []
+}
+
+/**
+ * Extract workup recommendations from S1 llmResponse (optional, new field).
+ */
+function getWorkupRecommendations(llmResponse: unknown): WorkupRecommendation[] {
+  if (llmResponse && typeof llmResponse === 'object' && 'workupRecommendations' in llmResponse) {
+    const wrapped = llmResponse as { workupRecommendations?: unknown }
+    if (Array.isArray(wrapped.workupRecommendations))
+      return wrapped.workupRecommendations as WorkupRecommendation[]
+  }
+  return []
+}
+
 function StubCard({ title, description }: { title: string; description: string }) {
   return (
     <div className="dashboard-output__stub-card">
@@ -81,6 +109,8 @@ export default function DashboardOutput({
 }: DashboardOutputProps) {
   const isMobile = useIsMobile()
   const differential = getDifferential(llmResponse)
+  const cdrAnalysis = getCdrAnalysis(llmResponse)
+  const workupRecommendations = getWorkupRecommendations(llmResponse)
   const [showOrderSelector, setShowOrderSelector] = useState(false)
   const [showCdrDetail, setShowCdrDetail] = useState(false)
   const [showSaveOrderSet, setShowSaveOrderSet] = useState(false)
@@ -91,13 +121,10 @@ export default function DashboardOutput({
 
   const recommendedTestIds = useMemo(
     () => getRecommendedTestIds(differential, tests),
-    [differential, tests]
+    [differential, tests],
   )
 
-  const identifiedCdrs = useMemo(
-    () => getIdentifiedCdrs(differential, cdrs),
-    [differential, cdrs]
-  )
+  const identifiedCdrs = useMemo(() => getIdentifiedCdrs(differential, cdrs), [differential, cdrs])
 
   // Auto-populate recommended tests as pre-checked on fresh encounters (AC#1)
   const autoPopulatedRef = useRef(false)
@@ -116,12 +143,12 @@ export default function DashboardOutput({
   // Build a text summary of the differential for order set matching
   const differentialText = useMemo(
     () => differential.map((d) => `${d.diagnosis} ${d.reasoning || ''}`).join(' '),
-    [differential]
+    [differential],
   )
 
   const suggestedOrderSet = useMemo(
     () => (suggestionDismissed ? null : suggestOrderSet(differentialText)),
-    [suggestOrderSet, differentialText, suggestionDismissed]
+    [suggestOrderSet, differentialText, suggestionDismissed],
   )
 
   const handleApplyOrderSet = (orderSet: OrderSet) => {
@@ -180,13 +207,21 @@ export default function DashboardOutput({
   const handleViewCdrs = hasCdrTracking ? () => setShowCdrDetail(true) : undefined
 
   return (
-    <div className={`dashboard-output ${isMobile ? 'dashboard-output--mobile' : 'dashboard-output--desktop'}`}>
+    <div
+      className={`dashboard-output ${isMobile ? 'dashboard-output--mobile' : 'dashboard-output--desktop'}`}
+    >
       {/* Top row: Differential + CDR side-by-side on desktop, stacked on mobile */}
       <div className="dashboard-output__top-row">
         <div className="dashboard-output__differential">
           <DifferentialList differential={differential} />
         </div>
-        <CdrCard identifiedCdrs={identifiedCdrs} loading={cdrsLoading} error={cdrsError} onViewCdrs={handleViewCdrs} />
+        <CdrCard
+          identifiedCdrs={identifiedCdrs}
+          cdrAnalysis={cdrAnalysis}
+          loading={cdrsLoading}
+          error={cdrsError}
+          onViewCdrs={handleViewCdrs}
+        />
       </div>
 
       {/* Order Set Suggestion */}
@@ -205,6 +240,7 @@ export default function DashboardOutput({
           <WorkupCard
             tests={tests}
             recommendedTestIds={recommendedTestIds}
+            workupRecommendations={workupRecommendations}
             selectedTests={selectedTests}
             onSelectionChange={handleSelectionChange}
             onOpenOrderSelector={() => setShowOrderSelector(true)}

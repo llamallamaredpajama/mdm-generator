@@ -68,9 +68,31 @@
   background-color: #d97706;
 }
 
+.cdr-card__dot--completed {
+  background-color: #2563eb;
+}
+
+.cdr-card__row-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
 .cdr-card__name {
   color: var(--color-text, #1e293b);
   font-weight: 500;
+}
+
+.cdr-card__score {
+  font-size: 0.8rem;
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.cdr-card__missing {
+  font-size: 0.8rem;
+  color: #d97706;
 }
 
 .cdr-card__readiness {

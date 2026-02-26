@@ -77,12 +77,7 @@ export interface QuickModeData {
 export type SectionStatus = 'pending' | 'in_progress' | 'completed'
 
 /** Overall status of an encounter document */
-export type EncounterStatus =
-  | 'draft'
-  | 'section1_done'
-  | 'section2_done'
-  | 'finalized'
-  | 'archived'
+export type EncounterStatus = 'draft' | 'section1_done' | 'section2_done' | 'finalized' | 'archived'
 
 /** Urgency classification for differential diagnosis items */
 export type UrgencyLevel = 'emergent' | 'urgent' | 'routine'
@@ -106,6 +101,44 @@ export interface DifferentialItem {
   regionalContext?: string
   /** Clinical decision rule context (e.g., "HEART score applicable") */
   cdrContext?: string
+}
+
+/**
+ * CDR Analysis Item from Section 1 LLM output.
+ * Describes an applicable Clinical Decision Rule and its current state.
+ */
+export interface CdrAnalysisItem {
+  /** CDR name (e.g., "HEART Score", "Wells PE Criteria") */
+  name: string
+  /** Whether this CDR is applicable to the presentation */
+  applicable: boolean
+  /** Partial or complete score (null if insufficient data) */
+  score?: number | null
+  /** Score interpretation (e.g., "Low risk: 1.7% MACE at 30 days") */
+  interpretation?: string | null
+  /** Specific data points still needed to complete the calculation */
+  missingData?: string[]
+  /** Data points that were available and used */
+  availableData?: string[]
+  /** Brief clinical reasoning for applicability */
+  reasoning?: string
+}
+
+/**
+ * Workup Recommendation from Section 1 LLM output.
+ * Recommends a lab, imaging study, or procedure for this presentation.
+ */
+export type WorkupRecommendationSource = 'baseline' | 'differential' | 'cdr' | 'surveillance'
+
+export interface WorkupRecommendation {
+  /** Test or study name (e.g., "Troponin", "CT Head", "CBC") */
+  testName: string
+  /** Clinical reason for ordering */
+  reason: string
+  /** Source of recommendation */
+  source: WorkupRecommendationSource
+  /** Priority: stat or routine */
+  priority?: 'stat' | 'routine'
 }
 
 /**
@@ -170,7 +203,7 @@ export interface WorkingDiagnosis {
 
 /** Type guard: distinguishes structured WorkingDiagnosis from legacy plain string */
 export const isStructuredDiagnosis = (
-  wd: string | WorkingDiagnosis | undefined | null
+  wd: string | WorkingDiagnosis | undefined | null,
 ): wd is WorkingDiagnosis => {
   return wd !== null && wd !== undefined && typeof wd === 'object'
 }
@@ -204,7 +237,15 @@ export interface CdrTrackingEntry {
 export type CdrTracking = Record<string, CdrTrackingEntry>
 
 /** Disposition option for patient */
-export type DispositionOption = 'discharge' | 'observation' | 'admit' | 'icu' | 'transfer' | 'ama' | 'lwbs' | 'deceased'
+export type DispositionOption =
+  | 'discharge'
+  | 'observation'
+  | 'admit'
+  | 'icu'
+  | 'transfer'
+  | 'ama'
+  | 'lwbs'
+  | 'deceased'
 
 // ============================================================================
 // Section Data Interfaces
@@ -228,6 +269,10 @@ export interface Section1Data {
   llmResponse?: {
     /** Generated differential diagnosis items */
     differential: DifferentialItem[]
+    /** CDR analysis results (optional — added in CDR integration) */
+    cdrAnalysis?: CdrAnalysisItem[]
+    /** Workup recommendations (optional — added in CDR integration) */
+    workupRecommendations?: WorkupRecommendation[]
     /** When the LLM processed this section */
     processedAt: Timestamp
   }
@@ -373,6 +418,10 @@ export interface EncounterDocument {
 export interface Section1Response {
   /** Generated differential diagnosis */
   differential: DifferentialItem[]
+  /** CDR analysis results (optional — may be absent on older encounters) */
+  cdrAnalysis?: CdrAnalysisItem[]
+  /** Workup recommendations (optional — may be absent on older encounters) */
+  workupRecommendations?: WorkupRecommendation[]
   /** Updated submission count for this section */
   submissionCount: number
   /** Whether the section is now locked */
@@ -446,7 +495,7 @@ export const createDefaultSectionData = (): Omit<Section1Data, 'llmResponse'> =>
  * Helper to check if a section can be submitted
  */
 export const canSubmitSection = (
-  sectionData: Section1Data | Section2Data | Section3Data
+  sectionData: Section1Data | Section2Data | Section3Data,
 ): boolean => {
   return !sectionData.isLocked && sectionData.submissionCount < MAX_SUBMISSIONS_PER_SECTION
 }
@@ -455,7 +504,7 @@ export const canSubmitSection = (
  * Helper to get remaining submissions for a section
  */
 export const getRemainingSubmissions = (
-  sectionData: Section1Data | Section2Data | Section3Data
+  sectionData: Section1Data | Section2Data | Section3Data,
 ): number => {
   return Math.max(0, MAX_SUBMISSIONS_PER_SECTION - sectionData.submissionCount)
 }
@@ -478,7 +527,8 @@ export const formatPatientIdentifier = (identifier?: PatientIdentifier): string 
   // Add chief complaint
   if (identifier.chiefComplaint) {
     // Capitalize first letter and keep it brief
-    const cc = identifier.chiefComplaint.charAt(0).toUpperCase() + identifier.chiefComplaint.slice(1)
+    const cc =
+      identifier.chiefComplaint.charAt(0).toUpperCase() + identifier.chiefComplaint.slice(1)
     // Truncate if too long
     parts.push(cc.length > 20 ? cc.substring(0, 20) + '...' : cc)
   }

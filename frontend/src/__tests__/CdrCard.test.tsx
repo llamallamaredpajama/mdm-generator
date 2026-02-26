@@ -8,6 +8,7 @@ import { describe, it, expect, vi } from 'vitest'
 import CdrCard from '../components/build-mode/shared/CdrCard'
 import type { IdentifiedCdr } from '../components/build-mode/shared/getIdentifiedCdrs'
 import type { CdrDefinition } from '../types/libraries'
+import type { CdrAnalysisItem } from '../types/encounter'
 
 const heartCdr: CdrDefinition = {
   id: 'heart',
@@ -30,7 +31,10 @@ const wellsCdr: CdrDefinition = {
     { id: 'dvt_signs', label: 'DVT Signs', type: 'boolean', source: 'section1', value: 3 },
     { id: 'pe_likely', label: 'PE Most Likely', type: 'boolean', source: 'user_input', value: 3 },
   ],
-  scoring: { method: 'sum', ranges: [{ min: 0, max: 1, risk: 'low', interpretation: 'PE unlikely' }] },
+  scoring: {
+    method: 'sum',
+    ranges: [{ min: 0, max: 1, risk: 'low', interpretation: 'PE unlikely' }],
+  },
 }
 
 const mockIdentifiedCdrs: IdentifiedCdr[] = [
@@ -55,7 +59,16 @@ describe('CdrCard', () => {
   it('shows readiness labels', () => {
     render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
 
-    expect(screen.getByText('(needs results)')).toBeDefined()
+    // "needs_results" CDR shows missing data text via getMergedCdrDisplay fallback
+    // The "Needs: " prefix and value are separate text nodes within the same span
+    expect(
+      screen.getByText(
+        (_content, el) =>
+          el?.className === 'cdr-card__missing' &&
+          (el?.textContent ?? '').includes('Requires workup results'),
+      ),
+    ).toBeDefined()
+    // "completable" CDR shows (completable) label
     expect(screen.getByText('(completable)')).toBeDefined()
   })
 
@@ -65,7 +78,7 @@ describe('CdrCard', () => {
     const legend = container.querySelector('.cdr-card__legend')
     expect(legend).not.toBeNull()
     expect(legend!.textContent).toContain('completable now')
-    expect(legend!.textContent).toContain('needs results')
+    expect(legend!.textContent).toContain('needs data')
   })
 
   it('shows loading state', () => {
@@ -93,7 +106,7 @@ describe('CdrCard', () => {
     render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
 
     const btn = screen.getByText('View CDRs')
-    expect(btn.getAttribute('title')).toBe('Available in next update')
+    expect(btn.getAttribute('title')).toBe('Available after CDR matching completes')
   })
 
   it('shows "1 identified" for single CDR', () => {
@@ -123,5 +136,89 @@ describe('CdrCard', () => {
     expect(screen.getByText('Unable to load CDR library')).toBeDefined()
     // Should NOT show the empty state message
     expect(screen.queryByText('No CDRs identified for this differential')).toBeNull()
+  })
+
+  // --- LLM cdrAnalysis prop tests ---
+
+  it('renders LLM cdrAnalysis with score and interpretation', () => {
+    const cdrAnalysis: CdrAnalysisItem[] = [
+      {
+        name: 'HEART Score',
+        applicable: true,
+        score: 4,
+        interpretation: 'Moderate risk',
+        reasoning: 'Calculated from available data',
+      },
+    ]
+    render(<CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />)
+
+    expect(screen.getByText('HEART Score')).toBeDefined()
+    // Score display: "Score: 4 — Moderate risk"
+    const scoreEl = screen.getByText(/Score: 4/)
+    expect(scoreEl.textContent).toContain('Moderate risk')
+  })
+
+  it('renders LLM cdrAnalysis with missing data', () => {
+    const cdrAnalysis: CdrAnalysisItem[] = [
+      {
+        name: 'Wells PE',
+        applicable: true,
+        missingData: ['D-dimer', 'CT angiography'],
+        reasoning: 'Need lab results',
+      },
+    ]
+    render(<CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />)
+
+    expect(screen.getByText('Wells PE')).toBeDefined()
+    // "Needs: " prefix and value are separate text nodes — use function matcher
+    expect(
+      screen.getByText(
+        (_content, el) =>
+          el?.className === 'cdr-card__missing' &&
+          (el?.textContent ?? '').includes('D-dimer, CT angiography'),
+      ),
+    ).toBeDefined()
+  })
+
+  it('merges LLM cdrAnalysis with client-side identifiedCdrs', () => {
+    const cdrAnalysis: CdrAnalysisItem[] = [
+      {
+        name: 'HEART Score',
+        applicable: true,
+        score: 3,
+        interpretation: 'Low risk',
+      },
+    ]
+    // Client-side has Wells PE which is NOT in LLM analysis — should be added
+    const clientCdrs: IdentifiedCdr[] = [{ cdr: wellsCdr, readiness: 'completable' }]
+
+    render(<CdrCard identifiedCdrs={clientCdrs} cdrAnalysis={cdrAnalysis} loading={false} />)
+
+    // Both should appear
+    expect(screen.getByText('HEART Score')).toBeDefined()
+    expect(screen.getByText('Wells PE')).toBeDefined()
+    // Total count should be 2
+    expect(screen.getByText('2 identified')).toBeDefined()
+  })
+
+  it('LLM cdrAnalysis takes priority over client-side match', () => {
+    const cdrAnalysis: CdrAnalysisItem[] = [
+      {
+        name: 'HEART Score',
+        applicable: true,
+        score: 5,
+        interpretation: 'High risk',
+      },
+    ]
+    // Client-side also has HEART — LLM version should take priority (shows score)
+    const clientCdrs: IdentifiedCdr[] = [{ cdr: heartCdr, readiness: 'needs_results' }]
+
+    render(<CdrCard identifiedCdrs={clientCdrs} cdrAnalysis={cdrAnalysis} loading={false} />)
+
+    // Should show LLM score, not client-side "Requires workup results"
+    expect(screen.getByText(/Score: 5/)).toBeDefined()
+    expect(screen.queryByText('Requires workup results')).toBeNull()
+    // Count should be 1 (no duplicate)
+    expect(screen.getByText('1 identified')).toBeDefined()
   })
 })

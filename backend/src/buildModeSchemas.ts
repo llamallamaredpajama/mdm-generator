@@ -95,10 +95,55 @@ export const DifferentialItemSchema = z.object({
 export type DifferentialItem = z.infer<typeof DifferentialItemSchema>
 
 /**
+ * CDR Analysis Item from Section 1 LLM output.
+ * Each item describes an applicable Clinical Decision Rule and its current state.
+ */
+export const CdrAnalysisItemSchema = z.object({
+  /** CDR name (e.g., "HEART Score", "Wells PE Criteria") */
+  name: z.string(),
+  /** Whether this CDR is applicable to the presentation */
+  applicable: z.boolean(),
+  /** Partial or complete score (null if insufficient data) */
+  score: z.number().nullable().optional(),
+  /** Score interpretation (e.g., "Low risk: 1.7% MACE at 30 days") */
+  interpretation: z.string().nullable().optional(),
+  /** Specific data points still needed to complete the calculation */
+  missingData: z.array(z.string()).optional(),
+  /** Data points that were available and used */
+  availableData: z.array(z.string()).optional(),
+  /** Brief clinical reasoning for applicability */
+  reasoning: z.string().optional(),
+})
+
+export type CdrAnalysisItem = z.infer<typeof CdrAnalysisItemSchema>
+
+/**
+ * Workup Recommendation from Section 1 LLM output.
+ * Recommends a lab, imaging study, or procedure for this presentation.
+ */
+export const WorkupRecommendationSchema = z.object({
+  /** Test or study name (e.g., "Troponin", "CT Head", "CBC") */
+  testName: z.string(),
+  /** Clinical reason for ordering (e.g., "Evaluate for ACS given chest pain with cardiac risk factors") */
+  reason: z.string(),
+  /** Source of recommendation */
+  source: z.enum(['baseline', 'differential', 'cdr', 'surveillance']),
+  /** Priority of the recommendation */
+  priority: z.enum(['stat', 'routine']).optional(),
+})
+
+export type WorkupRecommendation = z.infer<typeof WorkupRecommendationSchema>
+
+/**
  * Section 1 Response: Worst-first differential diagnosis list
+ * with CDR analysis and workup recommendations.
  */
 export const Section1ResponseSchema = z.object({
   differential: z.array(DifferentialItemSchema),
+  /** CDR analysis results from the LLM (optional for backward compat) */
+  cdrAnalysis: z.array(CdrAnalysisItemSchema).optional(),
+  /** Recommended workup based on presentation, differential, and CDRs (optional for backward compat) */
+  workupRecommendations: z.array(WorkupRecommendationSchema).optional(),
   submissionCount: z.number().int().min(0).max(2),
   isLocked: z.boolean(),
   quotaRemaining: z.number().int().min(0),

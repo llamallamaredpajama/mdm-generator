@@ -98,6 +98,11 @@ export function buildSection1Prompt(
     ].join('\n')
   }
 
+  // Build surveillance workup hints for the output format instructions
+  const surveillanceWorkupHint = surveillanceContext
+    ? '\n    Note: Include surveillance-influenced recommendations (e.g., if regional data shows rising flu activity, recommend influenza testing).'
+    : ''
+
   const user = [
     'INITIAL PATIENT PRESENTATION:',
     '---',
@@ -114,11 +119,41 @@ export function buildSection1Prompt(
     '      "regionalContext": "Optional: How regional surveillance data affects pre-test probability for this diagnosis",',
     '      "cdrContext": "Optional: Applicable CDR scores/results that inform this diagnosis"',
     '    }',
+    '  ],',
+    '  "cdrAnalysis": [',
+    '    {',
+    '      "name": "CDR name (e.g., HEART Score)",',
+    '      "applicable": true,',
+    '      "score": null,',
+    '      "interpretation": null,',
+    '      "missingData": ["List specific data points needed to complete the score"],',
+    '      "availableData": ["List data points from the narrative that were used"],',
+    '      "reasoning": "Why this CDR applies and its clinical relevance"',
+    '    }',
+    '  ],',
+    '  "workupRecommendations": [',
+    '    {',
+    '      "testName": "Test or study name",',
+    '      "reason": "Clinical reason for ordering this test",',
+    '      "source": "baseline" | "differential" | "cdr" | "surveillance",',
+    '      "priority": "stat" | "routine"',
+    '    }',
     '  ]',
     '}',
     '',
-    'Generate the differential diagnosis array. Order by urgency (emergent first).',
-    'Include 6-10 total diagnoses covering the worst-first spectrum.',
+    'Generate ALL three sections:',
+    '1. DIFFERENTIAL: 6-10 diagnoses ordered by urgency (emergent first), covering the worst-first spectrum.',
+    '2. CDR ANALYSIS: List ALL applicable clinical decision rules for this presentation.',
+    '   - If enough data exists to calculate a score, provide the score and interpretation.',
+    '   - If NOT enough data, still list the CDR with missingData specifying what is needed.',
+    '   - Common CDRs: HEART score (chest pain), Wells criteria (PE/DVT), PERC rule, PECARN (pediatric head), Ottawa ankle/knee, Canadian C-spine, etc.',
+    '   - If no CDRs apply, return an empty array.',
+    '3. WORKUP RECOMMENDATIONS: List labs, imaging, and procedures that should be ordered.',
+    '   - "baseline": Standard workup for this chief complaint in any ER.',
+    '   - "differential": Tests needed to evaluate specific differential diagnoses.',
+    '   - "cdr": Tests needed to complete CDR calculations (e.g., troponin for HEART score).',
+    '   - "surveillance": Tests driven by regional epidemiologic data.' + surveillanceWorkupHint,
+    '   - Mark "stat" priority for time-sensitive tests, "routine" otherwise.',
   ].join('\n')
 
   return { system, user }

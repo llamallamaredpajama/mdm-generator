@@ -19,9 +19,13 @@ import {
   SuggestDiagnosisRequestSchema,
   ParseResultsRequestSchema,
   DifferentialItemSchema,
+  CdrAnalysisItemSchema,
+  WorkupRecommendationSchema,
   MdmPreviewSchema,
   FinalMdmSchema,
   type DifferentialItem,
+  type CdrAnalysisItem,
+  type WorkupRecommendation,
   type MdmPreview,
   type FinalMdm,
   type CdrTracking,
@@ -793,10 +797,12 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx, section1CdrCtx)
 
     let differential: DifferentialItem[] = []
+    let cdrAnalysis: CdrAnalysisItem[] = []
+    let workupRecommendations: WorkupRecommendation[] = []
     try {
       const result = await callGeminiFlash(prompt)
 
-      // Parse response - expect JSON array of differential items
+      // Parse response - expect JSON object with differential, cdrAnalysis, workupRecommendations
       let cleanedText = result.text
         .replace(/^```json\s*/gm, '')
         .replace(/^```\s*$/gm, '')
@@ -804,26 +810,62 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
 
       try {
         let rawParsed = JSON.parse(cleanedText)
-        // Unwrap { "differential": [...] } wrapper if present
-        if (!Array.isArray(rawParsed) && rawParsed?.differential && Array.isArray(rawParsed.differential)) {
-          rawParsed = rawParsed.differential
+
+        // Handle both legacy (array) and new (object) response formats
+        if (Array.isArray(rawParsed)) {
+          // Legacy format: raw array of differential items
+          const validated = z.array(DifferentialItemSchema).safeParse(rawParsed)
+          if (validated.success) {
+            differential = validated.data
+          }
+        } else if (rawParsed && typeof rawParsed === 'object') {
+          // New format: { differential, cdrAnalysis, workupRecommendations }
+          // Extract differential
+          let diffArray = rawParsed.differential
+          if (Array.isArray(diffArray)) {
+            const validated = z.array(DifferentialItemSchema).safeParse(diffArray)
+            if (validated.success) {
+              differential = validated.data
+            } else {
+              console.warn('Section 1 differential validation failed:', validated.error.message)
+            }
+          }
+
+          // Extract cdrAnalysis (non-blocking — failures don't affect differential)
+          if (Array.isArray(rawParsed.cdrAnalysis)) {
+            const cdrValidated = z.array(CdrAnalysisItemSchema).safeParse(rawParsed.cdrAnalysis)
+            if (cdrValidated.success) {
+              cdrAnalysis = cdrValidated.data.filter((item) => item.applicable)
+            } else {
+              console.warn('Section 1 cdrAnalysis validation failed (non-blocking)')
+            }
+          }
+
+          // Extract workupRecommendations (non-blocking)
+          if (Array.isArray(rawParsed.workupRecommendations)) {
+            const workupValidated = z.array(WorkupRecommendationSchema).safeParse(rawParsed.workupRecommendations)
+            if (workupValidated.success) {
+              workupRecommendations = workupValidated.data
+            } else {
+              console.warn('Section 1 workupRecommendations validation failed (non-blocking)')
+            }
+          }
         }
-        // Validate structure
-        if (!Array.isArray(rawParsed)) {
+
+        // Fallback: if no differential was parsed, try array extraction from text
+        if (differential.length === 0) {
           const jsonStart = cleanedText.indexOf('[')
           const jsonEnd = cleanedText.lastIndexOf(']')
           if (jsonStart >= 0 && jsonEnd > jsonStart) {
-            rawParsed = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
-          } else {
-            throw new Error('Expected array of differential items')
+            const arrayParsed = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+            const validated = z.array(DifferentialItemSchema).safeParse(arrayParsed)
+            if (validated.success) {
+              differential = validated.data
+            }
           }
         }
-        // Validate each item with Zod schema
-        const validated = z.array(DifferentialItemSchema).safeParse(rawParsed)
-        if (validated.success) {
-          differential = validated.data
-        } else {
-          console.warn('Section 1 Zod validation failed:', validated.error.message)
+
+        if (differential.length === 0) {
           differential = [
             {
               diagnosis: 'Unable to validate differential',
@@ -856,6 +898,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       'section1.content': content,
       'section1.llmResponse': {
         differential,
+        ...(cdrAnalysis.length > 0 && { cdrAnalysis }),
+        ...(workupRecommendations.length > 0 && { workupRecommendations }),
         processedAt: admin.firestore.Timestamp.now(),
       },
       'section1.submissionCount': newSubmissionCount,
@@ -875,6 +919,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       uid,
       encounterId,
       submissionCount: newSubmissionCount,
+      cdrAnalysisCount: cdrAnalysis.length,
+      workupRecsCount: workupRecommendations.length,
       timestamp: new Date().toISOString(),
     })
 
@@ -882,6 +928,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     return res.json({
       ok: true,
       differential,
+      ...(cdrAnalysis.length > 0 && { cdrAnalysis }),
+      ...(workupRecommendations.length > 0 && { workupRecommendations }),
       submissionCount: newSubmissionCount,
       isLocked,
       quotaRemaining,

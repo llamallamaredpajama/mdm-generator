@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { TestDefinition, TestCategory } from '../../../types/libraries'
+import type { WorkupRecommendation, WorkupRecommendationSource } from '../../../types/encounter'
 import './WorkupCard.css'
 
 const CATEGORY_LABELS: Record<TestCategory, string> = {
@@ -8,9 +9,18 @@ const CATEGORY_LABELS: Record<TestCategory, string> = {
   procedures_poc: 'Procedures / POC',
 }
 
+const SOURCE_LABELS: Record<WorkupRecommendationSource, string> = {
+  baseline: 'Baseline',
+  differential: 'Differential',
+  cdr: 'CDR',
+  surveillance: 'Regional',
+}
+
 interface WorkupCardProps {
   tests: TestDefinition[]
   recommendedTestIds: string[]
+  /** S1 LLM-generated workup recommendations (may be empty on older encounters) */
+  workupRecommendations?: WorkupRecommendation[]
   selectedTests: string[]
   onSelectionChange: (testIds: string[]) => void
   onOpenOrderSelector: () => void
@@ -21,6 +31,7 @@ interface WorkupCardProps {
 export default function WorkupCard({
   tests,
   recommendedTestIds,
+  workupRecommendations = [],
   selectedTests,
   onSelectionChange,
   onOpenOrderSelector,
@@ -29,8 +40,34 @@ export default function WorkupCard({
 }: WorkupCardProps) {
   const recommendedTests = useMemo(
     () => tests.filter((t) => recommendedTestIds.includes(t.id)),
-    [tests, recommendedTestIds]
+    [tests, recommendedTestIds],
   )
+
+  // Identify LLM-recommended tests that are NOT in the test library
+  // These are displayed as text-only recommendations
+  const unmatchedRecommendations = useMemo(() => {
+    if (workupRecommendations.length === 0) return []
+    const testNames = new Set(tests.map((t) => t.name.toLowerCase()))
+    return workupRecommendations.filter((rec) => !testNames.has(rec.testName.toLowerCase()))
+  }, [workupRecommendations, tests])
+
+  // Enrich recommended tests with LLM source/reason when available
+  const enrichedTests = useMemo(() => {
+    if (workupRecommendations.length === 0)
+      return recommendedTests.map((t) => ({
+        test: t,
+        source: undefined as WorkupRecommendationSource | undefined,
+        reason: undefined as string | undefined,
+      }))
+    const recMap = new Map<string, WorkupRecommendation>()
+    for (const rec of workupRecommendations) {
+      recMap.set(rec.testName.toLowerCase(), rec)
+    }
+    return recommendedTests.map((t) => {
+      const match = recMap.get(t.name.toLowerCase())
+      return { test: t, source: match?.source, reason: match?.reason }
+    })
+  }, [recommendedTests, workupRecommendations])
 
   function handleToggle(testId: string) {
     if (selectedTests.includes(testId)) {
@@ -54,15 +91,15 @@ export default function WorkupCard({
     )
   }
 
+  const hasRecommendations = enrichedTests.length > 0 || unmatchedRecommendations.length > 0
+
   return (
     <div className="workup-card">
       <div className="workup-card__header">
         <div className="workup-card__title-group">
           <h4 className="workup-card__title">Recommended Workup</h4>
           {selectedTests.length > 0 && (
-            <span className="workup-card__count-badge">
-              {selectedTests.length} selected
-            </span>
+            <span className="workup-card__count-badge">{selectedTests.length} selected</span>
           )}
         </div>
         <div className="workup-card__actions">
@@ -93,28 +130,66 @@ export default function WorkupCard({
         </div>
       </div>
 
-      {recommendedTests.length === 0 ? (
+      {!hasRecommendations ? (
         <p className="workup-card__empty">No recommended tests identified</p>
       ) : (
-        <div className="workup-card__list">
-          {recommendedTests.map((test) => (
-            <div key={test.id} className="workup-card__test-row">
-              <input
-                type="checkbox"
-                id={`workup-test-${test.id}`}
-                className="workup-card__checkbox"
-                checked={selectedTests.includes(test.id)}
-                onChange={() => handleToggle(test.id)}
-              />
-              <label htmlFor={`workup-test-${test.id}`} className="workup-card__test-label">
-                {test.name}
-                <span className="workup-card__category-tag">
-                  {CATEGORY_LABELS[test.category]}
-                </span>
-              </label>
+        <>
+          {/* Orderable tests from the test library */}
+          {enrichedTests.length > 0 && (
+            <div className="workup-card__list">
+              {enrichedTests.map(({ test, source, reason }) => (
+                <div key={test.id} className="workup-card__test-row">
+                  <input
+                    type="checkbox"
+                    id={`workup-test-${test.id}`}
+                    className="workup-card__checkbox"
+                    checked={selectedTests.includes(test.id)}
+                    onChange={() => handleToggle(test.id)}
+                  />
+                  <label htmlFor={`workup-test-${test.id}`} className="workup-card__test-label">
+                    {test.name}
+                    <span className="workup-card__category-tag">
+                      {CATEGORY_LABELS[test.category]}
+                    </span>
+                    {source && (
+                      <span
+                        className={`workup-card__source-tag workup-card__source-tag--${source}`}
+                      >
+                        {SOURCE_LABELS[source]}
+                      </span>
+                    )}
+                  </label>
+                  {reason && <span className="workup-card__reason">{reason}</span>}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+
+          {/* LLM-recommended tests not in the test library (text-only) */}
+          {unmatchedRecommendations.length > 0 && (
+            <div className="workup-card__additional">
+              <h5 className="workup-card__additional-title">Additional Recommendations</h5>
+              <ul className="workup-card__additional-list">
+                {unmatchedRecommendations.map((rec) => (
+                  <li key={rec.testName} className="workup-card__additional-item">
+                    <span className="workup-card__additional-name">{rec.testName}</span>
+                    {rec.source && (
+                      <span
+                        className={`workup-card__source-tag workup-card__source-tag--${rec.source}`}
+                      >
+                        {SOURCE_LABELS[rec.source]}
+                      </span>
+                    )}
+                    {rec.priority === 'stat' && (
+                      <span className="workup-card__priority-tag">STAT</span>
+                    )}
+                    <span className="workup-card__additional-reason">{rec.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
