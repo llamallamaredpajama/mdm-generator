@@ -8,7 +8,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db, useAuth } from '../lib/firebase'
-import type { CdrTracking, CdrTrackingEntry, CdrComponentState, CdrStatus } from '../types/encounter'
+import type {
+  CdrTracking,
+  CdrTrackingEntry,
+  CdrComponentState,
+  CdrStatus,
+} from '../types/encounter'
 import type { CdrDefinition } from '../types/libraries'
 
 export interface UseCdrTrackingReturn {
@@ -20,6 +25,8 @@ export interface UseCdrTrackingReturn {
   dismissCdr: (cdrId: string) => void
   /** Undo dismiss on a CDR */
   undismissCdr: (cdrId: string) => void
+  /** A4: Toggle excluded flag — CDR stays visible but omitted from finalize */
+  toggleExcluded: (cdrId: string) => void
   // Note: S2 auto-populate is handled by EncounterEditor effect (direct Firestore write)
   // to avoid dual-state management when CdrDetailView is not mounted.
 }
@@ -42,7 +49,7 @@ function computeStatus(components: Record<string, CdrComponentState>): CdrStatus
  */
 function calculateScore(
   cdr: CdrDefinition,
-  components: Record<string, CdrComponentState>
+  components: Record<string, CdrComponentState>,
 ): { score: number | null; interpretation: string | null } {
   const allAnswered = Object.values(components).every((c) => c.answered)
   if (!allAnswered) return { score: null, interpretation: null }
@@ -76,7 +83,7 @@ function findCdr(cdrId: string, cdrLibrary: CdrDefinition[]): CdrDefinition | un
 export function useCdrTracking(
   encounterId: string | null,
   initialTracking: CdrTracking,
-  cdrLibrary: CdrDefinition[]
+  cdrLibrary: CdrDefinition[],
 ): UseCdrTrackingReturn {
   const { user } = useAuth()
   const [tracking, setTracking] = useState<CdrTracking>(initialTracking)
@@ -110,12 +117,12 @@ export function useCdrTracking(
       firestoreWriteTimer.current = setTimeout(() => {
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
         updateDoc(encounterRef, { cdrTracking: updatedTracking }).catch((err) =>
-          console.error('Failed to persist cdrTracking:', err?.message || 'unknown error')
+          console.error('Failed to persist cdrTracking:', err?.message || 'unknown error'),
         )
         pendingTrackingRef.current = null
       }, 300)
     },
-    [user, encounterId]
+    [user, encounterId],
   )
 
   // Cleanup on unmount: flush pending write
@@ -125,7 +132,7 @@ export function useCdrTracking(
       if (pendingTrackingRef.current !== null && user && encounterId) {
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
         updateDoc(encounterRef, { cdrTracking: pendingTrackingRef.current }).catch((err) =>
-          console.error('Failed to flush cdrTracking on unmount:', err?.message || 'unknown error')
+          console.error('Failed to flush cdrTracking on unmount:', err?.message || 'unknown error'),
         )
       }
     }
@@ -170,7 +177,7 @@ export function useCdrTracking(
         return updated
       })
     },
-    [cdrLibrary, persistTracking]
+    [cdrLibrary, persistTracking],
   )
 
   /**
@@ -193,7 +200,7 @@ export function useCdrTracking(
         return updated
       })
     },
-    [persistTracking]
+    [persistTracking],
   )
 
   /**
@@ -224,7 +231,29 @@ export function useCdrTracking(
         return updated
       })
     },
-    [cdrLibrary, persistTracking]
+    [cdrLibrary, persistTracking],
+  )
+
+  /**
+   * A4: Toggle excluded flag — CDR stays visible but omitted from finalize.
+   */
+  const toggleExcluded = useCallback(
+    (cdrId: string) => {
+      setTracking((prev) => {
+        const entry = prev[cdrId]
+        if (!entry) return prev
+
+        const updatedEntry: CdrTrackingEntry = {
+          ...entry,
+          excluded: !entry.excluded,
+        }
+
+        const updated = { ...prev, [cdrId]: updatedEntry }
+        persistTracking(updated)
+        return updated
+      })
+    },
+    [persistTracking],
   )
 
   return {
@@ -232,5 +261,6 @@ export function useCdrTracking(
     answerComponent,
     dismissCdr,
     undismissCdr,
+    toggleExcluded,
   }
 }

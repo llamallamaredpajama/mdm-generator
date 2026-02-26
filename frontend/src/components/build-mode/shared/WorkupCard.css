@@ -236,3 +236,12 @@
   outline: 2px solid var(--color-primary, #3b82f6);
   outline-offset: 2px;
 }
+
+/* A5: CDR correlation icon (small colored dot on test rows) */
+.workup-card__cdr-icon {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

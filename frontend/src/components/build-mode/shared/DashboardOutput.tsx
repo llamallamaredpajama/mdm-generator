@@ -29,6 +29,7 @@ import CdrDetailView from './CdrDetailView'
 import RegionalTrendsCard from './RegionalTrendsCard'
 import { useTestLibrary } from '../../../hooks/useTestLibrary'
 import { useCdrLibrary } from '../../../hooks/useCdrLibrary'
+import { useCdrTracking } from '../../../hooks/useCdrTracking'
 import { useOrderSets, type OrderSet } from '../../../hooks/useOrderSets'
 import { getRecommendedTestIds } from './getRecommendedTestIds'
 import { getIdentifiedCdrs } from './getIdentifiedCdrs'
@@ -125,6 +126,13 @@ export default function DashboardOutput({
   const { cdrs, loading: cdrsLoading, error: cdrsError } = useCdrLibrary()
   const { saveOrderSet, incrementUsage, suggestOrderSet } = useOrderSets()
 
+  // A2/A4: CDR tracking for inline edits and exclude toggles
+  const {
+    tracking: cdrTracking,
+    answerComponent,
+    toggleExcluded,
+  } = useCdrTracking(encounter?.id ?? null, encounter?.cdrTracking ?? {}, cdrs)
+
   const recommendedTestIds = useMemo(
     () => getRecommendedTestIds(differential, tests),
     [differential, tests],
@@ -217,9 +225,13 @@ export default function DashboardOutput({
           <CdrCard
             identifiedCdrs={identifiedCdrs}
             cdrAnalysis={cdrAnalysis}
+            cdrTracking={cdrTracking}
+            cdrLibrary={cdrs}
             loading={cdrsLoading}
             error={cdrsError}
             onViewCdrs={handleViewCdrs}
+            onToggleExcluded={encounter ? toggleExcluded : undefined}
+            onAnswerComponent={encounter ? answerComponent : undefined}
           />
           {/* C1: Trends positioned next to CDR card (right column) */}
           <RegionalTrendsCard
@@ -252,6 +264,7 @@ export default function DashboardOutput({
             onOpenOrderSelector={() => setShowOrderSelector(true)}
             onSaveOrderSet={selectedTests.length > 0 ? () => setShowSaveOrderSet(true) : undefined}
             onAcceptContinue={onAcceptContinue ?? handleScrollToSection2}
+            cdrTracking={cdrTracking}
             loading={testsLoading}
           />
         ) : (
@@ -284,8 +297,17 @@ export default function DashboardOutput({
               onBack={() => setShowOrderSelector(false)}
               onAcceptContinue={() => {
                 setShowOrderSelector(false)
-                handleScrollToSection2()
+                if (onAcceptContinue) onAcceptContinue()
+                else handleScrollToSection2()
               }}
+              onSaveOrderSet={
+                selectedTests.length > 0
+                  ? () => {
+                      setShowOrderSelector(false)
+                      setShowSaveOrderSet(true)
+                    }
+                  : undefined
+              }
             />
           </div>
         </div>

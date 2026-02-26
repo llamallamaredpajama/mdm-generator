@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import type { TestDefinition, TestCategory } from '../../../types/libraries'
 import type { WorkupRecommendation, WorkupRecommendationSource } from '../../../types/encounter'
+import type { CdrTracking } from '../../../types/encounter'
+import { CDR_COLORS } from './cdrColorPalette'
 import './WorkupCard.css'
 
 const CATEGORY_LABELS: Record<TestCategory, string> = {
@@ -27,6 +29,8 @@ interface WorkupCardProps {
   onSaveOrderSet?: () => void
   /** B2: Combined accept all + continue callback */
   onAcceptContinue?: () => void
+  /** A5: CDR tracking for correlation icons */
+  cdrTracking?: CdrTracking
   loading: boolean
 }
 
@@ -39,6 +43,7 @@ export default function WorkupCard({
   onOpenOrderSelector,
   // onSaveOrderSet reserved for future Save Set button (B3)
   onAcceptContinue,
+  cdrTracking = {},
   loading,
 }: WorkupCardProps) {
   const recommendedTests = useMemo(
@@ -71,6 +76,36 @@ export default function WorkupCard({
       return { test: t, source: match?.source, reason: match?.reason }
     })
   }, [recommendedTests, workupRecommendations])
+
+  // A5: Build CDR name -> color map for correlation icons
+  const cdrColorMap = useMemo(() => {
+    const names = Object.values(cdrTracking)
+      .filter((e) => !e.dismissed && !e.excluded)
+      .map((e) => e.name)
+    const map = new Map<string, string>()
+    names.forEach((name, idx) => {
+      map.set(name.toLowerCase(), CDR_COLORS[idx % CDR_COLORS.length])
+    })
+    return map
+  }, [cdrTracking])
+
+  // A5: For each test, find which active CDRs need it (via feedsCdrs)
+  const testCdrMap = useMemo(() => {
+    const map = new Map<string, Array<{ name: string; color: string }>>()
+    for (const test of tests) {
+      if (!test.feedsCdrs?.length) continue
+      const cdrs: Array<{ name: string; color: string }> = []
+      for (const cdrId of test.feedsCdrs) {
+        const entry = cdrTracking[cdrId]
+        if (entry && !entry.dismissed && !entry.excluded) {
+          const color = cdrColorMap.get(entry.name.toLowerCase())
+          if (color) cdrs.push({ name: entry.name, color })
+        }
+      }
+      if (cdrs.length > 0) map.set(test.id, cdrs)
+    }
+    return map
+  }, [tests, cdrTracking, cdrColorMap])
 
   function handleToggle(testId: string) {
     if (selectedTests.includes(testId)) {
@@ -143,6 +178,15 @@ export default function WorkupCard({
                         {SOURCE_LABELS[source]}
                       </span>
                     )}
+                    {/* A5: CDR correlation icons */}
+                    {testCdrMap.get(test.id)?.map((cdr) => (
+                      <span
+                        key={cdr.name}
+                        className="workup-card__cdr-icon"
+                        style={{ backgroundColor: cdr.color }}
+                        title={`Needed by ${cdr.name}`}
+                      />
+                    ))}
                   </label>
                   {reason && <span className="workup-card__reason">{reason}</span>}
                 </div>
