@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import type { CdrAnalysisItem, CdrTracking } from '../../../types/encounter'
 import type { CdrDefinition, CdrComponent } from '../../../types/libraries'
 import type { IdentifiedCdr } from './getIdentifiedCdrs'
-import { CDR_COLORS } from './cdrColorPalette'
+import { buildCdrColorMap } from './cdrColorPalette'
 import './CdrCard.css'
 
 interface CdrCardProps {
@@ -13,6 +13,8 @@ interface CdrCardProps {
   cdrTracking?: CdrTracking
   /** Full CDR library (for inline component editing) */
   cdrLibrary?: CdrDefinition[]
+  /** Deterministic CDR name → color map (single source of truth from EncounterEditor) */
+  cdrColorMap?: Map<string, string>
   loading: boolean
   error?: string | null
   onViewCdrs?: () => void
@@ -103,13 +105,24 @@ export default function CdrCard({
   cdrAnalysis = [],
   cdrTracking = {},
   cdrLibrary = [],
+  cdrColorMap: externalColorMap,
   loading,
   error,
   onViewCdrs,
   onToggleExcluded,
   onAnswerComponent,
 }: CdrCardProps) {
-  const mergedCdrs = getMergedCdrDisplay(cdrAnalysis, identifiedCdrs)
+  // Issue 4: Memoize merged CDR list
+  const mergedCdrs = useMemo(
+    () => getMergedCdrDisplay(cdrAnalysis, identifiedCdrs),
+    [cdrAnalysis, identifiedCdrs],
+  )
+
+  // Use external color map if provided; otherwise build a local fallback (alphabetically sorted)
+  const colorMap = useMemo(() => {
+    if (externalColorMap) return externalColorMap
+    return buildCdrColorMap(mergedCdrs.map((c) => c.name))
+  }, [externalColorMap, mergedCdrs])
 
   // A3: Track previous scores for pulse animation
   const prevScoresRef = useRef<Record<string, number | null | undefined>>({})
@@ -178,9 +191,8 @@ export default function CdrCard({
                   ? 'needs_results'
                   : 'completable'
 
-              // A5: Color-coded CDR index for correlation
-              const colorIndex = idx % CDR_COLORS.length
-              const cdrColor = CDR_COLORS[colorIndex]
+              // A5: Color-coded CDR correlation (deterministic via alphabetical sort)
+              const cdrColor = colorMap.get(item.name.toLowerCase()) ?? '#6b7280'
 
               // A2: Find simple components for inline editing
               const simpleComponents = cdrDef?.components.filter(isSimpleComponent) ?? []

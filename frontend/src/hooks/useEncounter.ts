@@ -312,12 +312,13 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               s2Structured,
             )
             // Update Firestore with response
+            // Note: workingDiagnosis is NOT written here — it moved to S3 (D1).
+            // Writing it in S2 would clear S3's fallback data.
             await updateDoc(encounterRef, {
               'section2.content': content,
               'section2.submissionCount': response.submissionCount,
               'section2.isLocked': response.isLocked,
               'section2.status': 'completed',
-              'section2.workingDiagnosis': workingDiagnosis || null,
               'section2.llmResponse': {
                 mdmPreview: (response as Section2Response).mdmPreview,
                 processedAt: serverTimestamp(),

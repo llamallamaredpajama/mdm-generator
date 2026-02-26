@@ -17,11 +17,15 @@ export const CDR_COLORS = [
 
 /**
  * Build a map of CDR name (lowercase) -> color for correlation indicators.
- * Used by WorkupCard and ResultEntry to display matching colored icons.
+ * Names are sorted alphabetically to ensure deterministic color assignment
+ * regardless of iteration order (e.g., Object.values(), merged list index).
+ *
+ * Single source of truth — used by EncounterEditor, CdrCard, WorkupCard, ResultEntry.
  */
 export function buildCdrColorMap(cdrNames: string[]): Map<string, string> {
+  const sorted = [...cdrNames].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
   const map = new Map<string, string>()
-  cdrNames.forEach((name, idx) => {
+  sorted.forEach((name, idx) => {
     map.set(name.toLowerCase(), CDR_COLORS[idx % CDR_COLORS.length])
   })
   return map

@@ -11,7 +11,7 @@
  * between Section 1 and Section 2.
  */
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import type {
   DifferentialItem,
   CdrAnalysisItem,
@@ -49,6 +49,8 @@ interface DashboardOutputProps {
   onSelectedTestsChange?: (testIds: string[]) => void
   /** Encounter document (required for CDR detail view) */
   encounter?: EncounterDocument | null
+  /** Deterministic CDR name → color map (single source of truth from EncounterEditor) */
+  cdrColorMap?: Map<string, string>
   /** B2/D3: Callback when user accepts workup and continues to S2 */
   onAcceptContinue?: () => void
   /** C2: Callback to open trend report modal */
@@ -111,6 +113,7 @@ export default function DashboardOutput({
   selectedTests = [],
   onSelectedTestsChange,
   encounter,
+  cdrColorMap,
   onAcceptContinue,
   onOpenTrendReport,
 }: DashboardOutputProps) {
@@ -188,6 +191,30 @@ export default function DashboardOutput({
     setShowSaveOrderSet(false)
   }
 
+  // Issue 3: Lock body scroll while OrderSelector overlay is open
+  useEffect(() => {
+    if (!showOrderSelector) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [showOrderSelector])
+
+  // Issue 3: Escape key handler for OrderSelector overlay
+  const handleOverlayKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowOrderSelector(false)
+    }
+  }, [])
+
+  // Issue 3: Backdrop click handler for OrderSelector overlay
+  const handleBackdropClick = useCallback((e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      setShowOrderSelector(false)
+    }
+  }, [])
+
   if (differential.length === 0) return null
 
   const handleSelectionChange = (testIds: string[]) => {
@@ -227,6 +254,7 @@ export default function DashboardOutput({
             cdrAnalysis={cdrAnalysis}
             cdrTracking={cdrTracking}
             cdrLibrary={cdrs}
+            cdrColorMap={cdrColorMap}
             loading={cdrsLoading}
             error={cdrsError}
             onViewCdrs={handleViewCdrs}
@@ -265,6 +293,7 @@ export default function DashboardOutput({
             onSaveOrderSet={selectedTests.length > 0 ? () => setShowSaveOrderSet(true) : undefined}
             onAcceptContinue={onAcceptContinue ?? handleScrollToSection2}
             cdrTracking={cdrTracking}
+            cdrColorMap={cdrColorMap}
             loading={testsLoading}
           />
         ) : (
@@ -287,7 +316,14 @@ export default function DashboardOutput({
 
       {/* B1 fix: OrderSelector rendered as overlay instead of replacing dashboard */}
       {showOrderSelector && (
-        <div className="dashboard-output__overlay" role="dialog" aria-label="Order Selection">
+        <div
+          className="dashboard-output__overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Order Selection"
+          onKeyDown={handleOverlayKeyDown}
+          onClick={handleBackdropClick}
+        >
           <div className="dashboard-output__overlay-content">
             <OrderSelector
               tests={tests}

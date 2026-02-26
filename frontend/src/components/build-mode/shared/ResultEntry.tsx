@@ -69,7 +69,7 @@ export default function ResultEntry({
   function handleNotesChange(notes: string) {
     const updated: TestResult = {
       ...result,
-      status: result?.status ?? 'abnormal',
+      status: result?.status ?? 'pending',
       quickFindings: result?.quickFindings ?? [],
       notes: notes || null,
       value: result?.value ?? null,

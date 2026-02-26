@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import type { TestDefinition, TestCategory } from '../../../types/libraries'
 import type { WorkupRecommendation, WorkupRecommendationSource } from '../../../types/encounter'
 import type { CdrTracking } from '../../../types/encounter'
-import { CDR_COLORS } from './cdrColorPalette'
+import { buildCdrColorMap } from './cdrColorPalette'
 import './WorkupCard.css'
 
 const CATEGORY_LABELS: Record<TestCategory, string> = {
@@ -31,6 +31,8 @@ interface WorkupCardProps {
   onAcceptContinue?: () => void
   /** A5: CDR tracking for correlation icons */
   cdrTracking?: CdrTracking
+  /** Deterministic CDR name → color map (single source of truth from EncounterEditor) */
+  cdrColorMap?: Map<string, string>
   loading: boolean
 }
 
@@ -44,6 +46,7 @@ export default function WorkupCard({
   // onSaveOrderSet reserved for future Save Set button (B3)
   onAcceptContinue,
   cdrTracking = {},
+  cdrColorMap: externalColorMap,
   loading,
 }: WorkupCardProps) {
   const recommendedTests = useMemo(
@@ -77,17 +80,14 @@ export default function WorkupCard({
     })
   }, [recommendedTests, workupRecommendations])
 
-  // A5: Build CDR name -> color map for correlation icons
+  // A5: Use external color map if provided; otherwise build a local fallback (alphabetically sorted)
   const cdrColorMap = useMemo(() => {
+    if (externalColorMap) return externalColorMap
     const names = Object.values(cdrTracking)
       .filter((e) => !e.dismissed && !e.excluded)
       .map((e) => e.name)
-    const map = new Map<string, string>()
-    names.forEach((name, idx) => {
-      map.set(name.toLowerCase(), CDR_COLORS[idx % CDR_COLORS.length])
-    })
-    return map
-  }, [cdrTracking])
+    return buildCdrColorMap(names)
+  }, [externalColorMap, cdrTracking])
 
   // A5: For each test, find which active CDRs need it (via feedsCdrs)
   const testCdrMap = useMemo(() => {

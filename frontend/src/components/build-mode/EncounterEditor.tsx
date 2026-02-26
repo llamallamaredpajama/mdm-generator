@@ -53,7 +53,7 @@ import TreatmentInput from './shared/TreatmentInput'
 import DispositionSelector from './shared/DispositionSelector'
 import { useDispoFlows } from '../../hooks/useDispoFlows'
 import { getRecommendedTestIds } from './shared/getRecommendedTestIds'
-import { CDR_COLORS } from './shared/cdrColorPalette'
+import { buildCdrColorMap } from './shared/cdrColorPalette'
 import type { WorkingDiagnosis } from '../../types/encounter'
 import './EncounterEditor.css'
 
@@ -872,16 +872,14 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     }
   }, [pendingSection, submitSection, workingDiagnosis])
 
-  // E1/A5: Build CDR color map for correlation indicators in S2 ResultEntry
+  // E1/A5: Build CDR color map for correlation indicators (single source of truth)
   // Must be above early returns to satisfy rules-of-hooks
   const cdrColorMap = useMemo(() => {
     const ct = encounter?.cdrTracking ?? {}
-    const activeEntries = Object.values(ct).filter((e) => !e.dismissed && !e.excluded)
-    const map = new Map<string, string>()
-    activeEntries.forEach((entry, idx) => {
-      map.set(entry.name.toLowerCase(), CDR_COLORS[idx % CDR_COLORS.length])
-    })
-    return map
+    const activeNames = Object.values(ct)
+      .filter((e) => !e.dismissed && !e.excluded)
+      .map((e) => e.name)
+    return buildCdrColorMap(activeNames)
   }, [encounter?.cdrTracking])
 
   // Loading state
@@ -1008,6 +1006,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
             selectedTests={selectedTests}
             onSelectedTestsChange={handleSelectedTestsChange}
             encounter={encounter}
+            cdrColorMap={cdrColorMap}
             onAcceptContinue={() => setWorkupAccepted(true)}
             onOpenTrendReport={analysis ? () => setShowTrendReport(true) : undefined}
           />
