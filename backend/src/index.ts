@@ -9,7 +9,7 @@ import admin from 'firebase-admin'
 import { buildPrompt } from './promptBuilder'
 import { buildParsePrompt, getEmptyParsedNarrative, type ParsedNarrative } from './parsePromptBuilder'
 import { MdmSchema, renderMdmText } from './outputSchema'
-import { callGemini, callGeminiFlash } from './vertex'
+import { callGemini } from './vertex'
 import { userService } from './services/userService'
 import {
   Section1RequestSchema,
@@ -481,7 +481,7 @@ app.post('/v1/parse-narrative', parseLimiter, async (req, res) => {
 
     let parsedNarrative: ParsedNarrative
     try {
-      const result = await callGeminiFlash(prompt)
+      const result = await callGemini(prompt)
 
       console.log({ action: 'model-response', endpoint: 'parse-narrative', responseLength: result.text.length })
 
@@ -583,7 +583,7 @@ app.post('/v1/generate', llmLimiter, async (req, res) => {
     let draftJson: any | null = null
     let draftText = ''
     try {
-      const result = await callGeminiFlash(prompt)
+      const result = await callGemini(prompt)
       
       console.log({ action: 'model-response', endpoint: 'generate', responseLength: result.text.length })
       
@@ -800,7 +800,7 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     let cdrAnalysis: CdrAnalysisItem[] = []
     let workupRecommendations: WorkupRecommendation[] = []
     try {
-      const result = await callGeminiFlash(prompt)
+      const result = await callGemini(prompt)
 
       // Parse response - expect JSON object with differential, cdrAnalysis, workupRecommendations
       let cleanedText = result.text
@@ -1033,7 +1033,7 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
 
     let mdmPreview: MdmPreview
     try {
-      const result = await callGeminiFlash(prompt)
+      const result = await callGemini(prompt)
 
       // Parse response - expect MDM preview object
       let cleanedText = result.text
@@ -1119,8 +1119,6 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       ...(selectedTests && { 'section2.selectedTests': selectedTests }),
       ...(testResults && { 'section2.testResults': testResults }),
       ...(structuredDiagnosis !== undefined && { 'section2.workingDiagnosis': structuredDiagnosis }),
-      // Update CDR context with expanded S2 analysis (may include additional rules from workup)
-      ...(section2CdrCtx && { cdrContext: section2CdrCtx }),
       status: 'section2_done',
       updatedAt: admin.firestore.Timestamp.now(),
     })
@@ -1236,7 +1234,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     const structuredData: FinalizeStructuredData = {
       selectedTests: encounter.section2?.selectedTests,
       testResults: encounter.section2?.testResults,
-      workingDiagnosis: s3WorkingDiagnosis ?? encounter.section3?.workingDiagnosis ?? encounter.section2?.workingDiagnosis,
+      workingDiagnosis: s3WorkingDiagnosis ?? encounter.section2?.workingDiagnosis,
       treatments: encounter.section3?.treatments,
       cdrSuggestedTreatments: encounter.section3?.cdrSuggestedTreatments,
       disposition: encounter.section3?.disposition,
@@ -1403,7 +1401,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now(),
     })
 
-    // 8. Log action (no PHI)
+    // 9. Log action (no PHI)
     console.log({
       action: 'finalize',
       uid,
@@ -1527,7 +1525,7 @@ app.post('/v1/build-mode/match-cdrs', llmLimiter, async (req, res) => {
 
         // Only call Gemini if there are extractable components
         if (prompt.system) {
-          const result = await callGeminiFlash(prompt)
+          const result = await callGemini(prompt)
 
           const cleanedText = result.text
             .replace(/^```json\s*/gm, '')
@@ -1649,7 +1647,7 @@ app.post('/v1/build-mode/suggest-diagnosis', llmLimiter, async (req, res) => {
     // 4c. Build prompt and call Gemini Flash
     const chiefComplaint = encounter.chiefComplaint || 'Unknown'
     const prompt = buildSuggestDiagnosisPrompt(differential, chiefComplaint, testResultsSummary)
-    const result = await callGeminiFlash(prompt)
+    const result = await callGemini(prompt)
 
     // 4d. Parse response as JSON array of strings
     const cleanedText = result.text
@@ -1744,7 +1742,7 @@ app.post('/v1/build-mode/parse-results', llmLimiter, async (req, res) => {
       pastedText,
       orderedTests.map((t) => ({ id: t.id, name: t.name, unit: t.unit, normalRange: t.normalRange }))
     )
-    const result = await callGeminiFlash(prompt)
+    const result = await callGemini(prompt)
 
     // 4c. Parse response
     const cleanedText = result.text
@@ -1967,7 +1965,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
     let result: QuickModeGenerationResult
     try {
       const prompt = await buildQuickModePrompt(narrative, surveillanceContext, quickCdrContext)
-      const modelResponse = await callGeminiFlash(prompt)
+      const modelResponse = await callGemini(prompt)
       result = parseQuickModeResponse(modelResponse.text)
     } catch (modelError) {
       console.error('Quick mode model error:', modelError)

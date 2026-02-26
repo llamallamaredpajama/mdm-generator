@@ -164,10 +164,20 @@ export type Section1Response = z.infer<typeof Section1ResponseSchema>
  * MDM Preview structure
  * Accumulated from Section 1 + Section 2
  */
+/**
+ * Flexible schema for LLM-generated fields that may return as string, string[], or object[].
+ * Accepts the known variations while rejecting primitives like numbers/booleans.
+ */
+const LlmFlexibleField = z.union([
+  z.string(),
+  z.array(z.union([z.string(), z.record(z.string(), z.unknown())])),
+  z.record(z.string(), z.unknown()),
+])
+
 export const MdmPreviewSchema = z.object({
-  problems: z.any(),        // string | string[] | object[] — LLM output varies
-  differential: z.any(),    // string | string[] | object[] — LLM output varies
-  dataReviewed: z.any(),    // string | string[] | object — LLM output varies
+  problems: LlmFlexibleField,
+  differential: LlmFlexibleField,
+  dataReviewed: LlmFlexibleField,
   reasoning: z.string(),
   regionalSurveillance: z.string().optional(),
   cdrResults: z.string().optional(),

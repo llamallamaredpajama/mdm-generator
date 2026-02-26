@@ -7,7 +7,7 @@ export type PromptParts = {
 }
 
 export async function buildPrompt(narrative: string): Promise<PromptParts> {
-  const guidePath = path.resolve(process.cwd(), '../docs/mdm-gen-guide.md')
+  const guidePath = path.join(__dirname, '../../docs/mdm-gen-guide.md')
   const guide = await fs.readFile(guidePath, 'utf8')
 
   const system = [

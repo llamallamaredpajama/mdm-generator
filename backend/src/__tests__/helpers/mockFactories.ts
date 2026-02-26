@@ -88,7 +88,7 @@ export function makeQuotaCheck(overrides: Record<string, unknown> = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Vertex AI / callGeminiFlash stubs
+// Vertex AI / callGemini stubs
 // ---------------------------------------------------------------------------
 
 /** Valid MDM JSON the model would return for /v1/generate */
