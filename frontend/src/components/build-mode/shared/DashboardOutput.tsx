@@ -3,7 +3,7 @@
  *
  * 4-area dashboard displayed after Section 1 completion:
  *   - Differential (full-width top)
- *   - CdrCard + WorkupCard (side-by-side on desktop, stacked on mobile)
+ *   - CdrCard + OrdersCard (side-by-side on desktop, stacked on mobile)
  *   - Trends (full-width bottom, conditionally shown)
  *   - "Accept All / Continue" button
  *
@@ -20,10 +20,9 @@ import type {
 } from '../../../types/encounter'
 import type { TrendAnalysisResult } from '../../../types/surveillance'
 import DifferentialList from './DifferentialList'
-import WorkupCard from './WorkupCard'
-import OrderSelector from './OrderSelector'
+import OrdersCard from './OrdersCard'
+import OrdersetManager from './OrdersetManager'
 import OrderSetSuggestion from './OrderSetSuggestion'
-import SaveOrderSetModal from './SaveOrderSetModal'
 import CdrCard from './CdrCard'
 import CdrDetailView from './CdrDetailView'
 import RegionalTrendsCard from './RegionalTrendsCard'
@@ -121,13 +120,22 @@ export default function DashboardOutput({
   const differential = getDifferential(llmResponse)
   const cdrAnalysis = getCdrAnalysis(llmResponse)
   const workupRecommendations = getWorkupRecommendations(llmResponse)
-  const [showOrderSelector, setShowOrderSelector] = useState(false)
   const [showCdrDetail, setShowCdrDetail] = useState(false)
-  const [showSaveOrderSet, setShowSaveOrderSet] = useState(false)
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
+  // OrdersetManager state
+  const [ordersetManagerOpen, setOrdersetManagerOpen] = useState(false)
+  const [ordersetManagerMode, setOrdersetManagerMode] = useState<'browse' | 'edit'>('browse')
+  const [editTargetOrderSet, setEditTargetOrderSet] = useState<OrderSet | undefined>()
   const { tests, loading: testsLoading } = useTestLibrary()
   const { cdrs, loading: cdrsLoading, error: cdrsError } = useCdrLibrary()
-  const { saveOrderSet, incrementUsage, suggestOrderSet } = useOrderSets()
+  const {
+    orderSets,
+    saveOrderSet,
+    updateOrderSet,
+    deleteOrderSet: deleteOrderSetFn,
+    incrementUsage,
+    suggestOrderSet,
+  } = useOrderSets()
 
   // A2/A4: CDR tracking for inline edits and exclude toggles
   const {
@@ -174,7 +182,7 @@ export default function DashboardOutput({
 
   const handleApplyOrderSet = (orderSet: OrderSet) => {
     if (!onSelectedTestsChange) return
-    const merged = new Set([...selectedTests, ...orderSet.testIds])
+    const merged = new Set([...selectedTests, ...orderSet.tests])
     onSelectedTestsChange(Array.from(merged))
     incrementUsage(orderSet.id)
     setSuggestionDismissed(true)
@@ -182,46 +190,51 @@ export default function DashboardOutput({
 
   const handleCustomizeOrderSet = (orderSet: OrderSet) => {
     if (!onSelectedTestsChange) return
-    // Pre-load order set tests then open the order selector
-    const merged = new Set([...selectedTests, ...orderSet.testIds])
+    // Pre-load order set tests then open the manager
+    const merged = new Set([...selectedTests, ...orderSet.tests])
     onSelectedTestsChange(Array.from(merged))
     incrementUsage(orderSet.id)
     setSuggestionDismissed(true)
-    setShowOrderSelector(true)
+    setOrdersetManagerMode('browse')
+    setEditTargetOrderSet(undefined)
+    setOrdersetManagerOpen(true)
   }
 
-  const handleSaveOrderSet = (name: string, testIds: string[], tags: string[]) => {
-    saveOrderSet(name, testIds, tags)
-    setShowSaveOrderSet(false)
+  const handleOpenOrdersetManager = (mode: 'browse' | 'edit', targetOrderSetId?: string) => {
+    setOrdersetManagerMode(mode)
+    setEditTargetOrderSet(
+      targetOrderSetId ? orderSets.find((os) => os.id === targetOrderSetId) : undefined,
+    )
+    setOrdersetManagerOpen(true)
   }
 
-  // Lock body scroll while any overlay is open (OrderSelector or CdrDetailView)
+  const handleAcceptAllRecommended = () => {
+    if (!onSelectedTestsChange) return
+    const merged = new Set([...selectedTests, ...recommendedTestIds])
+    onSelectedTestsChange(Array.from(merged))
+    if (onAcceptContinue) onAcceptContinue()
+    else handleScrollToSection2()
+  }
+
+  const handleAcceptSelected = () => {
+    // Keep current selection as-is — just advance to S2
+    if (onAcceptContinue) onAcceptContinue()
+    else handleScrollToSection2()
+  }
+
+  // Lock body scroll while any overlay is open (OrdersetManager or CdrDetailView)
   useEffect(() => {
-    if (!showOrderSelector && !showCdrDetail) return
+    if (!ordersetManagerOpen && !showCdrDetail) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prev
     }
-  }, [showOrderSelector, showCdrDetail])
-
-  // Escape key handler for overlays (OrderSelector and CdrDetailView)
-  const handleOrderOverlayKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      setShowOrderSelector(false)
-    }
-  }, [])
+  }, [ordersetManagerOpen, showCdrDetail])
 
   const handleCdrOverlayKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setShowCdrDetail(false)
-    }
-  }, [])
-
-  // Backdrop click handlers for overlays
-  const handleOrderBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      setShowOrderSelector(false)
     }
   }, [])
 
@@ -286,39 +299,28 @@ export default function DashboardOutput({
         />
       )}
 
-      {/* Workup: full-width */}
+      {/* Orders: full-width */}
       <div className="dashboard-output__middle-row">
         {onSelectedTestsChange ? (
-          <WorkupCard
+          <OrdersCard
             tests={tests}
             recommendedTestIds={recommendedTestIds}
             workupRecommendations={workupRecommendations}
             selectedTests={selectedTests}
             onSelectionChange={handleSelectionChange}
-            onOpenOrderSelector={() => setShowOrderSelector(true)}
-            onSaveOrderSet={selectedTests.length > 0 ? () => setShowSaveOrderSet(true) : undefined}
-            onAcceptContinue={onAcceptContinue ?? handleScrollToSection2}
+            onOpenOrdersetManager={handleOpenOrdersetManager}
+            onAcceptAllRecommended={handleAcceptAllRecommended}
+            onAcceptSelected={handleAcceptSelected}
             cdrTracking={cdrTracking}
             cdrColorMap={cdrColorMap}
             loading={testsLoading}
+            orderSets={orderSets}
+            onApplyOrderSet={handleApplyOrderSet}
           />
         ) : (
-          <StubCard
-            title="Recommended Workup"
-            description="Order selection available \u2014 BM-2.2"
-          />
+          <StubCard title="Orders" description="Order selection available \u2014 BM-2.2" />
         )}
       </div>
-
-      {/* Save Order Set Modal */}
-      {showSaveOrderSet && (
-        <SaveOrderSetModal
-          selectedTestIds={selectedTests}
-          tests={tests}
-          onSave={handleSaveOrderSet}
-          onClose={() => setShowSaveOrderSet(false)}
-        />
-      )}
 
       {/* Bug 2+3 fix: CdrDetailView rendered as overlay instead of replacing dashboard */}
       {showCdrDetail && encounter && (
@@ -342,39 +344,31 @@ export default function DashboardOutput({
         </div>
       )}
 
-      {/* B1 fix: OrderSelector rendered as overlay instead of replacing dashboard */}
-      {showOrderSelector && (
-        <div
-          className="dashboard-output__overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Order Selection"
-          onKeyDown={handleOrderOverlayKeyDown}
-          onClick={handleOrderBackdropClick}
-        >
-          <div className="dashboard-output__overlay-content">
-            <OrderSelector
-              tests={tests}
-              selectedTests={selectedTests}
-              recommendedTestIds={recommendedTestIds}
-              onSelectionChange={handleSelectionChange}
-              onBack={() => setShowOrderSelector(false)}
-              onAcceptContinue={() => {
-                setShowOrderSelector(false)
-                if (onAcceptContinue) onAcceptContinue()
-                else handleScrollToSection2()
-              }}
-              onSaveOrderSet={
-                selectedTests.length > 0
-                  ? () => {
-                      setShowOrderSelector(false)
-                      setShowSaveOrderSet(true)
-                    }
-                  : undefined
-              }
-            />
-          </div>
-        </div>
+      {/* OrdersetManager modal */}
+      {ordersetManagerOpen && (
+        <OrdersetManager
+          mode={ordersetManagerMode}
+          editTargetOrderSet={editTargetOrderSet}
+          tests={tests}
+          selectedTests={selectedTests}
+          recommendedTestIds={recommendedTestIds}
+          onSelectionChange={handleSelectionChange}
+          onClose={() => setOrdersetManagerOpen(false)}
+          onAcceptAllRecommended={() => {
+            setOrdersetManagerOpen(false)
+            handleAcceptAllRecommended()
+          }}
+          onAcceptSelected={() => {
+            setOrdersetManagerOpen(false)
+            handleAcceptSelected()
+          }}
+          orderSets={orderSets}
+          onSaveOrderSet={saveOrderSet}
+          onUpdateOrderSet={async (id, data) => {
+            await updateOrderSet(id, data)
+          }}
+          onDeleteOrderSet={deleteOrderSetFn}
+        />
       )}
     </div>
   )

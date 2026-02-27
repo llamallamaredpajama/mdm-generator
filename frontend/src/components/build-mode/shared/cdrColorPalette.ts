@@ -1,7 +1,7 @@
 /**
  * A5: Consistent color palette for CDR-workup correlation indicators.
  * Each CDR gets a unique color based on its index in the merged list.
- * The same colors are used in CdrCard, WorkupCard, and ResultEntry.
+ * The same colors are used in CdrCard, OrdersCard, and ResultEntry.
  */
 
 export const CDR_COLORS = [
@@ -20,7 +20,7 @@ export const CDR_COLORS = [
  * Names are sorted alphabetically to ensure deterministic color assignment
  * regardless of iteration order (e.g., Object.values(), merged list index).
  *
- * Single source of truth — used by EncounterEditor, CdrCard, WorkupCard, ResultEntry.
+ * Single source of truth — used by EncounterEditor, CdrCard, OrdersCard, ResultEntry.
  */
 export function buildCdrColorMap(cdrNames: string[]): Map<string, string> {
   const sorted = [...cdrNames].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))

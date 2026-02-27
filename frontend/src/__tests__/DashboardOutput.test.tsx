@@ -2,7 +2,7 @@
  * DashboardOutput Component Tests
  *
  * Tests rendering, data shape handling, conditional trends, scroll behavior,
- * and WorkupCard/OrderSelector integration.
+ * and OrdersCard/OrdersetManager integration.
  */
 
 /// <reference types="vitest/globals" />
@@ -34,7 +34,7 @@ vi.mock('../hooks/useMediaQuery', () => ({
   useIsMobile: mockIsMobile,
 }))
 
-// Mock useTestLibrary — WorkupCard uses it internally
+// Mock useTestLibrary — OrdersCard uses it internally
 const { mockUseTestLibrary } = vi.hoisted(() => ({
   mockUseTestLibrary: vi.fn().mockReturnValue({
     tests: [
@@ -86,6 +86,19 @@ const { mockUseCdrLibrary } = vi.hoisted(() => ({
 
 vi.mock('../hooks/useCdrLibrary', () => ({
   useCdrLibrary: mockUseCdrLibrary,
+}))
+
+// Mock useOrderSets — DashboardOutput uses it for orderset management
+vi.mock('../hooks/useOrderSets', () => ({
+  useOrderSets: () => ({
+    orderSets: [],
+    loading: false,
+    saveOrderSet: vi.fn().mockResolvedValue(null),
+    updateOrderSet: vi.fn().mockResolvedValue(undefined),
+    deleteOrderSet: vi.fn().mockResolvedValue(undefined),
+    incrementUsage: vi.fn(),
+    suggestOrderSet: vi.fn().mockReturnValue(null),
+  }),
 }))
 
 const mockDifferential: DifferentialItem[] = [
@@ -211,7 +224,7 @@ describe('DashboardOutput', () => {
     expect(screen.getByText('No CDRs identified for this differential')).toBeDefined()
   })
 
-  it('shows WorkupCard when onSelectedTestsChange is provided', () => {
+  it('shows OrdersCard when onSelectedTestsChange is provided', () => {
     render(
       <DashboardOutput
         llmResponse={mockDifferential}
@@ -221,20 +234,19 @@ describe('DashboardOutput', () => {
       />,
     )
 
-    expect(screen.getByText('Recommended Workup')).toBeDefined()
-    // B2: "Accept All" standalone header button replaced by "Accept All / Continue" at card bottom
-    expect(screen.getByText('Accept All / Continue')).toBeDefined()
+    expect(screen.getByText('Orders')).toBeDefined()
+    expect(screen.getByText('Accept All Recommended')).toBeDefined()
   })
 
-  it('shows Workup stub card when onSelectedTestsChange is not provided', () => {
+  it('shows Orders stub card when onSelectedTestsChange is not provided', () => {
     render(<DashboardOutput llmResponse={mockDifferential} trendAnalysis={null} />)
 
-    expect(screen.getByText('Recommended Workup')).toBeDefined()
+    expect(screen.getByText('Orders')).toBeDefined()
     // No Accept All button when using stub card
-    expect(screen.queryByText('Accept All')).toBeNull()
+    expect(screen.queryByText('Accept All Recommended')).toBeNull()
   })
 
-  it('opens OrderSelector as overlay when Edit is clicked (B1 fix)', () => {
+  it('opens OrdersetManager modal when Edit is clicked', () => {
     render(
       <DashboardOutput
         llmResponse={mockDifferential}
@@ -246,14 +258,13 @@ describe('DashboardOutput', () => {
 
     fireEvent.click(screen.getByText('Edit'))
 
-    // OrderSelector should be shown as overlay
-    expect(screen.getByText('Order Selection')).toBeDefined()
-    expect(screen.getByText('\u2190 Back to Dashboard')).toBeDefined()
-    // B1 fix: Dashboard content should STILL be visible (overlay, not replacement)
+    // OrdersetManager should be shown as modal overlay
+    expect(screen.getByText('Orderset Manager')).toBeDefined()
+    // Dashboard content should STILL be visible (overlay, not replacement)
     expect(screen.getByText('Differential Diagnosis')).toBeDefined()
   })
 
-  it('returns to dashboard from OrderSelector when Back is clicked', () => {
+  it('closes OrdersetManager modal when close button is clicked', () => {
     render(
       <DashboardOutput
         llmResponse={mockDifferential}
@@ -263,12 +274,13 @@ describe('DashboardOutput', () => {
       />,
     )
 
-    // Open order selector
+    // Open orderset manager
     fireEvent.click(screen.getByText('Edit'))
-    expect(screen.getByText('Order Selection')).toBeDefined()
+    expect(screen.getByText('Orderset Manager')).toBeDefined()
 
-    // Go back
-    fireEvent.click(screen.getByText('← Back to Dashboard'))
+    // Close via close button
+    fireEvent.click(screen.getByLabelText('Close'))
+    expect(screen.queryByText('Orderset Manager')).toBeNull()
     expect(screen.getByText('Differential Diagnosis')).toBeDefined()
   })
 
@@ -294,7 +306,7 @@ describe('DashboardOutput', () => {
     expect(screen.getByText('Analyzing regional surveillance data...')).toBeDefined()
   })
 
-  it('renders "Accept All / Continue" button in WorkupCard (B2)', () => {
+  it('renders Accept All Recommended button in OrdersCard', () => {
     render(
       <DashboardOutput
         llmResponse={mockDifferential}
@@ -304,12 +316,12 @@ describe('DashboardOutput', () => {
       />,
     )
 
-    const btn = screen.getByText('Accept All / Continue')
+    const btn = screen.getByText('Accept All Recommended')
     expect(btn).toBeDefined()
     expect(btn.tagName).toBe('BUTTON')
   })
 
-  it('calls onAcceptContinue when Accept All / Continue is clicked', () => {
+  it('calls onAcceptContinue when Accept All Recommended is clicked', () => {
     const onAcceptContinue = vi.fn()
 
     render(
@@ -322,7 +334,7 @@ describe('DashboardOutput', () => {
       />,
     )
 
-    fireEvent.click(screen.getByText('Accept All / Continue'))
+    fireEvent.click(screen.getByText('Accept All Recommended'))
     expect(onAcceptContinue).toHaveBeenCalledOnce()
   })
 

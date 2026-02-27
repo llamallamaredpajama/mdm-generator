@@ -52,7 +52,7 @@ interface TestSeed {
 }
 
 // ---------------------------------------------------------------------------
-// Complete Test Catalog (~60 tests)
+// Complete Test Catalog (~76 tests)
 // ---------------------------------------------------------------------------
 
 const tests: TestSeed[] = [
@@ -88,6 +88,12 @@ const tests: TestSeed[] = [
   { id: 'urine_tox', name: 'Urine Tox Screen', category: 'labs', subcategory: 'toxicology', commonIndications: ['overdose', 'altered mental status', 'drug screening'], unit: null, normalRange: null, quickFindings: null, feedsCdrs: [] },
   { id: 'uds', name: 'Urine Drug Screen', category: 'labs', subcategory: 'toxicology', commonIndications: ['overdose', 'altered mental status', 'drug screening'], unit: null, normalRange: null, quickFindings: null, feedsCdrs: [] },
   { id: 'osmolality', name: 'Osmolality', category: 'labs', subcategory: 'chemistry', commonIndications: ['hyponatremia', 'toxic ingestion', 'osmolar gap'], unit: 'mOsm/kg', normalRange: '275-295', quickFindings: null, feedsCdrs: [] },
+  { id: 'procalcitonin', name: 'Procalcitonin', category: 'labs', subcategory: 'infectious', commonIndications: ['sepsis', 'infection differentiation', 'antibiotic stewardship'], unit: 'ng/mL', normalRange: '<0.1', quickFindings: null, feedsCdrs: [] },
+  { id: 'ck_cpk', name: 'CK/CPK', category: 'labs', subcategory: 'chemistry', commonIndications: ['rhabdomyolysis', 'muscle injury', 'cardiac'], unit: 'U/L', normalRange: '22-198', quickFindings: null, feedsCdrs: [] },
+  { id: 'hcg_quant', name: 'Quantitative beta-HCG', category: 'labs', subcategory: 'genitourinary', commonIndications: ['ectopic pregnancy', 'pregnancy quantification', 'vaginal bleeding'], unit: 'mIU/mL', normalRange: null, quickFindings: null, feedsCdrs: [] },
+  { id: 'urine_cx', name: 'Urine Culture', category: 'labs', subcategory: 'infectious', commonIndications: ['UTI confirmation', 'recurrent UTI', 'pyelonephritis'], unit: null, normalRange: null, quickFindings: ['No growth', 'Growth >100k CFU', 'Mixed flora'], feedsCdrs: [] },
+  { id: 'stool_studies', name: 'Stool Studies', category: 'labs', subcategory: 'infectious', commonIndications: ['C. diff', 'diarrhea', 'O&P', 'infectious colitis'], unit: null, normalRange: null, quickFindings: ['C. diff positive', 'C. diff negative', 'O&P positive'], feedsCdrs: [] },
+  { id: 'blood_type_crossmatch', name: 'Type & Crossmatch', category: 'labs', subcategory: 'hematology', commonIndications: ['massive transfusion', 'surgical prep', 'GI bleed'], unit: null, normalRange: null, quickFindings: null, feedsCdrs: [] },
 
   // ===== IMAGING =====
   { id: 'ct_head', name: 'CT Head', category: 'imaging', subcategory: 'head_neck', commonIndications: ['headache', 'trauma', 'altered mental status', 'stroke'], unit: null, normalRange: null, quickFindings: ['Normal', 'Bleed', 'Mass', 'Edema', 'Midline shift'], feedsCdrs: ['canadian_ct_head'] },
@@ -108,6 +114,12 @@ const tests: TestSeed[] = [
   { id: 'echo_tte', name: 'Echo TTE', category: 'imaging', subcategory: 'cardiac', commonIndications: ['dyspnea', 'chest pain', 'murmur', 'CHF'], unit: null, normalRange: null, quickFindings: ['Normal EF', 'Reduced EF', 'Wall motion abnormality', 'Pericardial effusion', 'Valve abnormality'], feedsCdrs: ['heart'] },
   { id: 'mri_brain', name: 'MRI Brain', category: 'imaging', subcategory: 'head_neck', commonIndications: ['stroke', 'seizure', 'mass'], unit: null, normalRange: null, quickFindings: ['Normal', 'Infarct', 'Mass', 'Hemorrhage'], feedsCdrs: [] },
   { id: 'fluoro', name: 'Fluoroscopy', category: 'imaging', subcategory: 'misc', commonIndications: ['reduction', 'foreign body', 'swallow study'], unit: null, normalRange: null, quickFindings: null, feedsCdrs: [] },
+  { id: 'us_le_venous', name: 'LE Venous Duplex (DVT)', category: 'imaging', subcategory: 'vascular', commonIndications: ['DVT', 'leg swelling', 'unilateral edema'], unit: null, normalRange: null, quickFindings: ['Normal', 'DVT present', 'Superficial thrombosis'], feedsCdrs: ['wells_dvt'] },
+  { id: 'us_pelvic', name: 'Pelvic Ultrasound', category: 'imaging', subcategory: 'obstetric', commonIndications: ['ectopic pregnancy', 'ovarian torsion', 'pelvic pain', 'vaginal bleeding'], unit: null, normalRange: null, quickFindings: ['Normal', 'Free fluid', 'Ovarian mass', 'Ectopic'], feedsCdrs: [] },
+  { id: 'cta_abd', name: 'CTA Abdomen/Pelvis', category: 'imaging', subcategory: 'abdomen', commonIndications: ['mesenteric ischemia', 'AAA', 'GI bleed', 'vascular emergency'], unit: null, normalRange: null, quickFindings: ['Normal', 'Mesenteric occlusion', 'AAA', 'Active extravasation'], feedsCdrs: [] },
+  { id: 'xr_pelvis', name: 'X-ray Pelvis', category: 'imaging', subcategory: 'extremity', commonIndications: ['hip fracture', 'pelvic trauma', 'hip pain'], unit: null, normalRange: null, quickFindings: ['Normal', 'Fracture', 'Dislocation', 'Degenerative'], feedsCdrs: [] },
+  { id: 'ct_face', name: 'CT Facial Bones', category: 'imaging', subcategory: 'head_neck', commonIndications: ['facial trauma', 'orbital fracture', 'midface fracture'], unit: null, normalRange: null, quickFindings: ['Normal', 'Orbital fracture', 'Nasal fracture', 'Le Fort fracture'], feedsCdrs: [] },
+  { id: 'xr_abd', name: 'X-ray Abdomen (KUB)', category: 'imaging', subcategory: 'abdomen', commonIndications: ['obstruction', 'foreign body', 'constipation', 'kidney stone'], unit: null, normalRange: null, quickFindings: ['Normal', 'Obstruction', 'Free air', 'Calcification'], feedsCdrs: [] },
 
   // ===== PROCEDURES/POC =====
   { id: 'ecg_12lead', name: 'ECG (12-lead)', category: 'procedures_poc', subcategory: 'cardiac', commonIndications: ['chest pain', 'palpitations', 'syncope', 'dyspnea'], unit: null, normalRange: null, quickFindings: ['Normal sinus', 'ST elevation', 'ST depression', 'Afib', 'SVT', 'VT', 'BBB', 'STEMI equivalent'], feedsCdrs: ['heart', 'sgarbossa'] },
@@ -122,6 +134,9 @@ const tests: TestSeed[] = [
   { id: 'rapid_strep', name: 'Rapid Strep', category: 'procedures_poc', subcategory: 'point_of_care', commonIndications: ['sore throat', 'pharyngitis'], unit: null, normalRange: null, quickFindings: ['Positive', 'Negative'], feedsCdrs: ['centor_mcisaac'] },
   { id: 'rapid_flu', name: 'Rapid Influenza', category: 'procedures_poc', subcategory: 'point_of_care', commonIndications: ['fever', 'myalgia', 'respiratory illness'], unit: null, normalRange: null, quickFindings: ['Positive Flu A', 'Positive Flu B', 'Negative'], feedsCdrs: [] },
   { id: 'covid_rapid', name: 'COVID Rapid Test', category: 'procedures_poc', subcategory: 'point_of_care', commonIndications: ['respiratory illness', 'fever', 'exposure'], unit: null, normalRange: null, quickFindings: ['Positive', 'Negative'], feedsCdrs: [] },
+  { id: 'poc_glucose', name: 'POC Glucose', category: 'procedures_poc', subcategory: 'point_of_care', commonIndications: ['altered mental status', 'diabetes', 'DKA', 'hypoglycemia'], unit: 'mg/dL', normalRange: '70-140', quickFindings: ['Normal', 'Hypoglycemia', 'Hyperglycemia', 'Critical high'], feedsCdrs: [] },
+  { id: 'joint_aspiration', name: 'Arthrocentesis', category: 'procedures_poc', subcategory: 'orthopedic', commonIndications: ['septic joint', 'gout', 'effusion', 'joint pain'], unit: null, normalRange: null, quickFindings: ['Clear', 'Turbid/purulent', 'Bloody', 'Crystal positive'], feedsCdrs: [] },
+  { id: 'rsv_rapid', name: 'RSV Rapid Test', category: 'procedures_poc', subcategory: 'point_of_care', commonIndications: ['respiratory illness', 'pediatric', 'bronchiolitis', 'wheezing'], unit: null, normalRange: null, quickFindings: ['Positive', 'Negative'], feedsCdrs: [] },
 ]
 
 // ---------------------------------------------------------------------------
