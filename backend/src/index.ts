@@ -41,7 +41,6 @@ import {
   buildParseResultsPrompt,
   type FinalizeStructuredData,
 } from './promptBuilderBuildMode'
-import { buildCompactCatalog } from './services/testCatalogFormatter'
 import { matchCdrsFromDifferential } from './services/cdrMatcher'
 import { buildCdrTracking, type AutoPopulatedValues } from './services/cdrTrackingBuilder'
 import {
@@ -795,16 +794,7 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       'utf8'
     ).catch(() => '') // Fallback to empty if guide not found
 
-    // Build compact test catalog for prompt injection (enables LLM to return exact testIds)
-    let testCatalogStr: string | undefined
-    try {
-      const allTests = await getCachedTestLibrary()
-      testCatalogStr = buildCompactCatalog(allTests)
-    } catch (catalogError) {
-      console.warn('Test catalog build failed (non-blocking):', catalogError)
-    }
-
-    const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx, section1CdrCtx, testCatalogStr)
+    const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx, section1CdrCtx)
 
     let differential: DifferentialItem[] = []
     let cdrAnalysis: CdrAnalysisItem[] = []

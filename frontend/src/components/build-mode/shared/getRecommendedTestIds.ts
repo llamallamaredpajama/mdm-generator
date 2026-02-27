@@ -45,13 +45,9 @@ export function getRecommendedTestIds(
 }
 
 /**
- * Match LLM workup recommendations against the test library.
+ * Match LLM workup recommendations against the test library by name.
  *
- * Fast-path: if the recommendation carries a `testId` that exists in the library,
- * use it directly — no fuzzy matching needed. This is the primary path for new
- * encounters where the LLM was given the test catalog with exact IDs.
- *
- * Fallback (older encounters without testId): case-insensitive name matching:
+ * Uses case-insensitive matching with two strategies:
  * 1. Exact name match (recommendation testName === test library name)
  * 2. Substring containment (recommendation testName contains or is contained in test name)
  *
@@ -63,17 +59,9 @@ export function getTestIdsFromWorkupRecommendations(
 ): string[] {
   if (workupRecommendations.length === 0 || testLibrary.length === 0) return []
 
-  const libraryIds = new Set(testLibrary.map((t) => t.id))
   const matched = new Set<string>()
 
   for (const rec of workupRecommendations) {
-    // Fast-path: LLM provided an exact catalog ID
-    if (rec.testId && libraryIds.has(rec.testId)) {
-      matched.add(rec.testId)
-      continue
-    }
-
-    // Fallback: fuzzy name matching for older encounters without testId
     const recNameLower = rec.testName.toLowerCase()
 
     for (const test of testLibrary) {

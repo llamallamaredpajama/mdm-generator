@@ -38,8 +38,7 @@ export function buildSection1Prompt(
   content: string,
   systemPrompt: string,
   surveillanceContext?: string,
-  cdrContext?: string,
-  testCatalog?: string
+  cdrContext?: string
 ): { system: string; user: string } {
   let system = [
     systemPrompt,
@@ -104,23 +103,11 @@ export function buildSection1Prompt(
     ? '\n    Note: Include surveillance-influenced recommendations (e.g., if regional data shows rising flu activity, recommend influenza testing).'
     : ''
 
-  // Build test catalog block for the user prompt (if available)
-  const catalogBlock: string[] = testCatalog
-    ? [
-        '',
-        'AVAILABLE TEST CATALOG — use these exact IDs in workupRecommendations.testId:',
-        testCatalog,
-        'If recommending a test not in this list, omit testId and provide testName only.',
-        '',
-      ]
-    : []
-
   const user = [
     'INITIAL PATIENT PRESENTATION:',
     '---',
     content,
     '---',
-    ...catalogBlock,
     '',
     'OUTPUT FORMAT (strict JSON):',
     '{',
@@ -147,7 +134,6 @@ export function buildSection1Prompt(
     '  "workupRecommendations": [',
     '    {',
     '      "testName": "Test or study name",',
-    '      "testId": "exact_id_from_catalog (omit if not in catalog)",',
     '      "reason": "Clinical reason for ordering this test",',
     '      "source": "baseline" | "differential" | "cdr" | "surveillance",',
     '      "priority": "stat" | "routine"',

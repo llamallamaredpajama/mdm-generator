@@ -46,13 +46,12 @@ import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
 import { useToast } from '../../contexts/ToastContext'
 import ResultEntry from './shared/ResultEntry'
 import ProgressIndicator from './shared/ProgressIndicator'
-import OrdersetManager from './shared/OrdersetManager'
+import OrderSelector from './shared/OrderSelector'
 import WorkingDiagnosisInput from './shared/WorkingDiagnosisInput'
 import PasteLabModal from './shared/PasteLabModal'
 import TreatmentInput from './shared/TreatmentInput'
 import DispositionSelector from './shared/DispositionSelector'
 import { useDispoFlows } from '../../hooks/useDispoFlows'
-import { useOrderSets } from '../../hooks/useOrderSets'
 import {
   getRecommendedTestIds,
   getTestIdsFromWorkupRecommendations,
@@ -269,15 +268,15 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     }
   }, [user, encounterId])
 
-  // "+ Add Test" orderset manager toggle (shown inline in S2 custom content)
-  const [showS2OrdersetManager, setShowS2OrdersetManager] = useState(false)
+  // "+ Add Test" order selector toggle (shown inline in S2 custom content)
+  const [showS2OrderSelector, setShowS2OrderSelector] = useState(false)
 
   // S2 entry mode: structured (per-test cards) vs dictation (free-text AI parse) (BM-5.2)
   const [s2EntryMode, setS2EntryMode] = useState<'structured' | 'dictation'>('structured')
   const [dictationText, setDictationText] = useState('')
   const [dictationParsing, setDictationParsing] = useState(false)
 
-  // Compute recommended test IDs for OrdersetManager "AI" badges
+  // Compute recommended test IDs for OrderSelector "AI" badges
   const s1Differential = useMemo(() => {
     const llm = encounter?.section1?.llmResponse
     if (Array.isArray(llm)) return llm
@@ -689,13 +688,6 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     deleteFlow: deleteDispoFlow,
   } = useDispoFlows()
 
-  const {
-    orderSets: s2OrderSets,
-    saveOrderSet: s2SaveOrderSet,
-    updateOrderSet: s2UpdateOrderSet,
-    deleteOrderSet: s2DeleteOrderSet,
-  } = useOrderSets()
-
   // Initialize S3 disposition state from encounter data
   useEffect(() => {
     if (encounter && !s3DispoInitRef.current) {
@@ -1077,22 +1069,13 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
               preview={getSectionPreview(2, encounter)}
               customContent={
                 selectedTests.length > 0 && !isFinalized && !isArchived ? (
-                  showS2OrdersetManager ? (
-                    <OrdersetManager
-                      mode="browse"
+                  showS2OrderSelector ? (
+                    <OrderSelector
                       tests={testLibrary}
                       selectedTests={selectedTests}
                       recommendedTestIds={recommendedTestIds}
                       onSelectionChange={handleSelectedTestsChange}
-                      onClose={() => setShowS2OrdersetManager(false)}
-                      onAcceptAllRecommended={() => setShowS2OrdersetManager(false)}
-                      onAcceptSelected={() => setShowS2OrdersetManager(false)}
-                      orderSets={s2OrderSets}
-                      onSaveOrderSet={s2SaveOrderSet}
-                      onUpdateOrderSet={async (id, data) => {
-                        await s2UpdateOrderSet(id, data)
-                      }}
-                      onDeleteOrderSet={s2DeleteOrderSet}
+                      onBack={() => setShowS2OrderSelector(false)}
                     />
                   ) : (
                     <div className="encounter-editor__result-entries">
@@ -1195,7 +1178,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                             <button
                               type="button"
                               className="encounter-editor__add-test-btn"
-                              onClick={() => setShowS2OrdersetManager(true)}
+                              onClick={() => setShowS2OrderSelector(true)}
                               disabled={isS2Submitting}
                               data-testid="add-test-btn"
                             >

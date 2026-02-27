@@ -133,8 +133,6 @@ export type CdrAnalysisItem = z.infer<typeof CdrAnalysisItemSchema>
 export const WorkupRecommendationSchema = z.object({
   /** Test or study name (e.g., "Troponin", "CT Head", "CBC") */
   testName: z.string(),
-  /** Exact test ID from the catalog (e.g., "troponin", "ct_head") — enables direct matching */
-  testId: z.string().optional(),
   /** Clinical reason for ordering (e.g., "Evaluate for ACS given chest pain with cardiac risk factors") */
   reason: z.string(),
   /** Source of recommendation */

@@ -8,7 +8,7 @@ import {
   createCheckoutSession,
   createCustomerPortalSession,
   getProducts,
-  type ProductWithPrices,
+  type ProductWithPrices
 } from '../lib/stripe'
 import './Settings.css'
 
@@ -43,12 +43,7 @@ export default function Settings() {
   const { subscription, tier, loading: subLoading } = useSubscription()
   const { error: showError } = useToast()
   const { orderSets, deleteOrderSet } = useOrderSets()
-  const [info, setInfo] = useState<{
-    plan: string | null
-    usedThisPeriod: number
-    monthlyQuota: number
-    remaining: number
-  } | null>(null)
+  const [info, setInfo] = useState<{ plan: string | null; usedThisPeriod: number; monthlyQuota: number; remaining: number } | null>(null)
   const [loading, setLoading] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
   const [products, setProducts] = useState<ProductWithPrices[]>([])
@@ -59,12 +54,7 @@ export default function Settings() {
       setLoading(true)
       try {
         const res = await whoAmI(token)
-        setInfo({
-          plan: res.plan,
-          usedThisPeriod: res.used,
-          monthlyQuota: res.limit,
-          remaining: res.remaining,
-        })
+        setInfo({ plan: res.plan, usedThisPeriod: res.used, monthlyQuota: res.limit, remaining: res.remaining })
       } catch (e) {
         console.error('Failed to load account info', e)
       } finally {
@@ -93,8 +83,9 @@ export default function Settings() {
     try {
       setRedirecting(true)
 
-      const proProduct = products.find(
-        (p) => p.metadata?.tier === 'pro' || p.name.toLowerCase() === 'pro',
+      const proProduct = products.find(p =>
+        p.metadata?.tier === 'pro' ||
+        p.name.toLowerCase() === 'pro'
       )
 
       if (!proProduct || !proProduct.prices?.length) {
@@ -103,14 +94,15 @@ export default function Settings() {
         return
       }
 
-      const price =
-        proProduct.prices.find((p) => p.recurring?.interval === 'month') || proProduct.prices[0]
+      const price = proProduct.prices.find((p) =>
+        p.recurring?.interval === 'month'
+      ) || proProduct.prices[0]
 
       const checkoutUrl = await createCheckoutSession(
         user,
         price.id,
         window.location.origin + '/settings?success=true',
-        window.location.origin + '/settings',
+        window.location.origin + '/settings'
       )
 
       window.location.href = checkoutUrl
@@ -140,7 +132,7 @@ export default function Settings() {
     return new Intl.DateTimeFormat('en-US', {
       month: 'long',
       day: 'numeric',
-      year: 'numeric',
+      year: 'numeric'
     }).format(date)
   }
 
@@ -160,13 +152,7 @@ export default function Settings() {
       case 'pro':
         return ['250 MDMs/month', 'Priority processing', 'Export formats', 'Priority support']
       case 'enterprise':
-        return [
-          '1000 MDMs/month',
-          'Fastest processing',
-          'API access',
-          'Team features',
-          'Dedicated support',
-        ]
+        return ['1000 MDMs/month', 'Fastest processing', 'API access', 'Team features', 'Dedicated support']
       default:
         return ['10 MDMs/month', 'Basic features', 'Email support']
     }
@@ -191,13 +177,7 @@ export default function Settings() {
       {/* Account Section */}
       <section className="settings-section">
         <h2 className="settings-section-title">
-          <svg
-            className="settings-section-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
+          <svg className="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
             <circle cx="12" cy="7" r="4" />
           </svg>
@@ -212,10 +192,7 @@ export default function Settings() {
             </div>
             <div className="settings-info-row">
               <span className="settings-info-label">User ID</span>
-              <span
-                className="settings-info-value"
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-xs)' }}
-              >
+              <span className="settings-info-value" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-xs)' }}>
                 {user.uid}
               </span>
             </div>
@@ -232,19 +209,11 @@ export default function Settings() {
           </div>
         ) : (
           <div className="settings-signin">
-            <svg
-              className="settings-signin-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg className="settings-signin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-            <p className="settings-signin-text">
-              Please sign in on the Start page to manage your account.
-            </p>
+            <p className="settings-signin-text">Please sign in on the Start page to manage your account.</p>
           </div>
         )}
       </section>
@@ -253,13 +222,7 @@ export default function Settings() {
       {user && (
         <section className="settings-section">
           <h2 className="settings-section-title">
-            <svg
-              className="settings-section-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg className="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
               <line x1="1" y1="10" x2="23" y2="10" />
             </svg>
@@ -288,14 +251,7 @@ export default function Settings() {
                 {subscription && subscription.status === 'active' ? (
                   <>
                     <p className="settings-status settings-status--active">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                       Active Subscription
@@ -303,20 +259,12 @@ export default function Settings() {
                     <div className="settings-info-row">
                       <span className="settings-info-label">Billing Period</span>
                       <span className="settings-info-value">
-                        {formatDate(subscription.currentPeriodStart)} -{' '}
-                        {formatDate(subscription.currentPeriodEnd)}
+                        {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
                       </span>
                     </div>
                     {subscription.cancelAtPeriodEnd && (
                       <p className="settings-status settings-status--warning">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                           <line x1="12" y1="9" x2="12" y2="13" />
                           <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -328,23 +276,14 @@ export default function Settings() {
                 ) : subscription && subscription.status === 'trialing' ? (
                   <>
                     <p className="settings-status settings-status--active">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                       Trial Active
                     </p>
                     <div className="settings-info-row">
                       <span className="settings-info-label">Trial Ends</span>
-                      <span className="settings-info-value">
-                        {formatDate(subscription.trialEnd)}
-                      </span>
+                      <span className="settings-info-value">{formatDate(subscription.trialEnd)}</span>
                     </div>
                   </>
                 ) : (
@@ -359,13 +298,7 @@ export default function Settings() {
                   <ul className="settings-features-list">
                     {getPlanFeatures(tier).map((feature, idx) => (
                       <li key={idx} className="settings-features-item">
-                        <svg
-                          className="settings-features-check"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
+                        <svg className="settings-features-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
                         {feature}
@@ -382,9 +315,7 @@ export default function Settings() {
                   <div className="settings-usage">
                     <div className="settings-usage-header">
                       <span className="settings-usage-label">MDM Generations</span>
-                      <span className="settings-usage-value">
-                        {info.usedThisPeriod} / {info.monthlyQuota}
-                      </span>
+                      <span className="settings-usage-value">{info.usedThisPeriod} / {info.monthlyQuota}</span>
                     </div>
                     <div className="settings-progress-bar">
                       <div
@@ -415,19 +346,16 @@ export default function Settings() {
                         </>
                       ) : (
                         <>
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                           </svg>
                           Upgrade to Pro
                         </>
                       )}
                     </button>
-                    <p className="settings-btn-help">Get 250 MDMs/month and priority processing</p>
+                    <p className="settings-btn-help">
+                      Get 250 MDMs/month and priority processing
+                    </p>
                   </>
                 ) : (
                   <>
@@ -443,12 +371,7 @@ export default function Settings() {
                         </>
                       ) : (
                         <>
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
                             <line x1="1" y1="10" x2="23" y2="10" />
                           </svg>
@@ -471,13 +394,7 @@ export default function Settings() {
       {user && (
         <section className="settings-section">
           <h2 className="settings-section-title">
-            <svg
-              className="settings-section-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg className="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
               <rect x="9" y="3" width="6" height="4" rx="1" />
             </svg>
@@ -498,7 +415,7 @@ export default function Settings() {
                     <div className="settings-orderset-info">
                       <span className="settings-orderset-name">{os.name}</span>
                       <span className="settings-orderset-meta">
-                        {os.tests.length} tests | used {os.usageCount}x
+                        {os.testIds.length} tests | used {os.usageCount}x
                       </span>
                     </div>
                     <button
@@ -508,14 +425,7 @@ export default function Settings() {
                       type="button"
                       title="Delete order set"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        width="16"
-                        height="16"
-                      >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
                         <polyline points="3 6 5 6 21 6" />
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                       </svg>
@@ -531,13 +441,7 @@ export default function Settings() {
       {/* System Information */}
       <section className="settings-section">
         <h2 className="settings-section-title">
-          <svg
-            className="settings-section-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
+          <svg className="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="16" x2="12" y2="12" />
             <line x1="12" y1="8" x2="12.01" y2="8" />

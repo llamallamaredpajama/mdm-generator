@@ -133,8 +133,6 @@ export type WorkupRecommendationSource = 'baseline' | 'differential' | 'cdr' | '
 export interface WorkupRecommendation {
   /** Test or study name (e.g., "Troponin", "CT Head", "CBC") */
   testName: string
-  /** Exact test ID from the catalog (e.g., "troponin", "ct_head") — enables direct matching */
-  testId?: string
   /** Clinical reason for ordering */
   reason: string
   /** Source of recommendation */

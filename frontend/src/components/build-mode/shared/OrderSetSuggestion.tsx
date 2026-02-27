@@ -28,7 +28,7 @@ export default function OrderSetSuggestion({
         <div className="orderset-suggestion__info">
           <span className="orderset-suggestion__name">{orderSet.name}</span>
           <span className="orderset-suggestion__meta">
-            {orderSet.tests.length} tests
+            {orderSet.testIds.length} tests
             {orderSet.usageCount > 0 && ` | used ${orderSet.usageCount}x`}
           </span>
         </div>
