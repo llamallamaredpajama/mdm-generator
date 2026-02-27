@@ -23,6 +23,8 @@ export type { OrderSet } from '../types/userProfile'
 
 const LEGACY_STORAGE_KEY = 'mdm-order-sets'
 const MIGRATION_FLAG = 'mdm-order-sets-migrated'
+const MIGRATION_RETRY_KEY = 'mdm-order-sets-migration-retries'
+const MAX_MIGRATION_RETRIES = 3
 
 export interface UseOrderSetsReturn {
   orderSets: OrderSet[]
@@ -53,6 +55,10 @@ interface LegacyOrderSet {
 async function migrateFromLocalStorage(token: string): Promise<void> {
   if (localStorage.getItem(MIGRATION_FLAG)) return
 
+  // Bail if we've already exhausted retries
+  const retries = parseInt(localStorage.getItem(MIGRATION_RETRY_KEY) ?? '0', 10)
+  if (retries >= MAX_MIGRATION_RETRIES) return
+
   try {
     const raw = localStorage.getItem(LEGACY_STORAGE_KEY)
     if (!raw) {
@@ -79,9 +85,10 @@ async function migrateFromLocalStorage(token: string): Promise<void> {
 
     localStorage.setItem(MIGRATION_FLAG, '1')
     localStorage.removeItem(LEGACY_STORAGE_KEY)
+    localStorage.removeItem(MIGRATION_RETRY_KEY)
   } catch {
-    // Migration failed silently — user can still use localStorage sets
-    // Will retry on next load
+    // Increment retry counter — stops retrying after MAX_MIGRATION_RETRIES
+    localStorage.setItem(MIGRATION_RETRY_KEY, String(retries + 1))
   }
 }
 

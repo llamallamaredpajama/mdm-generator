@@ -388,4 +388,38 @@ describe('DashboardOutput', () => {
     // Should NOT auto-populate since selections already exist
     expect(onSelectedTestsChange).not.toHaveBeenCalled()
   })
+
+  // ── Fix 3: firestoreInitialized guard ─────────────────────────────────
+
+  it('[Fix 3] does NOT auto-populate when firestoreInitialized=false', () => {
+    const onSelectedTestsChange = vi.fn()
+    render(
+      <DashboardOutput
+        llmResponse={mockDifferential}
+        trendAnalysis={null}
+        selectedTests={[]}
+        onSelectedTestsChange={onSelectedTestsChange}
+        firestoreInitialized={false}
+      />,
+    )
+
+    // Should NOT auto-populate since Firestore hasn't initialized yet
+    expect(onSelectedTestsChange).not.toHaveBeenCalled()
+  })
+
+  it('[Fix 3] auto-populates when firestoreInitialized=true and selectedTests empty', () => {
+    const onSelectedTestsChange = vi.fn()
+    render(
+      <DashboardOutput
+        llmResponse={mockDifferential}
+        trendAnalysis={null}
+        selectedTests={[]}
+        onSelectedTestsChange={onSelectedTestsChange}
+        firestoreInitialized={true}
+      />,
+    )
+
+    // Should auto-populate with recommended test IDs
+    expect(onSelectedTestsChange).toHaveBeenCalledWith(['troponin'])
+  })
 })

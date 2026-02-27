@@ -69,6 +69,8 @@ export default function OrdersetManager({
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [createName, setCreateName] = useState('')
   const [createError, setCreateError] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const createInputRef = useRef<HTMLInputElement>(null)
 
@@ -120,6 +122,14 @@ export default function OrdersetManager({
 
   const selectedCount = selectedTests.length
 
+  // ── Clear stale footer errors when user selects items ────────────────────
+
+  useEffect(() => {
+    if (createError && !showCreateForm && selectedCount > 0) {
+      setCreateError('')
+    }
+  }, [createError, showCreateForm, selectedCount])
+
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleToggle = useCallback(
@@ -163,13 +173,26 @@ export default function OrdersetManager({
       setCreateError('Select items first to create an orderset')
       return
     }
-    setCreateError('')
-    const result = await onSaveOrderSet(trimmed, selectedTests)
-    if (result) {
-      setShowCreateForm(false)
-      setCreateName('')
+    if (orderSets.some((os) => os.name.toLowerCase() === trimmed.toLowerCase())) {
+      setCreateError('An orderset with this name already exists')
+      return
     }
-  }, [createName, selectedCount, selectedTests, onSaveOrderSet])
+    setCreateError('')
+    setIsSaving(true)
+    try {
+      const result = await onSaveOrderSet(trimmed, selectedTests)
+      if (result) {
+        setShowCreateForm(false)
+        setCreateName('')
+      } else {
+        setCreateError('Failed to save orderset')
+      }
+    } catch {
+      setCreateError('Failed to save orderset')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [createName, selectedCount, selectedTests, onSaveOrderSet, orderSets])
 
   const handleCreateAndUse = useCallback(async () => {
     const trimmed = createName.trim()
@@ -181,13 +204,34 @@ export default function OrdersetManager({
       setCreateError('Select items first to create an orderset')
       return
     }
-    setCreateError('')
-    const result = await onSaveOrderSet(trimmed, selectedTests)
-    if (result) {
-      onAcceptSelected()
-      onClose()
+    if (orderSets.some((os) => os.name.toLowerCase() === trimmed.toLowerCase())) {
+      setCreateError('An orderset with this name already exists')
+      return
     }
-  }, [createName, selectedCount, selectedTests, onSaveOrderSet, onAcceptSelected, onClose])
+    setCreateError('')
+    setIsSaving(true)
+    try {
+      const result = await onSaveOrderSet(trimmed, selectedTests)
+      if (result) {
+        onAcceptSelected()
+        onClose()
+      } else {
+        setCreateError('Failed to save orderset')
+      }
+    } catch {
+      setCreateError('Failed to save orderset')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [
+    createName,
+    selectedCount,
+    selectedTests,
+    onSaveOrderSet,
+    onAcceptSelected,
+    onClose,
+    orderSets,
+  ])
 
   const handleUpdateOrderSet = useCallback(async () => {
     if (!editTargetOrderSet) return
@@ -323,14 +367,37 @@ export default function OrdersetManager({
                       >
                         Apply
                       </button>
-                      <button
-                        type="button"
-                        className="orderset-manager__orderset-delete-btn"
-                        onClick={() => onDeleteOrderSet(os.id)}
-                        aria-label={`Delete ${os.name}`}
-                      >
-                        &#128465;
-                      </button>
+                      {pendingDeleteId === os.id ? (
+                        <span className="orderset-manager__confirm-delete">
+                          <span className="orderset-manager__confirm-label">Delete?</span>
+                          <button
+                            type="button"
+                            className="orderset-manager__confirm-yes"
+                            onClick={() => {
+                              onDeleteOrderSet(os.id)
+                              setPendingDeleteId(null)
+                            }}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            type="button"
+                            className="orderset-manager__confirm-no"
+                            onClick={() => setPendingDeleteId(null)}
+                          >
+                            No
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="orderset-manager__orderset-delete-btn"
+                          onClick={() => setPendingDeleteId(os.id)}
+                          aria-label={`Delete ${os.name}`}
+                        >
+                          &#128465;
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -363,17 +430,17 @@ export default function OrdersetManager({
                 type="button"
                 className="orderset-manager__footer-btn orderset-manager__footer-btn--primary"
                 onClick={handleCreateAndUse}
-                disabled={!createName.trim()}
+                disabled={!createName.trim() || isSaving}
               >
-                Accept and Use Now
+                {isSaving ? 'Saving...' : 'Accept and Use Now'}
               </button>
               <button
                 type="button"
                 className="orderset-manager__footer-btn orderset-manager__footer-btn--secondary"
                 onClick={handleCreateOrderSet}
-                disabled={!createName.trim()}
+                disabled={!createName.trim() || isSaving}
               >
-                Save
+                {isSaving ? 'Saving...' : 'Save'}
               </button>
               <button
                 type="button"

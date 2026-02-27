@@ -1034,6 +1034,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
             cdrColorMap={cdrColorMap}
             onAcceptContinue={() => setWorkupAccepted(true)}
             onOpenTrendReport={analysis ? () => setShowTrendReport(true) : undefined}
+            firestoreInitialized={selectedTestsInitRef.current}
           />
         )}
 

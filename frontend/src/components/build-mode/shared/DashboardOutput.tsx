@@ -54,6 +54,8 @@ interface DashboardOutputProps {
   onAcceptContinue?: () => void
   /** C2: Callback to open trend report modal */
   onOpenTrendReport?: () => void
+  /** Whether Firestore data has been loaded into selectedTests (guards auto-populate) */
+  firestoreInitialized?: boolean
 }
 
 /**
@@ -115,6 +117,7 @@ export default function DashboardOutput({
   cdrColorMap,
   onAcceptContinue,
   onOpenTrendReport,
+  firestoreInitialized = true,
 }: DashboardOutputProps) {
   const isMobile = useIsMobile()
   const differential = getDifferential(llmResponse)
@@ -160,6 +163,7 @@ export default function DashboardOutput({
   useEffect(() => {
     if (
       !autoPopulatedRef.current &&
+      firestoreInitialized &&
       recommendedTestIds.length > 0 &&
       selectedTests.length === 0 &&
       onSelectedTestsChange
@@ -167,7 +171,7 @@ export default function DashboardOutput({
       autoPopulatedRef.current = true
       onSelectedTestsChange(recommendedTestIds)
     }
-  }, [recommendedTestIds, selectedTests.length, onSelectedTestsChange])
+  }, [recommendedTestIds, selectedTests.length, onSelectedTestsChange, firestoreInitialized])
 
   // Build a text summary of the differential for order set matching
   const differentialText = useMemo(
