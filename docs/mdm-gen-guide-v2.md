@@ -42,7 +42,7 @@ Two of three elements must meet or exceed the target level:
 |------|----------|---------------|
 | **1 — Highest** | Differential with life threats, admission/observation rationale, independent interpretation of imaging, external physician discussion (name, time, content, recommendations) | Drives code level directly |
 | **2 — High** | Parenteral controlled substances, drug therapy requiring intensive monitoring, emergency procedures with risk factors, social determinants impact | Supports risk element |
-| **3 — Supporting** | Independent historian info, external records reviewed, risk stratification tools with scores, medication management rationale | Supports data element |
+| **3 — Supporting** | Independent historian info (when physician directly discussed with historian), external records reviewed, risk stratification tools with scores, medication management rationale | Supports data element |
 
 ### 1.4 Core Principle
 Presenting symptoms drive MDM complexity, NOT final diagnosis. A chest pain workup that rules out ACS still qualifies as high complexity because extensive evaluation may be required to reach the conclusion that signs or symptoms do not represent a highly morbid condition.
@@ -152,7 +152,7 @@ When a component is not specified in the narrative, apply these defaults:
 | External discussions (discharge) | Discharged, no discussion mentioned | "discussion with referred physician considered; patient/family demonstrate clear understanding of issues and close follow-up with their physician was recommended" |
 | PDMP review | Not mentioned | "considered but would not change management" |
 | External records | Not mentioned | "[Source and relevance]" placeholder — include if mentioned |
-| Independent historian | Not mentioned | "[EMS/Family/Facility/Primary Doctor]" — include if mentioned |
+| Independent historian | Not discussed | Include ONLY if physician directly discussed/spoke with historian (EMS, family, facility, PCP), as evidenced by phrases like "spoke with PMD", "discussed with", "I was told by [provider]", "EMS reported". Mere mention of another provider in patient history (e.g., "seen in urgent care", "PCP prescribed metformin") does NOT qualify — remove this component entirely. |
 
 ### 2.7 Forbidden Patterns
 
@@ -235,7 +235,7 @@ Tests:
 - EKG/Rhythm strips: [List interpretation; if not specified, remove per §2.6]
 Documents and other sources:
 - External records: [Source and relevance]
-- Independent historian: [EMS/Family/Facility/Primary Doctor]
+- Independent historian: [ONLY if physician directly discussed/spoke with historian, as evidenced by phrases like "spoke with PMD", "discussed with", "I was told by [provider]", "EMS reported" — document who and key information obtained. If narrative only mentions another provider in passing history, remove this line entirely]
 - PDMP review: [Default per §2.6]
 Independent Interpretation:
 [Use §2.5 patterns for imaging, ECG, POCUS]
