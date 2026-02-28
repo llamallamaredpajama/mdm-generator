@@ -56,4 +56,50 @@ export async function generateEmbedding(
   return values
 }
 
+const BATCH_LIMIT = 250
+
+/**
+ * Generate 768-dimension embeddings for multiple texts in batches.
+ *
+ * @param texts - Input texts to embed
+ * @param taskType - RETRIEVAL_QUERY for search queries, RETRIEVAL_DOCUMENT for catalog items
+ * @returns Array of 768-dimension number arrays (one per input text)
+ */
+export async function generateEmbeddings(
+  texts: string[],
+  taskType: EmbeddingTaskType
+): Promise<number[][]> {
+  if (texts.length === 0) return []
+
+  const client = await auth.getClient()
+  const allEmbeddings: number[][] = []
+
+  for (let i = 0; i < texts.length; i += BATCH_LIMIT) {
+    const batch = texts.slice(i, i + BATCH_LIMIT)
+    const response = await client.request({
+      url: ENDPOINT,
+      method: 'POST',
+      data: {
+        instances: batch.map(content => ({ content, task_type: taskType })),
+      },
+    })
+
+    const data = response.data as {
+      predictions: Array<{ embeddings: { values: number[] } }>
+    }
+
+    for (const prediction of data.predictions) {
+      const values = prediction.embeddings?.values
+      if (!values || values.length !== EMBEDDING_DIMENSION) {
+        throw new Error(
+          `Unexpected embedding response: got ${values?.length ?? 0} dimensions, expected ${EMBEDDING_DIMENSION}`
+        )
+      }
+      allEmbeddings.push(values)
+    }
+  }
+
+  return allEmbeddings
+}
+
 export { EMBEDDING_DIMENSION }
