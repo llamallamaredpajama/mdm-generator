@@ -42,6 +42,7 @@ import {
   type FinalizeStructuredData,
 } from './promptBuilderBuildMode'
 import { buildCompactCatalog } from './services/testCatalogFormatter'
+import { getRelevantTests } from './services/testCatalogSearch'
 import { matchCdrsFromDifferential } from './services/cdrMatcher'
 import { buildCdrTracking, type AutoPopulatedValues } from './services/cdrTrackingBuilder'
 import {
@@ -796,12 +797,20 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     ).catch(() => '') // Fallback to empty if guide not found
 
     // Build compact test catalog for prompt injection (enables LLM to return exact testIds)
+    // Vector search: embed the narrative and retrieve only the most relevant tests.
+    // Falls back to full cached catalog if vector search fails (same pattern as surveillance).
     let testCatalogStr: string | undefined
     try {
-      const allTests = await getCachedTestLibrary()
-      testCatalogStr = buildCompactCatalog(allTests)
-    } catch (catalogError) {
-      console.warn('Test catalog build failed (non-blocking):', catalogError)
+      const relevantTests = await getRelevantTests(content, 50)
+      testCatalogStr = buildCompactCatalog(relevantTests)
+    } catch (vectorSearchError) {
+      console.warn('Vector search failed, falling back to full catalog (non-blocking):', vectorSearchError)
+      try {
+        const allTests = await getCachedTestLibrary()
+        testCatalogStr = buildCompactCatalog(allTests)
+      } catch (catalogError) {
+        console.warn('Test catalog build also failed (non-blocking):', catalogError)
+      }
     }
 
     const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx, section1CdrCtx, testCatalogStr)

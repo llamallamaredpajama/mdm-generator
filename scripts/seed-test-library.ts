@@ -4,6 +4,9 @@
  *
  * Usage: cd backend && NODE_PATH=./node_modules npx tsx ../scripts/seed-test-library.ts
  *
+ * Options:
+ *   --skip-embeddings   Skip embedding generation (faster, for data-only updates)
+ *
  * Prerequisites:
  * - GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_APPLICATION_CREDENTIALS_JSON env var
  *
@@ -11,6 +14,7 @@
  */
 
 import admin from 'firebase-admin'
+import { GoogleAuth } from 'google-auth-library'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -32,6 +36,62 @@ if (serviceAccountJson) {
 }
 
 const db = admin.firestore()
+
+// ---------------------------------------------------------------------------
+// CLI flags
+// ---------------------------------------------------------------------------
+const skipEmbeddings = process.argv.includes('--skip-embeddings')
+
+// ---------------------------------------------------------------------------
+// Vertex AI Embedding helper (inline to keep script self-contained)
+// ---------------------------------------------------------------------------
+
+const embProject = process.env.PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || 'mdm-generator'
+const embLocation = process.env.VERTEX_LOCATION || process.env.GOOGLE_CLOUD_REGION || 'us-central1'
+const EMB_MODEL = 'text-embedding-005'
+const EMB_ENDPOINT = `https://${embLocation}-aiplatform.googleapis.com/v1/projects/${embProject}/locations/${embLocation}/publishers/google/models/${EMB_MODEL}:predict`
+
+const credJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
+const embAuth = new GoogleAuth({
+  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+  ...(credJson ? { credentials: JSON.parse(credJson) } : {}),
+})
+
+async function generateEmbedding(text: string): Promise<number[]> {
+  const client = await embAuth.getClient()
+  const response = await client.request({
+    url: EMB_ENDPOINT,
+    method: 'POST',
+    data: {
+      instances: [{ content: text, task_type: 'RETRIEVAL_DOCUMENT' }],
+    },
+  })
+  const data = response.data as {
+    predictions: Array<{ embeddings: { values: number[] } }>
+  }
+  return data.predictions[0].embeddings.values
+}
+
+/**
+ * Build rich embedding text capturing the full clinical context of a test.
+ * This is what gets embedded — not just the test name.
+ */
+function buildEmbeddingText(test: TestSeed): string {
+  const parts = [
+    `${test.name}.`,
+    `Category: ${test.category}/${test.subcategory}.`,
+  ]
+  if (test.commonIndications.length > 0) {
+    parts.push(`Indications: ${test.commonIndications.join(', ')}.`)
+  }
+  if (test.quickFindings && test.quickFindings.length > 0) {
+    parts.push(`Findings: ${test.quickFindings.join(', ')}.`)
+  }
+  if (test.feedsCdrs.length > 0) {
+    parts.push(`CDRs: ${test.feedsCdrs.join(', ')}.`)
+  }
+  return parts.join(' ')
+}
 
 // ---------------------------------------------------------------------------
 // Type definitions (inline to keep script self-contained)
@@ -372,7 +432,34 @@ const tests: TestSeed[] = [
 
 async function seedTestLibrary(): Promise<void> {
   console.log(`Seeding ${tests.length} tests into testLibrary collection...`)
+  if (skipEmbeddings) {
+    console.log('  --skip-embeddings: skipping embedding generation')
+  }
 
+  // Generate embeddings in parallel batches (Vertex AI rate limits apply)
+  const EMB_BATCH = 5 // concurrent embedding requests
+  const embeddings: Map<string, number[]> = new Map()
+
+  if (!skipEmbeddings) {
+    console.log('Generating embeddings...')
+    for (let i = 0; i < tests.length; i += EMB_BATCH) {
+      const chunk = tests.slice(i, i + EMB_BATCH)
+      const results = await Promise.all(
+        chunk.map(async (test) => {
+          const text = buildEmbeddingText(test)
+          const emb = await generateEmbedding(text)
+          return { id: test.id, emb }
+        })
+      )
+      for (const r of results) {
+        embeddings.set(r.id, r.emb)
+      }
+      console.log(`  Embeddings: ${Math.min(i + EMB_BATCH, tests.length)}/${tests.length}`)
+    }
+    console.log(`Generated ${embeddings.size} embeddings`)
+  }
+
+  // Write to Firestore in batches
   const BATCH_SIZE = 500
   let written = 0
 
@@ -382,7 +469,12 @@ async function seedTestLibrary(): Promise<void> {
 
     for (const test of chunk) {
       const docRef = db.collection('testLibrary').doc(test.id)
-      batch.set(docRef, test)
+      const emb = embeddings.get(test.id)
+      const docData: Record<string, unknown> = { ...test }
+      if (emb) {
+        docData.embedding = admin.firestore.FieldValue.vector(emb)
+      }
+      batch.set(docRef, docData)
     }
 
     await batch.commit()
