@@ -285,15 +285,23 @@ export interface FinalMdm {
   json: Record<string, unknown>
 }
 
+export interface RecommendedOrder {
+  testId: string
+  testName: string
+  reasoning: string
+  priority: 'high' | 'medium' | 'low'
+}
+
 export interface Section1Response {
   differential: DifferentialItem[]
+  recommendedOrders?: RecommendedOrder[]
   submissionCount: number
   isLocked: boolean
   quotaRemaining: number
 }
 
 export interface Section2Response {
-  mdmPreview: MdmPreview
+  mdmPreview?: MdmPreview
   submissionCount: number
   isLocked: boolean
 }

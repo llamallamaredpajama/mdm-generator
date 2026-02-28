@@ -19,9 +19,11 @@ import {
   SuggestDiagnosisRequestSchema,
   ParseResultsRequestSchema,
   DifferentialItemSchema,
+  RecommendedOrderSchema,
   MdmPreviewSchema,
   FinalMdmSchema,
   type DifferentialItem,
+  type RecommendedOrder,
   type MdmPreview,
   type FinalMdm,
   type CdrTracking,
@@ -785,18 +787,25 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     }
 
     // 7. Build prompt and call Vertex AI
+    // Use build-mode-specific S1 guide (fallback to legacy guide, then empty)
     const systemPrompt = await fs.readFile(
-      path.join(__dirname, '../../docs/mdm-gen-guide.md'),
+      path.join(__dirname, '../../docs/mdm-gen-guide-build-s1.md'),
       'utf8'
-    ).catch(() => '') // Fallback to empty if guide not found
+    ).catch(() =>
+      fs.readFile(
+        path.join(__dirname, '../../docs/mdm-gen-guide.md'),
+        'utf8'
+      ).catch(() => '')
+    )
 
     const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx, section1CdrCtx)
 
     let differential: DifferentialItem[] = []
+    let recommendedOrders: RecommendedOrder[] = []
     try {
       const result = await callGeminiFlash(prompt)
 
-      // Parse response - expect JSON array of differential items
+      // Parse response - expect JSON with differential array and optional recommendedOrders
       let cleanedText = result.text
         .replace(/^```json\s*/gm, '')
         .replace(/^```\s*$/gm, '')
@@ -804,22 +813,34 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
 
       try {
         let rawParsed = JSON.parse(cleanedText)
-        // Unwrap { "differential": [...] } wrapper if present
+
+        // Extract recommendedOrders if present in the top-level object
+        if (rawParsed?.recommendedOrders && Array.isArray(rawParsed.recommendedOrders)) {
+          const ordersValidated = z.array(RecommendedOrderSchema).safeParse(rawParsed.recommendedOrders)
+          if (ordersValidated.success) {
+            recommendedOrders = ordersValidated.data
+          } else {
+            console.warn('Section 1 recommendedOrders validation failed:', ordersValidated.error.message)
+          }
+        }
+
+        // Extract differential: unwrap wrapper if present
+        let diffArray = rawParsed
         if (!Array.isArray(rawParsed) && rawParsed?.differential && Array.isArray(rawParsed.differential)) {
-          rawParsed = rawParsed.differential
+          diffArray = rawParsed.differential
         }
         // Validate structure
-        if (!Array.isArray(rawParsed)) {
+        if (!Array.isArray(diffArray)) {
           const jsonStart = cleanedText.indexOf('[')
           const jsonEnd = cleanedText.lastIndexOf(']')
           if (jsonStart >= 0 && jsonEnd > jsonStart) {
-            rawParsed = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+            diffArray = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
           } else {
             throw new Error('Expected array of differential items')
           }
         }
         // Validate each item with Zod schema
-        const validated = z.array(DifferentialItemSchema).safeParse(rawParsed)
+        const validated = z.array(DifferentialItemSchema).safeParse(diffArray)
         if (validated.success) {
           differential = validated.data
         } else {
@@ -856,6 +877,7 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       'section1.content': content,
       'section1.llmResponse': {
         differential,
+        ...(recommendedOrders.length > 0 && { recommendedOrders }),
         processedAt: admin.firestore.Timestamp.now(),
       },
       'section1.submissionCount': newSubmissionCount,
@@ -875,6 +897,7 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       uid,
       encounterId,
       submissionCount: newSubmissionCount,
+      recommendedOrderCount: recommendedOrders.length,
       timestamp: new Date().toISOString(),
     })
 
@@ -882,6 +905,7 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     return res.json({
       ok: true,
       differential,
+      ...(recommendedOrders.length > 0 && { recommendedOrders }),
       submissionCount: newSubmissionCount,
       isLocked,
       quotaRemaining,
@@ -942,154 +966,43 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       })
     }
 
-    // Check token limit per request based on plan
-    const stats = await userService.getUsageStats(uid)
-    const tokenCheck = checkTokenSize(content, stats.features.maxTokensPerRequest)
-    if (tokenCheck.exceeded) {
-      return res.status(400).json(tokenCheck.payload)
-    }
+    // ================================================================
+    // REDESIGNED S2: Data persistence only — NO LLM call
+    // Section 2 is now pure data entry. Structured data (tests, results,
+    // working diagnosis) is persisted directly to Firestore without AI.
+    // ================================================================
 
-    // 6. Build prompt with section 1 context and call Vertex AI
-    const section1Content = encounter.section1?.content || ''
-    const rawS1Response = encounter.section1?.llmResponse
-    let s1Differential: DifferentialItem[] = []
-    if (Array.isArray(rawS1Response)) {
-      s1Differential = rawS1Response
-    } else if (rawS1Response?.differential && Array.isArray(rawS1Response.differential)) {
-      s1Differential = rawS1Response.differential
-    }
-    const section1Response = { differential: s1Differential }
-
-    // 6b. CDR enrichment for Section 2 (non-blocking)
-    let section2CdrCtx: string | undefined
-    const storedS1CdrCtx: string | undefined = encounter.cdrContext || undefined
-    try {
-      // Re-run CDR selector on combined S1+S2 content to find additional rules from workup data
-      const combinedText = `${section1Content} ${content}`
-      const selectedRules = selectRelevantRules(combinedText)
-      if (selectedRules.length > 0) {
-        section2CdrCtx = buildCdrContext(selectedRules) || undefined
-      }
-    } catch (cdrError) {
-      console.warn('Section 2 CDR enrichment failed (non-blocking):', cdrError)
-    }
-
-    // Build structured data for the prompt (prefer request data, fall back to Firestore)
-    const s2StructuredData = {
-      selectedTests: selectedTests || encounter.section2?.selectedTests,
-      testResults: testResults || encounter.section2?.testResults,
-      structuredDiagnosis: structuredDiagnosis !== undefined ? structuredDiagnosis : encounter.section2?.workingDiagnosis,
-    }
-
-    const prompt = buildSection2Prompt(section1Content, section1Response, content, workingDiagnosis, section2CdrCtx, storedS1CdrCtx, s2StructuredData)
-
-    let mdmPreview: MdmPreview
-    try {
-      const result = await callGeminiFlash(prompt)
-
-      // Parse response - expect MDM preview object
-      let cleanedText = result.text
-        .replace(/^```json\s*/gm, '')
-        .replace(/^```\s*$/gm, '')
-        .trim()
-
-      try {
-        let rawParsed = JSON.parse(cleanedText)
-        // Unwrap { "mdmPreview": { ... } } wrapper if present
-        if (rawParsed.mdmPreview && typeof rawParsed.mdmPreview === 'object') {
-          rawParsed = rawParsed.mdmPreview
-        }
-        // Try to extract JSON if top-level parse isn't an object
-        if (typeof rawParsed !== 'object' || rawParsed === null) {
-          const jsonStart = cleanedText.indexOf('{')
-          const jsonEnd = cleanedText.lastIndexOf('}')
-          if (jsonStart >= 0 && jsonEnd > jsonStart) {
-            rawParsed = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
-          } else {
-            throw new Error('No valid JSON object found')
-          }
-        }
-        // Validate with Zod schema
-        const validated = MdmPreviewSchema.safeParse(rawParsed)
-        if (validated.success) {
-          mdmPreview = validated.data
-        } else {
-          console.warn('Section 2 Zod validation failed:', validated.error.message)
-          mdmPreview = {
-            problems: ['Unable to validate MDM preview'],
-            differential: section1Response.differential.map((d: DifferentialItem) => d.diagnosis),
-            dataReviewed: [],
-            reasoning: 'Model output did not match expected schema. Please review and resubmit.',
-          }
-        }
-      } catch (parseError) {
-        console.error('Section 2 JSON parse error:', parseError)
-        // Try to extract JSON
-        const jsonStart = cleanedText.indexOf('{')
-        const jsonEnd = cleanedText.lastIndexOf('}')
-        if (jsonStart >= 0 && jsonEnd > jsonStart) {
-          const extracted = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
-          const validated = MdmPreviewSchema.safeParse(extracted)
-          if (validated.success) {
-            mdmPreview = validated.data
-          } else {
-            mdmPreview = {
-              problems: ['Unable to parse MDM preview'],
-              differential: section1Response.differential.map((d: DifferentialItem) => d.diagnosis),
-              dataReviewed: [],
-              reasoning: 'Please review input and resubmit',
-            }
-          }
-        } else {
-          mdmPreview = {
-            problems: ['Unable to parse MDM preview'],
-            differential: section1Response.differential.map((d: DifferentialItem) => d.diagnosis),
-            dataReviewed: [],
-            reasoning: 'Please review input and resubmit',
-          }
-        }
-      }
-    } catch (modelError) {
-      console.error('Section 2 model error:', modelError)
-      return res.status(500).json({ error: 'Failed to process section 2' })
-    }
-
-    // 7. Update Firestore
+    // 6. Update Firestore with structured data
     const newSubmissionCount = currentSubmissionCount + 1
     const isLocked = newSubmissionCount >= 2
 
     await encounterRef.update({
-      'section2.content': content,
-      'section2.llmResponse': {
-        mdmPreview,
-        processedAt: admin.firestore.Timestamp.now(),
-      },
+      'section2.content': content || '',
       'section2.submissionCount': newSubmissionCount,
       'section2.status': 'completed',
       'section2.lastUpdated': admin.firestore.Timestamp.now(),
-      // Persist structured data from the request (if provided)
+      // Persist structured data from the request
       ...(selectedTests && { 'section2.selectedTests': selectedTests }),
       ...(testResults && { 'section2.testResults': testResults }),
       ...(structuredDiagnosis !== undefined && { 'section2.workingDiagnosis': structuredDiagnosis }),
-      // Update CDR context with expanded S2 analysis (may include additional rules from workup)
-      ...(section2CdrCtx && { cdrContext: section2CdrCtx }),
+      ...(workingDiagnosis && { 'section2.workingDiagnosis': workingDiagnosis }),
       status: 'section2_done',
       updatedAt: admin.firestore.Timestamp.now(),
     })
 
-    // 8. Log action (no PHI)
+    // 7. Log action (no PHI)
     console.log({
       action: 'process-section2',
       uid,
       encounterId,
       submissionCount: newSubmissionCount,
+      dataOnly: true,
       timestamp: new Date().toISOString(),
     })
 
-    // 9. Return response
+    // 8. Return response (no mdmPreview — S2 is data-entry only)
     return res.json({
       ok: true,
-      mdmPreview,
       submissionCount: newSubmissionCount,
       isLocked,
     })
@@ -1167,13 +1080,17 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       content: encounter.section1?.content || '',
       response: { differential: s1Diff },
     }
+    // S2 data: handle both old-flow (with mdmPreview) and new-flow (data-entry only)
     const rawS2 = encounter.section2?.llmResponse
-    const s2Preview = (rawS2?.mdmPreview && typeof rawS2.mdmPreview === 'object')
-      ? rawS2.mdmPreview
-      : rawS2 || {}
-    const section2Data = {
+    const hasMdmPreview = rawS2?.mdmPreview && typeof rawS2.mdmPreview === 'object'
+    const section2Data: {
+      content: string
+      response?: { mdmPreview: MdmPreview }
+      workingDiagnosis?: string
+    } = {
       content: encounter.section2?.content || '',
-      response: { mdmPreview: s2Preview },
+      // Only include mdmPreview if S2 was processed by LLM (old flow)
+      ...(hasMdmPreview && { response: { mdmPreview: rawS2.mdmPreview } }),
       workingDiagnosis: encounter.section2?.workingDiagnosis,
     }
 
@@ -1194,7 +1111,13 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       followUp: encounter.section3?.followUp,
     }
 
-    const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx, structuredData)
+    // Read build-mode-specific S3 guide (fallback to empty if not found)
+    const s3GuideText = await fs.readFile(
+      path.join(__dirname, '../../docs/mdm-gen-guide-build-s3.md'),
+      'utf8'
+    ).catch(() => undefined)
+
+    const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx, structuredData, s3GuideText)
 
     let finalMdm: FinalMdm
     try {

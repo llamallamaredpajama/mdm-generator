@@ -259,9 +259,19 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     return []
   }, [encounter?.section1?.llmResponse])
 
+  // Extract AI-generated recommendedOrders from S1 LLM response (new flow)
+  const s1RecommendedOrders = useMemo(() => {
+    const llm = encounter?.section1?.llmResponse
+    if (llm && typeof llm === 'object' && 'recommendedOrders' in llm) {
+      const wrapped = llm as { recommendedOrders?: unknown }
+      if (Array.isArray(wrapped.recommendedOrders)) return wrapped.recommendedOrders
+    }
+    return undefined
+  }, [encounter?.section1?.llmResponse])
+
   const recommendedTestIds = useMemo(
-    () => getRecommendedTestIds(s1Differential, testLibrary),
-    [s1Differential, testLibrary]
+    () => getRecommendedTestIds(s1Differential, testLibrary, s1RecommendedOrders),
+    [s1Differential, testLibrary, s1RecommendedOrders]
   )
 
   /**
@@ -972,6 +982,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
               submissionCount={section2State.submissionCount}
               guide={getSectionGuide(2)}
               preview={getSectionPreview(2, encounter)}
+              submitLabel="Save & Continue"
               customContent={
                 selectedTests.length > 0 && !isFinalized && !isArchived ? (
                   showS2OrderSelector ? (
