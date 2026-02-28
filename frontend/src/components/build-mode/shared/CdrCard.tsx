@@ -33,8 +33,6 @@ function getMergedCdrDisplay(
   identifiedCdrs: IdentifiedCdr[],
 ): CdrAnalysisItem[] {
   if (cdrAnalysis.length > 0) {
-    // Use LLM analysis as primary source
-    // Add any client-side identified CDRs that aren't in the LLM analysis
     const analysisNames = new Set(cdrAnalysis.map((c) => c.name.toLowerCase()))
     const additionalFromLibrary: CdrAnalysisItem[] = identifiedCdrs
       .filter((ic) => !analysisNames.has(ic.cdr.name.toLowerCase()))
@@ -47,7 +45,6 @@ function getMergedCdrDisplay(
     return [...cdrAnalysis, ...additionalFromLibrary]
   }
 
-  // Fallback: convert client-side identified CDRs to CdrAnalysisItem shape
   return identifiedCdrs.map((ic) => ({
     name: ic.cdr.name,
     applicable: true,
@@ -57,20 +54,6 @@ function getMergedCdrDisplay(
         ? 'Completable with current data'
         : 'Needs lab/imaging results',
   }))
-}
-
-/**
- * Determine if a CDR component is "simple" enough for inline editing.
- * Simple = boolean (yes/no toggle) or number_range with source !== 'section2'.
- * Complex = select with many options. Reserve those for CdrDetailView.
- */
-function isSimpleComponent(comp: CdrComponent): boolean {
-  if (comp.source === 'section2') return false
-  if (comp.type === 'algorithm') return false
-  if (comp.type === 'boolean') return true
-  // number_range with user_input source is simple enough for inline
-  if (comp.type === 'number_range' && comp.source === 'user_input') return true
-  return false
 }
 
 /**
@@ -93,11 +76,105 @@ function findTrackingId(
 ): string | undefined {
   const def = findCdrDef(name, cdrLibrary)
   if (def && cdrTracking[def.id]) return def.id
-  // Fallback: match by name in tracking entries
   for (const [id, entry] of Object.entries(cdrTracking)) {
     if (entry.name.toLowerCase() === name.toLowerCase()) return id
   }
   return undefined
+}
+
+/**
+ * Parse hex color to RGB and compute relative luminance for contrast detection.
+ */
+function isLightColor(hex: string): boolean {
+  const c = hex.replace('#', '')
+  const r = parseInt(c.substring(0, 2), 16)
+  const g = parseInt(c.substring(2, 4), 16)
+  const b = parseInt(c.substring(4, 6), 16)
+  return (r * 299 + g * 587 + b * 114) / 1000 > 150
+}
+
+type SquareColor = 'empty' | 'answered' | 'complete' | 'excluded'
+
+function getProgressSquareColor(
+  comp: CdrComponent,
+  trackingEntry: { components: Record<string, { answered: boolean }> } | undefined,
+  allComplete: boolean,
+  excluded: boolean,
+): SquareColor {
+  if (excluded) return 'excluded'
+  const isAnswered = trackingEntry?.components[comp.id]?.answered ?? false
+  if (!isAnswered) return 'empty'
+  return allComplete ? 'complete' : 'answered'
+}
+
+interface StatusDisplay {
+  text: string
+  type: 'completable' | 'needs_data' | 'score'
+}
+
+function getStatusDisplay(
+  item: CdrAnalysisItem,
+  trackingEntry: CdrTracking[string] | undefined,
+  cdrDef: CdrDefinition | undefined,
+): StatusDisplay {
+  // Check for score (from tracking or LLM analysis)
+  const score = trackingEntry?.score ?? item.score
+  const interpretation = trackingEntry?.interpretation ?? item.interpretation
+  if (score != null) {
+    const text = interpretation ? `${score} — ${interpretation}` : `${score}`
+    return { text, type: 'score' }
+  }
+
+  // Check if any component needs section2 data
+  const hasMissing = item.missingData && item.missingData.length > 0
+  if (hasMissing) return { text: 'needs data', type: 'needs_data' }
+
+  // Check components for section2 dependencies
+  if (cdrDef) {
+    const hasS2Deps = cdrDef.components.some((c) => c.source === 'section2')
+    const allS2Answered = cdrDef.components
+      .filter((c) => c.source === 'section2')
+      .every((c) => trackingEntry?.components[c.id]?.answered)
+    if (hasS2Deps && !allS2Answered) return { text: 'needs data', type: 'needs_data' }
+  }
+
+  return { text: 'completable', type: 'completable' }
+}
+
+function getComponentStatusText(
+  comp: CdrComponent,
+  trackingEntry: CdrTracking[string] | undefined,
+): string {
+  const compState = trackingEntry?.components[comp.id]
+  if (compState?.answered) {
+    const val = compState.value
+    // For select components, find the matching option label
+    if (comp.type === 'select' && comp.options) {
+      const opt = comp.options.find((o) => o.value === val)
+      if (opt) return `${val} pt (${opt.label})`
+    }
+    // For boolean, show yes/no
+    if (comp.type === 'boolean') {
+      const pointWeight = comp.value ?? 1
+      return val === pointWeight ? `${val} pt (Yes)` : '0 pt (No)'
+    }
+    return val != null ? `${val}` : 'answered'
+  }
+  // Unanswered
+  if (comp.source === 'section2') return `needs ${comp.label}`
+  return 'awaiting input'
+}
+
+type CompSquareColor = 'red' | 'yellow' | 'green'
+
+function getCompSquareColor(
+  comp: CdrComponent,
+  trackingEntry: CdrTracking[string] | undefined,
+  allComplete: boolean,
+): CompSquareColor {
+  const isAnswered = trackingEntry?.components[comp.id]?.answered ?? false
+  if (!isAnswered) return 'red'
+  return allComplete ? 'green' : 'yellow'
 }
 
 export default function CdrCard({
@@ -110,19 +187,27 @@ export default function CdrCard({
   error,
   onViewCdrs,
   onToggleExcluded,
-  onAnswerComponent,
 }: CdrCardProps) {
-  // Issue 4: Memoize merged CDR list
   const mergedCdrs = useMemo(
     () => getMergedCdrDisplay(cdrAnalysis, identifiedCdrs),
     [cdrAnalysis, identifiedCdrs],
   )
 
-  // Use external color map if provided; otherwise build a local fallback (alphabetically sorted)
   const colorMap = useMemo(() => {
     if (externalColorMap) return externalColorMap
     return buildCdrColorMap(mergedCdrs.map((c) => c.name))
   }, [externalColorMap, mergedCdrs])
+
+  // Expand/collapse state
+  const [expandedCdrs, setExpandedCdrs] = useState<Set<string>>(new Set())
+  const toggleExpand = (cdrName: string) => {
+    setExpandedCdrs((prev) => {
+      const next = new Set(prev)
+      if (next.has(cdrName)) next.delete(cdrName)
+      else next.add(cdrName)
+      return next
+    })
+  }
 
   // A3: Track previous scores for pulse animation
   const prevScoresRef = useRef<Record<string, number | null | undefined>>({})
@@ -171,161 +256,133 @@ export default function CdrCard({
       ) : mergedCdrs.length === 0 ? (
         <p className="cdr-card__empty">No CDRs identified for this differential</p>
       ) : (
-        <>
-          <ul className="cdr-card__list" aria-label="Identified clinical decision rules">
-            {mergedCdrs.map((item, idx) => {
-              const trackingId = findTrackingId(item.name, cdrTracking, cdrLibrary)
-              const trackingEntry = trackingId ? cdrTracking[trackingId] : undefined
-              const isExcluded = trackingEntry?.excluded === true
-              const cdrDef = findCdrDef(item.name, cdrLibrary)
+        <ul className="cdr-card__list" aria-label="Identified clinical decision rules">
+          {mergedCdrs.map((item) => {
+            const trackingId = findTrackingId(item.name, cdrTracking, cdrLibrary)
+            const trackingEntry = trackingId ? cdrTracking[trackingId] : undefined
+            const isExcluded = trackingEntry?.excluded === true
+            const cdrDef = findCdrDef(item.name, cdrLibrary)
+            const cdrColor = colorMap.get(item.name.toLowerCase()) ?? '#6b7280'
+            const isExpanded = expandedCdrs.has(item.name)
+            const components = cdrDef?.components ?? []
 
-              // Use tracking score if available, otherwise use LLM analysis score
-              const displayScore = trackingEntry?.score ?? item.score
-              const displayInterpretation = trackingEntry?.interpretation ?? item.interpretation
+            // All components answered?
+            const allComplete =
+              components.length > 0 &&
+              components.every((c) => trackingEntry?.components[c.id]?.answered)
 
-              const hasScore = displayScore != null
-              const hasMissing = item.missingData && item.missingData.length > 0
-              const readiness = hasScore
-                ? 'completed'
-                : hasMissing
-                  ? 'needs_results'
-                  : 'completable'
+            const status = getStatusDisplay(item, trackingEntry, cdrDef)
+            const isPulsing = pulsing.has(item.name)
 
-              // A5: Color-coded CDR correlation (deterministic via alphabetical sort)
-              const cdrColor = colorMap.get(item.name.toLowerCase()) ?? '#6b7280'
+            // Pill text: name, or name + score when scored
+            const pillText =
+              status.type === 'score' ? `${item.name}: ${status.text}` : item.name
 
-              // A2: Find simple components for inline editing
-              const simpleComponents = cdrDef?.components.filter(isSimpleComponent) ?? []
-              const hasInlineEditable =
-                simpleComponents.length > 0 && onAnswerComponent && trackingId
+            const pillBg = isExcluded ? '#e5e7eb' : cdrColor
+            const pillTextColor = isExcluded ? '#9ca3af' : isLightColor(cdrColor) ? '#1f2937' : '#ffffff'
 
-              return (
-                <li
-                  key={item.name}
-                  className={`cdr-card__row${isExcluded ? ' cdr-card__row--excluded' : ''}`}
+            return (
+              <li
+                key={item.name}
+                className={`cdr-card__item${isExcluded ? ' cdr-card__row--excluded' : ''}`}
+              >
+                {/* Title row */}
+                <div
+                  className="cdr-card__row"
+                  onClick={() => toggleExpand(item.name)}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      toggleExpand(item.name)
+                    }
+                  }}
                 >
-                  {/* A4: Include/Exclude checkbox */}
+                  {/* Checkbox */}
                   {onToggleExcluded && trackingId && (
                     <input
                       type="checkbox"
-                      className="cdr-card__include-checkbox"
+                      className="cdr-card__checkbox"
                       checked={!isExcluded}
                       onChange={() => onToggleExcluded(trackingId)}
+                      onClick={(e) => e.stopPropagation()}
                       aria-label={`${isExcluded ? 'Include' : 'Exclude'} ${item.name}`}
                       title={isExcluded ? 'Include in MDM' : 'Exclude from MDM'}
                     />
                   )}
-                  {/* A5: CDR color indicator */}
+
+                  {/* Colored pill */}
                   <span
-                    className={`cdr-card__dot cdr-card__dot--${readiness}`}
-                    style={{ backgroundColor: cdrColor }}
-                    aria-hidden="true"
-                    title={`CDR ${idx + 1}`}
-                  />
-                  <div className="cdr-card__row-content">
-                    <span
-                      className={`cdr-card__name${isExcluded ? ' cdr-card__name--excluded' : ''}`}
-                    >
-                      {item.name}
-                      {/* A5: CDR correlation icon */}
-                      <span
-                        className="cdr-card__correlation-icon"
-                        style={{ backgroundColor: cdrColor }}
-                        title={`CDR ${idx + 1} correlation`}
-                      />
+                    className={`cdr-card__pill${isPulsing ? ' cdr-card__pill--pulse' : ''}`}
+                    style={{ backgroundColor: pillBg, color: pillTextColor }}
+                  >
+                    {pillText}
+                  </span>
+
+                  {/* Progress bar */}
+                  {components.length > 0 && (
+                    <span className="cdr-card__progress" aria-label={`${components.filter((c) => trackingEntry?.components[c.id]?.answered).length} of ${components.length} components answered`}>
+                      {components.map((comp) => {
+                        const sq = getProgressSquareColor(comp, trackingEntry, allComplete, isExcluded)
+                        return (
+                          <span
+                            key={comp.id}
+                            className={`cdr-card__progress-square cdr-card__progress-square--${sq}`}
+                            title={comp.label}
+                          />
+                        )
+                      })}
                     </span>
-                    {hasScore && (
-                      <span
-                        className={`cdr-card__score${pulsing.has(item.name) ? ' cdr-card__score--pulse' : ''}`}
-                      >
-                        Score: {displayScore}
-                        {displayInterpretation ? ` \u2014 ${displayInterpretation}` : ''}
-                      </span>
+                  )}
+
+                  {/* Status label (only when not scored — score is in pill) */}
+                  {status.type !== 'score' && (
+                    <span className={`cdr-card__status cdr-card__status--${status.type}`}>
+                      {status.text}
+                    </span>
+                  )}
+
+                  {/* Chevron */}
+                  <span className={`cdr-card__chevron${isExpanded ? ' cdr-card__chevron--open' : ''}`} aria-hidden="true">
+                    ▶
+                  </span>
+                </div>
+
+                {/* Expanded dropdown */}
+                <div className={`cdr-card__dropdown${isExpanded ? ' cdr-card__dropdown--open' : ''}`}>
+                  <div className="cdr-card__dropdown-inner">
+                    {/* Brief clinical application */}
+                    {cdrDef?.application && (
+                      <p className="cdr-card__application">{cdrDef.application}</p>
                     )}
-                    {!hasScore && hasMissing && (
-                      <span className="cdr-card__missing">
-                        Needs: {item.missingData!.join(', ')}
-                      </span>
-                    )}
-                    {!hasScore && !hasMissing && (
-                      <span className="cdr-card__readiness">(completable)</span>
-                    )}
 
-                    {/* A2: Inline simple component editing */}
-                    {hasInlineEditable && !isExcluded && (
-                      <div className="cdr-card__inline-components">
-                        {simpleComponents.map((comp) => {
-                          const compState = trackingEntry?.components[comp.id]
-                          const isAnswered = compState?.answered ?? false
-                          const currentValue = compState?.value ?? null
-
-                          if (comp.type === 'boolean') {
-                            const pointWeight = comp.value ?? 1
-                            const isPresent = currentValue === pointWeight
-                            const isAbsent = currentValue === 0
-                            return (
-                              <div key={comp.id} className="cdr-card__inline-toggle">
-                                <span className="cdr-card__inline-label">{comp.label}</span>
-                                <div className="cdr-card__inline-btn-group">
-                                  <button
-                                    type="button"
-                                    className={`cdr-card__inline-btn${isPresent ? ' cdr-card__inline-btn--active' : ''}`}
-                                    onClick={() =>
-                                      onAnswerComponent!(trackingId!, comp.id, pointWeight)
-                                    }
-                                    aria-pressed={isPresent}
-                                  >
-                                    Y
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className={`cdr-card__inline-btn${isAbsent ? ' cdr-card__inline-btn--active' : ''}`}
-                                    onClick={() => onAnswerComponent!(trackingId!, comp.id, 0)}
-                                    aria-pressed={isAbsent}
-                                  >
-                                    N
-                                  </button>
-                                </div>
-                                {isAnswered && compState?.source === 'section1' && (
-                                  <span className="cdr-card__inline-ai">(AI)</span>
-                                )}
-                              </div>
-                            )
-                          }
-
-                          // number_range: show current value indicator
-                          if (comp.type === 'number_range') {
-                            return (
-                              <div key={comp.id} className="cdr-card__inline-range">
-                                <span className="cdr-card__inline-label">{comp.label}</span>
-                                <span className="cdr-card__inline-value">
-                                  {isAnswered ? String(currentValue) : 'pending'}
-                                </span>
-                              </div>
-                            )
-                          }
-
-                          return null
+                    {/* Component checklist */}
+                    {components.length > 0 && (
+                      <div className="cdr-card__comp-list">
+                        {components.map((comp) => {
+                          const compColor = getCompSquareColor(comp, trackingEntry, allComplete)
+                          const statusText = getComponentStatusText(comp, trackingEntry)
+                          const isAnswered = trackingEntry?.components[comp.id]?.answered ?? false
+                          return (
+                            <div key={comp.id} className="cdr-card__comp-row">
+                              <span className={`cdr-card__comp-square cdr-card__comp-square--${compColor}`} />
+                              <span className="cdr-card__comp-label">{comp.label}</span>
+                              <span className={`cdr-card__comp-status${isAnswered ? ' cdr-card__comp-status--answered' : ''}`}>
+                                {statusText}
+                              </span>
+                            </div>
+                          )
                         })}
                       </div>
                     )}
                   </div>
-                </li>
-              )
-            })}
-          </ul>
-          <div className="cdr-card__legend" aria-hidden="true">
-            <span className="cdr-card__legend-item">
-              <span className="cdr-card__dot cdr-card__dot--completed" /> score calculated
-            </span>
-            <span className="cdr-card__legend-item">
-              <span className="cdr-card__dot cdr-card__dot--completable" /> completable now
-            </span>
-            <span className="cdr-card__legend-item">
-              <span className="cdr-card__dot cdr-card__dot--needs_results" /> needs data
-            </span>
-          </div>
-        </>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
       )}
 
       {!loading && mergedCdrs.length > 0 && (

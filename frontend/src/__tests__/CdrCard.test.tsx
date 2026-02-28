@@ -56,29 +56,18 @@ describe('CdrCard', () => {
     expect(screen.getByText('2 identified')).toBeDefined()
   })
 
-  it('shows readiness labels', () => {
-    render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
-
-    // "needs_results" CDR shows missing data text via getMergedCdrDisplay fallback
-    // The "Needs: " prefix and value are separate text nodes within the same span
-    expect(
-      screen.getByText(
-        (_content, el) =>
-          el?.className === 'cdr-card__missing' &&
-          (el?.textContent ?? '').includes('Requires workup results'),
-      ),
-    ).toBeDefined()
-    // "completable" CDR shows (completable) label
-    expect(screen.getByText('(completable)')).toBeDefined()
-  })
-
-  it('shows legend', () => {
+  it('shows readiness status labels', () => {
     const { container } = render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
 
-    const legend = container.querySelector('.cdr-card__legend')
-    expect(legend).not.toBeNull()
-    expect(legend!.textContent).toContain('completable now')
-    expect(legend!.textContent).toContain('needs data')
+    // "needs_results" CDR shows "needs data" status
+    const needsDataStatus = container.querySelector('.cdr-card__status--needs_data')
+    expect(needsDataStatus).not.toBeNull()
+    expect(needsDataStatus!.textContent).toBe('needs data')
+
+    // "completable" CDR shows "completable" status
+    const completableStatus = container.querySelector('.cdr-card__status--completable')
+    expect(completableStatus).not.toBeNull()
+    expect(completableStatus!.textContent).toBe('completable')
   })
 
   it('shows loading state', () => {
@@ -140,7 +129,7 @@ describe('CdrCard', () => {
 
   // --- LLM cdrAnalysis prop tests ---
 
-  it('renders LLM cdrAnalysis with score and interpretation', () => {
+  it('renders LLM cdrAnalysis with score and interpretation in pill', () => {
     const cdrAnalysis: CdrAnalysisItem[] = [
       {
         name: 'HEART Score',
@@ -150,15 +139,17 @@ describe('CdrCard', () => {
         reasoning: 'Calculated from available data',
       },
     ]
-    render(<CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />)
+    const { container } = render(<CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />)
 
-    expect(screen.getByText('HEART Score')).toBeDefined()
-    // Score display: "Score: 4 — Moderate risk"
-    const scoreEl = screen.getByText(/Score: 4/)
-    expect(scoreEl.textContent).toContain('Moderate risk')
+    // Score is shown inside the pill: "HEART Score: 4 — Moderate risk"
+    const pill = container.querySelector('.cdr-card__pill')
+    expect(pill).not.toBeNull()
+    expect(pill!.textContent).toContain('HEART Score')
+    expect(pill!.textContent).toContain('4')
+    expect(pill!.textContent).toContain('Moderate risk')
   })
 
-  it('renders LLM cdrAnalysis with missing data', () => {
+  it('renders LLM cdrAnalysis with missing data as needs_data status', () => {
     const cdrAnalysis: CdrAnalysisItem[] = [
       {
         name: 'Wells PE',
@@ -167,17 +158,13 @@ describe('CdrCard', () => {
         reasoning: 'Need lab results',
       },
     ]
-    render(<CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />)
+    const { container } = render(<CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />)
 
     expect(screen.getByText('Wells PE')).toBeDefined()
-    // "Needs: " prefix and value are separate text nodes — use function matcher
-    expect(
-      screen.getByText(
-        (_content, el) =>
-          el?.className === 'cdr-card__missing' &&
-          (el?.textContent ?? '').includes('D-dimer, CT angiography'),
-      ),
-    ).toBeDefined()
+    // Missing data CDRs show "needs data" status label
+    const status = container.querySelector('.cdr-card__status--needs_data')
+    expect(status).not.toBeNull()
+    expect(status!.textContent).toBe('needs data')
   })
 
   it('merges LLM cdrAnalysis with client-side identifiedCdrs', () => {
@@ -192,11 +179,13 @@ describe('CdrCard', () => {
     // Client-side has Wells PE which is NOT in LLM analysis — should be added
     const clientCdrs: IdentifiedCdr[] = [{ cdr: wellsCdr, readiness: 'completable' }]
 
-    render(<CdrCard identifiedCdrs={clientCdrs} cdrAnalysis={cdrAnalysis} loading={false} />)
+    const { container } = render(<CdrCard identifiedCdrs={clientCdrs} cdrAnalysis={cdrAnalysis} loading={false} />)
 
-    // Both should appear
-    expect(screen.getByText('HEART Score')).toBeDefined()
-    expect(screen.getByText('Wells PE')).toBeDefined()
+    // Both should appear — HEART Score pill includes score text
+    const pills = container.querySelectorAll('.cdr-card__pill')
+    const pillTexts = Array.from(pills).map((p) => p.textContent)
+    expect(pillTexts.some((t) => t?.includes('HEART Score'))).toBe(true)
+    expect(pillTexts.some((t) => t?.includes('Wells PE'))).toBe(true)
     // Total count should be 2
     expect(screen.getByText('2 identified')).toBeDefined()
   })
@@ -215,8 +204,9 @@ describe('CdrCard', () => {
 
     render(<CdrCard identifiedCdrs={clientCdrs} cdrAnalysis={cdrAnalysis} loading={false} />)
 
-    // Should show LLM score, not client-side "Requires workup results"
-    expect(screen.getByText(/Score: 5/)).toBeDefined()
+    // Should show LLM score in pill, not client-side "needs data" status
+    const pill = screen.getByText(/HEART Score.*5/)
+    expect(pill.textContent).toContain('High risk')
     expect(screen.queryByText('Requires workup results')).toBeNull()
     // Count should be 1 (no duplicate)
     expect(screen.getByText('1 identified')).toBeDefined()

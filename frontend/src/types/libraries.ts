@@ -98,4 +98,6 @@ export interface CdrDefinition {
   components: CdrComponent[]
   scoring: CdrScoring
   suggestedTreatments?: Record<string, string[]>
+  /** Brief clinical application summary (e.g., "Stratifies chest pain patients…") */
+  application?: string
 }

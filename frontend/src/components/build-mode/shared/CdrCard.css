@@ -43,217 +43,212 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
-.cdr-card__row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  font-size: 0.85rem;
+/* ── List item wrapper ────────────────────────────────────────── */
+.cdr-card__item {
   transition: opacity 0.2s;
 }
 
-/* A4: Excluded CDR row styling */
 .cdr-card__row--excluded {
   opacity: 0.5;
 }
 
-/* A4: Include/Exclude checkbox */
-.cdr-card__include-checkbox {
+/* ── Collapsed row ────────────────────────────────────────────── */
+.cdr-card__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  font-size: 0.85rem;
+}
+
+.cdr-card__row:hover {
+  background: var(--color-background, #ffffff);
+}
+
+/* ── Checkbox ─────────────────────────────────────────────────── */
+.cdr-card__checkbox {
   width: 0.875rem;
   height: 0.875rem;
-  margin-top: 0.125rem;
   cursor: pointer;
   accent-color: var(--color-primary, #3b82f6);
   flex-shrink: 0;
 }
 
-.cdr-card__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-top: 0.25rem;
-}
-
-.cdr-card__dot--completable {
-  background-color: #16a34a;
-}
-
-.cdr-card__dot--needs_results {
-  background-color: #d97706;
-}
-
-.cdr-card__dot--completed {
-  background-color: #2563eb;
-}
-
-.cdr-card__row-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  min-width: 0;
-  flex: 1;
-}
-
-.cdr-card__name {
-  color: var(--color-text, #1e293b);
-  font-weight: 500;
+/* ── Colored pill ─────────────────────────────────────────────── */
+.cdr-card__pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-}
-
-/* A4: Excluded CDR name styling */
-.cdr-card__name--excluded {
-  text-decoration: line-through;
-  color: var(--color-text-muted, #94a3b8);
-}
-
-/* A5: CDR correlation icon — small colored circle next to name */
-.cdr-card__correlation-icon {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.cdr-card__score {
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
   font-size: 0.8rem;
-  color: #2563eb;
   font-weight: 500;
+  white-space: nowrap;
+  line-height: 1.4;
   transition: transform 0.15s;
+  flex-shrink: 0;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* A3: Score pulse animation on recalculation */
-.cdr-card__score--pulse {
+/* A3: Pulse animation on score change */
+.cdr-card__pill--pulse {
   animation: cdr-score-pulse 0.6s ease-out;
 }
 
 @keyframes cdr-score-pulse {
   0% {
     transform: scale(1);
-    background-color: transparent;
   }
   30% {
-    transform: scale(1.08);
-    background-color: rgba(37, 99, 235, 0.1);
+    transform: scale(1.06);
   }
   100% {
     transform: scale(1);
-    background-color: transparent;
   }
 }
 
-.cdr-card__missing {
-  font-size: 0.8rem;
-  color: #d97706;
-}
-
-.cdr-card__readiness {
-  color: var(--color-text-muted, #94a3b8);
-  font-size: 0.8rem;
-}
-
-/* A2: Inline component editing area */
-.cdr-card__inline-components {
+/* ── Progress bar (N squares) ─────────────────────────────────── */
+.cdr-card__progress {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-top: 0.25rem;
-  padding-top: 0.25rem;
-  border-top: 1px dashed var(--color-border, #e2e8f0);
-}
-
-.cdr-card__inline-toggle {
-  display: flex;
+  gap: 2px;
   align-items: center;
-  gap: 0.375rem;
-  font-size: 0.75rem;
-}
-
-.cdr-card__inline-label {
-  color: var(--color-text-secondary, #64748b);
-  min-width: 0;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cdr-card__inline-btn-group {
-  display: flex;
-  gap: 0.125rem;
   flex-shrink: 0;
 }
 
-.cdr-card__inline-btn {
-  width: 1.5rem;
-  height: 1.5rem;
-  font-size: 0.65rem;
-  font-weight: 600;
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 4px;
-  background: var(--color-background, #ffffff);
+.cdr-card__progress-square {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid #d1d5db;
+  background: transparent;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.cdr-card__progress-square--answered {
+  background: #eab308;
+  border-color: #eab308;
+}
+
+.cdr-card__progress-square--complete {
+  background: #22c55e;
+  border-color: #22c55e;
+}
+
+.cdr-card__progress-square--excluded {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+/* ── Status label ─────────────────────────────────────────────── */
+.cdr-card__status {
+  font-size: 0.75rem;
   color: var(--color-text-muted, #94a3b8);
-  cursor: pointer;
-  transition:
-    background 0.1s,
-    border-color 0.1s,
-    color 0.1s;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  white-space: nowrap;
+  margin-left: auto;
 }
 
-.cdr-card__inline-btn:hover {
-  border-color: var(--color-primary, #3b82f6);
-  color: var(--color-primary, #3b82f6);
+.cdr-card__status--score {
+  color: #16a34a;
+  font-weight: 600;
 }
 
-.cdr-card__inline-btn--active {
-  background: var(--color-primary, #3b82f6);
-  border-color: var(--color-primary, #3b82f6);
-  color: #ffffff;
+.cdr-card__status--needs_data {
+  color: #d97706;
 }
 
-.cdr-card__inline-ai {
+/* ── Chevron ──────────────────────────────────────────────────── */
+.cdr-card__chevron {
   font-size: 0.65rem;
-  color: #7c3aed;
+  color: #9ca3af;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+
+.cdr-card__chevron--open {
+  transform: rotate(90deg);
+}
+
+/* ── Expandable dropdown ──────────────────────────────────────── */
+.cdr-card__dropdown {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+
+.cdr-card__dropdown--open {
+  max-height: 500px;
+}
+
+.cdr-card__dropdown-inner {
+  padding: 0.5rem 0.25rem 0.25rem 2rem;
+}
+
+/* ── Application description ──────────────────────────────────── */
+.cdr-card__application {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary, #64748b);
+  line-height: 1.4;
   font-style: italic;
 }
 
-.cdr-card__inline-range {
+/* ── Component checklist ──────────────────────────────────────── */
+.cdr-card__comp-list {
   display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.75rem;
-}
-
-.cdr-card__inline-value {
-  font-weight: 500;
-  color: var(--color-text, #1e293b);
-}
-
-.cdr-card__legend {
-  display: flex;
-  gap: 1rem;
-  margin-top: 0.75rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--color-border, #e2e8f0);
-  font-size: 0.75rem;
-  color: var(--color-text-muted, #94a3b8);
-}
-
-.cdr-card__legend-item {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.25rem;
 }
 
+.cdr-card__comp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.78rem;
+}
+
+.cdr-card__comp-square {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.cdr-card__comp-square--red {
+  background: #ef4444;
+}
+
+.cdr-card__comp-square--yellow {
+  background: #eab308;
+}
+
+.cdr-card__comp-square--green {
+  background: #22c55e;
+}
+
+.cdr-card__comp-label {
+  color: var(--color-text, #1e293b);
+  font-weight: 500;
+}
+
+.cdr-card__comp-status {
+  color: var(--color-text-muted, #94a3b8);
+  font-size: 0.72rem;
+  margin-left: auto;
+}
+
+.cdr-card__comp-status--answered {
+  color: var(--color-text-secondary, #64748b);
+}
+
+/* ── View CDRs button ─────────────────────────────────────────── */
 .cdr-card__view-btn {
   display: block;
   width: 100%;
