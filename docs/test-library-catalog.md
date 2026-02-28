@@ -1,6 +1,6 @@
 # ER Test Library Catalog
 
-This is the canonical test catalog (237 tests) used by the MDM Generator's Orders Card and AI recommendation system. These tests are stored in the Firestore `testLibrary` collection and seeded by `backend/scripts/seed-test-library.ts`.
+This is the canonical test catalog (241 tests) used by the MDM Generator's Orders Card and AI recommendation system. These tests are stored in the Firestore `testLibrary` collection and seeded by `backend/scripts/seed-test-library.ts`.
 
 > Last synced from Firestore: 2026-02-28
 
@@ -8,10 +8,10 @@ This is the canonical test catalog (237 tests) used by the MDM Generator's Order
 
 | Category | Count |
 |----------|------:|
-| Labs | 84 |
-| Imaging | 44 |
-| Procedures & Point-of-Care | 109 |
-| **Total** | **237** |
+| Labs | 85 |
+| Imaging | 45 |
+| Procedures & Point-of-Care | 111 |
+| **Total** | **241** |
 
 ---
 
@@ -108,7 +108,8 @@ This is the canonical test catalog (237 tests) used by the MDM Generator's Order
 | `malaria_smear` | Malaria Smear/RDT | travel fever, malaria endemic exposure, cyclic fevers, thrombocytopenia after travel | P. falciparum, P. vivax, P. malariae, Negative | — | — |
 | `mono_spot` | Monospot (Heterophile Ab) | pharyngitis, fatigue, lymphadenopathy, splenomegaly | Positive, Negative | — | — |
 | `procalcitonin` | Procalcitonin | sepsis, infection differentiation, antibiotic stewardship | — | <0.1 ng/mL | — |
-| `respiratory_panel` | Respiratory Pathogen Panel | respiratory illness, fever, pneumonia, bronchiolitis, immunocompromised | Influenza A, Influenza B, RSV, SARS-CoV-2, Rhinovirus, Adenovirus, Parainfluenza, Negative | — | — |
+| `gi_pathogen_panel` | GI Pathogen Panel (PCR) | acute gastroenteritis, bloody diarrhea, traveler diarrhea, immunocompromised with diarrhea, food poisoning, prolonged diarrhea | C. difficile positive, Campylobacter positive, Salmonella positive, Norovirus positive, Shigella/EIEC positive, STEC/E. coli O157 positive, Giardia positive, Rotavirus positive, Negative (no pathogens detected) | — | — |
+| `respiratory_panel` | Respiratory Pathogen Panel (PCR) | respiratory illness, fever, pneumonia, bronchiolitis, immunocompromised, upper respiratory infection, coinfection evaluation | Influenza A, Influenza B, RSV, SARS-CoV-2, Rhinovirus/Enterovirus, Adenovirus, Parainfluenza, Metapneumovirus, Coronavirus (seasonal), Bordetella pertussis, Mycoplasma pneumoniae, Negative | — | — |
 | `stool_studies` | Stool Studies | C. diff, diarrhea, O&P, infectious colitis | C. diff positive, C. diff negative, O&P positive | — | — |
 | `syphilis_rpr` | Syphilis RPR/VDRL | STI screening, rash, neurologic symptoms, pregnancy screening | Reactive, Non-reactive | — | — |
 | `tb_quantiferon` | TB QuantiFERON Gold | tuberculosis screening, immunocompromised, exposure, cavitary lung disease | Positive, Negative, Indeterminate | — | — |
@@ -218,6 +219,7 @@ This is the canonical test catalog (237 tests) used by the MDM Generator's Order
 | ID | Name | Common Indications | Quick Findings | Normal Range | Feeds CDRs |
 |----|------|--------------------|----------------|--------------|------------|
 | `swallow_study` | Esophagram/Swallow Study | esophageal foreign body, esophageal perforation, dysphagia, Boerhaave syndrome | Normal, Foreign body, Perforation/leak, Stricture, Obstruction | — | — |
+| `upper_gi_sbft` | Upper GI with Small Bowel Follow Through | bilious emesis (pediatric), malrotation, midgut volvulus, bowel obstruction, intermittent abdominal pain | Normal (DJ junction left of spine at pylorus level), Malrotation (ligament of Treitz on right), Corkscrew duodenum (volvulus), Duodenal obstruction (beak sign), Partial obstruction, Normal transit time | — | — |
 
 ### Genitourinary
 
@@ -478,6 +480,8 @@ This is the canonical test catalog (237 tests) used by the MDM Generator's Order
 | `arterial_line` | Arterial Line | continuous BP monitoring, hemodynamic instability, frequent ABG sampling, vasopressor titration | Radial placed, Femoral placed, Brachial placed, US-guided | — | — |
 | `central_line` | Central Line Placement | vasopressor administration, difficult IV access, CVP monitoring, rapid fluid resuscitation | IJ placed, Subclavian placed, Femoral placed, US-guided, Confirmed by CXR | — | — |
 | `io_access` | Intraosseous Access | cardiac arrest, failed IV access, pediatric emergency, critical access needed | Tibial IO placed, Humeral IO placed, Sternal IO placed, Good flow confirmed | — | — |
+| `us_guided_piv` | Ultrasound-Guided Peripheral IV | difficult IV access, obesity, IV drug use, dehydration, ESRD, failed blind attempts | Successful first-attempt, Long catheter placed (basilic/brachial), Short-axis technique, Long-axis technique, Multiple attempts required | — | — |
+| `ej_iv` | External Jugular IV | difficult peripheral access, failed peripheral IV, emergency vascular access, volume resuscitation | Successful cannulation, Trendelenburg positioning used, Good flow confirmed, Dislodged/positional | — | — |
 
 ### Wound
 
