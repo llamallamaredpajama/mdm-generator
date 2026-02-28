@@ -792,7 +792,7 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
 
     // 7. Build prompt and call Vertex AI
     const systemPrompt = await fs.readFile(
-      path.join(__dirname, '../../docs/mdm-gen-guide.md'),
+      path.join(__dirname, '../../docs/mdm-gen-guide-v2.md'),
       'utf8'
     ).catch(() => '') // Fallback to empty if guide not found
 

@@ -229,7 +229,7 @@ Requirements:
 
 Use the following guide to structure the output and ensure completeness:
 --- GUIDE START ---
-[Full mdm-gen-guide.md content injected here]
+[Full mdm-gen-guide-v2.md content injected here]
 --- GUIDE END ---
 ```
 
@@ -270,7 +270,10 @@ OUTPUT FORMAT INSTRUCTIONS:
 
 ### 5.1 Core Philosophy
 
-**Source:** `docs/mdm-gen-guide.md`
+**Source:** `docs/mdm-gen-guide-v2.md`
+
+#### Core Principle: Presenting Symptoms Drive Complexity
+Presenting symptoms drive MDM complexity, NOT final diagnosis. A chest pain workup that rules out ACS still qualifies as high complexity because extensive evaluation may be required to reach the conclusion that signs or symptoms do not represent a highly morbid condition.
 
 #### Worst-First Differential Diagnosis
 > "You take pride in creating broad but accurate and patient complaint focused differential diagnoses with a 'worst-first' mentality that is the standard for Emergency Medicine practice, rather than creating a 'most likely' type of differential diagnosis list."
@@ -282,21 +285,23 @@ OUTPUT FORMAT INSTRUCTIONS:
 
 **Implementation:** Missing items are omitted or given conservative defaults, never invented.
 
-### 5.2 Problem Classification System (13 Categories)
+### 5.2 Problem Classification System (11 Categories)
+
+v2 consolidates 13 prose definitions into an 11-row compact table (§2.3). See `docs/mdm-gen-guide-v2.md` for the full table.
 
 | # | Classification | Definition Summary |
 |---|---------------|---------------------|
 | 1 | Self-limited/minor | Transient, won't permanently alter health |
-| 2 | Chronic Stable | Expected duration ≥1 year, at treatment goal |
-| 3 | Chronic with exacerbation | Acutely worsening, poorly controlled |
+| 2 | Chronic stable | Duration ≥1yr, at treatment goal |
+| 3 | Chronic with exacerbation | Worsening/poorly controlled |
 | 4 | Chronic with severe exacerbation | Significant morbidity risk, may need care escalation |
-| 5 | Undiagnosed new problem | High morbidity risk without treatment |
-| 6 | Acute stable | New problem, treatment initiated, improving |
-| 7 | Acute uncomplicated | Low morbidity risk, full recovery expected |
-| 8 | Acute uncomplicated requiring hospitalization | Same as #7, hospital setting required |
+| 5 | Undiagnosed new, uncertain prognosis | High morbidity risk without treatment |
+| 6 | Acute stable | Treatment initiated, improving |
+| 7 | Acute uncomplicated | Low morbidity, full recovery expected |
+| 8 | Acute uncomplicated, inpatient/obs | Low morbidity but requires hospital setting |
 | 9 | Acute with systemic symptoms | High morbidity risk without treatment |
-| 10 | Acute complicated injury | Requires multi-system evaluation |
-| 11 | Threat to life/bodily function | Requires near-term treatment |
+| 10 | Acute complicated injury | Multi-system eval, multiple Tx options |
+| 11 | Threat to life or bodily function | Near-term threat without treatment |
 
 ### 5.3 Problem Formatting Structure
 
@@ -321,20 +326,9 @@ When mentioned by user, these must be documented by name:
 - Pneumonia Severity Index / PORT score
 - Well's Criteria (DVT and PE)
 
-### 5.5 Explicit Defaults for Missing Information
+### 5.5 Centralized Defaults Table
 
-| Component | Default When Missing |
-|-----------|---------------------|
-| Laboratory Tests | "considered but given limited utility, not warranted at this time" |
-| Imaging Studies | "benefit not deemed greater than risk" |
-| EKG/Rhythm Strips | **Remove entire section** |
-| Response to Treatment | **Remove entire section** |
-| Procedures Performed | **Remove entire section** |
-| Reassessments | "unremarkable" |
-| Medications (no dosing) | Add "see MAR for dosing" |
-| Medications (none) | "see MAR" |
-| Meds Considered But Not Given | List 2 drugs of similar class |
-| Disposition (discharge, no physician discussion) | "discussion with referred physician considered; patient/family demonstrate clear understanding of issues and close follow-up with their physician was recommended" |
+v2 consolidates all 14 missing-information defaults into a single table (§2.6) instead of scattering them throughout the template. See `docs/mdm-gen-guide-v2.md` §2.6 for the complete table including PDMP, external records, independent historian, and external discussion defaults.
 
 ### 5.6 Forbidden Phrasing
 
@@ -353,6 +347,32 @@ If mentioned as highest risk element, add verbatim:
 #### Substance Abuse
 If mentioned as highest risk element, add verbatim:
 > "Patient is at high risk of premature death from trauma, organ failure or overdose from continued substance abuse and is unable to abstain due to severity of withdrawal symptoms. This necessitates admission to observation for treatment and monitoring to control such symptoms and reduce such risks."
+
+### 5.8 Independent Interpretation Patterns (v2)
+
+v2 adds explicit language templates for independent interpretation of imaging, ECG, and POCUS (§2.5). This supports MDM data complexity credit:
+- **Imaging**: "On my interpretation of the [study]..."
+- **ECG**: "I independently interpret this ECG as showing..." (rate, rhythm, axis, intervals, ST changes, comparison)
+- **POCUS**: 5-element checklist (indication, views+quality, findings, interpretation, management impact)
+
+### 5.9 CC-Specific Worst-First Templates (v2)
+
+v2 adds illustrative worst-first templates for 6 common chief complaints (§2.2): Chest Pain, Headache, Abdominal Pain, Dyspnea, Syncope, Altered Mental Status. These are starting points — the LLM reasons freely from the actual presentation.
+
+### 5.10 Quality Metrics Time Windows (v2)
+
+v2 adds time-critical documentation requirements for (§3.3):
+- **SEP-1**: Time zero → cultures → abx → lactate → IV bolus → reassess → vasopressors
+- **Stroke**: Door-to-doctor → CT → interpretation → needle (each with target minutes)
+- **STEMI**: Door-to-ECG → needle/balloon timing
+
+### 5.11 Special Population Documentation (v2)
+
+v2 adds conditional documentation blocks for 5 special populations (§3.4): trauma (ABCDE + secondary survey), psychiatric (MSE + capacity + suicide risk), pediatric (weight + PECARN + NAT screening), geriatric (atypical presentation + polypharmacy), procedural sedation (pre/intra/post).
+
+### 5.12 Protective vs Dangerous Phrases (v2)
+
+v2 adds a two-column reference table (§4.2) mapping protective phrases (use) vs dangerous phrases (never use), drawn from medico-legal research. The FAILURE CONDITIONS section (§4) ensures the LLM self-checks against 10 must-have elements before output.
 
 ---
 
@@ -645,7 +665,7 @@ Quick Mode provides one-shot MDM generation: a single narrative produces a compl
 **File:** `backend/src/promptBuilderQuickMode.ts`
 
 The Quick Mode prompt builder:
-1. Constructs a system prompt with the full `mdm-gen-guide.md` content (same as legacy)
+1. Constructs a system prompt with the full `mdm-gen-guide-v2.md` content (same as legacy)
 2. Adds instructions for patient identifier extraction in addition to MDM generation
 3. Requests structured JSON output with both MDM sections and patient identifier fields
 
@@ -880,7 +900,7 @@ This reduces friction when transitioning from free-form dictation to structured 
 | `backend/src/surveillance/types.ts` | Surveillance TypeScript types |
 | `backend/src/surveillance/cache/` | Adapter response caching |
 | **Documentation** | |
-| `docs/mdm-gen-guide.md` | Complete MDM generation guide (prompt source of truth) |
+| `docs/mdm-gen-guide-v2.md` | Complete MDM generation guide v2 (prompt source of truth) |
 | `docs/prd.md` | Product requirements |
 
 ---
