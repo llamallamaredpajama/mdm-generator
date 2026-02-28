@@ -246,7 +246,7 @@ describe('DashboardOutput', () => {
     expect(screen.queryByText('Accept All Recommended')).toBeNull()
   })
 
-  it('opens OrdersetManager modal when Edit is clicked', () => {
+  it('opens OrdersetManager modal when Manage is clicked', () => {
     render(
       <DashboardOutput
         llmResponse={mockDifferential}
@@ -256,7 +256,7 @@ describe('DashboardOutput', () => {
       />,
     )
 
-    fireEvent.click(screen.getByText('Edit'))
+    fireEvent.click(screen.getByText('Manage'))
 
     // OrdersetManager should be shown as modal overlay
     expect(screen.getByText('Orderset Manager')).toBeDefined()
@@ -275,7 +275,7 @@ describe('DashboardOutput', () => {
     )
 
     // Open orderset manager
-    fireEvent.click(screen.getByText('Edit'))
+    fireEvent.click(screen.getByText('Manage'))
     expect(screen.getByText('Orderset Manager')).toBeDefined()
 
     // Close via close button

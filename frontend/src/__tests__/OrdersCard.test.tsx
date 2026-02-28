@@ -1,8 +1,8 @@
 /**
  * OrdersCard Component Tests
  *
- * Tests rendering, recommended orders, orderset integration,
- * category sections, and action callbacks.
+ * Tests rendering, two-panel layout, recommended orders, orderset integration,
+ * category sections with subcategory grouping, and action callbacks.
  */
 
 /// <reference types="vitest/globals" />
@@ -39,7 +39,7 @@ const mockTests: TestDefinition[] = [
     id: 'ct_head',
     name: 'CT Head',
     category: 'imaging',
-    subcategory: 'neuro',
+    subcategory: 'head_neck',
     commonIndications: ['head injury'],
     unit: null,
     normalRange: null,
@@ -78,6 +78,12 @@ describe('OrdersCard', () => {
   it('renders loading state when loading=true', () => {
     render(<OrdersCard {...defaultProps} loading={true} />)
     expect(screen.getByText('Loading test library...')).toBeDefined()
+  })
+
+  it('renders two-panel layout with Orders and Order Sets headers', () => {
+    render(<OrdersCard {...defaultProps} />)
+    expect(screen.getByText('Orders')).toBeDefined()
+    expect(screen.getByText('Order Sets')).toBeDefined()
   })
 
   it('renders recommended section when recommendedTestIds has items', () => {
@@ -120,10 +126,21 @@ describe('OrdersCard', () => {
     expect(onSelectionChange).toHaveBeenCalledWith(['troponin'])
   })
 
-  it('renders orderset section with orderset names', () => {
+  it('renders orderset in right panel with Manage button', () => {
     render(<OrdersCard {...defaultProps} />)
-    // Expand ordersets section
-    fireEvent.click(screen.getByText(/Ordersets/))
+    expect(screen.getByText('Manage')).toBeDefined()
+  })
+
+  it('calls onOpenOrdersetManager when Manage button clicked', () => {
+    render(<OrdersCard {...defaultProps} />)
+    fireEvent.click(screen.getByText('Manage'))
+    expect(defaultProps.onOpenOrdersetManager).toHaveBeenCalledWith('browse')
+  })
+
+  it('renders All Order Sets section with orderset names when expanded', () => {
+    render(<OrdersCard {...defaultProps} />)
+    // Expand the All Order Sets section
+    fireEvent.click(screen.getByText(/All Order Sets/))
     expect(screen.getByText('Chest Pain Workup')).toBeDefined()
   })
 
@@ -132,7 +149,7 @@ describe('OrdersCard', () => {
     render(
       <OrdersCard {...defaultProps} selectedTests={[]} onSelectionChange={onSelectionChange} />,
     )
-    fireEvent.click(screen.getByText(/Ordersets/))
+    fireEvent.click(screen.getByText(/All Order Sets/))
     // Click the orderset checkbox
     const osCheckbox = document.getElementById('orders-os-os-1') as HTMLInputElement
     fireEvent.click(osCheckbox)
@@ -140,20 +157,17 @@ describe('OrdersCard', () => {
     expect(onSelectionChange).toHaveBeenCalledWith(['troponin', 'cbc'])
   })
 
-  it('calls onOpenOrdersetManager when Edit button clicked', () => {
-    render(<OrdersCard {...defaultProps} />)
-    fireEvent.click(screen.getByText('Edit'))
-    expect(defaultProps.onOpenOrdersetManager).toHaveBeenCalledWith('browse')
-  })
-
   it('expands/collapses category sections on click', () => {
     render(<OrdersCard {...defaultProps} />)
     // Labs category exists; click to expand
     const labsHeader = screen.getByText(/Labs \(2\)/)
     fireEvent.click(labsHeader)
-    // Now CBC and Troponin should be visible in the category list
+    // Subcategory headers should be visible
+    expect(screen.getByText('Hematology')).toBeDefined()
+    // Expand the Hematology subcategory to see individual tests
+    fireEvent.click(screen.getByText('Hematology'))
     expect(screen.getByText('CBC')).toBeDefined()
-    // Click again to collapse
+    // Click Labs header again to collapse
     fireEvent.click(labsHeader)
   })
 
@@ -163,7 +177,7 @@ describe('OrdersCard', () => {
     expect(screen.getByText(/Imaging \(1\)/)).toBeDefined()
   })
 
-  it('renders frequently used section', () => {
+  it('renders frequently used orders section', () => {
     const freqUsed: OrderSet = {
       id: 'freq-1',
       name: '__frequently_used__',
@@ -173,15 +187,52 @@ describe('OrdersCard', () => {
       usageCount: 10,
     }
     render(<OrdersCard {...defaultProps} orderSets={[mockOrderSet, freqUsed]} />)
-    expect(screen.getByText('Frequently Used')).toBeDefined()
+    expect(screen.getByText('Frequently Used Orders')).toBeDefined()
   })
 
   it('calls onApplyOrderSet when orderset apply toggled on', () => {
     const onApplyOrderSet = vi.fn()
     render(<OrdersCard {...defaultProps} selectedTests={[]} onApplyOrderSet={onApplyOrderSet} />)
-    fireEvent.click(screen.getByText(/Ordersets/))
+    fireEvent.click(screen.getByText(/All Order Sets/))
     const osCheckbox = document.getElementById('orders-os-os-1') as HTMLInputElement
     fireEvent.click(osCheckbox)
     expect(onApplyOrderSet).toHaveBeenCalledWith(mockOrderSet)
+  })
+
+  it('renders select/deselect all checkbox in recommended section', () => {
+    render(<OrdersCard {...defaultProps} />)
+    const selectAllCheckbox = document.getElementById('orders-rec-select-all') as HTMLInputElement
+    expect(selectAllCheckbox).toBeDefined()
+    expect(selectAllCheckbox).not.toBeNull()
+  })
+
+  it('select/deselect all toggles all recommended tests', () => {
+    const onSelectionChange = vi.fn()
+    render(
+      <OrdersCard {...defaultProps} selectedTests={[]} onSelectionChange={onSelectionChange} />,
+    )
+    const selectAllCheckbox = document.getElementById('orders-rec-select-all') as HTMLInputElement
+    fireEvent.click(selectAllCheckbox)
+    // Should select all recommended test IDs
+    expect(onSelectionChange).toHaveBeenCalledWith(['troponin'])
+  })
+
+  it('shows Create Orderset button in left panel', () => {
+    render(<OrdersCard {...defaultProps} />)
+    expect(screen.getByText('Create Orderset')).toBeDefined()
+  })
+
+  it('shows selected count badge when tests are selected', () => {
+    render(<OrdersCard {...defaultProps} selectedTests={['troponin', 'cbc']} />)
+    expect(screen.getByText('2 selected')).toBeDefined()
+  })
+
+  it('renders subcategory groups when category expanded', () => {
+    render(<OrdersCard {...defaultProps} />)
+    // Expand Labs
+    fireEvent.click(screen.getByText(/Labs \(2\)/))
+    // Should show subcategory headers (title-cased)
+    expect(screen.getByText('Cardiac')).toBeDefined()
+    expect(screen.getByText('Hematology')).toBeDefined()
   })
 })

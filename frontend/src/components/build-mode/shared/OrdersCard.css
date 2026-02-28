@@ -1,6 +1,6 @@
 /* ── OrdersCard ─────────────────────────────────────────────────────────────
- * Multi-section order selection card with recommended, frequently used,
- * ordersets, and category browsing. BEM naming: .orders-card__element--modifier
+ * Two-panel order selection card: Orders (left) + Order Sets (right).
+ * BEM naming: .orders-card__element--modifier
  * ────────────────────────────────────────────────────────────────────────── */
 
 .orders-card {
@@ -19,11 +19,6 @@
   margin-bottom: 0.75rem;
 }
 
-.orders-card__title-group {
-  display: flex;
-  align-items: center;
-}
-
 .orders-card__title {
   margin: 0;
   font-size: 0.9375rem;
@@ -38,8 +33,42 @@
   background: #eff6ff;
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
-  margin-left: 0.5rem;
 }
+
+/* ── Two-Panel Layout ────────────────────────────────────────────────────── */
+
+.orders-card__panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.orders-card__panel {
+  min-width: 0; /* prevent grid blowout */
+}
+
+.orders-card__panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.orders-card__panel-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+  margin: 0;
+}
+
+/* Mobile: stack vertically */
+@media (max-width: 767px) {
+  .orders-card__panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Action Buttons ─────────────────────────────────────────────────────── */
 
 .orders-card__action-btn {
   font-size: 0.8125rem;
@@ -173,6 +202,24 @@
   color: var(--color-text-muted, #94a3b8);
 }
 
+/* ── Select / Deselect All ──────────────────────────────────────────────── */
+
+.orders-card__select-all-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0 0.5rem;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  margin-bottom: 0.375rem;
+}
+
+.orders-card__select-all-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748b);
+  cursor: pointer;
+}
+
 /* ── Source Tags ──────────────────────────────────────────────────────────── */
 
 .orders-card__source-tag {
@@ -236,52 +283,6 @@
   text-align: right;
 }
 
-/* ── Priority Tag ────────────────────────────────────────────────────────── */
-
-.orders-card__priority-tag {
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: #dc2626;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 4px;
-  padding: 0 0.25rem;
-}
-
-/* ── Unmatched Recommendations ───────────────────────────────────────────── */
-
-.orders-card__unmatched {
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px dashed var(--color-border, #e2e8f0);
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.orders-card__unmatched-row {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.8125rem;
-  flex-wrap: wrap;
-  padding-left: 1.5rem;
-}
-
-.orders-card__unmatched-name {
-  font-weight: 500;
-  color: var(--color-text, #1e293b);
-  font-style: italic;
-}
-
-.orders-card__unmatched-reason {
-  font-size: 0.75rem;
-  color: var(--color-text-muted, #94a3b8);
-  flex-basis: 100%;
-  padding-left: 0;
-}
-
 /* ── Frequently Used: Add Items ──────────────────────────────────────────── */
 
 .orders-card__add-items-btn {
@@ -291,10 +292,10 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.125rem 0.375rem;
+  padding: 0.25rem 0.375rem;
   border-radius: 4px;
   white-space: nowrap;
-  margin-left: auto;
+  margin-top: 0.375rem;
 }
 
 .orders-card__add-items-btn:hover {
@@ -318,6 +319,33 @@
   padding: 0.0625rem 0.375rem;
   border-radius: 9999px;
   white-space: nowrap;
+}
+
+/* ── Create Orderset Button ─────────────────────────────────────────────── */
+
+.orders-card__create-orderset-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-primary, #3b82f6);
+  background: transparent;
+  border: 1px dashed var(--color-primary, #3b82f6);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.orders-card__create-orderset-btn:hover {
+  background: #eff6ff;
+}
+
+/* ── Popup Anchor ────────────────────────────────────────────────────────── */
+
+.orders-card__popup-anchor {
+  position: relative;
 }
 
 /* ── Empty Placeholder ───────────────────────────────────────────────────── */

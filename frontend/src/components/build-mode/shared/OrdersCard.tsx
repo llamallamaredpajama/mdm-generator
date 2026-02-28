@@ -7,24 +7,14 @@ import type {
 } from '../../../types/encounter'
 import type { OrderSet } from '../../../types/userProfile'
 import { buildCdrColorMap } from './cdrColorPalette'
+import OrdersLeftPanel from './OrdersLeftPanel'
+import OrdersRightPanel from './OrdersRightPanel'
+import CreateOrdersetPopup from './CreateOrdersetPopup'
 import './OrdersCard.css'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORY_ORDER: TestCategory[] = ['labs', 'imaging', 'procedures_poc']
-
-const CATEGORY_LABELS: Record<TestCategory, string> = {
-  labs: 'Labs',
-  imaging: 'Imaging',
-  procedures_poc: 'Procedures / POC',
-}
-
-const SOURCE_LABELS: Record<WorkupRecommendationSource, string> = {
-  baseline: 'Baseline',
-  differential: 'Differential',
-  cdr: 'CDR',
-  surveillance: 'Regional',
-}
 
 const FREQUENTLY_USED_NAME = '__frequently_used__'
 
@@ -44,6 +34,8 @@ interface OrdersCardProps {
   loading: boolean
   orderSets: OrderSet[]
   onApplyOrderSet: (orderSet: OrderSet) => void
+  onSaveOrderSet?: (name: string, testIds: string[]) => Promise<OrderSet | null>
+  onUpdateOrderSet?: (id: string, data: { tests: string[] }) => Promise<void>
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -62,6 +54,8 @@ export default function OrdersCard({
   loading,
   orderSets,
   onApplyOrderSet,
+  onSaveOrderSet,
+  onUpdateOrderSet,
 }: OrdersCardProps) {
   // ── State ────────────────────────────────────────────────────────────────
 
@@ -69,6 +63,7 @@ export default function OrdersCard({
     () => new Set(['recommended', 'frequentlyUsed']),
   )
   const [accepted, setAccepted] = useState(false)
+  const [showCreatePopup, setShowCreatePopup] = useState(false)
 
   // Clear accepted flash after animation
   useEffect(() => {
@@ -84,13 +79,6 @@ export default function OrdersCard({
     () => tests.filter((t) => recommendedTestIds.includes(t.id)),
     [tests, recommendedTestIds],
   )
-
-  /** LLM recommendations that could not be matched to a library test */
-  const unmatchedRecommendations = useMemo(() => {
-    if (workupRecommendations.length === 0) return []
-    const testNames = new Set(tests.map((t) => t.name.toLowerCase()))
-    return workupRecommendations.filter((rec) => !testNames.has(rec.testName.toLowerCase()))
-  }, [workupRecommendations, tests])
 
   /** Recommended tests enriched with source/reason from workup recommendations */
   const enrichedTests = useMemo(() => {
@@ -199,10 +187,8 @@ export default function OrdersCard({
       const osTestSet = new Set(orderSet.tests)
       const allSelected = orderSet.tests.every((tid) => selectedTests.includes(tid))
       if (allSelected) {
-        // Remove orderset tests from selection
         onSelectionChange(selectedTests.filter((id) => !osTestSet.has(id)))
       } else {
-        // Add orderset tests to selection
         const merged = new Set([...selectedTests, ...orderSet.tests])
         onSelectionChange(Array.from(merged))
         onApplyOrderSet(orderSet)
@@ -210,6 +196,23 @@ export default function OrdersCard({
     },
     [selectedTests, onSelectionChange, onApplyOrderSet],
   )
+
+  const handleToggleAllRecommended = useCallback(() => {
+    const allSelected =
+      recommendedTestIds.length > 0 && recommendedTestIds.every((id) => selectedTests.includes(id))
+    if (allSelected) {
+      const recSet = new Set(recommendedTestIds)
+      onSelectionChange(selectedTests.filter((id) => !recSet.has(id)))
+    } else {
+      const merged = new Set([...selectedTests, ...recommendedTestIds])
+      onSelectionChange(Array.from(merged))
+    }
+  }, [recommendedTestIds, selectedTests, onSelectionChange])
+
+  const handleCreateOrderset = useCallback(() => {
+    if (selectedTests.length === 0) return
+    setShowCreatePopup(true)
+  }, [selectedTests.length])
 
   const handleAcceptAllRecommended = useCallback(() => {
     setAccepted(true)
@@ -234,13 +237,12 @@ export default function OrdersCard({
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  const hasRecommendations = enrichedTests.length > 0 || unmatchedRecommendations.length > 0
+  const hasRecommendations = enrichedTests.length > 0
   const hasSelected = selectedTests.length > 0
   const checkboxClass = accepted
     ? 'orders-card__checkbox orders-card__checkbox--accepted'
     : 'orders-card__checkbox'
 
-  // Check if an orderset is fully selected
   const isOrdersetFullySelected = (os: OrderSet) =>
     os.tests.length > 0 && os.tests.every((tid) => selectedTests.includes(tid))
 
@@ -248,259 +250,67 @@ export default function OrdersCard({
 
   return (
     <div className="orders-card">
-      {/* Header */}
-      <div className="orders-card__header">
-        <div className="orders-card__title-group">
-          <h4 className="orders-card__title">Orders</h4>
-          {hasSelected && (
-            <span className="orders-card__count-badge">{selectedTests.length} selected</span>
-          )}
-        </div>
-        <button
-          type="button"
-          className="orders-card__action-btn orders-card__action-btn--edit"
-          onClick={() => onOpenOrdersetManager('browse')}
-        >
-          Edit
-        </button>
-      </div>
-
-      {/* ── Recommended Orders ────────────────────────────────────────────── */}
-      {hasRecommendations && (
-        <div className="orders-card__section">
-          <button
-            type="button"
-            className="orders-card__section-header"
-            onClick={() => toggleSection('recommended')}
-            aria-expanded={openSections.has('recommended')}
-          >
-            <span
-              className={`orders-card__chevron${openSections.has('recommended') ? ' orders-card__chevron--open' : ''}`}
-              aria-hidden="true"
-            />
-            <span className="orders-card__section-title">Recommended Orders</span>
-          </button>
-          {openSections.has('recommended') && (
-            <div className="orders-card__section-body">
-              {/* Matched recommended tests */}
-              {enrichedTests.length > 0 && (
-                <div className="orders-card__list">
-                  {enrichedTests.map(({ test, source, reason }) => (
-                    <div key={test.id} className="orders-card__test-row">
-                      <input
-                        type="checkbox"
-                        id={`orders-rec-${test.id}`}
-                        className={checkboxClass}
-                        checked={selectedTests.includes(test.id)}
-                        onChange={() => handleToggle(test.id)}
-                      />
-                      <label htmlFor={`orders-rec-${test.id}`} className="orders-card__test-label">
-                        <span className="orders-card__test-name">{test.name}</span>
-                        <span className="orders-card__category-tag">
-                          {CATEGORY_LABELS[test.category]}
-                        </span>
-                        {source && (
-                          <span
-                            className={`orders-card__source-tag orders-card__source-tag--${source}`}
-                          >
-                            {SOURCE_LABELS[source]}
-                          </span>
-                        )}
-                        {/* CDR correlation icons */}
-                        {testCdrMap.get(test.id)?.map((cdr) => (
-                          <span
-                            key={cdr.name}
-                            className="orders-card__cdr-icon"
-                            style={{ backgroundColor: cdr.color }}
-                            title={`Needed by ${cdr.name}`}
-                          />
-                        ))}
-                        <span className="orders-card__ai-badge">AI</span>
-                      </label>
-                      {reason && <span className="orders-card__reason">{reason}</span>}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Unmatched LLM recommendations (text-only) */}
-              {unmatchedRecommendations.length > 0 && (
-                <div className="orders-card__unmatched">
-                  {unmatchedRecommendations.map((rec) => (
-                    <div key={rec.testName} className="orders-card__unmatched-row">
-                      <span className="orders-card__unmatched-name">{rec.testName}</span>
-                      {rec.source && (
-                        <span
-                          className={`orders-card__source-tag orders-card__source-tag--${rec.source}`}
-                        >
-                          {SOURCE_LABELS[rec.source]}
-                        </span>
-                      )}
-                      {rec.priority === 'stat' && (
-                        <span className="orders-card__priority-tag">STAT</span>
-                      )}
-                      <span className="orders-card__ai-badge">AI</span>
-                      {rec.reason && (
-                        <span className="orders-card__unmatched-reason">{rec.reason}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+      {/* Selected count badge */}
+      {hasSelected && (
+        <div className="orders-card__header">
+          <span className="orders-card__count-badge">{selectedTests.length} selected</span>
         </div>
       )}
 
-      {/* ── Frequently Used ───────────────────────────────────────────────── */}
-      <div className="orders-card__section">
-        <div className="orders-card__section-header-row">
-          <button
-            type="button"
-            className="orders-card__section-header"
-            onClick={() => toggleSection('frequentlyUsed')}
-            aria-expanded={openSections.has('frequentlyUsed')}
-          >
-            <span
-              className={`orders-card__chevron${openSections.has('frequentlyUsed') ? ' orders-card__chevron--open' : ''}`}
-              aria-hidden="true"
-            />
-            <span className="orders-card__section-title">Frequently Used</span>
-          </button>
-          <button
-            type="button"
-            className="orders-card__add-items-btn"
-            onClick={() => onOpenOrdersetManager('edit', frequentlyUsedOrderSet?.id)}
-          >
-            Add Items
-          </button>
-        </div>
-        {openSections.has('frequentlyUsed') && (
-          <div className="orders-card__section-body">
-            {frequentlyUsedTests.length > 0 ? (
-              <div className="orders-card__list">
-                {frequentlyUsedTests.map((test) => (
-                  <div key={test.id} className="orders-card__test-row">
-                    <input
-                      type="checkbox"
-                      id={`orders-freq-${test.id}`}
-                      className={checkboxClass}
-                      checked={selectedTests.includes(test.id)}
-                      onChange={() => handleToggle(test.id)}
-                    />
-                    <label htmlFor={`orders-freq-${test.id}`} className="orders-card__test-label">
-                      <span className="orders-card__test-name">{test.name}</span>
-                      <span className="orders-card__category-tag">
-                        {CATEGORY_LABELS[test.category]}
-                      </span>
-                      {/* Show AI badge if also recommended */}
-                      {recommendedTestIds.includes(test.id) && (
-                        <span className="orders-card__ai-badge">AI</span>
-                      )}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="orders-card__empty-placeholder">
-                Add items to build your frequently used list
-              </p>
-            )}
+      {/* Two-panel layout */}
+      <div className="orders-card__panels">
+        <div className="orders-card__panel">
+          <div className="orders-card__panel-header">
+            <h5 className="orders-card__panel-title">Orders</h5>
           </div>
-        )}
+          <OrdersLeftPanel
+            tests={tests}
+            enrichedTests={enrichedTests}
+            recommendedTestIds={recommendedTestIds}
+            selectedTests={selectedTests}
+            frequentlyUsedTests={frequentlyUsedTests}
+            frequentlyUsedOrderSet={frequentlyUsedOrderSet}
+            testsByCategory={testsByCategory}
+            openSections={openSections}
+            checkboxClass={checkboxClass}
+            cdrTracking={cdrTracking}
+            testCdrMap={testCdrMap}
+            onToggle={handleToggle}
+            onToggleSection={toggleSection}
+            onToggleAllRecommended={handleToggleAllRecommended}
+            onOpenOrdersetManager={onOpenOrdersetManager}
+            onCreateOrderset={handleCreateOrderset}
+          />
+        </div>
+
+        <OrdersRightPanel
+          tests={tests}
+          userOrderSets={userOrderSets}
+          selectedTests={selectedTests}
+          checkboxClass={checkboxClass}
+          openSections={openSections}
+          onToggle={handleToggle}
+          onToggleSection={toggleSection}
+          onOrdersetToggle={handleOrdersetToggle}
+          isOrdersetFullySelected={isOrdersetFullySelected}
+          onOpenOrdersetManager={onOpenOrdersetManager}
+        />
       </div>
 
-      {/* ── Ordersets ─────────────────────────────────────────────────────── */}
-      {userOrderSets.length > 0 && (
-        <div className="orders-card__section">
-          <button
-            type="button"
-            className="orders-card__section-header"
-            onClick={() => toggleSection('ordersets')}
-            aria-expanded={openSections.has('ordersets')}
-          >
-            <span
-              className={`orders-card__chevron${openSections.has('ordersets') ? ' orders-card__chevron--open' : ''}`}
-              aria-hidden="true"
-            />
-            <span className="orders-card__section-title">
-              Ordersets ({userOrderSets.length} saved)
-            </span>
-          </button>
-          {openSections.has('ordersets') && (
-            <div className="orders-card__section-body">
-              <div className="orders-card__list">
-                {userOrderSets.map((os) => (
-                  <div key={os.id} className="orders-card__orderset-row">
-                    <input
-                      type="checkbox"
-                      id={`orders-os-${os.id}`}
-                      className={checkboxClass}
-                      checked={isOrdersetFullySelected(os)}
-                      onChange={() => handleOrdersetToggle(os)}
-                    />
-                    <label htmlFor={`orders-os-${os.id}`} className="orders-card__test-label">
-                      <span className="orders-card__test-name">{os.name}</span>
-                      <span className="orders-card__orderset-count">{os.tests.length} tests</span>
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Create Orderset Popup */}
+      {showCreatePopup && onSaveOrderSet && onUpdateOrderSet && (
+        <div className="orders-card__popup-anchor">
+          <CreateOrdersetPopup
+            selectedTests={selectedTests}
+            existingOrderSets={userOrderSets}
+            onSave={onSaveOrderSet}
+            onUpdate={onUpdateOrderSet}
+            onClose={() => setShowCreatePopup(false)}
+          />
         </div>
       )}
 
-      {/* ── Category dropdowns ────────────────────────────────────────────── */}
-      {CATEGORY_ORDER.map((cat) => {
-        const catTests = testsByCategory.get(cat) ?? []
-        if (catTests.length === 0) return null
-        const sectionKey = `cat-${cat}`
-        return (
-          <div key={cat} className="orders-card__section">
-            <button
-              type="button"
-              className="orders-card__section-header"
-              onClick={() => toggleSection(sectionKey)}
-              aria-expanded={openSections.has(sectionKey)}
-            >
-              <span
-                className={`orders-card__chevron${openSections.has(sectionKey) ? ' orders-card__chevron--open' : ''}`}
-                aria-hidden="true"
-              />
-              <span className="orders-card__section-title">
-                {CATEGORY_LABELS[cat]} ({catTests.length})
-              </span>
-            </button>
-            {openSections.has(sectionKey) && (
-              <div className="orders-card__section-body">
-                <div className="orders-card__list">
-                  {catTests.map((test) => (
-                    <div key={test.id} className="orders-card__test-row">
-                      <input
-                        type="checkbox"
-                        id={`orders-cat-${test.id}`}
-                        className={checkboxClass}
-                        checked={selectedTests.includes(test.id)}
-                        onChange={() => handleToggle(test.id)}
-                      />
-                      <label htmlFor={`orders-cat-${test.id}`} className="orders-card__test-label">
-                        <span className="orders-card__test-name">{test.name}</span>
-                        <span className="orders-card__category-tag">{test.subcategory}</span>
-                        {recommendedTestIds.includes(test.id) && (
-                          <span className="orders-card__ai-badge">AI</span>
-                        )}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )
-      })}
-
-      {/* ── Footer buttons ────────────────────────────────────────────────── */}
+      {/* Footer buttons — full width below both panels */}
       <div className="orders-card__footer">
         <button
           type="button"
