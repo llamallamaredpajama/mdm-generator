@@ -56,7 +56,9 @@ export async function generateEmbedding(
   return values
 }
 
-const BATCH_LIMIT = 250
+// Vertex AI allows up to 250 instances but has a 20K token limit per request.
+// 100 instances keeps each batch safely under the token ceiling.
+const BATCH_LIMIT = 100
 
 /**
  * Generate 768-dimension embeddings for multiple texts in batches.
