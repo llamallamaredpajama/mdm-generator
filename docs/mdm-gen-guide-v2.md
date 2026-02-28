@@ -240,6 +240,10 @@ Documents and other sources:
 Independent Interpretation:
 [Use §2.5 patterns for imaging, ECG, POCUS]
 - [Test type]: [Brief clinical interpretation]
+Clinical Decision Rules Reviewed:
+[IF any CDRs were applied in Risk Assessment, include:]
+- The following clinical decision rules were reviewed and applied: [list CDR names only, e.g., "HEART Score, Wells (PE), PERC Rule"]
+[ELSE remove this subsection entirely]
 
 WORKING DIAGNOSIS:
 - [Most likely diagnosis based on emergency department evaluation]
