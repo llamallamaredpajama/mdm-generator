@@ -4,9 +4,11 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   onAuthStateChanged,
   signOut,
-  type User
+  type User,
 } from 'firebase/auth'
 import { type Firestore, getFirestore } from 'firebase/firestore'
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
@@ -50,17 +52,36 @@ function getProvider() {
 
 // eslint-disable-next-line react-refresh/only-export-components
 export async function signInWithGoogle() {
+  // Detect popup support: try opening a blank window. If it returns null
+  // or is immediately closed, popups are blocked (headless browsers,
+  // mobile WebViews, aggressive popup blockers).
+  let popupsWork = false
+  try {
+    const testWin = window.open('', '_blank', 'width=1,height=1')
+    if (testWin) {
+      popupsWork = true
+      testWin.close()
+    }
+  } catch {
+    // window.open threw — popups definitely blocked
+  }
+
+  if (!popupsWork) {
+    // Go straight to redirect — avoids the silent hang
+    await signInWithRedirect(getAppAuth(), getProvider())
+    return
+  }
+
   try {
     const result = await signInWithPopup(getAppAuth(), getProvider())
     return result
   } catch (error: unknown) {
     const authError = error as { code?: string; message?: string }
     if (authError.code === 'auth/popup-closed-by-user') {
-      // User cancelled — not an error
       return
     }
     if (authError.code === 'auth/popup-blocked') {
-      alert('Pop-up blocked by your browser. Please allow pop-ups for this site and try again.')
+      await signInWithRedirect(getAppAuth(), getProvider())
       return
     }
     alert(`Sign in failed: ${authError.message}`)
@@ -96,13 +117,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
+    // Handle redirect result when returning from Google OAuth
+    getRedirectResult(getAppAuth()).catch(() => {
+      // Redirect result errors are non-fatal — onAuthStateChanged
+      // still picks up the user if the redirect succeeded
+    })
+
     return onAuthStateChanged(getAppAuth(), (u) => setUser(u))
   }, [])
 
   const value = useMemo(() => ({ user }), [user])
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
