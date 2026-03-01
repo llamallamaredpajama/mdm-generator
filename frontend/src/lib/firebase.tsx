@@ -4,8 +4,6 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   onAuthStateChanged,
   signOut,
   type User,
@@ -64,9 +62,8 @@ export async function signInWithGoogle() {
     ) {
       return
     }
-    // Popup blocked — fall back to full-page redirect
     if (authError.code === 'auth/popup-blocked') {
-      await signInWithRedirect(getAppAuth(), getProvider())
+      alert('Pop-up blocked by your browser. Please allow pop-ups for this site and try again.')
       return
     }
     alert(`Sign in failed: ${authError.message}`)
@@ -102,12 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
-    // Handle redirect result when returning from Google OAuth
-    getRedirectResult(getAppAuth()).catch(() => {
-      // Redirect result errors are non-fatal — onAuthStateChanged
-      // still picks up the user if the redirect succeeded
-    })
-
     return onAuthStateChanged(getAppAuth(), (u) => setUser(u))
   }, [])
 
