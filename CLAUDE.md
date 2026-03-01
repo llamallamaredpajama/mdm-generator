@@ -1,6 +1,6 @@
 # CLAUDE.md - MDM Generator
 
-> For workflow patterns, tool selection, parallelization, git safety, and MCP server guidance, see `~/.claude/` (SuperClaude framework).
+> Workflow orchestration, skills, and agent strategies are defined in `~/.claude/CLAUDE.md` (global config).
 
 ## What This Is
 
