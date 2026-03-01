@@ -57,8 +57,8 @@ import { RegionResolver } from './surveillance/regionResolver'
 import { AdapterRegistry } from './surveillance/adapters/adapterRegistry'
 import { computeCorrelations } from './surveillance/correlationEngine'
 import { buildSurveillanceContext, appendSurveillanceToMdmText } from './surveillance/promptAugmenter'
-import { selectRelevantRules } from './cdr/cdrSelector'
-import { buildCdrContext } from './cdr/cdrPromptAugmenter'
+import { searchCdrCatalog } from './services/cdrCatalogSearch'
+import { formatCdrContext } from './services/cdrCatalogFormatter'
 import type { TestDefinition, TestCategory, TestLibraryResponse, CdrDefinition } from './types/libraries'
 import {
   OrderSetCreateSchema,
@@ -782,9 +782,9 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     // 6b. CDR enrichment (supplementary — failures must not block section 1)
     let section1CdrCtx: string | undefined
     try {
-      const selectedRules = selectRelevantRules(content)
-      if (selectedRules.length > 0) {
-        section1CdrCtx = buildCdrContext(selectedRules) || undefined
+      const cdrResults = await searchCdrCatalog(content, getDb(), 15)
+      if (cdrResults.length > 0) {
+        section1CdrCtx = formatCdrContext(cdrResults) || undefined
       }
     } catch (cdrError) {
       console.warn('Section 1 CDR enrichment failed (non-blocking):', cdrError)
@@ -1031,11 +1031,10 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
     let section2CdrCtx: string | undefined
     const storedS1CdrCtx: string | undefined = encounter.cdrContext || undefined
     try {
-      // Re-run CDR selector on combined S1+S2 content to find additional rules from workup data
       const combinedText = `${section1Content} ${content}`
-      const selectedRules = selectRelevantRules(combinedText)
-      if (selectedRules.length > 0) {
-        section2CdrCtx = buildCdrContext(selectedRules) || undefined
+      const cdrResults = await searchCdrCatalog(combinedText, getDb(), 15)
+      if (cdrResults.length > 0) {
+        section2CdrCtx = formatCdrContext(cdrResults) || undefined
       }
     } catch (cdrError) {
       console.warn('Section 2 CDR enrichment failed (non-blocking):', cdrError)
@@ -1972,9 +1971,9 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
     // 8b. CDR enrichment (supplementary — failures must not block MDM)
     let quickCdrContext: string | undefined
     try {
-      const selectedRules = selectRelevantRules(narrative)
-      if (selectedRules.length > 0) {
-        quickCdrContext = buildCdrContext(selectedRules) || undefined
+      const cdrResults = await searchCdrCatalog(narrative, getDb(), 15)
+      if (cdrResults.length > 0) {
+        quickCdrContext = formatCdrContext(cdrResults) || undefined
       }
     } catch (cdrError) {
       console.warn('Quick mode CDR enrichment failed (non-blocking):', cdrError)

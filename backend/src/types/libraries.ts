@@ -91,5 +91,10 @@ export const CdrDefinitionSchema = z.object({
   components: z.array(CdrComponentSchema),
   scoring: CdrScoringSchema,
   suggestedTreatments: z.record(z.string(), z.array(z.string())).optional(),
+  category: z.string().optional(),
+  application: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
+  requiredTests: z.array(z.string()).optional(),
+  embedding: z.array(z.number()).optional(),
 })
 export type CdrDefinition = z.infer<typeof CdrDefinitionSchema>
