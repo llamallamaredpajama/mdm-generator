@@ -52,34 +52,19 @@ function getProvider() {
 
 // eslint-disable-next-line react-refresh/only-export-components
 export async function signInWithGoogle() {
-  // Detect popup support: try opening a blank window. If it returns null
-  // or is immediately closed, popups are blocked (headless browsers,
-  // mobile WebViews, aggressive popup blockers).
-  let popupsWork = false
-  try {
-    const testWin = window.open('', '_blank', 'width=1,height=1')
-    if (testWin) {
-      popupsWork = true
-      testWin.close()
-    }
-  } catch {
-    // window.open threw — popups definitely blocked
-  }
-
-  if (!popupsWork) {
-    // Go straight to redirect — avoids the silent hang
-    await signInWithRedirect(getAppAuth(), getProvider())
-    return
-  }
-
   try {
     const result = await signInWithPopup(getAppAuth(), getProvider())
     return result
   } catch (error: unknown) {
     const authError = error as { code?: string; message?: string }
-    if (authError.code === 'auth/popup-closed-by-user') {
+    // User cancelled or double-clicked — not an error
+    if (
+      authError.code === 'auth/popup-closed-by-user' ||
+      authError.code === 'auth/cancelled-popup-request'
+    ) {
       return
     }
+    // Popup blocked — fall back to full-page redirect
     if (authError.code === 'auth/popup-blocked') {
       await signInWithRedirect(getAppAuth(), getProvider())
       return
