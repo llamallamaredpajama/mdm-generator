@@ -1,0 +1,58 @@
+/* ── SubcategoryGroup ──────────────────────────────────────────────────────
+ * Collapsible subcategory header with test rows inside.
+ * Used within category dropdowns in OrdersLeftPanel.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+.subcategory-group {
+  margin-left: 0.25rem;
+}
+
+.subcategory-group__header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748b);
+  text-align: left;
+}
+
+.subcategory-group__header:hover {
+  color: var(--color-primary, #3b82f6);
+}
+
+.subcategory-group__chevron {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 3px solid currentColor;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.subcategory-group__chevron--open {
+  transform: rotate(90deg);
+}
+
+.subcategory-group__name {
+  flex: 1;
+}
+
+.subcategory-group__count {
+  color: var(--color-text-muted, #94a3b8);
+  font-weight: 400;
+}
+
+.subcategory-group__list {
+  padding-left: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding-bottom: 0.25rem;
+}
