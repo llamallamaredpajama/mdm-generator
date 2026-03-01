@@ -787,16 +787,25 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     }
 
     // 7. Build prompt and call Vertex AI
-    // Use build-mode-specific S1 guide (fallback to legacy guide, then empty)
-    const systemPrompt = await fs.readFile(
-      path.join(__dirname, '../../docs/mdm-gen-guide-build-s1.md'),
-      'utf8'
-    ).catch(() =>
-      fs.readFile(
-        path.join(__dirname, '../../docs/mdm-gen-guide.md'),
+    // Use build-mode-specific S1 guide (fallback to legacy guide, fail on total absence)
+    let systemPrompt: string
+    try {
+      systemPrompt = await fs.readFile(
+        path.join(__dirname, '../../docs/mdm-gen-guide-build-s1.md'),
         'utf8'
-      ).catch(() => '')
-    )
+      )
+    } catch {
+      console.warn('S1 guide not found, falling back to legacy guide')
+      try {
+        systemPrompt = await fs.readFile(
+          path.join(__dirname, '../../docs/mdm-gen-guide.md'),
+          'utf8'
+        )
+      } catch {
+        console.error('CRITICAL: No MDM guide found for Section 1 prompt')
+        return res.status(500).json({ error: 'Internal configuration error' })
+      }
+    }
 
     const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx, section1CdrCtx)
 
@@ -984,8 +993,10 @@ app.post('/v1/build-mode/process-section2', llmLimiter, async (req, res) => {
       // Persist structured data from the request
       ...(selectedTests && { 'section2.selectedTests': selectedTests }),
       ...(testResults && { 'section2.testResults': testResults }),
-      ...(structuredDiagnosis !== undefined && { 'section2.workingDiagnosis': structuredDiagnosis }),
-      ...(workingDiagnosis && { 'section2.workingDiagnosis': workingDiagnosis }),
+      ...(() => {
+        const resolved = structuredDiagnosis !== undefined ? structuredDiagnosis : (workingDiagnosis || undefined)
+        return resolved !== undefined ? { 'section2.workingDiagnosis': resolved } : {}
+      })(),
       status: 'section2_done',
       updatedAt: admin.firestore.Timestamp.now(),
     })
@@ -1111,11 +1122,17 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       followUp: encounter.section3?.followUp,
     }
 
-    // Read build-mode-specific S3 guide (fallback to empty if not found)
-    const s3GuideText = await fs.readFile(
-      path.join(__dirname, '../../docs/mdm-gen-guide-build-s3.md'),
-      'utf8'
-    ).catch(() => undefined)
+    // Read build-mode-specific S3 guide (fallback to inline instructions if not found)
+    let s3GuideText: string | undefined
+    try {
+      s3GuideText = await fs.readFile(
+        path.join(__dirname, '../../docs/mdm-gen-guide-build-s3.md'),
+        'utf8'
+      )
+    } catch {
+      console.warn('S3 guide not found, using inline finalize instructions')
+      s3GuideText = undefined
+    }
 
     const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx, structuredData, s3GuideText)
 

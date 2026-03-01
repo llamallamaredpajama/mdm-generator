@@ -49,7 +49,11 @@ export interface UseEncounterReturn {
 export function useEncounter(encounterId: string | null): UseEncounterReturn {
   const { user } = useAuth()
   const token = useAuthToken()
-  const { isEnabled: trendEnabled, location: trendLocation, isLocationValid: trendLocationValid } = useTrendAnalysisContext()
+  const {
+    isEnabled: trendEnabled,
+    location: trendLocation,
+    isLocationValid: trendLocationValid,
+  } = useTrendAnalysisContext()
 
   // Core state
   const [encounter, setEncounter] = useState<EncounterDocument | null>(null)
@@ -155,7 +159,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
         console.error('Error listening to encounter:', err)
         setError(err instanceof Error ? err : new Error('Failed to load encounter'))
         setLoading(false)
-      }
+      },
     )
 
     return () => {
@@ -172,7 +176,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
         3: encounter.section3.content,
       })
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: only reset on ID change, not every update
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: only reset on ID change, not every update
   }, [encounter?.id])
 
   /**
@@ -190,7 +194,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
    */
   const getSectionData = (
     enc: EncounterDocument,
-    section: SectionNumber
+    section: SectionNumber,
   ): Section1Data | Section2Data | Section3Data => {
     switch (section) {
       case 1:
@@ -229,7 +233,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
 
       return true
     },
-    [encounter, localContent]
+    [encounter, localContent],
   )
 
   /**
@@ -263,7 +267,8 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
         // Call appropriate API endpoint based on section
         switch (section) {
           case 1: {
-            const location = trendEnabled && trendLocationValid && trendLocation ? trendLocation : undefined
+            const location =
+              trendEnabled && trendLocationValid && trendLocation ? trendLocation : undefined
             const s1Response = await processSection1(encounterId, content, token, location)
             // Update Firestore with response (including recommendedOrders if present)
             await updateDoc(encounterRef, {
@@ -273,7 +278,9 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               'section1.status': 'completed',
               'section1.llmResponse': {
                 differential: s1Response.differential,
-                ...(s1Response.recommendedOrders && { recommendedOrders: s1Response.recommendedOrders }),
+                ...(s1Response.recommendedOrders && {
+                  recommendedOrders: s1Response.recommendedOrders,
+                }),
                 processedAt: serverTimestamp(),
               },
               status: 'section1_done',
@@ -288,7 +295,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
             // REDESIGNED S2: Pure data entry — NO API call
             // Persist structured data directly to Firestore.
             // ================================================================
-            const currentCount = encounter.section2.submissionCount || 0
+            const currentCount = encounter.section2.submissionCount ?? 0
             const newCount = currentCount + 1
             const locked = newCount >= 2
             await updateDoc(encounterRef, {
@@ -298,7 +305,8 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               'section2.status': 'completed',
               'section2.selectedTests': encounter.section2.selectedTests || [],
               'section2.testResults': encounter.section2.testResults || {},
-              'section2.workingDiagnosis': workingDiagnosis || encounter.section2.workingDiagnosis || null,
+              'section2.workingDiagnosis':
+                workingDiagnosis ?? encounter.section2.workingDiagnosis ?? null,
               status: 'section2_done',
               currentSection: locked ? 3 : 2,
               updatedAt: serverTimestamp(),
@@ -324,7 +332,17 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
         setSubmittingSection(null)
       }
     },
-    [user, encounterId, token, encounter, localContent, canSubmitSection, trendEnabled, trendLocationValid, trendLocation]
+    [
+      user,
+      encounterId,
+      token,
+      encounter,
+      localContent,
+      canSubmitSection,
+      trendEnabled,
+      trendLocationValid,
+      trendLocation,
+    ],
   )
 
   // Merge local content with encounter for return value
@@ -354,7 +372,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
  */
 export function useSectionState(
   encounter: EncounterDocument | null,
-  section: SectionNumber
+  section: SectionNumber,
 ): {
   status: string
   content: string
