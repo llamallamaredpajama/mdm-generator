@@ -13,7 +13,7 @@ import {
   Timestamp,
   type Unsubscribe
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { getAppDb } from './firebase';
 import { type User } from 'firebase/auth';
 
 // Re-export types that components need
@@ -46,7 +46,7 @@ export async function createCheckoutSession(
     throw new Error('User must be authenticated to create checkout session');
   }
 
-  const checkoutSessionRef = collection(db, 'customers', user.uid, 'checkout_sessions');
+  const checkoutSessionRef = collection(getAppDb(), 'customers', user.uid, 'checkout_sessions');
   
   const sessionData: Partial<CheckoutSession> = {
     mode: 'subscription',
@@ -94,7 +94,7 @@ export function monitorCheckoutSession(
   sessionId: string,
   onUpdate: (session: CheckoutSession) => void
 ): Unsubscribe {
-  const sessionRef = doc(db, 'customers', user.uid, 'checkout_sessions', sessionId);
+  const sessionRef = doc(getAppDb(), 'customers', user.uid, 'checkout_sessions', sessionId);
   
   return onSnapshot(sessionRef, (snap) => {
     if (snap.exists()) {
@@ -110,7 +110,7 @@ export function monitorCheckoutSession(
 export async function getActiveSubscription(user: User): Promise<Subscription | null> {
   if (!user) return null;
   
-  const subscriptionsRef = collection(db, 'customers', user.uid, 'subscriptions');
+  const subscriptionsRef = collection(getAppDb(), 'customers', user.uid, 'subscriptions');
   const q = query(
     subscriptionsRef, 
     where('status', 'in', ['active', 'trialing'])
@@ -142,7 +142,7 @@ export function subscribeToSubscriptionChanges(
     return () => {};
   }
   
-  const subscriptionsRef = collection(db, 'customers', user.uid, 'subscriptions');
+  const subscriptionsRef = collection(getAppDb(), 'customers', user.uid, 'subscriptions');
   
   return onSnapshot(subscriptionsRef, (snapshot) => {
     const subscriptions: Subscription[] = [];
@@ -213,7 +213,7 @@ export async function createCustomerPortalSession(
  * Get all products with prices
  */
 export async function getProducts(): Promise<ProductWithPrices[]> {
-  const productsRef = collection(db, 'products');
+  const productsRef = collection(getAppDb(), 'products');
   const q = query(productsRef, where('active', '==', true));
   const productsSnapshot = await getDocs(q);
   
@@ -226,7 +226,7 @@ export async function getProducts(): Promise<ProductWithPrices[]> {
     } as ProductWithPrices;
     
     // Get prices for this product
-    const pricesRef = collection(db, 'products', productDoc.id, 'prices');
+    const pricesRef = collection(getAppDb(), 'products', productDoc.id, 'prices');
     const pricesQuery = query(pricesRef, where('active', '==', true));
     const pricesSnapshot = await getDocs(pricesQuery);
     
@@ -295,7 +295,7 @@ export async function getCurrentPeriodUsage(
     : new Date(new Date().getFullYear(), new Date().getMonth(), 1); // First of month for free tier
   
   // Query usage collection (you'll need to track this in your backend)
-  const usageRef = collection(db, 'customers', user.uid, 'usage');
+  const usageRef = collection(getAppDb(), 'customers', user.uid, 'usage');
   const q = query(
     usageRef,
     where('timestamp', '>=', Timestamp.fromDate(periodStart)),

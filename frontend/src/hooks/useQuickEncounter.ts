@@ -16,7 +16,7 @@ import {
   serverTimestamp,
   type DocumentData,
 } from 'firebase/firestore'
-import { db, useAuth } from '../lib/firebase'
+import { getAppDb, useAuth } from '../lib/firebase'
 import { useAuthToken } from '../lib/firebase'
 import { generateQuickMode, type QuickModeResponse } from '../lib/api'
 import { useTrendAnalysisContext } from '../contexts/TrendAnalysisContext'
@@ -110,6 +110,7 @@ function convertEncounterDoc(docId: string, data: DocumentData): EncounterDocume
  * @param encounterId - The Firestore document ID of the encounter
  */
 export function useQuickEncounter(encounterId: string | null): UseQuickEncounterReturn {
+  const db = getAppDb()
   const { user } = useAuth()
   const idToken = useAuthToken()
   const { isEnabled: trendEnabled, location: trendLocation, isLocationValid: trendLocationValid } = useTrendAnalysisContext()

@@ -14,6 +14,7 @@ import type { DifferentialItem } from '../types/encounter'
 // Mock Firebase (needed by CdrDetailView -> useCdrTracking)
 vi.mock('../lib/firebase', () => ({
   db: {},
+  getAppDb: vi.fn(() => ({})),
   useAuth: () => ({ user: { uid: 'test-uid' } }),
   useAuthToken: () => 'test-token',
 }))

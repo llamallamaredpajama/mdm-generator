@@ -20,6 +20,7 @@ import type { IdentifiedCdr } from '../components/build-mode/shared/getIdentifie
 // Mock Firebase (needed by CdrCard -> CdrDetailView -> useCdrTracking)
 vi.mock('../lib/firebase', () => ({
   db: {},
+  getAppDb: vi.fn(() => ({})),
   useAuth: () => ({ user: { uid: 'test-uid' } }),
   useAuthToken: () => 'test-token',
 }))
@@ -175,21 +176,17 @@ describe('CdrCard - Accessibility', () => {
     expect(badge?.getAttribute('aria-label')).toBe('2 clinical decision rules identified')
   })
 
-  it('hides decorative dots from screen readers', () => {
+  it('hides decorative chevrons from screen readers', () => {
     const { container } = render(
       <CdrCard identifiedCdrs={mockCdrs} loading={false} />
     )
 
-    // List row dots have aria-hidden directly
-    const rowDots = container.querySelectorAll('.cdr-card__row .cdr-card__dot')
-    expect(rowDots.length).toBeGreaterThan(0)
-    rowDots.forEach((dot) => {
-      expect(dot.getAttribute('aria-hidden')).toBe('true')
+    // Chevron indicators have aria-hidden
+    const chevrons = container.querySelectorAll('.cdr-card__chevron')
+    expect(chevrons.length).toBeGreaterThan(0)
+    chevrons.forEach((chevron) => {
+      expect(chevron.getAttribute('aria-hidden')).toBe('true')
     })
-
-    // Legend is hidden as a whole via aria-hidden on parent
-    const legend = container.querySelector('.cdr-card__legend')
-    expect(legend?.getAttribute('aria-hidden')).toBe('true')
   })
 
   it('has accessible label on CDR list', () => {

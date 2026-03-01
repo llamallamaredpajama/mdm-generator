@@ -1,5 +1,6 @@
-import { initializeApp } from 'firebase/app'
+import { type FirebaseApp, initializeApp } from 'firebase/app'
 import {
+  type Auth,
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
@@ -7,7 +8,7 @@ import {
   signOut,
   type User
 } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { type Firestore, getFirestore } from 'firebase/firestore'
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
 const firebaseConfig = {
@@ -19,16 +20,38 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 }
 
-const app = initializeApp(firebaseConfig)
-const auth = getAuth(app)
+// Lazy initialization — prevents module-level side effects that cause
+// Firebase auth listeners to keep the event loop open in test environments
+let _app: FirebaseApp | undefined
+let _auth: Auth | undefined
+let _db: Firestore | undefined
+let _provider: GoogleAuthProvider | undefined
+
+function getApp() {
+  if (!_app) _app = initializeApp(firebaseConfig)
+  return _app
+}
+
+function getAppAuth() {
+  if (!_auth) _auth = getAuth(getApp())
+  return _auth
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
-export const db = getFirestore(app)
-const provider = new GoogleAuthProvider()
+export function getAppDb() {
+  if (!_db) _db = getFirestore(getApp())
+  return _db
+}
+
+function getProvider() {
+  if (!_provider) _provider = new GoogleAuthProvider()
+  return _provider
+}
 
 // eslint-disable-next-line react-refresh/only-export-components
 export async function signInWithGoogle() {
   try {
-    const result = await signInWithPopup(auth, provider)
+    const result = await signInWithPopup(getAppAuth(), getProvider())
     return result
   } catch (error: unknown) {
     const authError = error as { code?: string; message?: string }
@@ -47,7 +70,7 @@ export async function signInWithGoogle() {
 
 // eslint-disable-next-line react-refresh/only-export-components
 export async function signOutUser() {
-  await signOut(auth)
+  await signOut(getAppAuth())
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -55,7 +78,7 @@ export function useAuthToken() {
   const { user } = useAuth()
   const [token, setToken] = useState<string | null>(null)
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+    const unsubscribe = onAuthStateChanged(getAppAuth(), async (u) => {
       if (u) setToken(await u.getIdToken())
       else setToken(null)
     })
@@ -71,11 +94,11 @@ export const useAuth = () => useContext(AuthContext)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  
+
   useEffect(() => {
-    return onAuthStateChanged(auth, (u) => setUser(u))
+    return onAuthStateChanged(getAppAuth(), (u) => setUser(u))
   }, [])
-  
+
   const value = useMemo(() => ({ user }), [user])
   return (
     <AuthContext.Provider value={value}>

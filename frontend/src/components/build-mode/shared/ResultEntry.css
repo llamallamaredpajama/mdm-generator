@@ -2,12 +2,14 @@
   background: var(--color-surface, #f8fafc);
   border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 8px;
-  padding: 0.75rem 1rem;
-  transition: border-color 0.15s, background-color 0.15s;
+  padding: 0.5rem 0.75rem;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .result-entry + .result-entry {
-  margin-top: 0.5rem;
+  margin-top: 0.375rem;
 }
 
 /* Status modifiers */
@@ -26,12 +28,12 @@
   background: var(--color-surface, #f8fafc);
 }
 
-/* Header row */
-.result-entry__header {
+/* D4: Table-row layout */
+.result-entry__row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+  min-height: 2rem;
 }
 
 .result-entry__title-group {
@@ -39,34 +41,102 @@
   align-items: center;
   gap: 0.375rem;
   flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .result-entry__name {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-text, #1e293b);
+  white-space: nowrap;
 }
 
 .result-entry__category {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 500;
   color: var(--color-text-muted, #94a3b8);
   background: var(--color-background, #ffffff);
   border: 1px solid var(--color-border, #e2e8f0);
-  padding: 0.0625rem 0.375rem;
-  border-radius: 4px;
+  padding: 0 0.25rem;
+  border-radius: 3px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
 .result-entry__cdr-badge {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
   color: #7c3aed;
   background: #ede9fe;
-  border-radius: 4px;
-  padding: 0.0625rem 0.375rem;
+  border-radius: 3px;
+  padding: 0 0.25rem;
   white-space: nowrap;
+}
+
+/* D4: WNL / ABNL checkbox labels */
+.result-entry__checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0.25rem 0.375rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.1s,
+    border-color 0.1s;
+}
+
+.result-entry__checkbox-label:hover {
+  background: #f1f5f9;
+}
+
+.result-entry__checkbox-label--wnl-active {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.result-entry__checkbox-label--abnl-active {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.result-entry__checkbox {
+  width: 0.875rem;
+  height: 0.875rem;
+  cursor: pointer;
+  accent-color: var(--color-primary, #3b82f6);
+}
+
+.result-entry__checkbox-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #64748b);
+  user-select: none;
+}
+
+/* D4: Inline comment field */
+.result-entry__comment {
+  flex: 0 1 12rem;
+  min-width: 6rem;
+  font-size: 0.8125rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 4px;
+  background: var(--color-background, #ffffff);
+  color: var(--color-text, #1e293b);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.result-entry__comment:focus {
+  border-color: var(--color-primary, #3b82f6);
+}
+
+.result-entry__comment::placeholder {
+  color: var(--color-text-muted, #94a3b8);
 }
 
 .result-entry__check {
@@ -74,10 +144,34 @@
   flex-shrink: 0;
 }
 
-/* Radio group */
+/* E3: Readiness indicator */
+.result-entry__readiness-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.result-entry__readiness-dot--red {
+  background-color: #dc2626;
+}
+
+.result-entry__readiness-dot--green {
+  background-color: #16a34a;
+}
+
+/* Radio group — now visually hidden (D4 uses checkboxes) but kept for a11y */
 .result-entry__radio-group {
-  display: flex;
-  gap: 0.5rem;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .result-entry__radio {
@@ -90,7 +184,9 @@
   background: var(--color-background, #ffffff);
   color: var(--color-text, #1e293b);
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
   text-align: center;
 }
 
@@ -113,15 +209,21 @@
 
 /* CDR warning */
 .result-entry__cdr-warning {
-  margin-top: 0.375rem;
-  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
   color: #7c3aed;
   font-style: italic;
+  padding-left: 0.75rem;
 }
 
-/* Responsive: stack radios on narrow screens */
-@media (max-width: 400px) {
-  .result-entry__radio-group {
-    flex-direction: column;
+/* Responsive: stack on narrow screens */
+@media (max-width: 480px) {
+  .result-entry__row {
+    flex-wrap: wrap;
+  }
+
+  .result-entry__comment {
+    flex: 1 1 100%;
+    min-width: 0;
   }
 }

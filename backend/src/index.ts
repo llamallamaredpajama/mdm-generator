@@ -9,7 +9,7 @@ import admin from 'firebase-admin'
 import { buildPrompt } from './promptBuilder'
 import { buildParsePrompt, getEmptyParsedNarrative, type ParsedNarrative } from './parsePromptBuilder'
 import { MdmSchema, renderMdmText } from './outputSchema'
-import { callGemini, callGeminiFlash } from './vertex'
+import { callGemini } from './vertex'
 import { userService } from './services/userService'
 import {
   Section1RequestSchema,
@@ -19,11 +19,13 @@ import {
   SuggestDiagnosisRequestSchema,
   ParseResultsRequestSchema,
   DifferentialItemSchema,
-  RecommendedOrderSchema,
+  CdrAnalysisItemSchema,
+  WorkupRecommendationSchema,
   MdmPreviewSchema,
   FinalMdmSchema,
   type DifferentialItem,
-  type RecommendedOrder,
+  type CdrAnalysisItem,
+  type WorkupRecommendation,
   type MdmPreview,
   type FinalMdm,
   type CdrTracking,
@@ -39,6 +41,8 @@ import {
   buildParseResultsPrompt,
   type FinalizeStructuredData,
 } from './promptBuilderBuildMode'
+import { buildCompactCatalog } from './services/testCatalogFormatter'
+import { getRelevantTests } from './services/testCatalogSearch'
 import { matchCdrsFromDifferential } from './services/cdrMatcher'
 import { buildCdrTracking, type AutoPopulatedValues } from './services/cdrTrackingBuilder'
 import {
@@ -53,8 +57,8 @@ import { RegionResolver } from './surveillance/regionResolver'
 import { AdapterRegistry } from './surveillance/adapters/adapterRegistry'
 import { computeCorrelations } from './surveillance/correlationEngine'
 import { buildSurveillanceContext, appendSurveillanceToMdmText } from './surveillance/promptAugmenter'
-import { selectRelevantRules } from './cdr/cdrSelector'
-import { buildCdrContext } from './cdr/cdrPromptAugmenter'
+import { searchCdrCatalog } from './services/cdrCatalogSearch'
+import { formatCdrContext } from './services/cdrCatalogFormatter'
 import type { TestDefinition, TestCategory, TestLibraryResponse, CdrDefinition } from './types/libraries'
 import {
   OrderSetCreateSchema,
@@ -193,7 +197,7 @@ function buildCdrContextString(cdrTracking: CdrTracking): string | undefined {
   const lines: string[] = []
 
   for (const [, entry] of entries) {
-    if (entry.dismissed) continue
+    if (entry.dismissed || entry.excluded) continue
 
     const components = Object.entries(entry.components)
     const answeredCount = components.filter(([, c]) => c.answered).length
@@ -479,7 +483,7 @@ app.post('/v1/parse-narrative', parseLimiter, async (req, res) => {
 
     let parsedNarrative: ParsedNarrative
     try {
-      const result = await callGeminiFlash(prompt)
+      const result = await callGemini(prompt)
 
       console.log({ action: 'model-response', endpoint: 'parse-narrative', responseLength: result.text.length })
 
@@ -581,7 +585,7 @@ app.post('/v1/generate', llmLimiter, async (req, res) => {
     let draftJson: any | null = null
     let draftText = ''
     try {
-      const result = await callGeminiFlash(prompt)
+      const result = await callGemini(prompt)
       
       console.log({ action: 'model-response', endpoint: 'generate', responseLength: result.text.length })
       
@@ -778,9 +782,9 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     // 6b. CDR enrichment (supplementary — failures must not block section 1)
     let section1CdrCtx: string | undefined
     try {
-      const selectedRules = selectRelevantRules(content)
-      if (selectedRules.length > 0) {
-        section1CdrCtx = buildCdrContext(selectedRules) || undefined
+      const cdrResults = await searchCdrCatalog(content, getDb(), 15)
+      if (cdrResults.length > 0) {
+        section1CdrCtx = formatCdrContext(cdrResults) || undefined
       }
     } catch (cdrError) {
       console.warn('Section 1 CDR enrichment failed (non-blocking):', cdrError)
@@ -807,14 +811,32 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       }
     }
 
-    const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx, section1CdrCtx)
+    // Build compact test catalog for prompt injection (enables LLM to return exact testIds)
+    // Vector search: embed the narrative and retrieve only the most relevant tests.
+    // Falls back to full cached catalog if vector search fails (same pattern as surveillance).
+    let testCatalogStr: string | undefined
+    try {
+      const relevantTests = await getRelevantTests(content, 50)
+      testCatalogStr = buildCompactCatalog(relevantTests)
+    } catch (vectorSearchError) {
+      console.warn('Vector search failed, falling back to full catalog (non-blocking):', vectorSearchError)
+      try {
+        const allTests = await getCachedTestLibrary()
+        testCatalogStr = buildCompactCatalog(allTests)
+      } catch (catalogError) {
+        console.warn('Test catalog build also failed (non-blocking):', catalogError)
+      }
+    }
+
+    const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx, section1CdrCtx, testCatalogStr)
 
     let differential: DifferentialItem[] = []
-    let recommendedOrders: RecommendedOrder[] = []
+    let cdrAnalysis: CdrAnalysisItem[] = []
+    let workupRecommendations: WorkupRecommendation[] = []
     try {
-      const result = await callGeminiFlash(prompt)
+      const result = await callGemini(prompt)
 
-      // Parse response - expect JSON with differential array and optional recommendedOrders
+      // Parse response - expect JSON object with differential, cdrAnalysis, workupRecommendations
       let cleanedText = result.text
         .replace(/^```json\s*/gm, '')
         .replace(/^```\s*$/gm, '')
@@ -823,37 +845,61 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       try {
         let rawParsed = JSON.parse(cleanedText)
 
-        // Extract recommendedOrders if present in the top-level object
-        if (rawParsed?.recommendedOrders && Array.isArray(rawParsed.recommendedOrders)) {
-          const ordersValidated = z.array(RecommendedOrderSchema).safeParse(rawParsed.recommendedOrders)
-          if (ordersValidated.success) {
-            recommendedOrders = ordersValidated.data
-          } else {
-            console.warn('Section 1 recommendedOrders validation failed:', ordersValidated.error.message)
+        // Handle both legacy (array) and new (object) response formats
+        if (Array.isArray(rawParsed)) {
+          // Legacy format: raw array of differential items
+          const validated = z.array(DifferentialItemSchema).safeParse(rawParsed)
+          if (validated.success) {
+            differential = validated.data
+          }
+        } else if (rawParsed && typeof rawParsed === 'object') {
+          // New format: { differential, cdrAnalysis, workupRecommendations }
+          // Extract differential
+          let diffArray = rawParsed.differential
+          if (Array.isArray(diffArray)) {
+            const validated = z.array(DifferentialItemSchema).safeParse(diffArray)
+            if (validated.success) {
+              differential = validated.data
+            } else {
+              console.warn('Section 1 differential validation failed:', validated.error.message)
+            }
+          }
+
+          // Extract cdrAnalysis (non-blocking — failures don't affect differential)
+          if (Array.isArray(rawParsed.cdrAnalysis)) {
+            const cdrValidated = z.array(CdrAnalysisItemSchema).safeParse(rawParsed.cdrAnalysis)
+            if (cdrValidated.success) {
+              cdrAnalysis = cdrValidated.data.filter((item) => item.applicable)
+            } else {
+              console.warn('Section 1 cdrAnalysis validation failed (non-blocking)')
+            }
+          }
+
+          // Extract workupRecommendations (non-blocking)
+          if (Array.isArray(rawParsed.workupRecommendations)) {
+            const workupValidated = z.array(WorkupRecommendationSchema).safeParse(rawParsed.workupRecommendations)
+            if (workupValidated.success) {
+              workupRecommendations = workupValidated.data
+            } else {
+              console.warn('Section 1 workupRecommendations validation failed (non-blocking)')
+            }
           }
         }
 
-        // Extract differential: unwrap wrapper if present
-        let diffArray = rawParsed
-        if (!Array.isArray(rawParsed) && rawParsed?.differential && Array.isArray(rawParsed.differential)) {
-          diffArray = rawParsed.differential
-        }
-        // Validate structure
-        if (!Array.isArray(diffArray)) {
+        // Fallback: if no differential was parsed, try array extraction from text
+        if (differential.length === 0) {
           const jsonStart = cleanedText.indexOf('[')
           const jsonEnd = cleanedText.lastIndexOf(']')
           if (jsonStart >= 0 && jsonEnd > jsonStart) {
-            diffArray = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
-          } else {
-            throw new Error('Expected array of differential items')
+            const arrayParsed = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+            const validated = z.array(DifferentialItemSchema).safeParse(arrayParsed)
+            if (validated.success) {
+              differential = validated.data
+            }
           }
         }
-        // Validate each item with Zod schema
-        const validated = z.array(DifferentialItemSchema).safeParse(diffArray)
-        if (validated.success) {
-          differential = validated.data
-        } else {
-          console.warn('Section 1 Zod validation failed:', validated.error.message)
+
+        if (differential.length === 0) {
           differential = [
             {
               diagnosis: 'Unable to validate differential',
@@ -886,7 +932,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       'section1.content': content,
       'section1.llmResponse': {
         differential,
-        ...(recommendedOrders.length > 0 && { recommendedOrders }),
+        ...(cdrAnalysis.length > 0 && { cdrAnalysis }),
+        ...(workupRecommendations.length > 0 && { workupRecommendations }),
         processedAt: admin.firestore.Timestamp.now(),
       },
       'section1.submissionCount': newSubmissionCount,
@@ -906,7 +953,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       uid,
       encounterId,
       submissionCount: newSubmissionCount,
-      recommendedOrderCount: recommendedOrders.length,
+      cdrAnalysisCount: cdrAnalysis.length,
+      workupRecsCount: workupRecommendations.length,
       timestamp: new Date().toISOString(),
     })
 
@@ -914,7 +962,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     return res.json({
       ok: true,
       differential,
-      ...(recommendedOrders.length > 0 && { recommendedOrders }),
+      ...(cdrAnalysis.length > 0 && { cdrAnalysis }),
+      ...(workupRecommendations.length > 0 && { workupRecommendations }),
       submissionCount: newSubmissionCount,
       isLocked,
       quotaRemaining,
@@ -1044,7 +1093,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    const { encounterId, content } = parsed.data
+    const { encounterId, content, workingDiagnosis: s3WorkingDiagnosis } = parsed.data
 
     // 3. Get encounter and verify ownership
     const encounterRef = getEncounterRef(uid, encounterId)
@@ -1112,10 +1161,11 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     const storedCdrCtx: string | undefined = buildCdrContextString(encounter.cdrTracking ?? {})
 
     // Build structured data from S2/S3 fields (BM-6.3: enriches finalize prompt)
+    // D1: Prefer workingDiagnosis from S3 request body, fall back to S2 Firestore data
     const structuredData: FinalizeStructuredData = {
       selectedTests: encounter.section2?.selectedTests,
       testResults: encounter.section2?.testResults,
-      workingDiagnosis: encounter.section2?.workingDiagnosis,
+      workingDiagnosis: s3WorkingDiagnosis ?? encounter.section2?.workingDiagnosis,
       treatments: encounter.section3?.treatments,
       cdrSuggestedTreatments: encounter.section3?.cdrSuggestedTreatments,
       disposition: encounter.section3?.disposition,
@@ -1294,7 +1344,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now(),
     })
 
-    // 8. Log action (no PHI)
+    // 9. Log action (no PHI)
     console.log({
       action: 'finalize',
       uid,
@@ -1418,7 +1468,7 @@ app.post('/v1/build-mode/match-cdrs', llmLimiter, async (req, res) => {
 
         // Only call Gemini if there are extractable components
         if (prompt.system) {
-          const result = await callGeminiFlash(prompt)
+          const result = await callGemini(prompt)
 
           const cleanedText = result.text
             .replace(/^```json\s*/gm, '')
@@ -1540,7 +1590,7 @@ app.post('/v1/build-mode/suggest-diagnosis', llmLimiter, async (req, res) => {
     // 4c. Build prompt and call Gemini Flash
     const chiefComplaint = encounter.chiefComplaint || 'Unknown'
     const prompt = buildSuggestDiagnosisPrompt(differential, chiefComplaint, testResultsSummary)
-    const result = await callGeminiFlash(prompt)
+    const result = await callGemini(prompt)
 
     // 4d. Parse response as JSON array of strings
     const cleanedText = result.text
@@ -1635,7 +1685,7 @@ app.post('/v1/build-mode/parse-results', llmLimiter, async (req, res) => {
       pastedText,
       orderedTests.map((t) => ({ id: t.id, name: t.name, unit: t.unit, normalRange: t.normalRange }))
     )
-    const result = await callGeminiFlash(prompt)
+    const result = await callGemini(prompt)
 
     // 4c. Parse response
     const cleanedText = result.text
@@ -1846,9 +1896,9 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
     // 8b. CDR enrichment (supplementary — failures must not block MDM)
     let quickCdrContext: string | undefined
     try {
-      const selectedRules = selectRelevantRules(narrative)
-      if (selectedRules.length > 0) {
-        quickCdrContext = buildCdrContext(selectedRules) || undefined
+      const cdrResults = await searchCdrCatalog(narrative, getDb(), 15)
+      if (cdrResults.length > 0) {
+        quickCdrContext = formatCdrContext(cdrResults) || undefined
       }
     } catch (cdrError) {
       console.warn('Quick mode CDR enrichment failed (non-blocking):', cdrError)
@@ -1858,7 +1908,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
     let result: QuickModeGenerationResult
     try {
       const prompt = await buildQuickModePrompt(narrative, surveillanceContext, quickCdrContext)
-      const modelResponse = await callGeminiFlash(prompt)
+      const modelResponse = await callGemini(prompt)
       result = parseQuickModeResponse(modelResponse.text)
     } catch (modelError) {
       console.error('Quick mode model error:', modelError)

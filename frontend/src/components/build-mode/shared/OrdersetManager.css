@@ -1,0 +1,478 @@
+/* ── OrdersetManager ────────────────────────────────────────────────────────
+ * Large modal overlay for unified order browsing and orderset management.
+ * BEM naming: .orderset-manager__element--modifier
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Backdrop ───────────────────────────────────────────────────────────── */
+
+.orderset-manager__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* ── Modal Container ────────────────────────────────────────────────────── */
+
+.orderset-manager {
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 12px;
+  width: 90vw;
+  max-width: 720px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.orderset-manager__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.orderset-manager__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+}
+
+.orderset-manager__close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--color-text-muted, #94a3b8);
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+
+.orderset-manager__close-btn:hover {
+  color: var(--color-text, #1e293b);
+}
+
+/* ── Search ─────────────────────────────────────────────────────────────── */
+
+.orderset-manager__search {
+  padding: 0.75rem 1.25rem 0;
+  flex-shrink: 0;
+}
+
+.orderset-manager__search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--color-text, #1e293b);
+  background: var(--color-surface, #f8fafc);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.orderset-manager__search-input:focus {
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.orderset-manager__search-input::placeholder {
+  color: var(--color-text-muted, #94a3b8);
+}
+
+/* ── Body (scrollable content) ──────────────────────────────────────────── */
+
+.orderset-manager__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+}
+
+/* ── Category Sections ──────────────────────────────────────────────────── */
+
+.orderset-manager__category {
+  margin-bottom: 0.25rem;
+}
+
+.orderset-manager__category-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: 100%;
+  padding: 0.625rem 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-text, #1e293b);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.orderset-manager__category-header:hover {
+  color: var(--color-primary, #3b82f6);
+}
+
+.orderset-manager__category-header:focus-visible {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.orderset-manager__category-name {
+  flex: 1;
+}
+
+/* ── Chevron ────────────────────────────────────────────────────────────── */
+
+.orderset-manager__chevron {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 4px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.orderset-manager__chevron--open {
+  transform: rotate(90deg);
+}
+
+/* ── Test List ──────────────────────────────────────────────────────────── */
+
+.orderset-manager__test-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.5rem 0 0.5rem 1.125rem;
+}
+
+.orderset-manager__test-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.125rem 0;
+}
+
+.orderset-manager__checkbox {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: var(--color-primary, #3b82f6);
+  flex-shrink: 0;
+}
+
+.orderset-manager__test-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--color-text, #1e293b);
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+
+.orderset-manager__test-name {
+  font-weight: 500;
+}
+
+.orderset-manager__subcategory-tag {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted, #94a3b8);
+}
+
+/* ── AI Badge ───────────────────────────────────────────────────────────── */
+
+.orderset-manager__ai-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-primary, #3b82f6);
+  background: #eff6ff;
+  padding: 0.0625rem 0.3125rem;
+  border-radius: 4px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* ── Saved Ordersets Section ────────────────────────────────────────────── */
+
+.orderset-manager__saved-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--color-border, #e2e8f0);
+}
+
+.orderset-manager__saved-title {
+  margin: 0 0 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.orderset-manager__saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.orderset-manager__orderset-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.625rem;
+  background: var(--color-surface, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+}
+
+.orderset-manager__orderset-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.orderset-manager__orderset-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.orderset-manager__orderset-count {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-text-muted, #94a3b8);
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  padding: 0.0625rem 0.375rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.orderset-manager__orderset-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+
+.orderset-manager__orderset-apply-btn {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-primary, #3b82f6);
+  background: transparent;
+  border: 1px solid var(--color-primary, #3b82f6);
+  border-radius: 4px;
+  padding: 0.1875rem 0.5rem;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.orderset-manager__orderset-apply-btn:hover {
+  background: var(--color-primary, #3b82f6);
+  color: #ffffff;
+}
+
+.orderset-manager__orderset-delete-btn {
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #94a3b8);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.125rem 0.25rem;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.orderset-manager__orderset-delete-btn:hover {
+  color: #dc2626;
+}
+
+/* ── Inline Delete Confirmation ────────────────────────────────────────── */
+
+.orderset-manager__confirm-delete {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.orderset-manager__confirm-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #dc2626;
+  white-space: nowrap;
+}
+
+.orderset-manager__confirm-yes,
+.orderset-manager__confirm-no {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  padding: 0.125rem 0.375rem;
+  cursor: pointer;
+  line-height: 1.3;
+}
+
+.orderset-manager__confirm-yes {
+  color: #ffffff;
+  background: #dc2626;
+}
+
+.orderset-manager__confirm-yes:hover {
+  background: #b91c1c;
+}
+
+.orderset-manager__confirm-no {
+  color: var(--color-text-muted, #64748b);
+  background: var(--color-border, #e2e8f0);
+}
+
+.orderset-manager__confirm-no:hover {
+  background: #cbd5e1;
+}
+
+/* ── Create Form (above footer) ─────────────────────────────────────────── */
+
+.orderset-manager__create-form {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #f8fafc);
+  flex-shrink: 0;
+}
+
+.orderset-manager__create-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+}
+
+.orderset-manager__create-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--color-text, #1e293b);
+  outline: none;
+  transition: border-color 0.15s;
+  margin-bottom: 0.375rem;
+}
+
+.orderset-manager__create-input:focus {
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.orderset-manager__create-count {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #94a3b8);
+  margin-bottom: 0.5rem;
+}
+
+.orderset-manager__create-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+
+.orderset-manager__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.orderset-manager__footer-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.orderset-manager__footer-btn--primary {
+  color: #ffffff;
+  background: var(--color-primary, #3b82f6);
+  border: 1px solid var(--color-primary, #3b82f6);
+}
+
+.orderset-manager__footer-btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover, #2563eb);
+  border-color: var(--color-primary-hover, #2563eb);
+}
+
+.orderset-manager__footer-btn--primary:focus-visible {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.orderset-manager__footer-btn--secondary {
+  color: var(--color-primary, #3b82f6);
+  background: transparent;
+  border: 1px solid var(--color-primary, #3b82f6);
+}
+
+.orderset-manager__footer-btn--secondary:hover:not(:disabled) {
+  background: #eff6ff;
+}
+
+.orderset-manager__footer-btn--secondary:focus-visible {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.orderset-manager__footer-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Alert / Error Text ─────────────────────────────────────────────────── */
+
+.orderset-manager__alert {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #dc2626;
+  width: 100%;
+  margin-bottom: 0.25rem;
+}

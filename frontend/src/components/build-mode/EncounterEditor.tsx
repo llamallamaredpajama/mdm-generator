@@ -9,7 +9,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo, type ReactNode } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
-import { db, useAuth, useAuthToken } from '../../lib/firebase'
+import { getAppDb, useAuth, useAuthToken } from '../../lib/firebase'
 import { useEncounter, useSectionState } from '../../hooks/useEncounter'
 import { ShiftTimer } from './ShiftTimer'
 import SectionPanel from './SectionPanel'
@@ -27,7 +27,6 @@ import type {
   CdrTrackingEntry,
   TestResult,
   DispositionOption,
-  RecommendedOrder,
 } from '../../types/encounter'
 import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
@@ -47,13 +46,18 @@ import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
 import { useToast } from '../../contexts/ToastContext'
 import ResultEntry from './shared/ResultEntry'
 import ProgressIndicator from './shared/ProgressIndicator'
-import OrderSelector from './shared/OrderSelector'
+import OrdersetManager from './shared/OrdersetManager'
 import WorkingDiagnosisInput from './shared/WorkingDiagnosisInput'
 import PasteLabModal from './shared/PasteLabModal'
 import TreatmentInput from './shared/TreatmentInput'
 import DispositionSelector from './shared/DispositionSelector'
 import { useDispoFlows } from '../../hooks/useDispoFlows'
-import { getRecommendedTestIds } from './shared/getRecommendedTestIds'
+import { useOrderSets } from '../../hooks/useOrderSets'
+import {
+  getRecommendedTestIds,
+  getTestIdsFromWorkupRecommendations,
+} from './shared/getRecommendedTestIds'
+import { buildCdrColorMap } from './shared/cdrColorPalette'
 import type { WorkingDiagnosis } from '../../types/encounter'
 import './EncounterEditor.css'
 
@@ -119,6 +123,7 @@ function getSectionPreview(
  * Each SectionPanel manages its own expand/collapse state.
  */
 export default function EncounterEditor({ encounterId, onBack }: EncounterEditorProps) {
+  const db = getAppDb()
   const {
     encounter,
     loading,
@@ -264,15 +269,15 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     }
   }, [user, encounterId])
 
-  // "+ Add Test" order selector toggle (shown inline in S2 custom content)
-  const [showS2OrderSelector, setShowS2OrderSelector] = useState(false)
+  // "+ Add Test" orderset manager toggle (shown inline in S2 custom content)
+  const [showS2OrdersetManager, setShowS2OrdersetManager] = useState(false)
 
   // S2 entry mode: structured (per-test cards) vs dictation (free-text AI parse) (BM-5.2)
   const [s2EntryMode, setS2EntryMode] = useState<'structured' | 'dictation'>('structured')
   const [dictationText, setDictationText] = useState('')
   const [dictationParsing, setDictationParsing] = useState(false)
 
-  // Compute recommended test IDs for OrderSelector "AI" badges
+  // Compute recommended test IDs for OrdersetManager "AI" badges
   const s1Differential = useMemo(() => {
     const llm = encounter?.section1?.llmResponse
     if (Array.isArray(llm)) return llm
@@ -283,30 +288,23 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     return []
   }, [encounter?.section1?.llmResponse])
 
-  // Extract AI-generated recommendedOrders from S1 LLM response (new flow)
-  const s1RecommendedOrders = useMemo(() => {
+  // Extract workup recommendations from S1 response
+  const s1WorkupRecommendations = useMemo(() => {
     const llm = encounter?.section1?.llmResponse
-    if (llm && typeof llm === 'object' && 'recommendedOrders' in llm) {
-      const wrapped = llm as { recommendedOrders?: unknown }
-      if (Array.isArray(wrapped.recommendedOrders)) {
-        return wrapped.recommendedOrders.filter(
-          (o): o is RecommendedOrder =>
-            typeof o === 'object' &&
-            o !== null &&
-            'testId' in o &&
-            typeof (o as Record<string, unknown>).testId === 'string' &&
-            'testName' in o &&
-            typeof (o as Record<string, unknown>).testName === 'string',
-        )
-      }
+    if (llm && typeof llm === 'object' && 'workupRecommendations' in llm) {
+      const wrapped = llm as { workupRecommendations?: unknown }
+      if (Array.isArray(wrapped.workupRecommendations)) return wrapped.workupRecommendations
     }
-    return undefined
+    return []
   }, [encounter?.section1?.llmResponse])
 
-  const recommendedTestIds = useMemo(
-    () => getRecommendedTestIds(s1Differential, testLibrary, s1RecommendedOrders),
-    [s1Differential, testLibrary, s1RecommendedOrders],
-  )
+  // Bug 4 fix: Combine client-side matching AND LLM workup recommendations
+  const recommendedTestIds = useMemo(() => {
+    const fromDifferential = getRecommendedTestIds(s1Differential, testLibrary)
+    const fromWorkup = getTestIdsFromWorkupRecommendations(s1WorkupRecommendations, testLibrary)
+    const merged = new Set([...fromWorkup, ...fromDifferential])
+    return Array.from(merged)
+  }, [s1Differential, testLibrary, s1WorkupRecommendations])
 
   /**
    * Batch update test results with immediate Firestore write.
@@ -639,6 +637,26 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   // Trend report modal state
   const [showTrendReport, setShowTrendReport] = useState(false)
 
+  // D3: Workup accepted state — S2 gated behind "Accept All / Continue"
+  const [workupAccepted, setWorkupAccepted] = useState(false)
+  // Auto-accept if encounter already has S2 progress (backward compat)
+  const workupAcceptedInitRef = useRef(false)
+  useEffect(() => {
+    if (encounter && !workupAcceptedInitRef.current) {
+      workupAcceptedInitRef.current = true
+      // If S2 already has content or is completed, auto-accept
+      if (
+        encounter.section2.status === 'completed' ||
+        encounter.section2.status === 'in_progress' ||
+        encounter.section2.submissionCount > 0 ||
+        encounter.section2.content.length > 0 ||
+        (encounter.section2.testResults && Object.keys(encounter.section2.testResults).length > 0)
+      ) {
+        setWorkupAccepted(true)
+      }
+    }
+  }, [encounter])
+
   // Paste Lab Results modal state (BM-5.1)
   const [showPasteModal, setShowPasteModal] = useState(false)
 
@@ -671,6 +689,13 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     deleteFlow: deleteDispoFlow,
   } = useDispoFlows()
 
+  const {
+    orderSets: s2OrderSets,
+    saveOrderSet: s2SaveOrderSet,
+    updateOrderSet: s2UpdateOrderSet,
+    deleteOrderSet: s2DeleteOrderSet,
+  } = useOrderSets()
+
   // Initialize S3 disposition state from encounter data
   useEffect(() => {
     if (encounter && !s3DispoInitRef.current) {
@@ -691,13 +716,14 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
   /**
    * Handle working diagnosis change — update local state and persist to Firestore
+   * D1: Now writes to section3.workingDiagnosis (moved from S2 to S3)
    */
   const handleWorkingDiagnosisChange = useCallback(
     (wd: WorkingDiagnosis) => {
       setWorkingDiagnosis(wd)
       if (!user || !encounterId) return
       const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
-      updateDoc(encounterRef, { 'section2.workingDiagnosis': wd }).catch((err) => {
+      updateDoc(encounterRef, { 'section3.workingDiagnosis': wd }).catch((err) => {
         console.error('Failed to persist working diagnosis:', err?.message || 'unknown error')
       })
     },
@@ -871,6 +897,16 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     }
   }, [pendingSection, submitSection, workingDiagnosis])
 
+  // E1/A5: Build CDR color map for correlation indicators (single source of truth)
+  // Must be above early returns to satisfy rules-of-hooks
+  const cdrColorMap = useMemo(() => {
+    const ct = encounter?.cdrTracking ?? {}
+    const activeNames = Object.values(ct)
+      .filter((e) => !e.dismissed && !e.excluded)
+      .map((e) => e.name)
+    return buildCdrColorMap(activeNames)
+  }, [encounter?.cdrTracking])
+
   // Loading state
   if (loading) {
     return (
@@ -988,29 +1024,22 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
 
         {/* Dashboard Output (after Section 1 completion) */}
         {encounter.section1.status === 'completed' && encounter.section1.llmResponse && (
-          <>
-            <DashboardOutput
-              llmResponse={encounter.section1.llmResponse}
-              trendAnalysis={analysis}
-              trendLoading={isAnalyzing}
-              selectedTests={selectedTests}
-              onSelectedTestsChange={handleSelectedTestsChange}
-              encounter={encounter}
-            />
-            {analysis && analysis.rankedFindings.length > 0 && (
-              <button
-                type="button"
-                className="encounter-editor__report-btn"
-                onClick={() => setShowTrendReport(true)}
-              >
-                View Chart Report
-              </button>
-            )}
-          </>
+          <DashboardOutput
+            llmResponse={encounter.section1.llmResponse}
+            trendAnalysis={analysis}
+            trendLoading={isAnalyzing}
+            selectedTests={selectedTests}
+            onSelectedTestsChange={handleSelectedTestsChange}
+            encounter={encounter}
+            cdrColorMap={cdrColorMap}
+            onAcceptContinue={() => setWorkupAccepted(true)}
+            onOpenTrendReport={analysis ? () => setShowTrendReport(true) : undefined}
+            firestoreInitialized={selectedTestsInitRef.current}
+          />
         )}
 
-        {/* Section 2: Workup & Results (blocked) */}
-        {!isSection1Complete && !isFinalized && !isArchived && (
+        {/* Section 2: Results and Data Review (blocked until S1 complete + workup accepted) */}
+        {(!isSection1Complete || !workupAccepted) && !isFinalized && !isArchived && (
           <div className="encounter-editor__section-blocked">
             <span className="encounter-editor__blocked-icon">
               <svg
@@ -1033,18 +1062,8 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
             </div>
           </div>
         )}
-        {(isSection1Complete || isFinalized || isArchived) && (
+        {((isSection1Complete && workupAccepted) || isFinalized || isArchived) && (
           <div id="section-panel-2">
-            {/* Working Diagnosis Input (only for Section 2, when unlocked) */}
-            {isSection1Complete && !encounter.section2.isLocked && !isFinalized && !isArchived && (
-              <WorkingDiagnosisInput
-                suggestions={dxSuggestions}
-                loading={dxSuggestionsLoading}
-                value={workingDiagnosis ?? encounter.section2.workingDiagnosis}
-                onChange={handleWorkingDiagnosisChange}
-                disabled={isS2Locked}
-              />
-            )}
             <SectionPanel
               sectionNumber={2}
               title={SECTION_TITLES[2]}
@@ -1058,13 +1077,22 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
               submitLabel="Save & Continue"
               customContent={
                 selectedTests.length > 0 && !isFinalized && !isArchived ? (
-                  showS2OrderSelector ? (
-                    <OrderSelector
+                  showS2OrdersetManager ? (
+                    <OrdersetManager
+                      mode="browse"
                       tests={testLibrary}
                       selectedTests={selectedTests}
                       recommendedTestIds={recommendedTestIds}
                       onSelectionChange={handleSelectedTestsChange}
-                      onBack={() => setShowS2OrderSelector(false)}
+                      onClose={() => setShowS2OrdersetManager(false)}
+                      onAcceptAllRecommended={() => setShowS2OrdersetManager(false)}
+                      onAcceptSelected={() => setShowS2OrdersetManager(false)}
+                      orderSets={s2OrderSets}
+                      onSaveOrderSet={s2SaveOrderSet}
+                      onUpdateOrderSet={async (id, data) => {
+                        await s2UpdateOrderSet(id, data)
+                      }}
+                      onDeleteOrderSet={s2DeleteOrderSet}
                     />
                   ) : (
                     <div className="encounter-editor__result-entries">
@@ -1141,6 +1169,8 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                                   testDef={testDef}
                                   result={testResults[testId]}
                                   activeCdrNames={activeCdrNames}
+                                  cdrColors={cdrColorMap}
+                                  showReadiness={!isS2Locked}
                                   onResultChange={handleTestResultChange}
                                 />
                               )
@@ -1165,7 +1195,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
                             <button
                               type="button"
                               className="encounter-editor__add-test-btn"
-                              onClick={() => setShowS2OrderSelector(true)}
+                              onClick={() => setShowS2OrdersetManager(true)}
                               disabled={isS2Submitting}
                               data-testid="add-test-btn"
                             >
@@ -1264,6 +1294,20 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
             customContent={
               !isFinalized && !isArchived && encounter ? (
                 <div className="encounter-editor__s3-layout">
+                  {/* D1: Working Diagnosis moved from S2 to S3 */}
+                  {!section3State.isLocked && (
+                    <WorkingDiagnosisInput
+                      suggestions={dxSuggestions}
+                      loading={dxSuggestionsLoading}
+                      value={
+                        workingDiagnosis ??
+                        encounter.section3?.workingDiagnosis ??
+                        encounter.section2?.workingDiagnosis
+                      }
+                      onChange={handleWorkingDiagnosisChange}
+                      disabled={section3State.isLocked || isFinalized || isArchived}
+                    />
+                  )}
                   <TreatmentInput
                     encounter={encounter}
                     cdrLibrary={cdrLibrary}

@@ -35,7 +35,7 @@ export interface QuickModeGenerationResult {
  */
 async function loadMdmGuide(): Promise<string> {
   try {
-    const guidePath = path.join(__dirname, '../../docs/mdm-gen-guide.md')
+    const guidePath = path.join(__dirname, '../../docs/mdm-gen-guide-v2.md')
     return await fs.readFile(guidePath, 'utf8')
   } catch {
     // Return minimal guidance if file not found
@@ -48,7 +48,7 @@ async function loadMdmGuide(): Promise<string> {
 }
 
 /**
- * Prompt structure matching vertex.ts callGeminiFlash expectations
+ * Prompt structure matching vertex.ts callGemini expectations
  */
 export interface PromptParts {
   system: string

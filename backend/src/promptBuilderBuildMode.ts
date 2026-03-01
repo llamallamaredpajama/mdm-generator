@@ -5,7 +5,7 @@
  * Each function builds prompts that generate structured output for their section.
  */
 
-import type { DifferentialItem, DispositionOption, MdmPreview, RecommendedOrder, Section1Response, Section2Response, TestResult, WorkingDiagnosis } from './buildModeSchemas'
+import type { DifferentialItem, DispositionOption, MdmPreview, Section1Response, Section2Response, TestResult, WorkingDiagnosis } from './buildModeSchemas'
 import type { CdrDefinition, TestDefinition } from './types/libraries'
 
 /**
@@ -38,7 +38,8 @@ export function buildSection1Prompt(
   content: string,
   systemPrompt: string,
   surveillanceContext?: string,
-  cdrContext?: string
+  cdrContext?: string,
+  testCatalog?: string
 ): { system: string; user: string } {
   let system = [
     systemPrompt,
@@ -98,24 +99,28 @@ export function buildSection1Prompt(
     ].join('\n')
   }
 
-  // Append recommended orders instructions
-  system += [
-    '',
-    '',
-    'RECOMMENDED ORDERS GENERATION:',
-    'Based on the differential diagnoses and identified CDRs, generate recommended orders for Section 2 workup.',
-    '1. Each emergent/urgent diagnosis suggests specific tests to confirm or exclude',
-    '2. Missing CDR components suggest specific tests (e.g., HEART score missing troponin → recommend troponin)',
-    '3. Include standard ED workup items appropriate for the presentation',
-    '4. Common test IDs: cbc, bmp, troponin, bnp, d_dimer, lactate, lipase, urinalysis, urine_pregnancy, coags, lfts, blood_cultures, cxr, ct_head, ct_angio_chest, ct_abdomen_pelvis, us_ruq, us_aorta, ecg, echo, lumbar_puncture',
-    '5. Priority: high (critical for ruling out emergent conditions), medium (important for workup), low (supplementary)',
-  ].join('\n')
+  // Build surveillance workup hints for the output format instructions
+  const surveillanceWorkupHint = surveillanceContext
+    ? '\n    Note: Include surveillance-influenced recommendations (e.g., if regional data shows rising flu activity, recommend influenza testing).'
+    : ''
+
+  // Build test catalog block for the user prompt (if available)
+  const catalogBlock: string[] = testCatalog
+    ? [
+        '',
+        'AVAILABLE TEST CATALOG — use these exact IDs in workupRecommendations.testId:',
+        testCatalog,
+        'If recommending a test not in this list, omit testId and provide testName only.',
+        '',
+      ]
+    : []
 
   const user = [
     'INITIAL PATIENT PRESENTATION:',
     '---',
     content,
     '---',
+    ...catalogBlock,
     '',
     'OUTPUT FORMAT (strict JSON):',
     '{',
@@ -128,20 +133,41 @@ export function buildSection1Prompt(
     '      "cdrContext": "Optional: Applicable CDR scores/results that inform this diagnosis"',
     '    }',
     '  ],',
-    '  "recommendedOrders": [',
+    '  "cdrAnalysis": [',
     '    {',
-    '      "testId": "test_library_id (e.g., troponin, cbc, ecg)",',
-    '      "testName": "Human-readable test name",',
-    '      "reasoning": "Why this test is recommended based on differential or CDR",',
-    '      "priority": "high" | "medium" | "low"',
+    '      "name": "CDR name (e.g., HEART Score)",',
+    '      "applicable": true,',
+    '      "score": null,',
+    '      "interpretation": null,',
+    '      "missingData": ["List specific data points needed to complete the score"],',
+    '      "availableData": ["List data points from the narrative that were used"],',
+    '      "reasoning": "Why this CDR applies and its clinical relevance"',
+    '    }',
+    '  ],',
+    '  "workupRecommendations": [',
+    '    {',
+    '      "testName": "Test or study name",',
+    '      "testId": "exact_id_from_catalog (omit if not in catalog)",',
+    '      "reason": "Clinical reason for ordering this test",',
+    '      "source": "baseline" | "differential" | "cdr" | "surveillance",',
+    '      "priority": "stat" | "routine"',
     '    }',
     '  ]',
     '}',
     '',
-    'Generate the differential diagnosis array ordered by urgency (emergent first).',
-    'Include 6-10 total diagnoses covering the worst-first spectrum.',
-    'Generate recommended orders based on the differential and identified CDRs.',
-    'Include 5-15 recommended tests ordered by priority (high first).',
+    'Generate ALL three sections:',
+    '1. DIFFERENTIAL: 6-10 diagnoses ordered by urgency (emergent first), covering the worst-first spectrum.',
+    '2. CDR ANALYSIS: List ALL applicable clinical decision rules for this presentation.',
+    '   - If enough data exists to calculate a score, provide the score and interpretation.',
+    '   - If NOT enough data, still list the CDR with missingData specifying what is needed.',
+    '   - Common CDRs: HEART score (chest pain), Wells criteria (PE/DVT), PERC rule, PECARN (pediatric head), Ottawa ankle/knee, Canadian C-spine, etc.',
+    '   - If no CDRs apply, return an empty array.',
+    '3. WORKUP RECOMMENDATIONS: List labs, imaging, and procedures that should be ordered.',
+    '   - "baseline": Standard workup for this chief complaint in any ER.',
+    '   - "differential": Tests needed to evaluate specific differential diagnoses.',
+    '   - "cdr": Tests needed to complete CDR calculations (e.g., troponin for HEART score).',
+    '   - "surveillance": Tests driven by regional epidemiologic data.' + surveillanceWorkupHint,
+    '   - Mark "stat" priority for time-sensitive tests, "routine" otherwise.',
   ].join('\n')
 
   return { system, user }
@@ -321,13 +347,6 @@ export function buildSection2Prompt(
  * treatments, disposition, follow-up) that are injected into the prompt so
  * the LLM can produce a more accurate final MDM. All fields are optional
  * for backward compatibility with older encounters.
- *
- * `s3GuideText` is the build-mode-specific S3 MDM guide (docs/mdm-gen-guide-build-s3.md).
- * When provided, it replaces the inline finalize instructions. Falls back to inline
- * instructions for backward compatibility.
- *
- * `section2.response` is now optional: new-flow encounters skip S2 AI processing
- * and have no mdmPreview. When absent, the finalize prompt uses structured data only.
  */
 export function buildFinalizePrompt(
   section1: { content: string; response: Pick<Section1Response, 'differential'> },
@@ -339,8 +358,10 @@ export function buildFinalizePrompt(
   s3GuideText?: string
 ): { system: string; user: string } {
   const differentialSummary = section1.response.differential
-    .map((d: DifferentialItem) => `- ${d.diagnosis} (${d.urgency}): ${d.reasoning}`)
+    .map((d: DifferentialItem) => `- ${d.diagnosis} (${d.urgency})`)
     .join('\n')
+
+  const mdmPreview = section2.response?.mdmPreview
 
   // --- Build structured data sections ---
   const structuredSections: string[] = []
@@ -379,6 +400,7 @@ export function buildFinalizePrompt(
     if (structuredData.cdrSuggestedTreatments && structuredData.cdrSuggestedTreatments.length > 0) {
       treatLines.push('CDR-suggested treatments selected:')
       for (const t of structuredData.cdrSuggestedTreatments) {
+        // Format: "cdrId:treatment_id" → "CDR: Treatment Label"
         const colonIdx = t.indexOf(':')
         if (colonIdx > 0) {
           const cdrId = t.slice(0, colonIdx)
@@ -404,15 +426,8 @@ export function buildFinalizePrompt(
     structuredSections.push(dispoLines.join('\n'), '')
   }
 
-  // Build system prompt: use S3 guide if available, otherwise inline instructions
-  const systemParts: string[] = []
-
-  if (s3GuideText) {
-    // Use the build-mode-specific S3 MDM guide as the primary system prompt
-    systemParts.push(s3GuideText, '')
-  }
-
-  systemParts.push(
+  const system = [
+    ...(s3GuideText ? [s3GuideText, ''] : []),
     'SECTION 3: TREATMENT & DISPOSITION - FINAL MDM GENERATION',
     '',
     'You are compiling the complete Medical Decision Making documentation.',
@@ -423,47 +438,25 @@ export function buildFinalizePrompt(
     '=== SECTION 1: INITIAL PRESENTATION ===',
     section1.content,
     '',
-    '=== INITIAL DIFFERENTIAL (AI-generated, worst-first) ===',
+    '=== INITIAL DIFFERENTIAL ===',
     differentialSummary,
     '',
-  )
-
-  // S2 context: use structured data as primary, mdmPreview as supplementary (backward compat)
-  if (section2.content) {
-    systemParts.push(
-      '=== SECTION 2: WORKUP NOTES ===',
-      section2.content,
-      '',
-    )
-  }
-
-  if (wdStr) {
-    systemParts.push(`Working Diagnosis: ${wdStr}`, '')
-  }
-
-  // Include legacy mdmPreview if available (old-format encounters)
-  if (section2.response?.mdmPreview) {
-    systemParts.push(
-      '=== MDM PREVIEW (from prior AI analysis) ===',
-      JSON.stringify(section2.response.mdmPreview, null, 2),
-      '',
-    )
-  }
-
-  if (structuredSections.length > 0) {
-    systemParts.push(...structuredSections)
-  }
-
-  if (surveillanceContext) {
-    systemParts.push(
+    '=== SECTION 2: WORKUP ===',
+    section2.content,
+    wdStr ? `Working Diagnosis: ${wdStr}` : '',
+    '',
+    ...(mdmPreview ? [
+      '=== MDM PREVIEW ===',
+      JSON.stringify(mdmPreview, null, 2),
+    ] : []),
+    '',
+    ...(structuredSections.length > 0 ? structuredSections : []),
+    ...(surveillanceContext ? [
       '=== REGIONAL SURVEILLANCE DATA ===',
       surveillanceContext,
       '',
-    )
-  }
-
-  if (cdrContext) {
-    systemParts.push(
+    ] : []),
+    ...(cdrContext ? [
       '=== CLINICAL DECISION RULES RESULTS ===',
       cdrContext,
       '',
@@ -473,40 +466,32 @@ export function buildFinalizePrompt(
       '3. Note CDR results that support discharge safety (e.g., "HEART score 2 — low risk, safe for discharge with outpatient follow-up")',
       '4. Include CDR-based exclusion reasoning (e.g., "Ottawa Ankle Rules negative — imaging deferred")',
       '',
-    )
-  }
-
-  // Only include inline instructions if no S3 guide was loaded
-  if (!s3GuideText) {
-    systemParts.push(
-      'STRUCTURED DATA INSTRUCTIONS:',
-      '1. When structured test results are provided, use them as the authoritative data source for the Data Reviewed section — they are more precise than free-text',
-      '2. When structured treatments are provided, document each treatment in the Treatment section with its CDR basis if applicable (e.g., "Aspirin 325mg — per HEART score protocol")',
-      '3. When a structured disposition is provided, use it as the primary disposition decision and document the clinical rationale supporting it',
-      '4. When follow-up instructions are provided, include them verbatim in the Disposition section',
-      '5. CDR-suggested treatments should reference the specific CDR that recommended them',
-      '',
-      'CRITICAL REQUIREMENTS:',
-      '1. Generate copy-pastable MDM text formatted for EHR documentation',
-      '2. Include MDM complexity level determination (Low, Moderate, High)',
-      '3. Follow standard EM MDM structure from the guide',
-      '4. Include risk assessment with highest risk element identified',
-      '5. Document disposition decision with clinical rationale',
-      '6. Add appropriate discharge instructions if applicable',
-      '7. NEVER fabricate information - use only what was provided',
-      ...(surveillanceContext ? [
-        '8. Include regional surveillance data sources in the Data Reviewed section',
-        '9. Note any regional epidemiologic context that influenced the differential or clinical reasoning',
-      ] : []),
-      '',
-      'MDM COMPLEXITY DETERMINATION:',
-      '- HIGH: Multiple diagnoses, extensive data review, high-risk decision making',
-      '- MODERATE: 2-3 diagnoses, moderate data, some risk',
-      '- LOW: Single straightforward problem, minimal workup',
-    )
-  }
-
-  const system = systemParts.join('\n')
+    ] : []),
+    'STRUCTURED DATA INSTRUCTIONS:',
+    '1. When structured test results are provided, use them as the authoritative data source for the Data Reviewed section — they are more precise than free-text',
+    '2. When structured treatments are provided, document each treatment in the Treatment section with its CDR basis if applicable (e.g., "Aspirin 325mg — per HEART score protocol")',
+    '3. When a structured disposition is provided, use it as the primary disposition decision and document the clinical rationale supporting it',
+    '4. When follow-up instructions are provided, include them verbatim in the Disposition section',
+    '5. CDR-suggested treatments should reference the specific CDR that recommended them',
+    '',
+    'CRITICAL REQUIREMENTS:',
+    '1. Generate copy-pastable MDM text formatted for EHR documentation',
+    '2. Include MDM complexity level determination (Low, Moderate, High)',
+    '3. Follow standard EM MDM structure from the guide',
+    '4. Include risk assessment with highest risk element identified',
+    '5. Document disposition decision with clinical rationale',
+    '6. Add appropriate discharge instructions if applicable',
+    '7. NEVER fabricate information - use only what was provided',
+    ...(surveillanceContext ? [
+      '8. Include regional surveillance data sources in the Data Reviewed section (e.g., "Regional Surveillance Data: CDC Respiratory, NWSS Wastewater")',
+      '9. Note any regional epidemiologic context that influenced the differential or clinical reasoning',
+    ] : []),
+    '',
+    'MDM COMPLEXITY DETERMINATION:',
+    '- HIGH: Multiple diagnoses, extensive data review, high-risk decision making',
+    '- MODERATE: 2-3 diagnoses, moderate data, some risk',
+    '- LOW: Single straightforward problem, minimal workup',
+  ].join('\n')
 
   const user = [
     'TREATMENT AND DISPOSITION:',

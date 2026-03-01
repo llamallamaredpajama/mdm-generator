@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore'
-import { db, useAuth, useAuthToken } from '../lib/firebase'
+import { getAppDb, useAuth, useAuthToken } from '../lib/firebase'
 import { processSection1, finalizeEncounter } from '../lib/api'
 import { useTrendAnalysisContext } from '../contexts/TrendAnalysisContext'
 import type {
@@ -47,6 +47,7 @@ export interface UseEncounterReturn {
  * @returns Encounter state and mutation functions
  */
 export function useEncounter(encounterId: string | null): UseEncounterReturn {
+  const db = getAppDb()
   const { user } = useAuth()
   const token = useAuthToken()
   const {
@@ -270,7 +271,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
             const location =
               trendEnabled && trendLocationValid && trendLocation ? trendLocation : undefined
             const s1Response = await processSection1(encounterId, content, token, location)
-            // Update Firestore with response (including recommendedOrders if present)
+            // Update Firestore with response (include optional CDR analysis + workup recs)
             await updateDoc(encounterRef, {
               'section1.content': content,
               'section1.submissionCount': s1Response.submissionCount,
@@ -278,8 +279,9 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               'section1.status': 'completed',
               'section1.llmResponse': {
                 differential: s1Response.differential,
-                ...(s1Response.recommendedOrders && {
-                  recommendedOrders: s1Response.recommendedOrders,
+                ...(s1Response.cdrAnalysis && { cdrAnalysis: s1Response.cdrAnalysis }),
+                ...(s1Response.workupRecommendations && {
+                  workupRecommendations: s1Response.workupRecommendations,
                 }),
                 processedAt: serverTimestamp(),
               },

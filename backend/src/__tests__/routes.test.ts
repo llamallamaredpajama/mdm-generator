@@ -126,10 +126,9 @@ vi.mock('../services/userService', () => ({
 // vertex mock
 // ---------------------------------------------------------------------------
 
-const mockCallGeminiFlash = vi.fn()
+const mockCallGemini = vi.fn()
 vi.mock('../vertex', () => ({
-  callGeminiFlash: (...args: unknown[]) => mockCallGeminiFlash(...args),
-  callGemini: (...args: unknown[]) => mockCallGeminiFlash(...args),
+  callGemini: (...args: unknown[]) => mockCallGemini(...args),
 }))
 
 // ---------------------------------------------------------------------------
@@ -198,7 +197,7 @@ beforeEach(() => {
   mockEncounterDocRef.update.mockResolvedValue(undefined)
 
   // Default Gemini response
-  mockCallGeminiFlash.mockResolvedValue({ text: VALID_MDM_MODEL_RESPONSE })
+  mockCallGemini.mockResolvedValue({ text: VALID_MDM_MODEL_RESPONSE })
 })
 
 // ============================================================================
@@ -327,7 +326,7 @@ describe('POST /v1/generate', () => {
   })
 
   it('returns fallback stub (not 500) when model returns malformed JSON', async () => {
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: MALFORMED_MODEL_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: MALFORMED_MODEL_RESPONSE })
 
     const res = await request(app)
       .post('/v1/generate')
@@ -355,7 +354,7 @@ describe('POST /v1/generate', () => {
 
 describe('POST /v1/parse-narrative', () => {
   it('returns 200 with parsed structure on valid request', async () => {
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_PARSE_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: VALID_PARSE_RESPONSE })
 
     const res = await request(app)
       .post('/v1/parse-narrative')
@@ -368,7 +367,7 @@ describe('POST /v1/parse-narrative', () => {
   })
 
   it('does NOT increment usage counter', async () => {
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_PARSE_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: VALID_PARSE_RESPONSE })
 
     await request(app)
       .post('/v1/parse-narrative')
@@ -378,7 +377,7 @@ describe('POST /v1/parse-narrative', () => {
   })
 
   it('returns empty structure when model fails', async () => {
-    mockCallGeminiFlash.mockRejectedValueOnce(new Error('Model unavailable'))
+    mockCallGemini.mockRejectedValueOnce(new Error('Model unavailable'))
 
     const res = await request(app)
       .post('/v1/parse-narrative')
@@ -505,7 +504,7 @@ describe('POST /v1/build-mode/process-section1', () => {
     mockEncounterDocRef.get.mockResolvedValueOnce(
       makeEncounterSnap({ quotaCounted: false }),
     )
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -527,7 +526,7 @@ describe('POST /v1/build-mode/process-section1', () => {
         section1: { status: 'completed', submissionCount: 1 },
       }),
     )
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -555,7 +554,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('returns 200 with differential on valid request', async () => {
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -569,25 +568,25 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   /**
-   * BUG TEST: No token-size check on section content.
+   * Regression: token-size check added and Zod char limit aligned to 2000.
    *
-   * /v1/generate checks `Math.ceil(narrative.length / 4)` against
-   * `stats.features.maxTokensPerRequest`, but build-mode endpoints do NOT.
-   * Only the Zod `.max(SECTION1_MAX_CHARS)` = 2000 char limit applies.
+   * Previously, build-mode had no token-size check and a higher Zod char limit,
+   * allowing oversized content through. Now both defenses are in place:
+   * - Zod limit = SECTION1_MAX_CHARS (2000 chars)
+   * - checkTokenSize() added at route level
    *
-   * Expected: Should check token estimate against plan limit (like /v1/generate)
-   * Actual: Only checks Zod character limit, ignoring plan token limits
+   * The Zod limit is the tighter constraint (2000 chars ≈ 500 tokens, well
+   * under the free plan's 2000-token limit), so oversized content is now
+   * correctly rejected at the Zod validation layer.
    */
-  it('BUG: oversized section content passes without token-size check', async () => {
-    const nearMaxContent = 'A'.repeat(3996) // within Zod limit, but ~999 tokens
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
+  it('rejects content exceeding SECTION1_MAX_CHARS', async () => {
+    const oversizedContent = 'A'.repeat(2001) // exceeds SECTION1_MAX_CHARS = 2000
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
-      .send({ ...validBody, content: nearMaxContent })
+      .send({ ...validBody, content: oversizedContent })
 
-    // Succeeds because there's no token-based validation — only Zod max char
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(400)
   })
 })
 
@@ -664,7 +663,7 @@ describe('POST /v1/build-mode/process-section2', () => {
   })
 
   it('returns 200 with MDM preview', async () => {
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_SECTION2_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION2_RESPONSE })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section2')
@@ -729,7 +728,7 @@ describe('POST /v1/build-mode/process-section2', () => {
         quotaCounted: true,
       }),
     )
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_SECTION2_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION2_RESPONSE })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section2')
@@ -777,7 +776,7 @@ describe('POST /v1/build-mode/finalize', () => {
   })
 
   it('returns 200 with final MDM', async () => {
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_FINALIZE_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: VALID_FINALIZE_RESPONSE })
 
     const res = await request(app)
       .post('/v1/build-mode/finalize')
@@ -810,7 +809,7 @@ describe('POST /v1/build-mode/finalize', () => {
   })
 
   it('parses wrapped finalMdm response from LLM', async () => {
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
 
     const res = await request(app)
       .post('/v1/build-mode/finalize')
@@ -825,7 +824,7 @@ describe('POST /v1/build-mode/finalize', () => {
   })
 
   it('normalizes title-case complexityLevel to lowercase', async () => {
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
 
     const res = await request(app)
       .post('/v1/build-mode/finalize')
@@ -836,7 +835,7 @@ describe('POST /v1/build-mode/finalize', () => {
   })
 
   it('maps prompt field names to schema field names', async () => {
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
 
     const res = await request(app)
       .post('/v1/build-mode/finalize')
@@ -858,7 +857,7 @@ describe('POST /v1/build-mode/finalize', () => {
   })
 
   it('returns fallback MDM when JSON is completely unparseable', async () => {
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: 'This is not JSON at all <html>oops</html>' })
+    mockCallGemini.mockResolvedValueOnce({ text: 'This is not JSON at all <html>oops</html>' })
 
     const res = await request(app)
       .post('/v1/build-mode/finalize')
@@ -950,7 +949,7 @@ describe('POST /v1/quick-mode/generate', () => {
   })
 
   it('returns 200 with MDM on valid request', async () => {
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_QUICK_MODE_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: VALID_QUICK_MODE_RESPONSE })
 
     const res = await request(app)
       .post('/v1/quick-mode/generate')
@@ -966,8 +965,8 @@ describe('POST /v1/quick-mode/generate', () => {
 
   it('returns fallback when model fails (not 500)', async () => {
     // Reset fully then set rejection as the default to avoid any residual state
-    mockCallGeminiFlash.mockReset()
-    mockCallGeminiFlash.mockRejectedValue(new Error('Model unavailable'))
+    mockCallGemini.mockReset()
+    mockCallGemini.mockRejectedValue(new Error('Model unavailable'))
 
     const res = await request(app)
       .post('/v1/quick-mode/generate')
@@ -990,7 +989,7 @@ describe('POST /v1/quick-mode/generate', () => {
    */
   it('rejects oversized narrative that exceeds plan token limit', async () => {
     const oversizedNarrative = 'X'.repeat(12000) // ~3000 tokens, exceeds free plan's 2000
-    mockCallGeminiFlash.mockResolvedValueOnce({ text: VALID_QUICK_MODE_RESPONSE })
+    mockCallGemini.mockResolvedValueOnce({ text: VALID_QUICK_MODE_RESPONSE })
 
     const res = await request(app)
       .post('/v1/quick-mode/generate')

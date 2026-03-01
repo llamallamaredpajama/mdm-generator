@@ -1,0 +1,52 @@
+/* ── OrdersRightPanel ──────────────────────────────────────────────────────
+ * Right panel of the split OrdersCard: order sets management.
+ * BEM naming extends .orders-card__ for shared styles.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+.orders-right-panel__list {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.orders-right-panel__orderset {
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.orders-right-panel__orderset-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+}
+
+.orders-right-panel__orderset-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--color-text, #1e293b);
+  text-align: left;
+  padding: 0;
+}
+
+.orders-right-panel__orderset-toggle:hover {
+  color: var(--color-primary, #3b82f6);
+}
+
+.orders-right-panel__orderset-items {
+  padding: 0.25rem 0.5rem 0.5rem 2.25rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #f8fafc);
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}

@@ -15,6 +15,8 @@ interface RegionalTrendsCardProps {
   analysis: TrendAnalysisResult | null
   /** Whether trend analysis is currently loading */
   isLoading?: boolean
+  /** C2: Callback to open trend report modal */
+  onOpenReport?: () => void
 }
 
 const TREND_ARROWS: Record<string, string> = {
@@ -33,6 +35,7 @@ const ALERT_ICONS: Record<string, string> = {
 export default function RegionalTrendsCard({
   analysis,
   isLoading = false,
+  onOpenReport,
 }: RegionalTrendsCardProps) {
   const [expanded, setExpanded] = useState(false)
 
@@ -71,26 +74,19 @@ export default function RegionalTrendsCard({
       {/* Header */}
       <div className="regional-trends-card__header">
         <h4 className="regional-trends-card__title">Regional Trends</h4>
-        <span className="regional-trends-card__region-badge">
-          {analysis.regionLabel}
-        </span>
+        <span className="regional-trends-card__region-badge">{analysis.regionLabel}</span>
       </div>
 
       {/* Findings */}
       <div className="regional-trends-card__findings">
         {displayFindings.map((finding, i) => (
-          <div
-            key={`${finding.condition}-${i}`}
-            className="regional-trends-card__finding"
-          >
+          <div key={`${finding.condition}-${i}`} className="regional-trends-card__finding">
             <span
               className={`regional-trends-card__arrow regional-trends-card__arrow--${finding.trendDirection}`}
             >
               {TREND_ARROWS[finding.trendDirection] || '?'}
             </span>
-            <span className="regional-trends-card__condition">
-              {finding.condition}
-            </span>
+            <span className="regional-trends-card__condition">{finding.condition}</span>
             <span className="regional-trends-card__summary">
               {' \u2014 '}
               {finding.summary}
@@ -113,9 +109,7 @@ export default function RegionalTrendsCard({
               </span>
               <div className="regional-trends-card__alert-content">
                 <strong>{alert.title}</strong>
-                <p className="regional-trends-card__alert-desc">
-                  {alert.description}
-                </p>
+                <p className="regional-trends-card__alert-desc">{alert.description}</p>
               </div>
             </div>
           ))}
@@ -130,22 +124,29 @@ export default function RegionalTrendsCard({
             {new Date(analysis.analyzedAt).toLocaleDateString()}
           </p>
           <p className="regional-trends-card__disclaimer">
-            Surveillance data is supplementary. Clinical judgment must guide all
-            decisions.
+            Surveillance data is supplementary. Clinical judgment must guide all decisions.
           </p>
         </footer>
       )}
 
-      {/* Toggle button */}
-      {(hasMoreFindings || analysis.alerts.length > 0) && (
-        <button
-          type="button"
-          className="regional-trends-card__toggle-btn"
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? 'Hide Details' : 'Show Details'}
-        </button>
-      )}
+      {/* Action buttons */}
+      <div className="regional-trends-card__actions">
+        {(hasMoreFindings || analysis.alerts.length > 0) && (
+          <button
+            type="button"
+            className="regional-trends-card__toggle-btn"
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? 'Hide Details' : 'Show Details'}
+          </button>
+        )}
+        {/* C2: Report button opens TrendReportModal */}
+        {onOpenReport && (
+          <button type="button" className="regional-trends-card__report-btn" onClick={onOpenReport}>
+            Report
+          </button>
+        )}
+      </div>
     </div>
   )
 }

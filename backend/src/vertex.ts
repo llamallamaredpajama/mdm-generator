@@ -50,6 +50,3 @@ export async function callGemini(
   const text = res.response?.candidates?.[0]?.content?.parts?.[0]?.text || ''
   return { text }
 }
-
-/** @deprecated Use callGemini instead */
-export const callGeminiFlash = callGemini
