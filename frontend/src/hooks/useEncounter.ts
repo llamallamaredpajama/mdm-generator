@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { getAppDb, useAuth, useAuthToken } from '../lib/firebase'
-import { processSection1, processSection2, finalizeEncounter } from '../lib/api'
+import { processSection1, finalizeEncounter } from '../lib/api'
 import { useTrendAnalysisContext } from '../contexts/TrendAnalysisContext'
 import type {
   EncounterDocument,
@@ -18,9 +18,6 @@ import type {
   Section1Data,
   Section2Data,
   Section3Data,
-  Section1Response,
-  Section2Response,
-  FinalizeResponse,
 } from '../types/encounter'
 import { MAX_SUBMISSIONS_PER_SECTION } from '../types/encounter'
 
@@ -268,15 +265,12 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
         const content = localContent[section]
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
 
-        let response: Section1Response | Section2Response | FinalizeResponse
-
         // Call appropriate API endpoint based on section
         switch (section) {
           case 1: {
             const location =
               trendEnabled && trendLocationValid && trendLocation ? trendLocation : undefined
-            response = await processSection1(encounterId, content, token, location)
-            const s1Response = response as Section1Response
+            const s1Response = await processSection1(encounterId, content, token, location)
             // Update Firestore with response (include optional CDR analysis + workup recs)
             await updateDoc(encounterRef, {
               'section1.content': content,
@@ -299,46 +293,38 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
           }
 
           case 2: {
-            // Collect structured data from the encounter for the S2 prompt
-            const s2Structured = {
-              selectedTests: encounter.section2.selectedTests,
-              testResults: encounter.section2.testResults,
-              structuredDiagnosis: encounter.section2.workingDiagnosis,
-            }
-            response = await processSection2(
-              encounterId,
-              content,
-              token,
-              workingDiagnosis,
-              s2Structured,
-            )
-            // Update Firestore with response
-            // Note: workingDiagnosis is NOT written here — it moved to S3 (D1).
-            // Writing it in S2 would clear S3's fallback data.
+            // ================================================================
+            // REDESIGNED S2: Pure data entry — NO API call
+            // Persist structured data directly to Firestore.
+            // ================================================================
+            const currentCount = encounter.section2.submissionCount ?? 0
+            const newCount = currentCount + 1
+            const locked = newCount >= 2
             await updateDoc(encounterRef, {
-              'section2.content': content,
-              'section2.submissionCount': response.submissionCount,
-              'section2.isLocked': response.isLocked,
+              'section2.content': content || '',
+              'section2.submissionCount': newCount,
+              'section2.isLocked': locked,
               'section2.status': 'completed',
-              'section2.llmResponse': {
-                mdmPreview: (response as Section2Response).mdmPreview,
-                processedAt: serverTimestamp(),
-              },
+              'section2.selectedTests': encounter.section2.selectedTests || [],
+              'section2.testResults': encounter.section2.testResults || {},
+              'section2.workingDiagnosis':
+                workingDiagnosis ?? encounter.section2.workingDiagnosis ?? null,
               status: 'section2_done',
-              currentSection: response.isLocked ? 3 : 2,
+              currentSection: locked ? 3 : 2,
               updatedAt: serverTimestamp(),
             })
             break
           }
 
-          case 3:
-            response = await finalizeEncounter(encounterId, content, token, workingDiagnosis)
+          case 3: {
+            const s3Response = await finalizeEncounter(encounterId, content, token)
             // Backend already updates Firestore with section3 data and status: 'finalized'.
             // The onSnapshot listener will pick up changes automatically.
             // Client-side write is skipped to avoid race with Firestore rule
             // that blocks updates when status == 'finalized'.
-            setQuotaRemaining((response as FinalizeResponse).quotaRemaining)
+            setQuotaRemaining(s3Response.quotaRemaining)
             break
+          }
         }
       } catch (err) {
         console.error(`Error submitting section ${section}:`, err)

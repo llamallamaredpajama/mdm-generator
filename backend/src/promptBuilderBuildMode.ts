@@ -350,17 +350,18 @@ export function buildSection2Prompt(
  */
 export function buildFinalizePrompt(
   section1: { content: string; response: Pick<Section1Response, 'differential'> },
-  section2: { content: string; response: Pick<Section2Response, 'mdmPreview'>; workingDiagnosis?: string },
+  section2: { content: string; response?: Pick<Section2Response, 'mdmPreview'>; workingDiagnosis?: string },
   section3Content: string,
   surveillanceContext?: string,
   cdrContext?: string,
-  structuredData?: FinalizeStructuredData
+  structuredData?: FinalizeStructuredData,
+  s3GuideText?: string
 ): { system: string; user: string } {
   const differentialSummary = section1.response.differential
     .map((d: DifferentialItem) => `- ${d.diagnosis} (${d.urgency})`)
     .join('\n')
 
-  const mdmPreview = section2.response.mdmPreview
+  const mdmPreview = section2.response?.mdmPreview
 
   // --- Build structured data sections ---
   const structuredSections: string[] = []
@@ -426,6 +427,7 @@ export function buildFinalizePrompt(
   }
 
   const system = [
+    ...(s3GuideText ? [s3GuideText, ''] : []),
     'SECTION 3: TREATMENT & DISPOSITION - FINAL MDM GENERATION',
     '',
     'You are compiling the complete Medical Decision Making documentation.',
@@ -443,8 +445,10 @@ export function buildFinalizePrompt(
     section2.content,
     wdStr ? `Working Diagnosis: ${wdStr}` : '',
     '',
-    '=== MDM PREVIEW ===',
-    JSON.stringify(mdmPreview, null, 2),
+    ...(mdmPreview ? [
+      '=== MDM PREVIEW ===',
+      JSON.stringify(mdmPreview, null, 2),
+    ] : []),
     '',
     ...(structuredSections.length > 0 ? structuredSections : []),
     ...(surveillanceContext ? [

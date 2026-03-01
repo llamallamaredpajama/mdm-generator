@@ -26,6 +26,8 @@ interface SectionPanelProps {
   textareaPlaceholder?: string
   /** Allow submit even when textarea content is empty (e.g., when customContent handles input) */
   allowEmptySubmit?: boolean
+  /** Custom label for the submit button (default: "Submit Section {N}") */
+  submitLabel?: string
   onContentChange: (content: string) => void
   onSubmit: () => void
   isSubmitting: boolean
@@ -124,6 +126,7 @@ export default function SectionPanel({
   customContent,
   textareaPlaceholder,
   allowEmptySubmit,
+  submitLabel,
   onContentChange,
   onSubmit,
   isSubmitting,
@@ -296,9 +299,7 @@ export default function SectionPanel({
                     Processing...
                   </>
                 ) : (
-                  <>
-                    Submit Section {sectionNumber}
-                  </>
+                  submitLabel ?? `Submit Section ${sectionNumber}`
                 )}
               </button>
               <CharacterCount current={safeContent.length} max={maxChars} />

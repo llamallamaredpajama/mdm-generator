@@ -856,8 +856,8 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     setSectionErrors((prev) => ({ ...prev, [section]: null }))
 
     try {
-      // D1: Working diagnosis moved from S2 to S3 — pass it on finalize
-      if (section === 3) {
+      // For section 2, pass the effective working diagnosis string
+      if (section === 2) {
         const effectiveDx = workingDiagnosis?.selected ?? workingDiagnosis?.custom ?? undefined
         await submitSection(section, effectiveDx || undefined)
       } else {
@@ -1055,11 +1055,9 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
               </svg>
             </span>
             <div className="encounter-editor__blocked-text">
-              <h4 className="encounter-editor__blocked-title">Results and Data Review</h4>
+              <h4 className="encounter-editor__blocked-title">Workup and Results</h4>
               <p className="encounter-editor__blocked-subtitle">
-                {isSection1Complete
-                  ? 'Accept the recommended workup above to begin entering results'
-                  : 'Complete the initial evaluation to unlock this section'}
+                Dictate when your workup is complete and you are reviewing your results
               </p>
             </div>
           </div>
@@ -1076,6 +1074,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
               submissionCount={section2State.submissionCount}
               guide={getSectionGuide(2)}
               preview={getSectionPreview(2, encounter)}
+              submitLabel="Save & Continue"
               customContent={
                 selectedTests.length > 0 && !isFinalized && !isArchived ? (
                   showS2OrdersetManager ? (

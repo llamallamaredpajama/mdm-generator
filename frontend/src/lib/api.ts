@@ -285,15 +285,35 @@ export interface FinalMdm {
   json: Record<string, unknown>
 }
 
+export interface CdrAnalysisItem {
+  name: string
+  applicable: boolean
+  score?: number | null
+  interpretation?: string | null
+  missingData?: string[]
+  availableData?: string[]
+  reasoning?: string
+}
+
+export interface WorkupRecommendation {
+  testName: string
+  testId?: string
+  reason: string
+  source: 'baseline' | 'differential' | 'cdr' | 'surveillance'
+  priority?: 'stat' | 'routine'
+}
+
 export interface Section1Response {
   differential: DifferentialItem[]
+  cdrAnalysis?: CdrAnalysisItem[]
+  workupRecommendations?: WorkupRecommendation[]
   submissionCount: number
   isLocked: boolean
   quotaRemaining: number
 }
 
 export interface Section2Response {
-  mdmPreview: MdmPreview
+  mdmPreview?: MdmPreview
   submissionCount: number
   isLocked: boolean
 }
