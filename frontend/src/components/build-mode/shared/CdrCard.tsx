@@ -275,11 +275,14 @@ export default function CdrCard({
             const isPulsing = pulsing.has(item.name)
 
             // Pill text: name, or name + score when scored
-            const pillText =
-              status.type === 'score' ? `${item.name}: ${status.text}` : item.name
+            const pillText = status.type === 'score' ? `${item.name}: ${status.text}` : item.name
 
             const pillBg = isExcluded ? '#e5e7eb' : cdrColor
-            const pillTextColor = isExcluded ? '#9ca3af' : isLightColor(cdrColor) ? '#1f2937' : '#ffffff'
+            const pillTextColor = isExcluded
+              ? '#9ca3af'
+              : isLightColor(cdrColor)
+                ? '#1f2937'
+                : '#ffffff'
 
             return (
               <li
@@ -323,9 +326,17 @@ export default function CdrCard({
 
                   {/* Progress bar */}
                   {components.length > 0 && (
-                    <span className="cdr-card__progress" aria-label={`${components.filter((c) => trackingEntry?.components[c.id]?.answered).length} of ${components.length} components answered`}>
+                    <span
+                      className="cdr-card__progress"
+                      aria-label={`${components.filter((c) => trackingEntry?.components[c.id]?.answered).length} of ${components.length} components answered`}
+                    >
                       {components.map((comp) => {
-                        const sq = getProgressSquareColor(comp, trackingEntry, allComplete, isExcluded)
+                        const sq = getProgressSquareColor(
+                          comp,
+                          trackingEntry,
+                          allComplete,
+                          isExcluded,
+                        )
                         return (
                           <span
                             key={comp.id}
@@ -345,13 +356,18 @@ export default function CdrCard({
                   )}
 
                   {/* Chevron */}
-                  <span className={`cdr-card__chevron${isExpanded ? ' cdr-card__chevron--open' : ''}`} aria-hidden="true">
+                  <span
+                    className={`cdr-card__chevron${isExpanded ? ' cdr-card__chevron--open' : ''}`}
+                    aria-hidden="true"
+                  >
                     ▶
                   </span>
                 </div>
 
                 {/* Expanded dropdown */}
-                <div className={`cdr-card__dropdown${isExpanded ? ' cdr-card__dropdown--open' : ''}`}>
+                <div
+                  className={`cdr-card__dropdown${isExpanded ? ' cdr-card__dropdown--open' : ''}`}
+                >
                   <div className="cdr-card__dropdown-inner">
                     {/* Brief clinical application */}
                     {cdrDef?.application && (
@@ -367,9 +383,13 @@ export default function CdrCard({
                           const isAnswered = trackingEntry?.components[comp.id]?.answered ?? false
                           return (
                             <div key={comp.id} className="cdr-card__comp-row">
-                              <span className={`cdr-card__comp-square cdr-card__comp-square--${compColor}`} />
+                              <span
+                                className={`cdr-card__comp-square cdr-card__comp-square--${compColor}`}
+                              />
                               <span className="cdr-card__comp-label">{comp.label}</span>
-                              <span className={`cdr-card__comp-status${isAnswered ? ' cdr-card__comp-status--answered' : ''}`}>
+                              <span
+                                className={`cdr-card__comp-status${isAnswered ? ' cdr-card__comp-status--answered' : ''}`}
+                              >
                                 {statusText}
                               </span>
                             </div>

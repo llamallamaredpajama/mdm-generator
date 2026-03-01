@@ -17,9 +17,17 @@ const ENDPOINT = `https://${location}-aiplatform.googleapis.com/v1/projects/${pr
 
 // Parse inline JSON credentials if available (local dev)
 const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
+let parsedCredentials: Record<string, unknown> | undefined
+if (credentialsJson) {
+  try {
+    parsedCredentials = JSON.parse(credentialsJson)
+  } catch {
+    console.warn('Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON, falling back to default credentials')
+  }
+}
 const auth = new GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-  ...(credentialsJson ? { credentials: JSON.parse(credentialsJson) } : {}),
+  ...(parsedCredentials ? { credentials: parsedCredentials } : {}),
 })
 
 export type EmbeddingTaskType = 'RETRIEVAL_QUERY' | 'RETRIEVAL_DOCUMENT'
