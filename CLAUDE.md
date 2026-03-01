@@ -75,6 +75,16 @@ Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS
 - **IMPORTANT**: Backend changes in `backend/src/` are NOT live until the Cloud Run container is rebuilt and deployed. `pnpm build` only compiles locally.
 - **Do NOT** use Vercel, Netlify, or other hosting CLIs
 
+## Firebase Auth (Google Sign-In)
+
+- **Auth domain**: `VITE_FIREBASE_AUTH_DOMAIN=mdm-generator.web.app` (in `frontend/.env.production`)
+- **OAuth client**: [GCP Console credentials page](https://console.cloud.google.com/apis/credentials?project=mdm-generator) — auto-created by Firebase, no API to manage
+- **Redirect URIs must match authDomain**: If `authDomain` is `X`, then `https://X/__/auth/handler` must be in the OAuth client's authorized redirect URIs
+- **Current redirect URIs**: `https://mdm-generator.firebaseapp.com/__/auth/handler` and `https://mdm-generator.web.app/__/auth/handler`
+- **`redirect_uri_mismatch` errors**: Always check the OAuth client redirect URIs first — do NOT add COOP headers, redirect fallbacks, or other workarounds
+- **Sign-in method**: `signInWithPopup` only — no redirect fallback (causes more problems than it solves with cross-origin cookies)
+- **Propagation delay**: OAuth redirect URI changes can take 5 min to propagate
+
 ## Commands
 
 ```bash
