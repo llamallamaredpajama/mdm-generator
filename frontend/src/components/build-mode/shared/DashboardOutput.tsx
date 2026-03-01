@@ -321,9 +321,7 @@ export default function DashboardOutput({
             orderSets={orderSets}
             onApplyOrderSet={handleApplyOrderSet}
             onSaveOrderSet={saveOrderSet}
-            onUpdateOrderSet={async (id, data) => {
-              await updateOrderSet(id, data)
-            }}
+            onUpdateOrderSet={updateOrderSet}
           />
         ) : (
           <StubCard title="Orders" description="Order selection available \u2014 BM-2.2" />

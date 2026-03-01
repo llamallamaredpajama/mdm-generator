@@ -1,4 +1,12 @@
-import type { TestDefinition } from '../../../types/libraries'
+import type { TestCategory, TestDefinition } from '../../../types/libraries'
+
+export const CATEGORY_ORDER: TestCategory[] = ['labs', 'imaging', 'procedures_poc']
+
+export const CATEGORY_LABELS: Record<TestCategory, string> = {
+  labs: 'Labs',
+  imaging: 'Imaging',
+  procedures_poc: 'Bedside Tests & Procedures',
+}
 
 const SUBCATEGORY_DISPLAY: Record<string, string> = {
   hematology: 'Hematology',

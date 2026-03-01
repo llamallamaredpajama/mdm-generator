@@ -1,19 +1,9 @@
 import type { TestDefinition, TestCategory } from '../../../types/libraries'
-import type { WorkupRecommendationSource, CdrTracking } from '../../../types/encounter'
+import type { WorkupRecommendationSource } from '../../../types/encounter'
 import type { OrderSet } from '../../../types/userProfile'
 import SubcategoryGroup from './SubcategoryGroup'
-import { groupBySubcategory } from './subcategoryUtils'
+import { CATEGORY_ORDER, CATEGORY_LABELS, groupBySubcategory } from './subcategoryUtils'
 import './OrdersCard.css'
-
-// ── Constants ────────────────────────────────────────────────────────────────
-
-const CATEGORY_ORDER: TestCategory[] = ['labs', 'imaging', 'procedures_poc']
-
-const CATEGORY_LABELS: Record<TestCategory, string> = {
-  labs: 'Labs',
-  imaging: 'Imaging',
-  procedures_poc: 'Bedside Tests & Procedures',
-}
 
 const SOURCE_LABELS: Record<WorkupRecommendationSource, string> = {
   baseline: 'Baseline',
@@ -25,7 +15,6 @@ const SOURCE_LABELS: Record<WorkupRecommendationSource, string> = {
 // ── Props ────────────────────────────────────────────────────────────────────
 
 interface OrdersLeftPanelProps {
-  tests: TestDefinition[]
   enrichedTests: Array<{
     test: TestDefinition
     source?: WorkupRecommendationSource
@@ -38,13 +27,12 @@ interface OrdersLeftPanelProps {
   testsByCategory: Map<TestCategory, TestDefinition[]>
   openSections: Set<string>
   checkboxClass: string
-  cdrTracking: CdrTracking
   testCdrMap: Map<string, Array<{ name: string; color: string }>>
   onToggle: (testId: string) => void
   onToggleSection: (key: string) => void
   onToggleAllRecommended: () => void
   onOpenOrdersetManager: (mode: 'browse' | 'edit', targetOrderSetId?: string) => void
-  onCreateOrderset: () => void
+  onCreateOrderset?: () => void
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -248,9 +236,15 @@ export default function OrdersLeftPanel({
       })}
 
       {/* ── Section 6: Create Orderset Button ──────────────────────────────── */}
-      <button type="button" className="orders-card__create-orderset-btn" onClick={onCreateOrderset}>
-        Create Orderset
-      </button>
+      {onCreateOrderset && (
+        <button
+          type="button"
+          className="orders-card__create-orderset-btn"
+          onClick={onCreateOrderset}
+        >
+          Create Orderset
+        </button>
+      )}
     </div>
   )
 }

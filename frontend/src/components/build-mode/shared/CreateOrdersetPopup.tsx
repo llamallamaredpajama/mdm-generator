@@ -75,7 +75,8 @@ export default function CreateOrdersetPopup({
       } else {
         setError('Failed to save orderset')
       }
-    } catch {
+    } catch (err) {
+      console.error('CreateOrdersetPopup: save failed', err)
       setError('Failed to save orderset')
     } finally {
       setSaving(false)
@@ -88,7 +89,10 @@ export default function CreateOrdersetPopup({
       return
     }
     const target = existingOrderSets.find((os) => os.id === selectedOrderSetId)
-    if (!target) return
+    if (!target) {
+      setError('Selected orderset no longer exists')
+      return
+    }
 
     setError('')
     setSaving(true)
@@ -96,7 +100,8 @@ export default function CreateOrdersetPopup({
       const merged = new Set([...target.tests, ...selectedTests])
       await onUpdate(target.id, { tests: Array.from(merged) })
       onClose()
-    } catch {
+    } catch (err) {
+      console.error('CreateOrdersetPopup: update failed', err)
       setError('Failed to update orderset')
     } finally {
       setSaving(false)

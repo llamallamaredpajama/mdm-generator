@@ -217,9 +217,14 @@ describe('OrdersCard', () => {
     expect(onSelectionChange).toHaveBeenCalledWith(['troponin'])
   })
 
-  it('shows Create Orderset button in left panel', () => {
-    render(<OrdersCard {...defaultProps} />)
+  it('shows Create Orderset button in left panel when save/update callbacks provided', () => {
+    render(<OrdersCard {...defaultProps} onSaveOrderSet={vi.fn()} onUpdateOrderSet={vi.fn()} />)
     expect(screen.getByText('Create Orderset')).toBeDefined()
+  })
+
+  it('hides Create Orderset button when save/update callbacks not provided', () => {
+    render(<OrdersCard {...defaultProps} />)
+    expect(screen.queryByText('Create Orderset')).toBeNull()
   })
 
   it('shows selected count badge when tests are selected', () => {

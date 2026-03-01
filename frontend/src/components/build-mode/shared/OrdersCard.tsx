@@ -7,14 +7,13 @@ import type {
 } from '../../../types/encounter'
 import type { OrderSet } from '../../../types/userProfile'
 import { buildCdrColorMap } from './cdrColorPalette'
+import { CATEGORY_ORDER } from './subcategoryUtils'
 import OrdersLeftPanel from './OrdersLeftPanel'
 import OrdersRightPanel from './OrdersRightPanel'
 import CreateOrdersetPopup from './CreateOrdersetPopup'
 import './OrdersCard.css'
 
 // ── Constants ────────────────────────────────────────────────────────────────
-
-const CATEGORY_ORDER: TestCategory[] = ['labs', 'imaging', 'procedures_poc']
 
 const FREQUENTLY_USED_NAME = '__frequently_used__'
 
@@ -224,6 +223,11 @@ export default function OrdersCard({
     onAcceptSelected()
   }, [onAcceptSelected])
 
+  const isOrdersetFullySelected = useCallback(
+    (os: OrderSet) => os.tests.length > 0 && os.tests.every((tid) => selectedTests.includes(tid)),
+    [selectedTests],
+  )
+
   // ── Loading state ────────────────────────────────────────────────────────
 
   if (loading) {
@@ -243,9 +247,6 @@ export default function OrdersCard({
     ? 'orders-card__checkbox orders-card__checkbox--accepted'
     : 'orders-card__checkbox'
 
-  const isOrdersetFullySelected = (os: OrderSet) =>
-    os.tests.length > 0 && os.tests.every((tid) => selectedTests.includes(tid))
-
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -264,7 +265,6 @@ export default function OrdersCard({
             <h5 className="orders-card__panel-title">Orders</h5>
           </div>
           <OrdersLeftPanel
-            tests={tests}
             enrichedTests={enrichedTests}
             recommendedTestIds={recommendedTestIds}
             selectedTests={selectedTests}
@@ -273,13 +273,12 @@ export default function OrdersCard({
             testsByCategory={testsByCategory}
             openSections={openSections}
             checkboxClass={checkboxClass}
-            cdrTracking={cdrTracking}
             testCdrMap={testCdrMap}
             onToggle={handleToggle}
             onToggleSection={toggleSection}
             onToggleAllRecommended={handleToggleAllRecommended}
             onOpenOrdersetManager={onOpenOrdersetManager}
-            onCreateOrderset={handleCreateOrderset}
+            onCreateOrderset={onSaveOrderSet && onUpdateOrderSet ? handleCreateOrderset : undefined}
           />
         </div>
 
