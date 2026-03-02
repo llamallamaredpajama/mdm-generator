@@ -2,12 +2,12 @@
  * RegionalTrendsCard Component
  *
  * Dashboard card displaying CDC surveillance trend data with
- * concise summary (top 3 findings) and expandable detail view.
- * Replaces the inline TrendsCard in DashboardOutput.
+ * concise summary (top 3 findings with incidence values) and
+ * expandable detail view organized by data source.
  */
 
 import { useState } from 'react'
-import type { TrendAnalysisResult } from '../../../types/surveillance'
+import type { TrendAnalysisResult, DataSourceSummary } from '../../../types/surveillance'
 import './RegionalTrendsCard.css'
 
 interface RegionalTrendsCardProps {
@@ -30,6 +30,44 @@ const ALERT_ICONS: Record<string, string> = {
   critical: '\u26A0',
   warning: '\u26A1',
   info: '\u2139',
+}
+
+/** CDC dataset URLs for each data source */
+const SOURCE_URLS: Record<string, string> = {
+  cdc_respiratory:
+    'https://data.cdc.gov/Public-Health-Surveillance/Weekly-Hospital-Respiratory-Data-HRD-Metrics-by-Ju/mpgq-jmmr',
+  cdc_wastewater:
+    'https://data.cdc.gov/Public-Health-Surveillance/NWSS-Public-SARS-CoV-2-Wastewater-Metric-Data/2ew6-ywp6',
+  cdc_nndss:
+    'https://data.cdc.gov/NNDSS/NNDSS-TABLE-II-Invasive-pneumococcal-diseases-all-a/x9gk-5huc',
+}
+
+/** Status labels for data source display */
+const STATUS_LABELS: Record<string, string> = {
+  data: 'Data Available',
+  no_data: 'No Activity',
+  error: 'Unavailable',
+  not_queried: 'Not Queried',
+}
+
+/**
+ * Format an absolute value with its unit for concise clinical display.
+ */
+function formatIncidenceValue(value: number | undefined, unit: string | undefined): string | null {
+  if (value == null || !unit) return null
+
+  switch (unit) {
+    case 'pct_inpatient_beds':
+      return `${value.toFixed(1)}% beds`
+    case 'wastewater_concentration':
+      if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M copies/L`
+      if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K copies/L`
+      return `${value.toFixed(0)} copies/L`
+    case 'case_count':
+      return `${value} cases/wk`
+    default:
+      return `${value} ${unit}`
+  }
 }
 
 export default function RegionalTrendsCard({
@@ -68,6 +106,7 @@ export default function RegionalTrendsCard({
   const allFindings = analysis.rankedFindings
   const hasMoreFindings = allFindings.length > 3
   const displayFindings = expanded ? allFindings : conciseFindings
+  const hasSourceSummaries = analysis.dataSourceSummaries && analysis.dataSourceSummaries.length > 0
 
   return (
     <div className="regional-trends-card">
@@ -79,20 +118,36 @@ export default function RegionalTrendsCard({
 
       {/* Findings */}
       <div className="regional-trends-card__findings">
-        {displayFindings.map((finding, i) => (
-          <div key={`${finding.condition}-${i}`} className="regional-trends-card__finding">
-            <span
-              className={`regional-trends-card__arrow regional-trends-card__arrow--${finding.trendDirection}`}
-            >
-              {TREND_ARROWS[finding.trendDirection] || '?'}
-            </span>
-            <span className="regional-trends-card__condition">{finding.condition}</span>
-            <span className="regional-trends-card__summary">
-              {' \u2014 '}
-              {finding.summary}
-            </span>
-          </div>
-        ))}
+        {displayFindings.map((finding, i) => {
+          const incidence = formatIncidenceValue(finding.value, finding.unit)
+          const magnitude =
+            finding.trendMagnitude != null && finding.trendMagnitude > 0
+              ? `${finding.trendDirection === 'falling' ? '-' : '+'}${finding.trendMagnitude}%`
+              : null
+          return (
+            <div key={`${finding.condition}-${i}`} className="regional-trends-card__finding">
+              <span
+                className={`regional-trends-card__arrow regional-trends-card__arrow--${finding.trendDirection}`}
+              >
+                {TREND_ARROWS[finding.trendDirection] || '?'}
+              </span>
+              <span className="regional-trends-card__condition">{finding.condition}</span>
+              {(incidence || magnitude) && (
+                <span className="regional-trends-card__value">
+                  {incidence && magnitude
+                    ? `(${incidence}, ${magnitude})`
+                    : incidence
+                      ? `(${incidence})`
+                      : `(${magnitude})`}
+                </span>
+              )}
+              <span className="regional-trends-card__summary">
+                {' \u2014 '}
+                {finding.summary}
+              </span>
+            </div>
+          )
+        })}
       </div>
 
       {/* Expanded: Alerts */}
@@ -116,8 +171,17 @@ export default function RegionalTrendsCard({
         </div>
       )}
 
-      {/* Expanded: Attribution */}
-      {expanded && (
+      {/* Expanded: Data Sources */}
+      {expanded && hasSourceSummaries && (
+        <div className="regional-trends-card__sources">
+          {analysis.dataSourceSummaries!.map((source) => (
+            <DataSourceSection key={source.source} source={source} />
+          ))}
+        </div>
+      )}
+
+      {/* Expanded: Attribution (fallback when no source summaries) */}
+      {expanded && !hasSourceSummaries && (
         <footer className="regional-trends-card__footer">
           <p className="regional-trends-card__attribution">
             Data: {analysis.dataSourcesQueried.join(', ')} |{' '}
@@ -129,9 +193,21 @@ export default function RegionalTrendsCard({
         </footer>
       )}
 
+      {/* Expanded: Disclaimer (shown after source sections) */}
+      {expanded && hasSourceSummaries && (
+        <footer className="regional-trends-card__footer">
+          <p className="regional-trends-card__attribution">
+            Analyzed: {new Date(analysis.analyzedAt).toLocaleDateString()}
+          </p>
+          <p className="regional-trends-card__disclaimer">
+            Surveillance data is supplementary. Clinical judgment must guide all decisions.
+          </p>
+        </footer>
+      )}
+
       {/* Action buttons */}
       <div className="regional-trends-card__actions">
-        {(hasMoreFindings || analysis.alerts.length > 0) && (
+        {(hasMoreFindings || analysis.alerts.length > 0 || hasSourceSummaries) && (
           <button
             type="button"
             className="regional-trends-card__toggle-btn"
@@ -147,6 +223,66 @@ export default function RegionalTrendsCard({
           </button>
         )}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Renders a single data source section in the expanded view.
+ */
+function DataSourceSection({ source }: { source: DataSourceSummary }) {
+  const sourceUrl = SOURCE_URLS[source.source]
+  const statusLabel = STATUS_LABELS[source.status] || source.status
+
+  return (
+    <div className="regional-trends-card__source">
+      <div className="regional-trends-card__source-header">
+        <h5 className="regional-trends-card__source-name">{source.label}</h5>
+        <span
+          className={`regional-trends-card__source-status regional-trends-card__source-status--${source.status}`}
+        >
+          {statusLabel}
+        </span>
+      </div>
+
+      {source.status === 'data' && source.highlights.length > 0 && (
+        <ul className="regional-trends-card__source-highlights">
+          {source.highlights.map((highlight, i) => (
+            <li key={i} className="regional-trends-card__source-highlight">
+              {highlight}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {source.status === 'no_data' && (
+        <p className="regional-trends-card__source-empty">
+          No significant activity detected for this presentation
+        </p>
+      )}
+
+      {source.status === 'error' && (
+        <p className="regional-trends-card__source-empty">
+          Data could not be retrieved from this source
+        </p>
+      )}
+
+      {source.status === 'not_queried' && (
+        <p className="regional-trends-card__source-empty">
+          Not queried — no relevant syndromes for this presentation
+        </p>
+      )}
+
+      {sourceUrl && (
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="regional-trends-card__source-link"
+        >
+          View CDC dataset &#x2197;
+        </a>
+      )}
     </div>
   )
 }

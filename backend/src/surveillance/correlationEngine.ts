@@ -217,6 +217,12 @@ export function computeCorrelations(input: CorrelationInput): ClinicalCorrelatio
     // Collect unique syndromes
     const syndromes = [...new Set(conditionDataPoints.flatMap((dp) => dp.syndromes))]
 
+    // Extract most recent data point's absolute value and unit for frontend display
+    const mostRecentDp = conditionDataPoints.reduce<SurveillanceDataPoint | null>(
+      (best, dp) => (!best || dp.periodEnd > best.periodEnd ? dp : best),
+      null,
+    )
+
     correlations.push({
       condition,
       syndromes: syndromes as SyndromeCategory[],
@@ -233,6 +239,8 @@ export function computeCorrelations(input: CorrelationInput): ClinicalCorrelatio
       trendMagnitude: avgMagnitude > 0 ? Math.round(avgMagnitude) : undefined,
       dataPoints: conditionDataPoints,
       summary: buildSummary(condition, tier, conditionDataPoints),
+      value: mostRecentDp?.value,
+      unit: mostRecentDp?.unit,
     })
   }
 

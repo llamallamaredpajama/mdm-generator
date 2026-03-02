@@ -1,75 +1,72 @@
-# Intake PRD — CDR Card UI Redesign
+# Intake PRD — Regional Trends Card Improvements
 
 Generated: 2026-03-01
 
 ## Request Classification
-- **Type:** feature (UI redesign)
-- **Scope:** cross-layer (frontend-heavy, backend schema adjustments)
-- **Complexity:** high
-- **Risk:** medium — UI-only changes with potential backend schema impacts; CDR data feeds into orders section
+- **Type:** feature + bugfix (mixed)
+- **Scope:** cross-layer (backend data enrichment + frontend display + CSS fix)
+- **Complexity:** medium
+- **Risk:** low — surveillance is non-blocking, changes are additive, no breaking API changes
 
 ## Objective
-Redesign the Clinical Decision Rules (CDR) card in Build Mode to match the Differential Diagnosis card's organization and interaction patterns. This includes restructuring the header, adding status indicators, redesigning individual CDR entries with checkbox states, fixing dropdown arrow behavior globally, and ensuring the CDR-to-orders data flow works correctly.
+Improve the RegionalTrendsCard component in Build Mode with three changes: (1) surface absolute incidence data alongside existing percent-change trends, (2) fix button text color bug where text becomes invisible on click, and (3) enhance the "Show Details" expanded view to organize information by CDC data source with relevant data and source URLs.
 
 ## Functional Requirements
-1. Remove "X rules identified" counter from CDR card header
-2. Add "expand all" button to CDR header, matching differential diagnosis card style, justified far-right
-3. Add three color-coded status indicators below CDR header: "Needs Data" (RED), "Needs History" (YELLOW), "Complete" (GREEN) with counts
-4. Format individual CDR entries like differential diagnosis entries with same organization
-5. Use CDR-specific status indicators (red/yellow/green) on entries instead of differential ones
-6. Add dropdown arrows on far right of each CDR entry
-7. Standardize dropdown arrow behavior globally: DOWN when collapsed, UP when expanded
-8. Dropdown content: concise summary of CDR calculation and clinical significance at top
-9. Darken grey description font for legibility
-10. After CDR calculation: description shows result significance (score, pos/neg, clinical meaning)
-11. Item list below description: each data point on its own line (not prose paragraphs)
-12. Checkbox states: solid GREEN (available from S1), outlined YELLOW (needs history/physical), outlined RED (needs ordering)
-13. When CDR fully calculated: all checkboxes turn solid green
-14. RED checkbox items pre-populate the recommended orders section
+1. Include absolute incidence/measurement values in the frontend trend findings display (e.g., "2.3% of inpatient beds", "45K copies/L", "12 cases/wk") alongside existing trend arrows and percent changes
+2. Fix CSS for toggle and report buttons so text remains visible in all interactive states (active, focus, visited)
+3. Redesign expanded "Show Details" view to group information by CDC data source
+4. Each data source group should show: source name heading, relevant data highlights, and a link to the CDC data source URL
+5. CDC data source URLs to include:
+   - Respiratory Hospital Data: https://data.cdc.gov/dataset/mpgq-jmmr
+   - NWSS Wastewater: https://data.cdc.gov/dataset/g653-rqe2
+   - NNDSS Notifiable Diseases: https://data.cdc.gov/dataset/x9gk-5huc
+6. The `dataSourceSummaries` field (already in backend `TrendAnalysisResult`) should be passed to frontend and rendered in the expanded view
+7. Frontend `TrendFinding` type should include `value`, `unit`, and `trendMagnitude` fields from backend `ClinicalCorrelation`
 
 ## Non-Functional Requirements
 - Performance: no degradation in Build Mode rendering
 - Security: no PHI in code, logs, or comments
-- Backwards Compatibility: existing CDR data from S1 must continue to work; no breaking API changes
-- Mobile Responsiveness: both desktop and mobile layouts must be updated
+- Backwards Compatibility: existing surveillance responses must continue to work; new fields are additive
+- Surveillance remains non-blocking — failures must never prevent MDM generation
 
 ## Acceptance Criteria
-- [ ] CDR card header shows title + expand-all button (no counter)
-- [ ] Three status indicators (Needs Data/Needs History/Complete) with correct counts displayed below header
-- [ ] Individual CDR entries match differential diagnosis card visual style
-- [ ] Dropdown arrows point DOWN when collapsed, UP when expanded (consistent globally)
-- [ ] CDR dropdown shows calculation summary and per-item data points on separate lines
-- [ ] Description text is legible (darkened from current grey)
-- [ ] Checkbox states: solid green (S1 available), outlined yellow (needs history), outlined red (needs ordering)
-- [ ] Fully calculated CDR shows all solid green checkboxes and result significance
-- [ ] RED checkbox items appear in recommended orders section
+- [ ] Trend findings display absolute values with appropriate units (% beds, copies/L, cases/wk)
+- [ ] Toggle button ("Show Details"/"Hide Details") text remains visible when clicked/active/focused
+- [ ] Report button text remains visible when clicked/active/focused
+- [ ] Expanded view groups data by source with headings
+- [ ] Each source group shows data highlights from `dataSourceSummaries`
+- [ ] Each source group includes a clickable URL to the CDC dataset
+- [ ] Sources with errors show error status gracefully
+- [ ] Sources not queried show "Not queried" status
 - [ ] `cd frontend && pnpm check` passes (typecheck + lint + test)
 - [ ] `cd backend && pnpm build` passes
-- [ ] Mobile layout renders correctly
 - [ ] No PHI in any changes
+- [ ] Existing tests continue to pass
 
 ## Edge Cases & Error Handling
-- CDR with zero items in a status category: show count as 0, don't hide the indicator
-- CDR with no data points: show empty state gracefully
-- Expand all when all already expanded: collapse all (toggle behavior)
-- CDR data missing from S1 response: degrade gracefully, show what's available
-- Backend schema changes must be backward-compatible with existing Firestore encounter documents
+- Data source with error status: show source name + "Data unavailable" message, no URL link needed
+- Data source not queried: show source name + "Not queried for this presentation"
+- Data source with no data: show source name + "No significant activity detected"
+- `dataSourceSummaries` is undefined/missing in older cached analysis: degrade gracefully, show legacy attribution
+- Finding with undefined value/unit: show trend summary only, skip incidence display
+- All three sources failed: show general error message in expanded view
 
 ## UX Expectations
-- Visual consistency with differential diagnosis card is paramount
-- Color coding must be intuitive: red = action needed (ordering), yellow = bedside action, green = complete
-- Dropdown transitions should be smooth
-- Checkbox state changes should be immediate on user interaction
+- Incidence values should be concise and clinically meaningful (not raw numbers)
+- Source URLs should open in new tab
+- Expanded view should be scannable — clear source headings with visual separation
+- Button states should feel responsive without jarring color shifts
 
 ## Out of Scope
-- Changes to CDR calculation logic in the backend LLM prompts
-- Changes to the differential diagnosis card itself
-- New CDR rules or scoring algorithms
-- Changes to Section 2 or Section 3 processing logic
-- Surveillance or Quick Mode changes
+- Changes to CDC adapter fetch logic or data processing
+- Changes to correlation engine scoring
+- PDF report generation changes
+- Changes to surveillance prompt augmenter
+- Changes to TrendAnalysisToggle component
+- Mobile-specific layout changes (card is shared between desktop/mobile)
 
 ## Constraints
 - Must use existing React 19 + TypeScript + Vite stack
-- Must follow the 6-step API route security pattern for any backend changes
-- CDR data structure generated by Vertex AI (Gemini) during S1 processing
-- Existing encounter documents in Firestore must remain compatible
+- Backend `TrendAnalysisResult` type already includes `dataSourceSummaries` — frontend just needs to consume it
+- Frontend `TrendFinding` type needs to be extended (not replaced)
+- CDC dataset URLs are stable SODA API endpoints

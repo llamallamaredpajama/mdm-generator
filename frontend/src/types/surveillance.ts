@@ -17,6 +17,10 @@ export interface TrendFinding {
   trendDirection: 'rising' | 'falling' | 'stable' | 'unknown'
   trendMagnitude?: number
   summary: string
+  /** Absolute measurement value (e.g., % of inpatient beds, copies/L, cases/wk) */
+  value?: number
+  /** Unit of the value measurement */
+  unit?: string
 }
 
 /** Alert from surveillance analysis */

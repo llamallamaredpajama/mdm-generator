@@ -79,6 +79,10 @@ export interface ClinicalCorrelation {
   trendMagnitude?: number
   dataPoints: SurveillanceDataPoint[]
   summary: string
+  /** Most recent absolute measurement value for this condition */
+  value?: number
+  /** Unit of the measurement (pct_inpatient_beds, wastewater_concentration, case_count) */
+  unit?: string
 }
 
 /** Alert for unusual surveillance patterns */
