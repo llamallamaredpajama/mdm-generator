@@ -2,13 +2,73 @@
 
 ## 1. Purpose
 
-> *Placeholder — written in Task 2*
+This is the canonical reference for executing any text or language change across the MDM Generator's full stack. It covers:
+
+- **All three MDM systems:** Legacy one-shot pipeline, Build Mode (3-section progressive workflow with Firestore persistence), and Quick Mode
+- **The complete 11-node data pipeline** from constants through LLM output to frontend rendering
+- **Architectural patterns** for backward compatibility, field extraction, and dual-shape handling
+- **A categorized execution checklist** that scales from simple display text changes (touch 4 files) to full field renames (touch 20+ files)
+
+This guide is structured as a reusable process, not a post-mortem. See **Appendix A** for a concrete case study (the `disclaimer` → `attestation` change) that illustrates the process end-to-end.
 
 ---
 
 ## 2. Change Category Taxonomy
 
-> *Placeholder — written in Task 2*
+Before touching code, classify your change. The category determines which pipeline nodes are in scope, which files to modify, and how much backward-compatibility work is needed.
+
+### 2.1 Decision Framework
+
+| Category | What Changes | Example | Complexity | Key Consideration |
+|----------|-------------|---------|------------|-------------------|
+| **A: Field Name Rename** | JSON key in schema | `disclaimers` → `attestation` | HIGH | Backward compat for Firestore data + LLM output variability |
+| **B: Display Text Change** | UI label, no data change | "Differential Diagnosis" → "Differential Diagnoses" | LOW | Only rendering layers affected |
+| **C: Content Value Change** | Default/generated text value | Reword attestation statement | MEDIUM | Constants + prompts + test assertions + fallback defaults |
+| **D: Section Addition/Removal** | New/removed MDM section | Add "Complications Addressed" section | VERY HIGH | All layers + Firestore schema migration + new rendering path |
+
+### 2.2 Scope Decision Tree
+
+```
+Does your change rename a JSON field key (the key itself, not its value)?
+├─ Yes → Category A (full pipeline — all 11 nodes)
+│        WARNING: Also check if the field name differs between Legacy
+│        (snake_case) and Build Mode (camelCase) — you may need to
+│        update both naming conventions.
+│
+└─ No → Does your change add or remove an entire MDM section?
+    ├─ Yes → Category D (full pipeline + Firestore schema migration planning)
+    │        WARNING: This is the highest-risk category. Consider whether
+    │        the new section belongs in the structured JSON, the text blob,
+    │        or both. Build Mode finalize generates a text blob; Legacy
+    │        constructs text from structured fields.
+    │
+    └─ No → Does your change modify the text VALUE of a field (not the key)?
+        ├─ Yes → Category C (constants + prompts + fallback defaults + tests)
+        │        Scope: Nodes 1, 3, 5-6 (if fallbacks), 9 (if rendered), 11
+        │
+        └─ No → Category B (UI rendering + CSS + tests only)
+                 Scope: Nodes 9, 10, 11 only
+```
+
+### 2.3 Pipeline Skip-List by Category
+
+This table shows which pipeline nodes (from Section 3) require changes for each category. Use this to scope your work and avoid unnecessary file modifications.
+
+| Pipeline Node | A: Field Rename | B: Display Text | C: Value Change | D: Section Add/Remove |
+|---------------|:-:|:-:|:-:|:-:|
+| 1. Constants | YES | — | YES | YES |
+| 2. Zod Schemas | YES | — | — | YES |
+| 3. Prompt Builders | YES | — | If value in prompt | YES |
+| 4. LLM Output | *(consequence)* | *(consequence)* | *(consequence)* | *(consequence)* |
+| 5. Schema Parse | YES | — | — | YES |
+| 6. Field Extraction | YES (add alias) | — | — | YES |
+| 7. API Response | *(consequence)* | — | — | YES |
+| 8. Frontend Types | YES | — | — | YES |
+| 9. Frontend Render | YES | YES | Maybe | YES |
+| 10. CSS | If BEM class contains field name | If BEM class contains field name | — | YES |
+| 11. Tests + Docs | YES | YES | YES | YES |
+
+**Reading the table:** "YES" = you must check/modify this node. "—" = skip. "*(consequence)*" = this node is affected by upstream changes but you don't modify it directly.
 
 ---
 
