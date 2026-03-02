@@ -74,7 +74,91 @@ This table shows which pipeline nodes (from Section 3) require changes for each 
 
 ## 3. The MDM Data Pipeline
 
-> *Placeholder — written in Task 3*
+### 3.1 The 11-Node Model
+
+Every text or language change traverses a subset of this pipeline. Understanding the full chain — and where your change enters — prevents missed files and broken rendering.
+
+```
+Node 1:  Constants           → backend/src/constants.ts
+Node 2:  Zod Schemas         → outputSchema.ts (Legacy/Quick) + buildModeSchemas.ts (Build Mode)
+Node 3:  Prompt Builders     → promptBuilder.ts, promptBuilderBuildMode.ts,
+                                promptBuilderQuickMode.ts, parsePromptBuilder.ts
+Node 4:  LLM Output          → Vertex AI Gemini response (non-deterministic field naming)
+Node 5:  Schema Parse        → Zod .parse() with .transform() for backward compat
+Node 6:  Field Extraction    → extractFinalMdm() alias chains in index.ts
+Node 7:  API Response        → Express JSON response to frontend
+Node 8:  Frontend Types      → frontend/src/types/encounter.ts interfaces
+Node 9:  Frontend Render     → Three distinct rendering paths (see §3.3)
+Node 10: CSS                 → BEM class names (.component-field)
+Node 11: Tests + Docs        → Backend + frontend tests, mock factories, documentation
+```
+
+**Why bottom-up ordering matters:** If you update the UI before the schema, the frontend will render fields the backend doesn't produce. If you update prompts before the schema, the LLM may output `attestation` but Zod will strip it as an unknown field. Always work bottom-up: constants → schema → prompts → extraction → types → UI → tests → docs. Each layer depends on the foundation beneath it.
+
+### 3.2 Dual-System Architecture
+
+The codebase has **two parallel MDM systems** with different conventions. A text change that appears in both systems requires updating both, and the update mechanisms differ.
+
+| Aspect | Legacy One-Shot | Build Mode | Quick Mode |
+|--------|----------------|------------|------------|
+| **Field naming** | `snake_case` (`data_reviewed_ordered`) | `camelCase` (`dataReviewed`) | Same as Legacy (`snake_case`) |
+| **Schema file** | `outputSchema.ts` | `buildModeSchemas.ts` | Uses `outputSchema.ts` |
+| **Prompt builder** | `promptBuilder.ts` | `promptBuilderBuildMode.ts` | `promptBuilderQuickMode.ts` |
+| **Attestation handling** | Separate JSON field parsed by Zod | Embedded inline in LLM-generated `text` via prompt instruction | Separate JSON field (same as Legacy) |
+| **Rendering** | `renderMdmText()` constructs text from structured fields | `MdmPreviewPanel.tsx` SECTIONS array (S2 preview) + `<pre>{text}</pre>` (finalized) | Same as Legacy |
+| **Persistence** | None (stateless) | Firestore `encounters` collection | None (stateless) |
+| **Field extraction** | Direct Zod parse | `extractFinalMdm()` alias chains (index.ts:1250) | Direct Zod parse |
+
+**Critical implication for field renames (Category A):** Searching for `data_reviewed_ordered` will miss `dataReviewed` and `dataReviewedOrdered`. You must search for *all naming conventions* — see Section 5, Step 2.5.
+
+### 3.3 Three Rendering Paths
+
+Text changes that affect how MDM content is displayed must account for all three rendering paths. Each has different ownership of section headers and content formatting.
+
+#### Path 1: Legacy `renderMdmText()` — `outputSchema.ts:25-60`
+
+Constructs copy-paste text from structured MDM fields. Section headers are **hardcoded strings** in this function:
+
+```
+"Differential:", "Data reviewed/ordered:", "Decision making:",
+"Risk:", "Disposition:", "Attestation:"
+```
+
+If you rename a section header (e.g., "Attestation:" → "Physician Attestation:"), change it here. This function is also used as fallback rendering in Build Mode finalize when the LLM's text blob is empty.
+
+#### Path 2: Build Mode S2 Preview — `MdmPreviewPanel.tsx:47-52`
+
+The `SECTIONS` array maps field IDs to display titles:
+
+```typescript
+const SECTIONS: SectionItem[] = [
+  { id: 'problems', title: 'Problems Addressed', icon: '!' },
+  { id: 'differential', title: 'Differential Diagnosis', icon: '?' },
+  { id: 'dataReviewed', title: 'Data Reviewed', icon: 'D' },
+  { id: 'reasoning', title: 'Clinical Reasoning', icon: 'R' },
+]
+```
+
+The `normalizeToString()` helper handles LLM output variability (string/array/object). Adding a section here requires adding to the `SECTIONS` array and handling it in `normalizeToString()`. Note: attestation is **not shown** in S2 preview — it only appears in the finalized text.
+
+#### Path 3: Build Mode Finalized Text — `EncounterEditor.tsx:1377-1400`
+
+Displays `finalMdmData.text` as a `<pre>` block:
+
+```tsx
+<pre>{finalMdmData.text}</pre>
+```
+
+The text blob is **entirely LLM-generated** — section headers and attestation are *inside the text*, controlled by prompt instructions in `promptBuilderBuildMode.ts`, not by frontend rendering logic. Changing a section header in the finalized MDM means changing the prompt instruction, not the component code.
+
+**Summary of header ownership:**
+
+| Rendering Path | Who controls section headers? | Where to change them? |
+|---------------|-------------------------------|----------------------|
+| Legacy `renderMdmText()` | Hardcoded in function | `outputSchema.ts` |
+| Build Mode S2 Preview | `SECTIONS` array | `MdmPreviewPanel.tsx` |
+| Build Mode Finalized | LLM prompt instructions | `promptBuilderBuildMode.ts` |
+| Quick Mode | Same as Legacy | `outputSchema.ts` |
 
 ---
 
