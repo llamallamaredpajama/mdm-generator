@@ -356,7 +356,7 @@ export const batch2TraumaCdrs: CdrSeed[] = [
       },
     ],
     scoring: {
-      method: 'threshold',
+      method: 'sum',
       ranges: [
         { min: 0, max: 0, risk: 'Very Low', interpretation: 'None of 7 predictors present — very low risk of IAI-AI (<0.1%); CT abdomen/pelvis can generally be avoided. Consider observation.' },
         { min: 1, max: 2, risk: 'Low-Intermediate', interpretation: '1–2 predictors present — elevated risk. Consider FAST, labs (AST/ALT, UA, Hct). CT indicated if labs abnormal or FAST positive.' },

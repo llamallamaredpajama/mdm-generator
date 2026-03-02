@@ -753,7 +753,7 @@ export const batch4NeuroCdrs: CdrSeed[] = [
       method: 'sum',
       ranges: [
         {
-          min: -3,
+          min: -4,
           max: 3,
           risk: 'Very Low',
           interpretation:

@@ -132,7 +132,7 @@ export const batch1CardioCdrs: CdrSeed[] = [
         },
         {
           min: 4,
-          max: 10,
+          max: 11,
           risk: 'Not Low Risk',
           interpretation:
             'HEART ≥4 OR any troponin elevated → Not low risk; requires further workup, observation, or admission.',
@@ -677,7 +677,7 @@ export const batch1CardioCdrs: CdrSeed[] = [
         },
         {
           min: 126,
-          max: 300,
+          max: 325,
           risk: 'Class V — Very High',
           interpretation:
             'Score >125: 10.0–24.5% 30-day mortality — inpatient management with ICU; consider systemic thrombolysis or catheter-directed therapy if massive PE.',

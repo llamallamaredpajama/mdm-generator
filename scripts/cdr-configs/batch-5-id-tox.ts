@@ -982,6 +982,7 @@ export const batch5IdToxCdrs: CdrSeed[] = [
         source: 'section1',
         autoPopulateFrom: 'narrative_analysis',
         options: [
+          { label: '<37.2°C (<99°F) — Normal', value: 0 },
           { label: '37.2–37.7°C (99–99.9°F)', value: 5 },
           { label: '37.8–38.2°C (100–100.9°F)', value: 10 },
           { label: '38.3–38.8°C (101–101.9°F)', value: 15 },

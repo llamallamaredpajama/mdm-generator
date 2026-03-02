@@ -1292,7 +1292,7 @@ export const batch7MiscCdrs: CdrSeed[] = [
 
   // ── 4AT (Rapid Clinical Test for Delirium) ────────────────────────────────
   {
-    id: '4at',
+    id: 'four_at',
     name: '4AT',
     fullName: '4AT (Rapid Clinical Test for Delirium)',
     category: 'GERIATRICS & DELIRIUM',
