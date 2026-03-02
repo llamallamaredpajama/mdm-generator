@@ -260,9 +260,19 @@ export default function OrdersCard({
 
       {/* Two-panel layout */}
       <div className="orders-card__panels">
-        <div className="orders-card__panel">
+        <div className="orders-card__panel orders-card__panel--left">
           <div className="orders-card__panel-header">
             <h5 className="orders-card__panel-title">Orders</h5>
+            {onSaveOrderSet && onUpdateOrderSet && (
+              <button
+                type="button"
+                className="orders-card__action-btn orders-card__action-btn--edit"
+                onClick={handleCreateOrderset}
+                disabled={selectedTests.length === 0}
+              >
+                Save as Orderset
+              </button>
+            )}
           </div>
           <OrdersLeftPanel
             enrichedTests={enrichedTests}
@@ -278,7 +288,6 @@ export default function OrdersCard({
             onToggleSection={toggleSection}
             onToggleAllRecommended={handleToggleAllRecommended}
             onOpenOrdersetManager={onOpenOrdersetManager}
-            onCreateOrderset={onSaveOrderSet && onUpdateOrderSet ? handleCreateOrderset : undefined}
           />
         </div>
 

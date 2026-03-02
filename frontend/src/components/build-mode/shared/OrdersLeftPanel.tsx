@@ -2,7 +2,16 @@ import type { TestDefinition, TestCategory } from '../../../types/libraries'
 import type { WorkupRecommendationSource } from '../../../types/encounter'
 import type { OrderSet } from '../../../types/userProfile'
 import SubcategoryGroup from './SubcategoryGroup'
-import { CATEGORY_ORDER, CATEGORY_LABELS, groupBySubcategory } from './subcategoryUtils'
+import {
+  CATEGORY_ORDER,
+  CATEGORY_LABELS,
+  groupBySubcategory,
+  groupBySubcategoryOrdered,
+  isMriSubsection,
+  formatSubcategory,
+  IMAGING_SUBCATEGORY_ORDER,
+  MRI_SUBSECTION_ORDER,
+} from './subcategoryUtils'
 import './OrdersCard.css'
 
 const SOURCE_LABELS: Record<WorkupRecommendationSource, string> = {
@@ -32,7 +41,6 @@ interface OrdersLeftPanelProps {
   onToggleSection: (key: string) => void
   onToggleAllRecommended: () => void
   onOpenOrdersetManager: (mode: 'browse' | 'edit', targetOrderSetId?: string) => void
-  onCreateOrderset?: () => void
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -51,11 +59,125 @@ export default function OrdersLeftPanel({
   onToggleSection,
   onToggleAllRecommended,
   onOpenOrdersetManager,
-  onCreateOrderset,
 }: OrdersLeftPanelProps) {
   const hasRecommendations = enrichedTests.length > 0
   const allRecommendedSelected =
     recommendedTestIds.length > 0 && recommendedTestIds.every((id) => selectedTests.includes(id))
+
+  /**
+   * Render imaging subcategories with MRI sub-section nesting.
+   * Non-MRI modalities (xray, ct, ultrasound, fluoroscopy, nuclear_medicine)
+   * render as flat SubcategoryGroups. All mri_* subcategories are collected
+   * under a parent "MRI" collapsible section with nested SubcategoryGroups.
+   */
+  function renderImagingSubcategories(subcategoryGroups: Map<string, TestDefinition[]>) {
+    // Separate MRI sub-sections from top-level modalities
+    const topLevel: Array<[string, TestDefinition[]]> = []
+    const mriSections: Array<[string, TestDefinition[]]> = []
+
+    for (const [subcategory, tests] of subcategoryGroups) {
+      if (isMriSubsection(subcategory)) {
+        mriSections.push([subcategory, tests])
+      } else if (subcategory === 'mri') {
+        // Direct 'mri' subcategory tests go into MRI parent too
+        mriSections.unshift([subcategory, tests])
+      } else {
+        topLevel.push([subcategory, tests])
+      }
+    }
+
+    // Sort MRI sub-sections by defined order
+    const mriSorted = groupBySubcategoryOrdered(
+      mriSections.flatMap(([, tests]) => tests),
+      MRI_SUBSECTION_ORDER,
+    )
+
+    // Count total MRI tests for the parent header
+    const mriTotalCount = mriSections.reduce((acc, [, tests]) => acc + tests.length, 0)
+
+    const elements: React.ReactNode[] = []
+
+    // Render using IMAGING_SUBCATEGORY_ORDER to maintain proper order
+    for (const modality of IMAGING_SUBCATEGORY_ORDER) {
+      if (modality === 'mri') {
+        // Render MRI as a parent group with nested sub-sections
+        if (mriTotalCount > 0) {
+          const mriSectionKey = 'imaging-mri'
+          elements.push(
+            <div key="mri-parent" className="subcategory-group">
+              <button
+                type="button"
+                className={`subcategory-group__header${openSections.has(mriSectionKey) ? ' subcategory-group__header--open' : ''}`}
+                onClick={() => onToggleSection(mriSectionKey)}
+                aria-expanded={openSections.has(mriSectionKey)}
+              >
+                <span
+                  className={`subcategory-group__chevron${openSections.has(mriSectionKey) ? ' subcategory-group__chevron--open' : ''}`}
+                  aria-hidden="true"
+                />
+                <span className="subcategory-group__name">{formatSubcategory('mri')}</span>
+                <span className="subcategory-group__count">({mriTotalCount})</span>
+              </button>
+              {openSections.has(mriSectionKey) && (
+                <div className="subcategory-group__list">
+                  {[...mriSorted.entries()].map(([subKey, tests]) => (
+                    <SubcategoryGroup
+                      key={subKey}
+                      subcategory={subKey}
+                      tests={tests}
+                      selectedTests={selectedTests}
+                      recommendedTestIds={recommendedTestIds}
+                      checkboxClass={checkboxClass}
+                      idPrefix="orders-imaging-mri"
+                      onToggle={onToggle}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>,
+          )
+        }
+      } else {
+        // Render non-MRI modality as a flat SubcategoryGroup
+        const found = topLevel.find(([key]) => key === modality)
+        if (found) {
+          const [subcategory, tests] = found
+          elements.push(
+            <SubcategoryGroup
+              key={subcategory}
+              subcategory={subcategory}
+              tests={tests}
+              selectedTests={selectedTests}
+              recommendedTestIds={recommendedTestIds}
+              checkboxClass={checkboxClass}
+              idPrefix="orders-imaging"
+              onToggle={onToggle}
+            />,
+          )
+        }
+      }
+    }
+
+    // Render any remaining top-level modalities not in IMAGING_SUBCATEGORY_ORDER
+    for (const [subcategory, tests] of topLevel) {
+      if (!(IMAGING_SUBCATEGORY_ORDER as readonly string[]).includes(subcategory)) {
+        elements.push(
+          <SubcategoryGroup
+            key={subcategory}
+            subcategory={subcategory}
+            tests={tests}
+            selectedTests={selectedTests}
+            recommendedTestIds={recommendedTestIds}
+            checkboxClass={checkboxClass}
+            idPrefix="orders-imaging"
+            onToggle={onToggle}
+          />,
+        )
+      }
+    }
+
+    return elements
+  }
 
   return (
     <div className="orders-card__left-panel">
@@ -64,7 +186,7 @@ export default function OrdersLeftPanel({
         <div className="orders-card__section">
           <button
             type="button"
-            className="orders-card__section-header"
+            className={`orders-card__section-header${openSections.has('recommended') ? ' orders-card__section-header--open' : ''}`}
             onClick={() => onToggleSection('recommended')}
             aria-expanded={openSections.has('recommended')}
           >
@@ -136,7 +258,7 @@ export default function OrdersLeftPanel({
       <div className="orders-card__section">
         <button
           type="button"
-          className="orders-card__section-header"
+          className={`orders-card__section-header${openSections.has('frequentlyUsed') ? ' orders-card__section-header--open' : ''}`}
           onClick={() => onToggleSection('frequentlyUsed')}
           aria-expanded={openSections.has('frequentlyUsed')}
         >
@@ -198,12 +320,15 @@ export default function OrdersLeftPanel({
         const catTests = testsByCategory.get(cat) ?? []
         if (catTests.length === 0) return null
         const sectionKey = `cat-${cat}`
-        const subcategoryGroups = groupBySubcategory(catTests)
+        const isImaging = cat === 'imaging'
+        const subcategoryGroups = isImaging
+          ? groupBySubcategoryOrdered(catTests, IMAGING_SUBCATEGORY_ORDER)
+          : groupBySubcategory(catTests)
         return (
           <div key={cat} className="orders-card__section">
             <button
               type="button"
-              className="orders-card__section-header"
+              className={`orders-card__section-header${openSections.has(sectionKey) ? ' orders-card__section-header--open' : ''}`}
               onClick={() => onToggleSection(sectionKey)}
               aria-expanded={openSections.has(sectionKey)}
             >
@@ -217,34 +342,25 @@ export default function OrdersLeftPanel({
             </button>
             {openSections.has(sectionKey) && (
               <div className="orders-card__section-body">
-                {[...subcategoryGroups.entries()].map(([subcategory, tests]) => (
-                  <SubcategoryGroup
-                    key={subcategory}
-                    subcategory={subcategory}
-                    tests={tests}
-                    selectedTests={selectedTests}
-                    recommendedTestIds={recommendedTestIds}
-                    checkboxClass={checkboxClass}
-                    idPrefix={`orders-${cat}`}
-                    onToggle={onToggle}
-                  />
-                ))}
+                {isImaging
+                  ? renderImagingSubcategories(subcategoryGroups)
+                  : [...subcategoryGroups.entries()].map(([subcategory, tests]) => (
+                      <SubcategoryGroup
+                        key={subcategory}
+                        subcategory={subcategory}
+                        tests={tests}
+                        selectedTests={selectedTests}
+                        recommendedTestIds={recommendedTestIds}
+                        checkboxClass={checkboxClass}
+                        idPrefix={`orders-${cat}`}
+                        onToggle={onToggle}
+                      />
+                    ))}
               </div>
             )}
           </div>
         )
       })}
-
-      {/* ── Section 6: Create Orderset Button ──────────────────────────────── */}
-      {onCreateOrderset && (
-        <button
-          type="button"
-          className="orders-card__create-orderset-btn"
-          onClick={onCreateOrderset}
-        >
-          Create Orderset
-        </button>
-      )}
     </div>
   )
 }
