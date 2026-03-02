@@ -70,7 +70,7 @@ export default function OrdersRightPanel({
       <div className="orders-card__section">
         <button
           type="button"
-          className="orders-card__section-header"
+          className={`orders-card__section-header${openSections.has('freqOrderSets') ? ' orders-card__section-header--open' : ''}`}
           onClick={() => onToggleSection('freqOrderSets')}
           aria-expanded={openSections.has('freqOrderSets')}
         >
@@ -98,7 +98,7 @@ export default function OrdersRightPanel({
         <div className="orders-card__section">
           <button
             type="button"
-            className="orders-card__section-header"
+            className={`orders-card__section-header${openSections.has('allOrderSets') ? ' orders-card__section-header--open' : ''}`}
             onClick={() => onToggleSection('allOrderSets')}
             aria-expanded={openSections.has('allOrderSets')}
           >
