@@ -1,6 +1,6 @@
 /**
  * Seed CDR Library
- * Populates the `cdrLibrary` Firestore collection with 216 Clinical Decision Rule definitions.
+ * Populates the `cdrLibrary` Firestore collection with Clinical Decision Rule definitions.
  *
  * Usage: cd backend && NODE_PATH=./node_modules npx tsx ../scripts/seed-cdr-library.ts [--skip-embeddings]
  *
@@ -18,7 +18,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { generateEmbeddings } from '../backend/src/services/embeddingService'
 
-// Phase 1 batch CDR configs — real clinical components replacing placeholders
+// Batch CDR configs — real clinical components replacing placeholders
 import { batch1CardioCdrs } from './cdr-configs/batch-1-cardio'
 import { batch2TraumaCdrs } from './cdr-configs/batch-2-trauma'
 import { batch3PulmGiCdrs } from './cdr-configs/batch-3-pulm-gi'
@@ -26,6 +26,19 @@ import { batch4NeuroCdrs } from './cdr-configs/batch-4-neuro'
 import { batch5IdToxCdrs } from './cdr-configs/batch-5-id-tox'
 import { batch6CritPedsCdrs } from './cdr-configs/batch-6-crit-peds'
 import { batch7MiscCdrs } from './cdr-configs/batch-7-misc'
+import { batch8CardioIiCdrs } from './cdr-configs/batch-8-cardio-ii'
+import { batch9CardioIiiCdrs } from './cdr-configs/batch-9-cardio-iii'
+import { batch10PulmNeuroCdrs } from './cdr-configs/batch-10-pulm-neuro'
+import { batch11NeuroTraumaCdrs } from './cdr-configs/batch-11-neuro-trauma'
+import { batch12GiIdCdrs } from './cdr-configs/batch-12-gi-id'
+import { batch13IdToxCdrs } from './cdr-configs/batch-13-id-tox'
+import { batch14PedsHemeCdrs } from './cdr-configs/batch-14-peds-heme'
+import { batch15DispositionProcCdrs } from './cdr-configs/batch-15-disposition-proc'
+import { batch16EnviroObPsychCdrs } from './cdr-configs/batch-16-enviro-ob-psych'
+import { batch17PsychBurnsNephroCdrs } from './cdr-configs/batch-17-psych-burns-nephro'
+import { batch18NephroOncCdrs } from './cdr-configs/batch-18-nephro-onc'
+import { batch19OncDermEntCdrs } from './cdr-configs/batch-19-onc-derm-ent'
+import { batch20OrthoGeriPallCdrs } from './cdr-configs/batch-20-ortho-geri-pall'
 
 // Initialize Firebase Admin
 const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
@@ -5237,6 +5250,19 @@ const batchOverrides: CdrSeed[] = [
   ...batch5IdToxCdrs,
   ...batch6CritPedsCdrs,
   ...batch7MiscCdrs,
+  ...batch8CardioIiCdrs,
+  ...batch9CardioIiiCdrs,
+  ...batch10PulmNeuroCdrs,
+  ...batch11NeuroTraumaCdrs,
+  ...batch12GiIdCdrs,
+  ...batch13IdToxCdrs,
+  ...batch14PedsHemeCdrs,
+  ...batch15DispositionProcCdrs,
+  ...batch16EnviroObPsychCdrs,
+  ...batch17PsychBurnsNephroCdrs,
+  ...batch18NephroOncCdrs,
+  ...batch19OncDermEntCdrs,
+  ...batch20OrthoGeriPallCdrs,
 ]
 
 const overrideMap = new Map(batchOverrides.map((cdr) => [cdr.id, cdr]))
