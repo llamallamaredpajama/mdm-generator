@@ -60,7 +60,9 @@ export default function CdrResultsOutput({ encounter }: CdrResultsOutputProps) {
   const cdrTracking = encounter.cdrTracking ?? {}
   const cdrEntries = Object.entries(cdrTracking) as [string, CdrTrackingEntry][]
   const completedCdrs = cdrEntries.filter(([, e]) => e.status === 'completed' && !e.dismissed)
-  const pendingCdrs = cdrEntries.filter(([, e]) => (e.status === 'pending' || e.status === 'partial') && !e.dismissed)
+  const pendingCdrs = cdrEntries.filter(
+    ([, e]) => (e.status === 'pending' || e.status === 'partial') && !e.dismissed,
+  )
 
   return (
     <div className="cdr-results" data-testid="cdr-results-output">
@@ -68,7 +70,9 @@ export default function CdrResultsOutput({ encounter }: CdrResultsOutputProps) {
       {workingDx && (
         <div className="cdr-results__section">
           <h4 className="cdr-results__label">Working Diagnosis</h4>
-          <p className="cdr-results__dx" data-testid="cdr-results-dx">{workingDx}</p>
+          <p className="cdr-results__dx" data-testid="cdr-results-dx">
+            {workingDx}
+          </p>
         </div>
       )}
 
@@ -79,14 +83,17 @@ export default function CdrResultsOutput({ encounter }: CdrResultsOutputProps) {
           {respondedResults.length} of {selectedTests.length} tests resulted
           {abnormalResults.length > 0 && (
             <span className="cdr-results__abnormal-count">
-              {' '}— {abnormalResults.length} abnormal
+              {' '}
+              — {abnormalResults.length} abnormal
             </span>
           )}
         </p>
         {abnormalNames.length > 0 && (
           <ul className="cdr-results__abnormal-list" data-testid="cdr-results-abnormals">
             {abnormalNames.map((name) => (
-              <li key={name} className="cdr-results__abnormal-item">{name}</li>
+              <li key={name} className="cdr-results__abnormal-item">
+                {name}
+              </li>
             ))}
           </ul>
         )}
@@ -98,7 +105,11 @@ export default function CdrResultsOutput({ encounter }: CdrResultsOutputProps) {
           <h4 className="cdr-results__label">CDR Scores</h4>
           <div className="cdr-results__scores">
             {completedCdrs.map(([cdrId, entry]) => (
-              <div key={cdrId} className="cdr-results__score-card" data-testid={`cdr-score-${cdrId}`}>
+              <div
+                key={cdrId}
+                className="cdr-results__score-card"
+                data-testid={`cdr-score-${cdrId}`}
+              >
                 <button
                   type="button"
                   className="cdr-results__score-header"
@@ -109,8 +120,8 @@ export default function CdrResultsOutput({ encounter }: CdrResultsOutputProps) {
                   <span className="cdr-results__score-value">
                     {entry.score != null ? `Score: ${entry.score}` : 'Completed'}
                   </span>
-                  <span className={`cdr-results__chevron${expandedCdrs.has(cdrId) ? ' cdr-results__chevron--open' : ''}`}>
-                    &#9654;
+                  <span className="cdr-results__chevron">
+                    {expandedCdrs.has(cdrId) ? '\u25B2' : '\u25BC'}
                   </span>
                 </button>
                 {entry.interpretation && (
@@ -143,9 +154,15 @@ export default function CdrResultsOutput({ encounter }: CdrResultsOutputProps) {
               const total = Object.keys(entry.components).length
               const answered = Object.values(entry.components).filter((c) => c.answered).length
               return (
-                <li key={cdrId} className="cdr-results__pending-item" data-testid={`cdr-pending-${cdrId}`}>
+                <li
+                  key={cdrId}
+                  className="cdr-results__pending-item"
+                  data-testid={`cdr-pending-${cdrId}`}
+                >
                   <span className="cdr-results__pending-name">{entry.name}</span>
-                  <span className="cdr-results__pending-progress">{answered}/{total}</span>
+                  <span className="cdr-results__pending-progress">
+                    {answered}/{total}
+                  </span>
                 </li>
               )
             })}

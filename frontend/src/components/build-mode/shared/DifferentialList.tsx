@@ -47,8 +47,8 @@ function DifferentialRow({
         <span className={`diff-row__label diff-row__label--${item.urgency}`}>
           {URGENCY_LABELS[item.urgency]}
         </span>
-        <span className={`diff-row__chevron ${isExpanded ? 'diff-row__chevron--open' : ''}`} aria-hidden="true">
-          &#x25B8;
+        <span className="diff-row__chevron" aria-hidden="true">
+          {isExpanded ? '\u25B2' : '\u25BC'}
         </span>
       </button>
 
@@ -122,17 +122,26 @@ export default function DifferentialList({ differential }: DifferentialListProps
 
       <div className="diff-list__summary" role="status" aria-label="Diagnosis urgency summary">
         {emergentCount > 0 && (
-          <span className="diff-list__badge diff-list__badge--emergent" aria-label={`${emergentCount} emergent diagnoses`}>
+          <span
+            className="diff-list__badge diff-list__badge--emergent"
+            aria-label={`${emergentCount} emergent diagnoses`}
+          >
             {emergentCount} emergent
           </span>
         )}
         {urgentCount > 0 && (
-          <span className="diff-list__badge diff-list__badge--urgent" aria-label={`${urgentCount} urgent diagnoses`}>
+          <span
+            className="diff-list__badge diff-list__badge--urgent"
+            aria-label={`${urgentCount} urgent diagnoses`}
+          >
             {urgentCount} urgent
           </span>
         )}
         {routineCount > 0 && (
-          <span className="diff-list__badge diff-list__badge--routine" aria-label={`${routineCount} routine diagnoses`}>
+          <span
+            className="diff-list__badge diff-list__badge--routine"
+            aria-label={`${routineCount} routine diagnoses`}
+          >
             {routineCount} routine
           </span>
         )}
@@ -150,9 +159,7 @@ export default function DifferentialList({ differential }: DifferentialListProps
         ))}
       </div>
 
-      <p className="diff-list__note">
-        Listed in worst-first order based on clinical presentation
-      </p>
+      <p className="diff-list__note">Listed in worst-first order based on clinical presentation</p>
     </div>
   )
 }

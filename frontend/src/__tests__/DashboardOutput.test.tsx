@@ -204,7 +204,8 @@ describe('DashboardOutput', () => {
     // HEART Score matches via applicableChiefComplaints containing 'acute coronary syndrome'
     // which is a substring of diagnosis 'Acute Coronary Syndrome'
     expect(screen.getByText('HEART Score')).toBeDefined()
-    expect(screen.getByText('1 identified')).toBeDefined()
+    // Status badges should appear (replaces old "N identified" badge)
+    expect(screen.getByText('Expand All')).toBeDefined()
   })
 
   it('shows CdrCard error state when CDR library fails to load', () => {

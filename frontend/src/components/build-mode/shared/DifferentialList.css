@@ -177,16 +177,11 @@
   color: #16a34a;
 }
 
-/* Chevron */
+/* Chevron (DOWN/UP arrows) */
 .diff-row__chevron {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: var(--color-text-secondary, #64748b);
-  transition: transform 0.15s ease;
   flex-shrink: 0;
-}
-
-.diff-row__chevron--open {
-  transform: rotate(90deg);
 }
 
 /* Expanded details */

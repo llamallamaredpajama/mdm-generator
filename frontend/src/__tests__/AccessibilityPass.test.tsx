@@ -60,7 +60,7 @@ describe('ProgressIndicator - Accessibility', () => {
         responded={3}
         abnormalCount={1}
         statuses={['unremarkable', 'abnormal', 'unremarkable', 'pending', 'pending']}
-      />
+      />,
     )
 
     const indicator = container.querySelector('[role="status"]')
@@ -74,13 +74,11 @@ describe('ProgressIndicator - Accessibility', () => {
         responded={3}
         abnormalCount={1}
         statuses={['unremarkable', 'abnormal', 'unremarkable', 'pending', 'pending']}
-      />
+      />,
     )
 
     const indicator = container.querySelector('.progress-indicator')
-    expect(indicator?.getAttribute('aria-label')).toBe(
-      'Test progress: 3 of 5 resulted, 1 abnormal'
-    )
+    expect(indicator?.getAttribute('aria-label')).toBe('Test progress: 3 of 5 resulted, 1 abnormal')
   })
 
   it('omits abnormal from aria-label when count is 0', () => {
@@ -90,13 +88,11 @@ describe('ProgressIndicator - Accessibility', () => {
         responded={2}
         abnormalCount={0}
         statuses={['unremarkable', 'unremarkable', 'pending']}
-      />
+      />,
     )
 
     const indicator = container.querySelector('.progress-indicator')
-    expect(indicator?.getAttribute('aria-label')).toBe(
-      'Test progress: 2 of 3 resulted'
-    )
+    expect(indicator?.getAttribute('aria-label')).toBe('Test progress: 2 of 3 resulted')
   })
 
   it('hides decorative dots from screen readers', () => {
@@ -106,7 +102,7 @@ describe('ProgressIndicator - Accessibility', () => {
         responded={1}
         abnormalCount={0}
         statuses={['unremarkable', 'pending']}
-      />
+      />,
     )
 
     const dotsContainer = container.querySelector('.progress-indicator__dots')
@@ -122,16 +118,22 @@ describe('CdrCard - Accessibility', () => {
   const mockCdrs: IdentifiedCdr[] = [
     {
       cdr: {
-        id: 'heart', name: 'HEART Score', fullName: 'HEART Score for Chest Pain',
-        applicableChiefComplaints: ['chest pain'], components: [],
+        id: 'heart',
+        name: 'HEART Score',
+        fullName: 'HEART Score for Chest Pain',
+        applicableChiefComplaints: ['chest pain'],
+        components: [],
         scoring: { method: 'sum', ranges: [] },
       },
       readiness: 'completable',
     },
     {
       cdr: {
-        id: 'perc', name: 'PERC Rule', fullName: 'PERC Rule for PE',
-        applicableChiefComplaints: ['shortness of breath'], components: [],
+        id: 'perc',
+        name: 'PERC Rule',
+        fullName: 'PERC Rule for PE',
+        applicableChiefComplaints: ['shortness of breath'],
+        components: [],
         scoring: { method: 'threshold', ranges: [] },
       },
       readiness: 'needs_results',
@@ -139,9 +141,7 @@ describe('CdrCard - Accessibility', () => {
   ]
 
   it('has role="region" with descriptive aria-label', () => {
-    const { container } = render(
-      <CdrCard identifiedCdrs={mockCdrs} loading={false} />
-    )
+    const { container } = render(<CdrCard identifiedCdrs={mockCdrs} loading={false} />)
 
     const region = container.querySelector('[role="region"]')
     expect(region).not.toBeNull()
@@ -149,9 +149,7 @@ describe('CdrCard - Accessibility', () => {
   })
 
   it('has role="status" on loading message', () => {
-    const { container } = render(
-      <CdrCard identifiedCdrs={[]} loading={true} />
-    )
+    const { container } = render(<CdrCard identifiedCdrs={[]} loading={true} />)
 
     const status = container.querySelector('[role="status"]')
     expect(status).not.toBeNull()
@@ -160,42 +158,47 @@ describe('CdrCard - Accessibility', () => {
 
   it('has role="alert" on error message', () => {
     const { container } = render(
-      <CdrCard identifiedCdrs={[]} loading={false} error="Failed to load" />
+      <CdrCard identifiedCdrs={[]} loading={false} error="Failed to load" />,
     )
 
     const alert = container.querySelector('[role="alert"]')
     expect(alert).not.toBeNull()
   })
 
-  it('has accessible label on CDR count badge', () => {
-    const { container } = render(
-      <CdrCard identifiedCdrs={mockCdrs} loading={false} />
-    )
+  it('has accessible labels on status badges', () => {
+    const { container } = render(<CdrCard identifiedCdrs={mockCdrs} loading={false} />)
 
-    const badge = container.querySelector('.cdr-card__badge')
-    expect(badge?.getAttribute('aria-label')).toBe('2 clinical decision rules identified')
+    const badges = container.querySelectorAll('.cdr-card__badge')
+    expect(badges.length).toBe(3)
+    // Check that each badge has an aria-label
+    badges.forEach((badge) => {
+      expect(badge.getAttribute('aria-label')).not.toBeNull()
+    })
+  })
+
+  it('has expand all button with aria-label', () => {
+    render(<CdrCard identifiedCdrs={mockCdrs} loading={false} />)
+
+    const btn = screen.getByText('Expand All')
+    expect(btn.getAttribute('aria-label')).toBe('Expand all CDRs')
   })
 
   it('hides decorative chevrons from screen readers', () => {
-    const { container } = render(
-      <CdrCard identifiedCdrs={mockCdrs} loading={false} />
-    )
+    const { container } = render(<CdrCard identifiedCdrs={mockCdrs} loading={false} />)
 
     // Chevron indicators have aria-hidden
-    const chevrons = container.querySelectorAll('.cdr-card__chevron')
+    const chevrons = container.querySelectorAll('.cdr-row__chevron')
     expect(chevrons.length).toBeGreaterThan(0)
     chevrons.forEach((chevron) => {
       expect(chevron.getAttribute('aria-hidden')).toBe('true')
     })
   })
 
-  it('has accessible label on CDR list', () => {
-    const { container } = render(
-      <CdrCard identifiedCdrs={mockCdrs} loading={false} />
-    )
+  it('has CDR rows container', () => {
+    const { container } = render(<CdrCard identifiedCdrs={mockCdrs} loading={false} />)
 
-    const list = container.querySelector('.cdr-card__list')
-    expect(list?.getAttribute('aria-label')).toBe('Identified clinical decision rules')
+    const rows = container.querySelector('.cdr-card__rows')
+    expect(rows).not.toBeNull()
   })
 })
 
@@ -218,9 +221,7 @@ const mockDifferential: DifferentialItem[] = [
 
 describe('DifferentialList - Accessibility', () => {
   it('has role="region" with aria-label on wrapper', () => {
-    const { container } = render(
-      <DifferentialList differential={mockDifferential} />
-    )
+    const { container } = render(<DifferentialList differential={mockDifferential} />)
 
     const region = container.querySelector('[role="region"]')
     expect(region).not.toBeNull()
@@ -239,9 +240,7 @@ describe('DifferentialList - Accessibility', () => {
   })
 
   it('has role="status" on urgency summary', () => {
-    const { container } = render(
-      <DifferentialList differential={mockDifferential} />
-    )
+    const { container } = render(<DifferentialList differential={mockDifferential} />)
 
     const summary = container.querySelector('[role="status"]')
     expect(summary).not.toBeNull()
@@ -249,9 +248,7 @@ describe('DifferentialList - Accessibility', () => {
   })
 
   it('has accessible labels on urgency badges', () => {
-    const { container } = render(
-      <DifferentialList differential={mockDifferential} />
-    )
+    const { container } = render(<DifferentialList differential={mockDifferential} />)
 
     const emergentBadge = container.querySelector('.diff-list__badge--emergent')
     expect(emergentBadge?.getAttribute('aria-label')).toBe('1 emergent diagnoses')
@@ -264,15 +261,13 @@ describe('DifferentialList - Accessibility', () => {
     render(<DifferentialList differential={mockDifferential} />)
 
     const buttons = screen.getAllByRole('button')
-    const diagButton = buttons.find(b => b.textContent?.includes('Acute Coronary Syndrome'))
+    const diagButton = buttons.find((b) => b.textContent?.includes('Acute Coronary Syndrome'))
     expect(diagButton?.getAttribute('aria-expanded')).toBe('false')
     expect(diagButton?.getAttribute('aria-controls')).toBe('diff-details-0')
   })
 
   it('hides decorative dots from screen readers', () => {
-    const { container } = render(
-      <DifferentialList differential={mockDifferential} />
-    )
+    const { container } = render(<DifferentialList differential={mockDifferential} />)
 
     const dots = container.querySelectorAll('.diff-row__dot')
     dots.forEach((dot) => {
@@ -305,7 +300,7 @@ describe('ResultEntry - Accessibility', () => {
         result={undefined}
         activeCdrNames={[]}
         onResultChange={vi.fn()}
-      />
+      />,
     )
 
     const radiogroup = screen.getByRole('radiogroup')
@@ -319,12 +314,12 @@ describe('ResultEntry - Accessibility', () => {
         result={{ status: 'unremarkable', quickFindings: [], notes: null, value: null, unit: null }}
         activeCdrNames={[]}
         onResultChange={vi.fn()}
-      />
+      />,
     )
 
     const radios = screen.getAllByRole('radio')
-    const unremarkableRadio = radios.find(r => r.textContent === 'Unremarkable')
-    const abnormalRadio = radios.find(r => r.textContent === 'Abnormal')
+    const unremarkableRadio = radios.find((r) => r.textContent === 'Unremarkable')
+    const abnormalRadio = radios.find((r) => r.textContent === 'Abnormal')
 
     expect(unremarkableRadio?.getAttribute('aria-checked')).toBe('true')
     expect(abnormalRadio?.getAttribute('aria-checked')).toBe('false')
@@ -337,13 +332,13 @@ describe('ResultEntry - Accessibility', () => {
         result={undefined}
         activeCdrNames={['HEART Score', 'Wells']}
         onResultChange={vi.fn()}
-      />
+      />,
     )
 
     const warning = container.querySelector('[role="alert"]')
     expect(warning).not.toBeNull()
     expect(warning?.getAttribute('aria-label')).toBe(
-      'Result needed: value required for HEART Score, Wells'
+      'Result needed: value required for HEART Score, Wells',
     )
   })
 
@@ -354,7 +349,7 @@ describe('ResultEntry - Accessibility', () => {
         result={undefined}
         activeCdrNames={[]}
         onResultChange={vi.fn()}
-      />
+      />,
     )
 
     const warning = container.querySelector('.result-entry__cdr-warning')
@@ -369,7 +364,7 @@ describe('ResultEntry - Accessibility', () => {
 describe('ConfirmationModal - Accessibility', () => {
   it('has role="dialog" and aria-modal', () => {
     const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />
+      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />,
     )
 
     const dialog = container.querySelector('[role="dialog"]')
@@ -379,7 +374,7 @@ describe('ConfirmationModal - Accessibility', () => {
 
   it('has aria-labelledby pointing to title', () => {
     const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />
+      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />,
     )
 
     const dialog = container.querySelector('[role="dialog"]')
@@ -393,7 +388,7 @@ describe('ConfirmationModal - Accessibility', () => {
   it('closes on Escape key', () => {
     const onClose = vi.fn()
     const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={onClose} onConfirm={vi.fn()} />
+      <ConfirmationModal isOpen={true} onClose={onClose} onConfirm={vi.fn()} />,
     )
 
     const dialog = container.querySelector('[role="dialog"]')
@@ -403,7 +398,7 @@ describe('ConfirmationModal - Accessibility', () => {
 
   it('has warning with role="alert"', () => {
     const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />
+      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />,
     )
 
     const alert = container.querySelector('.modal-warning[role="alert"]')
@@ -412,7 +407,7 @@ describe('ConfirmationModal - Accessibility', () => {
 
   it('hides warning SVG from screen readers', () => {
     const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />
+      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />,
     )
 
     const svg = container.querySelector('.warning-icon')
@@ -421,7 +416,7 @@ describe('ConfirmationModal - Accessibility', () => {
 
   it('returns null when not open', () => {
     const { container } = render(
-      <ConfirmationModal isOpen={false} onClose={vi.fn()} onConfirm={vi.fn()} />
+      <ConfirmationModal isOpen={false} onClose={vi.fn()} onConfirm={vi.fn()} />,
     )
 
     expect(container.innerHTML).toBe('')
@@ -430,7 +425,7 @@ describe('ConfirmationModal - Accessibility', () => {
   it('closes on overlay click', () => {
     const onClose = vi.fn()
     const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={onClose} onConfirm={vi.fn()} />
+      <ConfirmationModal isOpen={true} onClose={onClose} onConfirm={vi.fn()} />,
     )
 
     const overlay = container.querySelector('.modal-overlay')
@@ -441,7 +436,7 @@ describe('ConfirmationModal - Accessibility', () => {
   it('does not close when clicking inside modal content', () => {
     const onClose = vi.fn()
     const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={onClose} onConfirm={vi.fn()} />
+      <ConfirmationModal isOpen={true} onClose={onClose} onConfirm={vi.fn()} />,
     )
 
     const content = container.querySelector('.modal-content')

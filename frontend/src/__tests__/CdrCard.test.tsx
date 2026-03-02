@@ -43,31 +43,35 @@ const mockIdentifiedCdrs: IdentifiedCdr[] = [
 ]
 
 describe('CdrCard', () => {
-  it('renders identified CDRs with name and indicator', () => {
+  it('renders identified CDRs with name', () => {
     render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
 
     expect(screen.getByText('HEART Score')).toBeDefined()
     expect(screen.getByText('Wells PE')).toBeDefined()
   })
 
-  it('shows count badge in header', () => {
+  it('shows Expand All button in header instead of count badge', () => {
     render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
 
-    expect(screen.getByText('2 identified')).toBeDefined()
+    expect(screen.getByText('Expand All')).toBeDefined()
+    // Should NOT have the old "X identified" badge
+    expect(screen.queryByText('2 identified')).toBeNull()
   })
 
-  it('shows readiness status labels', () => {
-    const { container } = render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
+  it('shows three status badges with correct counts', () => {
+    render(
+      <CdrCard
+        identifiedCdrs={mockIdentifiedCdrs}
+        cdrLibrary={[heartCdr, wellsCdr]}
+        loading={false}
+      />,
+    )
 
-    // "needs_results" CDR shows "needs data" status
-    const needsDataStatus = container.querySelector('.cdr-card__status--needs_data')
-    expect(needsDataStatus).not.toBeNull()
-    expect(needsDataStatus!.textContent).toBe('needs data')
-
-    // "completable" CDR shows "completable" status
-    const completableStatus = container.querySelector('.cdr-card__status--completable')
-    expect(completableStatus).not.toBeNull()
-    expect(completableStatus!.textContent).toBe('completable')
+    // HEART has section2 component (troponin) so needs_data
+    // Wells PE has all section1/user_input components so needs_history
+    expect(screen.getByText(/1 Needs Data/)).toBeDefined()
+    expect(screen.getByText(/1 Needs History/)).toBeDefined()
+    expect(screen.getByText(/0 Complete/)).toBeDefined()
   })
 
   it('shows loading state', () => {
@@ -98,12 +102,6 @@ describe('CdrCard', () => {
     expect(btn.getAttribute('title')).toBe('Available after CDR matching completes')
   })
 
-  it('shows "1 identified" for single CDR', () => {
-    render(<CdrCard identifiedCdrs={[mockIdentifiedCdrs[0]]} loading={false} />)
-
-    expect(screen.getByText('1 identified')).toBeDefined()
-  })
-
   it('calls onViewCdrs callback when button is clicked', () => {
     const onViewCdrs = vi.fn()
     render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} onViewCdrs={onViewCdrs} />)
@@ -123,13 +121,48 @@ describe('CdrCard', () => {
     render(<CdrCard identifiedCdrs={[]} loading={false} error="Server error" />)
 
     expect(screen.getByText('Unable to load CDR library')).toBeDefined()
-    // Should NOT show the empty state message
     expect(screen.queryByText('No CDRs identified for this differential')).toBeNull()
+  })
+
+  it('toggles expand/collapse all', () => {
+    const { container } = render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
+
+    // Initially collapsed
+    expect(container.querySelectorAll('.cdr-row__details').length).toBe(0)
+
+    // Click Expand All
+    fireEvent.click(screen.getByText('Expand All'))
+    expect(container.querySelectorAll('.cdr-row__details').length).toBe(2)
+    expect(screen.getByText('Collapse All')).toBeDefined()
+
+    // Click Collapse All
+    fireEvent.click(screen.getByText('Collapse All'))
+    expect(container.querySelectorAll('.cdr-row__details').length).toBe(0)
+    expect(screen.getByText('Expand All')).toBeDefined()
+  })
+
+  it('uses down/up arrow chevrons', () => {
+    const { container } = render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
+
+    // Collapsed state: down arrows
+    const chevrons = container.querySelectorAll('.cdr-row__chevron')
+    expect(chevrons.length).toBeGreaterThan(0)
+    chevrons.forEach((chevron) => {
+      expect(chevron.textContent).toBe('\u25BC') // down arrow
+    })
+
+    // Expand first CDR
+    const firstRow = container.querySelector('.cdr-row__header')
+    fireEvent.click(firstRow!)
+
+    // First chevron should now be up arrow
+    const firstChevron = container.querySelector('.cdr-row__chevron')
+    expect(firstChevron!.textContent).toBe('\u25B2') // up arrow
   })
 
   // --- LLM cdrAnalysis prop tests ---
 
-  it('renders LLM cdrAnalysis with score and interpretation in pill', () => {
+  it('renders LLM cdrAnalysis with score and interpretation in name', () => {
     const cdrAnalysis: CdrAnalysisItem[] = [
       {
         name: 'HEART Score',
@@ -139,14 +172,11 @@ describe('CdrCard', () => {
         reasoning: 'Calculated from available data',
       },
     ]
-    const { container } = render(<CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />)
+    render(<CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />)
 
-    // Score is shown inside the pill: "HEART Score: 4 — Moderate risk"
-    const pill = container.querySelector('.cdr-card__pill')
-    expect(pill).not.toBeNull()
-    expect(pill!.textContent).toContain('HEART Score')
-    expect(pill!.textContent).toContain('4')
-    expect(pill!.textContent).toContain('Moderate risk')
+    // Score should be in the CDR row name area
+    const nameEl = screen.getByText(/HEART Score.*4/)
+    expect(nameEl.textContent).toContain('Moderate risk')
   })
 
   it('renders LLM cdrAnalysis with missing data as needs_data status', () => {
@@ -158,13 +188,16 @@ describe('CdrCard', () => {
         reasoning: 'Need lab results',
       },
     ]
-    const { container } = render(<CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />)
+    const { container } = render(
+      <CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />,
+    )
 
     expect(screen.getByText('Wells PE')).toBeDefined()
-    // Missing data CDRs show "needs data" status label
-    const status = container.querySelector('.cdr-card__status--needs_data')
-    expect(status).not.toBeNull()
-    expect(status!.textContent).toBe('needs data')
+    // Should have needs_data status in the badge
+    expect(screen.getByText(/1 Needs Data/)).toBeDefined()
+    // Row should have needs_data border
+    const row = container.querySelector('.cdr-row--needs_data')
+    expect(row).not.toBeNull()
   })
 
   it('merges LLM cdrAnalysis with client-side identifiedCdrs', () => {
@@ -176,18 +209,13 @@ describe('CdrCard', () => {
         interpretation: 'Low risk',
       },
     ]
-    // Client-side has Wells PE which is NOT in LLM analysis — should be added
     const clientCdrs: IdentifiedCdr[] = [{ cdr: wellsCdr, readiness: 'completable' }]
 
-    const { container } = render(<CdrCard identifiedCdrs={clientCdrs} cdrAnalysis={cdrAnalysis} loading={false} />)
+    render(<CdrCard identifiedCdrs={clientCdrs} cdrAnalysis={cdrAnalysis} loading={false} />)
 
-    // Both should appear — HEART Score pill includes score text
-    const pills = container.querySelectorAll('.cdr-card__pill')
-    const pillTexts = Array.from(pills).map((p) => p.textContent)
-    expect(pillTexts.some((t) => t?.includes('HEART Score'))).toBe(true)
-    expect(pillTexts.some((t) => t?.includes('Wells PE'))).toBe(true)
-    // Total count should be 2
-    expect(screen.getByText('2 identified')).toBeDefined()
+    // Both should appear
+    expect(screen.getByText(/HEART Score/)).toBeDefined()
+    expect(screen.getByText('Wells PE')).toBeDefined()
   })
 
   it('LLM cdrAnalysis takes priority over client-side match', () => {
@@ -199,16 +227,13 @@ describe('CdrCard', () => {
         interpretation: 'High risk',
       },
     ]
-    // Client-side also has HEART — LLM version should take priority (shows score)
     const clientCdrs: IdentifiedCdr[] = [{ cdr: heartCdr, readiness: 'needs_results' }]
 
     render(<CdrCard identifiedCdrs={clientCdrs} cdrAnalysis={cdrAnalysis} loading={false} />)
 
-    // Should show LLM score in pill, not client-side "needs data" status
-    const pill = screen.getByText(/HEART Score.*5/)
-    expect(pill.textContent).toContain('High risk')
+    // Should show LLM score
+    const nameEl = screen.getByText(/HEART Score.*5/)
+    expect(nameEl.textContent).toContain('High risk')
     expect(screen.queryByText('Requires workup results')).toBeNull()
-    // Count should be 1 (no duplicate)
-    expect(screen.getByText('1 identified')).toBeDefined()
   })
 })

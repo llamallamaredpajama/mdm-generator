@@ -104,11 +104,6 @@
 .cdr-results__chevron {
   font-size: 0.625rem;
   color: var(--color-text-muted, #9ca3af);
-  transition: transform 0.2s;
-}
-
-.cdr-results__chevron--open {
-  transform: rotate(90deg);
 }
 
 .cdr-results__interpretation {
