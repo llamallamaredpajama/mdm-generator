@@ -164,7 +164,146 @@ The text blob is **entirely LLM-generated** — section headers and attestation 
 
 ## 4. Architectural Patterns
 
-> *Placeholder — written in Task 4*
+These patterns recur every time you make a text or field change. They exist because LLMs are non-deterministic about field naming, Firestore documents persist across schema versions, and the codebase has two parallel MDM systems with different conventions.
+
+### Pattern 1: Zod `.transform()` — One-Way Migration Gate
+
+**Where:** `backend/src/outputSchema.ts:15-21`
+**When:** Category A (field rename) in the Legacy/Quick Mode pipeline
+
+When you rename a JSON field, existing Firestore documents and in-flight LLM responses still use the old name. A hard rename breaks parsing. Instead, accept both and normalize:
+
+```typescript
+// Accept BOTH old 'disclaimers' and new 'attestation' from LLM output
+const RawMdmSchema = z.object({
+  // ... other fields ...
+  attestation: z.union([z.string(), z.array(z.string())]).optional(),
+  disclaimers: z.union([z.string(), z.array(z.string())]).optional(),  // OLD name
+})
+
+export const MdmSchema = RawMdmSchema.transform((data) => {
+  const { disclaimers, attestation, ...rest } = data
+  return {
+    ...rest,
+    attestation: attestation ?? disclaimers ?? PHYSICIAN_ATTESTATION,
+  }
+})
+```
+
+**Properties:**
+- New name takes precedence if both are present
+- Falls back to old name for legacy data
+- Falls back to constant when neither exists
+- Old field is **stripped from output** — downstream code only sees the new name
+- `z.infer<typeof MdmSchema>` produces the new type automatically — no manual type updates needed
+
+**Rule:** This is a **one-way migration gate**. Old data flows through, but new data never uses the old field name. Never remove the old field acceptance — LLMs may still produce it.
+
+### Pattern 2: `extractFinalMdm()` Alias Chains
+
+**Where:** `backend/src/index.ts:1250-1266`
+**When:** Category A (field rename) in the Build Mode finalize pipeline
+
+LLMs are non-deterministic about field naming. The same prompt may produce `dataReviewed` in one call and `dataReviewedOrdered` in the next. The extraction function tries multiple alternative names in priority order:
+
+```typescript
+const extractFinalMdm = (raw: Record<string, unknown>): FinalMdm => {
+  const j = (raw.json && typeof raw.json === 'object' ? raw.json : {}) as Record<string, unknown>
+  return {
+    text: (raw.text as string) || '',
+    json: {
+      problems: asStringOrArr(j.problems) || asStringOrArr(raw.problems)
+        || flattenToStrings(j.problemsAddressed) || flattenToStrings(raw.problemsAddressed) || [],
+      differential: asStringOrArr(j.differential) || asStringOrArr(raw.differential) || [],
+      dataReviewed: asStringOrArr(j.dataReviewed) || asStringOrArr(raw.dataReviewed)
+        || flattenNestedObj(j.dataReviewedOrdered) || flattenNestedObj(raw.dataReviewedOrdered) || [],
+      reasoning: (j.reasoning || raw.reasoning
+        || j.clinicalReasoning || raw.clinicalReasoning || '') as string,
+      risk: asStringOrArr(j.risk) || asStringOrArr(raw.risk)
+        || flattenNestedObj(j.riskAssessment) || flattenNestedObj(raw.riskAssessment) || [],
+      disposition: stringifyDisposition(j.disposition || raw.disposition),
+      complexityLevel: normalizeComplexity(j.complexityLevel || raw.complexityLevel),
+    },
+  }
+}
+```
+
+**Alias chains visible:**
+- `problems` → `problemsAddressed`
+- `dataReviewed` → `dataReviewedOrdered`
+- `reasoning` → `clinicalReasoning`
+- `risk` → `riskAssessment`
+
+**Rule:** When renaming a field, **add the old name as a new alias** in the chain — don't remove any existing aliases. The LLM may still produce any of them. Aliases also search both `j.` (nested under `json`) and `raw.` (top-level) because LLMs inconsistently nest their output.
+
+### Pattern 3: `useEncounter.ts` Defensive Defaults
+
+**Where:** `frontend/src/hooks/useEncounter.ts:90-130`
+**When:** Category A or D — any change that adds or renames a field in the encounter document
+
+Firestore documents may have `null` for fields not yet populated (e.g., a section 2 field before section 2 is submitted). The `onSnapshot` handler bridges Firestore `null` to TypeScript optional semantics:
+
+```typescript
+const encounterData: EncounterDocument = {
+  // ...
+  section2: {
+    ...data.section2,
+    selectedTests: data.section2?.selectedTests ?? [],
+    testResults: data.section2?.testResults ?? {},
+    allUnremarkable: data.section2?.allUnremarkable ?? false,
+    pastedRawText: data.section2?.pastedRawText ?? null,
+    workingDiagnosis: data.section2?.workingDiagnosis ?? undefined, // null → undefined
+  },
+  section3: {
+    ...data.section3,
+    treatments: data.section3?.treatments ?? undefined,
+    disposition: data.section3?.disposition ?? null,
+    followUp: data.section3?.followUp ?? [],
+  },
+  cdrTracking: data.cdrTracking ?? {},
+  // ...
+}
+```
+
+**Rule:** Any new optional field added to the encounter schema **must** have a corresponding default in this handler. Without it, a `null` Firestore value propagates as `null` into React components that expect `undefined` or a typed default, causing runtime errors.
+
+### Pattern 4: Dual-Shape Extraction (`getDifferential()`)
+
+**Where:** `frontend/src/components/build-mode/shared/DashboardOutput.tsx:65-72`
+**When:** Category A or D — when an LLM response field changes structure over time
+
+S1 `llmResponse` has a dual shape: old encounters store a flat `DifferentialItem[]`, new encounters store `{ differential, cdrAnalysis, workupRecommendations, processedAt }`. The extraction helper handles both:
+
+```typescript
+function getDifferential(llmResponse: unknown): DifferentialItem[] {
+  if (Array.isArray(llmResponse)) return llmResponse as DifferentialItem[]
+  if (llmResponse && typeof llmResponse === 'object' && 'differential' in llmResponse) {
+    const wrapped = llmResponse as { differential?: unknown }
+    if (Array.isArray(wrapped.differential)) return wrapped.differential as DifferentialItem[]
+  }
+  return []
+}
+```
+
+**Rule:** When changing an LLM response field's structure, create an extraction helper that handles both old and new shapes. Old Firestore documents retain the old shape indefinitely — there is no migration step.
+
+### Pattern 5: Conditional Prompt Numbering
+
+**Where:** `backend/src/promptBuilderBuildMode.ts:477-489`
+**When:** Any prompt modification that inserts or removes a numbered instruction
+
+Build Mode prompts use numbered instructions where surveillance items are conditionally appended. Inserting a new instruction bumps all subsequent numbers:
+
+```typescript
+'7. NEVER fabricate information - use only what was provided',
+'8. Include the physician attestation at the end of the MDM text: "..."',
+...(surveillanceContext ? [
+  '9. Include regional surveillance data sources in the Data Reviewed section...',
+  '10. Note any regional epidemiologic context...',
+] : []),
+```
+
+**Rule:** After inserting/removing any numbered prompt instruction, verify all subsequent numbers are correct. Misnumbered instructions can confuse LLMs — they may skip or duplicate items when numbers are inconsistent.
 
 ---
 
