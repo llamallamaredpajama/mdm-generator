@@ -56,53 +56,7 @@
   font-style: italic;
 }
 
-/* Select options */
-.cdr-input__options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-}
-
-.cdr-input__option {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.625rem;
-  font-size: 0.8rem;
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 6px;
-  background: var(--color-background, #ffffff);
-  color: var(--color-text, #1e293b);
-  cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
-}
-
-.cdr-input__option:hover:not(:disabled) {
-  border-color: var(--color-primary, #3b82f6);
-  background: #eff6ff;
-}
-
-.cdr-input__option--selected {
-  border-color: var(--color-primary, #3b82f6);
-  background: #dbeafe;
-  font-weight: 500;
-}
-
-.cdr-input__option:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.cdr-input__option-label {
-  white-space: nowrap;
-}
-
-.cdr-input__option-value {
-  font-size: 0.7rem;
-  color: var(--color-text-muted, #94a3b8);
-}
-
-/* Boolean toggle */
+/* ── Boolean toggle (Yes / No) ───────────────────────────────────────── */
 .cdr-input__toggle-group {
   display: flex;
   gap: 0.375rem;
@@ -115,19 +69,23 @@
   border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 6px;
   background: var(--color-background, #ffffff);
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-muted, #94a3b8);
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .cdr-input__toggle:hover:not(:disabled) {
-  border-color: var(--color-primary, #3b82f6);
-  background: #eff6ff;
+  border-color: var(--color-text-secondary, #64748b);
+  color: var(--color-text, #1e293b);
 }
 
 .cdr-input__toggle--active {
-  border-color: var(--color-primary, #3b82f6);
-  background: #dbeafe;
+  border-color: var(--color-text-secondary, #64748b);
+  background: var(--color-surface, #f8fafc);
+  color: var(--color-text, #1e293b);
   font-weight: 500;
 }
 
@@ -136,7 +94,99 @@
   cursor: default;
 }
 
-/* Number range info */
+/* ── Select dropdown ─────────────────────────────────────────────────── */
+.cdr-input--select {
+  position: relative;
+}
+
+.cdr-input__dropdown-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--color-background, #ffffff);
+  color: var(--color-text-muted, #94a3b8);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  text-align: left;
+  font: inherit;
+}
+
+.cdr-input__dropdown-trigger:hover:not(:disabled) {
+  border-color: var(--color-text-secondary, #64748b);
+}
+
+.cdr-input__dropdown-trigger--answered {
+  color: var(--color-text, #1e293b);
+}
+
+.cdr-input__dropdown-trigger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.cdr-input__dropdown-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cdr-input__dropdown-chevron {
+  font-size: 0.65rem;
+  margin-left: 0.5rem;
+  color: var(--color-text-secondary, #64748b);
+  flex-shrink: 0;
+}
+
+.cdr-input__dropdown-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% - 0.375rem);
+  z-index: 10;
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.cdr-input__dropdown-option {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  color: var(--color-text, #1e293b);
+  cursor: pointer;
+  font: inherit;
+  transition: background-color 0.1s;
+}
+
+.cdr-input__dropdown-option:last-child {
+  border-bottom: none;
+}
+
+.cdr-input__dropdown-option:hover {
+  background: var(--color-surface, #f8fafc);
+}
+
+.cdr-input__dropdown-option--selected {
+  background: var(--color-surface, #f8fafc);
+  font-weight: 500;
+}
+
+/* ── Number range info ───────────────────────────────────────────────── */
 .cdr-input__range-info {
   font-size: 0.8rem;
   color: var(--color-text-muted, #94a3b8);

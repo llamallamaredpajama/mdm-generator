@@ -1,10 +1,15 @@
 /**
  * CdrComponentInput Component
  *
- * Renders a single CDR component with the appropriate input type
- * (select, boolean, number_range, algorithm) and state indicators.
+ * Renders a single CDR component with the appropriate input type:
+ * - boolean: Yes/No toggle pair (neutral, no point display)
+ * - select: Expandable dropdown (collapsed shows label + current selection)
+ * - number_range: Display-only range info
+ * - algorithm: "Calculated automatically" badge
+ * - section2 pending: "Pending results" badge
  */
 
+import { useState, useRef, useEffect } from 'react'
 import type { CdrComponent } from '../../../types/libraries'
 import type { CdrComponentState } from '../../../types/encounter'
 import './CdrComponentInput.css'
@@ -31,6 +36,22 @@ export default function CdrComponentInput({
   const isSection2 = component.source === 'section2'
   const currentValue = state?.value ?? null
 
+  // Dropdown open/close state for select components
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!dropdownOpen) return
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [dropdownOpen])
+
   // Section2-sourced components show pending state (not interactive in S1)
   if (isSection2) {
     return (
@@ -51,38 +72,58 @@ export default function CdrComponentInput({
     )
   }
 
-  // Select: radio button group
+  // Select: expandable dropdown
   if (component.type === 'select' && component.options) {
+    const selectedOption = component.options.find((o) => o.value === currentValue)
+    const displayText = selectedOption ? selectedOption.label : 'Select...'
+
     return (
-      <div className="cdr-input cdr-input--select">
+      <div className="cdr-input cdr-input--select" ref={dropdownRef}>
         <div className="cdr-input__label-row">
           <span className="cdr-input__label">{component.label}</span>
           {isAiPopulated && <span className="cdr-input__ai-badge">(AI)</span>}
         </div>
-        <div className="cdr-input__options">
-          {component.options.map((opt, idx) => (
-            <button
-              key={`${opt.label}-${opt.value}-${idx}`}
-              type="button"
-              className={`cdr-input__option ${currentValue === opt.value ? 'cdr-input__option--selected' : ''}`}
-              onClick={() => onAnswer(opt.value)}
-              disabled={disabled}
-              aria-pressed={currentValue === opt.value}
-            >
-              <span className="cdr-input__option-label">{opt.label}</span>
-              <span className="cdr-input__option-value">({opt.value}pt{opt.value !== 1 ? 's' : ''})</span>
-            </button>
-          ))}
-        </div>
+        <button
+          type="button"
+          className={`cdr-input__dropdown-trigger${isAnswered ? ' cdr-input__dropdown-trigger--answered' : ''}`}
+          onClick={() => !disabled && setDropdownOpen((prev) => !prev)}
+          disabled={disabled}
+          aria-expanded={dropdownOpen}
+          aria-haspopup="listbox"
+        >
+          <span className="cdr-input__dropdown-text">{displayText}</span>
+          <span className="cdr-input__dropdown-chevron" aria-hidden="true">
+            {dropdownOpen ? '\u25B2' : '\u25BC'}
+          </span>
+        </button>
+        {dropdownOpen && (
+          <div className="cdr-input__dropdown-list" role="listbox">
+            {component.options.map((opt, idx) => (
+              <button
+                key={`${opt.label}-${opt.value}-${idx}`}
+                type="button"
+                className={`cdr-input__dropdown-option${currentValue === opt.value ? ' cdr-input__dropdown-option--selected' : ''}`}
+                role="option"
+                aria-selected={currentValue === opt.value}
+                onClick={() => {
+                  onAnswer(opt.value)
+                  setDropdownOpen(false)
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     )
   }
 
-  // Boolean: toggle (Present / Absent)
+  // Boolean: Yes / No toggle pair
   if (component.type === 'boolean') {
     const pointWeight = component.value ?? 1
-    const presentValue = pointWeight
-    const absentValue = 0
+    const yesValue = pointWeight
+    const noValue = 0
     return (
       <div className="cdr-input cdr-input--boolean">
         <div className="cdr-input__label-row">
@@ -92,28 +133,28 @@ export default function CdrComponentInput({
         <div className="cdr-input__toggle-group">
           <button
             type="button"
-            className={`cdr-input__toggle ${currentValue === presentValue ? 'cdr-input__toggle--active' : ''}`}
-            onClick={() => onAnswer(presentValue)}
+            className={`cdr-input__toggle${currentValue === yesValue ? ' cdr-input__toggle--active' : ''}`}
+            onClick={() => onAnswer(yesValue)}
             disabled={disabled}
-            aria-pressed={currentValue === presentValue}
+            aria-pressed={currentValue === yesValue}
           >
-            Present ({presentValue}pt{presentValue !== 1 ? 's' : ''})
+            Yes
           </button>
           <button
             type="button"
-            className={`cdr-input__toggle ${currentValue === absentValue ? 'cdr-input__toggle--active' : ''}`}
-            onClick={() => onAnswer(absentValue)}
+            className={`cdr-input__toggle${currentValue === noValue ? ' cdr-input__toggle--active' : ''}`}
+            onClick={() => onAnswer(noValue)}
             disabled={disabled}
-            aria-pressed={currentValue === absentValue}
+            aria-pressed={currentValue === noValue}
           >
-            Absent (0pts)
+            No
           </button>
         </div>
       </div>
     )
   }
 
-  // number_range for non-section2 (user_input): show numeric stepper
+  // number_range: display-only
   if (component.type === 'number_range') {
     return (
       <div className="cdr-input cdr-input--range">

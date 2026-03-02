@@ -11,7 +11,7 @@
  * between Section 1 and Section 2.
  */
 
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import type {
   DifferentialItem,
   CdrAnalysisItem,
@@ -24,7 +24,6 @@ import OrdersCard from './OrdersCard'
 import OrdersetManager from './OrdersetManager'
 import OrderSetSuggestion from './OrderSetSuggestion'
 import CdrCard from './CdrCard'
-import CdrDetailView from './CdrDetailView'
 import RegionalTrendsCard from './RegionalTrendsCard'
 import { useTestLibrary } from '../../../hooks/useTestLibrary'
 import { useCdrLibrary } from '../../../hooks/useCdrLibrary'
@@ -123,7 +122,6 @@ export default function DashboardOutput({
   const differential = getDifferential(llmResponse)
   const cdrAnalysis = getCdrAnalysis(llmResponse)
   const workupRecommendations = getWorkupRecommendations(llmResponse)
-  const [showCdrDetail, setShowCdrDetail] = useState(false)
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
   // OrdersetManager state
   const [ordersetManagerOpen, setOrdersetManagerOpen] = useState(false)
@@ -226,41 +224,21 @@ export default function DashboardOutput({
     else handleScrollToSection2()
   }
 
-  // Lock body scroll while any overlay is open (OrdersetManager or CdrDetailView)
+  // Lock body scroll while OrdersetManager overlay is open
   useEffect(() => {
-    if (!ordersetManagerOpen && !showCdrDetail) return
+    if (!ordersetManagerOpen) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prev
     }
-  }, [ordersetManagerOpen, showCdrDetail])
-
-  const handleCdrOverlayKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      setShowCdrDetail(false)
-    }
-  }, [])
-
-  const handleCdrBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      setShowCdrDetail(false)
-    }
-  }, [])
+  }, [ordersetManagerOpen])
 
   if (differential.length === 0) return null
 
   const handleSelectionChange = (testIds: string[]) => {
     onSelectedTestsChange?.(testIds)
   }
-
-  // Determine if "View CDRs" should be enabled
-  // A1 fix: enable based on identifiedCdrs or cdrAnalysis presence, not just cdrTracking
-  const hasCdrData =
-    identifiedCdrs.length > 0 ||
-    cdrAnalysis.length > 0 ||
-    (encounter && Object.keys(encounter.cdrTracking ?? {}).length > 0)
-  const handleViewCdrs = hasCdrData && encounter ? () => setShowCdrDetail(true) : undefined
 
   return (
     <div
@@ -280,7 +258,6 @@ export default function DashboardOutput({
             cdrColorMap={cdrColorMap}
             loading={cdrsLoading}
             error={cdrsError}
-            onViewCdrs={handleViewCdrs}
             onToggleExcluded={encounter ? toggleExcluded : undefined}
             onAnswerComponent={encounter ? answerComponent : undefined}
           />
@@ -327,28 +304,6 @@ export default function DashboardOutput({
           <StubCard title="Orders" description="Order selection available \u2014 BM-2.2" />
         )}
       </div>
-
-      {/* Bug 2+3 fix: CdrDetailView rendered as overlay instead of replacing dashboard */}
-      {showCdrDetail && encounter && (
-        <div
-          className="dashboard-output__overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Clinical Decision Rules Detail"
-          onKeyDown={handleCdrOverlayKeyDown}
-          onClick={handleCdrBackdropClick}
-        >
-          <div className="dashboard-output__overlay-content dashboard-output__overlay-content--wide">
-            <CdrDetailView
-              encounter={encounter}
-              cdrLibrary={cdrs}
-              identifiedCdrs={identifiedCdrs}
-              cdrAnalysis={cdrAnalysis}
-              onBack={() => setShowCdrDetail(false)}
-            />
-          </div>
-        </div>
-      )}
 
       {/* OrdersetManager modal */}
       {ordersetManagerOpen && (

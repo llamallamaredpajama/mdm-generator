@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import type { CdrAnalysisItem, CdrTracking } from '../../../types/encounter'
-import type { CdrDefinition, CdrComponent } from '../../../types/libraries'
+import type { CdrDefinition } from '../../../types/libraries'
 import type { IdentifiedCdr } from './getIdentifiedCdrs'
+import { calculateScore } from '../../../lib/cdrScoringEngine'
+import CdrComponentInput from './CdrComponentInput'
 import './CdrCard.css'
 
 interface CdrCardProps {
@@ -16,7 +18,6 @@ interface CdrCardProps {
   cdrColorMap?: Map<string, string>
   loading: boolean
   error?: string | null
-  onViewCdrs?: () => void
   /** A4: Callback to toggle excluded flag on a CDR */
   onToggleExcluded?: (cdrId: string) => void
   /** A2: Callback when user answers a simple CDR component inline */
@@ -84,9 +85,6 @@ function findTrackingId(
 /** CDR-level status for the three-category model */
 type CdrStatusCategory = 'needs_data' | 'needs_history' | 'complete'
 
-/** Per-component checkbox state */
-type CheckboxState = 'solid_green' | 'outlined_yellow' | 'outlined_red'
-
 /**
  * Determine the CDR-level status category based on its components.
  * - needs_data: ANY component with source=section2 is not answered
@@ -119,46 +117,6 @@ function getCdrStatusCategory(
   if (hasUnansweredOther) return 'needs_history'
 
   return 'complete'
-}
-
-/**
- * Get checkbox state for an individual CDR component.
- */
-function getCheckboxState(
-  comp: CdrComponent,
-  trackingEntry: CdrTracking[string] | undefined,
-  allComplete: boolean,
-): CheckboxState {
-  const isAnswered = trackingEntry?.components[comp.id]?.answered ?? false
-
-  if (allComplete) return 'solid_green'
-  if (isAnswered) return 'solid_green'
-  if (comp.source === 'section2') return 'outlined_red'
-  return 'outlined_yellow'
-}
-
-/**
- * Get display text for component status
- */
-function getComponentStatusText(
-  comp: CdrComponent,
-  trackingEntry: CdrTracking[string] | undefined,
-): string {
-  const compState = trackingEntry?.components[comp.id]
-  if (compState?.answered) {
-    const val = compState.value
-    if (comp.type === 'select' && comp.options) {
-      const opt = comp.options.find((o) => o.value === val)
-      if (opt) return `${val} pt (${opt.label})`
-    }
-    if (comp.type === 'boolean') {
-      const pointWeight = comp.value ?? 1
-      return val === pointWeight ? `${val} pt (Yes)` : '0 pt (No)'
-    }
-    return val != null ? `${val}` : 'answered'
-  }
-  if (comp.source === 'section2') return `needs ${comp.label}`
-  return 'awaiting input'
 }
 
 interface StatusDisplay {
@@ -210,6 +168,7 @@ function CdrRow({
   statusCategory,
   isPulsing,
   onToggleExcluded,
+  onAnswerComponent,
 }: {
   item: CdrAnalysisItem
   index: number
@@ -222,11 +181,16 @@ function CdrRow({
   statusCategory: CdrStatusCategory
   isPulsing: boolean
   onToggleExcluded?: (cdrId: string) => void
+  onAnswerComponent?: (cdrId: string, componentId: string, value: number) => void
 }) {
   const components = cdrDef?.components ?? []
-  const allComplete =
-    components.length > 0 && components.every((c) => trackingEntry?.components[c.id]?.answered)
   const status = getStatusDisplay(item, trackingEntry, cdrDef)
+
+  // Compute missing components using the scoring engine
+  const missingInfo = useMemo(() => {
+    if (!cdrDef) return null
+    return calculateScore(cdrDef, trackingEntry?.components ?? {})
+  }, [cdrDef, trackingEntry?.components])
 
   // Pill text: name, or name + score when scored
   const pillText = status.type === 'score' ? `${item.name}: ${status.text}` : item.name
@@ -270,54 +234,61 @@ function CdrRow({
 
       {isExpanded && (
         <div id={`cdr-details-${index}`} className="cdr-row__details">
-          {/* Application description */}
+          {/* Section 1: Clinical Application */}
           {cdrDef?.application && (
             <div className="cdr-row__detail-section">
-              <span className="cdr-row__detail-label">Clinical Application:</span>
+              <span className="cdr-row__detail-label">Clinical Application</span>
               <p className="cdr-row__detail-text">{cdrDef.application}</p>
             </div>
           )}
 
-          {/* Post-calculation result significance */}
-          {status.type === 'score' && (
-            <div className="cdr-row__detail-section">
-              <span className="cdr-row__detail-label">Result:</span>
-              <p className="cdr-row__detail-text cdr-row__detail-text--result">{status.text}</p>
-            </div>
-          )}
-
-          {/* Reasoning */}
-          {item.reasoning && status.type !== 'score' && (
-            <div className="cdr-row__detail-section">
-              <span className="cdr-row__detail-label">Reasoning:</span>
-              <p className="cdr-row__detail-text">{item.reasoning}</p>
-            </div>
-          )}
-
-          {/* Component checklist — each item on its own line */}
+          {/* Section 2: Data Points (interactive) */}
           {components.length > 0 && (
-            <div className="cdr-row__comp-list">
-              <span className="cdr-row__detail-label">Data Points:</span>
-              {components.map((comp) => {
-                const checkboxState = getCheckboxState(comp, trackingEntry, allComplete)
-                const statusText = getComponentStatusText(comp, trackingEntry)
-                return (
-                  <div key={comp.id} className="cdr-row__comp-item">
-                    <span
-                      className={`cdr-row__checkbox cdr-row__checkbox--${checkboxState}`}
-                      aria-hidden="true"
-                    />
-                    <span className="cdr-row__comp-label">{comp.label}</span>
-                    <span
-                      className={`cdr-row__comp-status${trackingEntry?.components[comp.id]?.answered ? ' cdr-row__comp-status--answered' : ''}`}
-                    >
-                      {statusText}
-                    </span>
-                  </div>
-                )
-              })}
+            <div className="cdr-row__data-points">
+              <span className="cdr-row__detail-label">Data Points</span>
+              {components.map((comp) => (
+                <CdrComponentInput
+                  key={comp.id}
+                  component={comp}
+                  state={trackingEntry?.components[comp.id]}
+                  onAnswer={(value) =>
+                    trackingId && onAnswerComponent?.(trackingId, comp.id, value)
+                  }
+                  disabled={isExcluded || !trackingId || !onAnswerComponent}
+                />
+              ))}
             </div>
           )}
+
+          {/* Section 3: Results */}
+          <div className="cdr-row__results">
+            {status.type === 'score' ? (
+              <div className="cdr-row__results-header">
+                <span className="cdr-row__detail-label">Result</span>
+                <span className="cdr-row__score-value">{trackingEntry?.score ?? item.score}</span>
+              </div>
+            ) : (
+              <span className="cdr-row__detail-label">Result</span>
+            )}
+
+            {status.type === 'score' && (
+              <p className="cdr-row__detail-text cdr-row__detail-text--result">{status.text}</p>
+            )}
+
+            {status.type !== 'score' && missingInfo && missingInfo.missingComponents.length > 0 && (
+              <p className="cdr-row__missing-text">
+                Missing: {missingInfo.missingComponents.join(', ')}
+              </p>
+            )}
+
+            {status.type !== 'score' &&
+              (!missingInfo || missingInfo.missingComponents.length === 0) &&
+              components.length === 0 && (
+                <p className="cdr-row__missing-text">
+                  {item.reasoning || 'Awaiting component data'}
+                </p>
+              )}
+          </div>
         </div>
       )}
     </div>
@@ -331,8 +302,8 @@ export default function CdrCard({
   cdrLibrary = [],
   loading,
   error,
-  onViewCdrs,
   onToggleExcluded,
+  onAnswerComponent,
 }: CdrCardProps) {
   const mergedCdrs = useMemo(
     () => getMergedCdrDisplay(cdrAnalysis, identifiedCdrs),
@@ -469,22 +440,11 @@ export default function CdrCard({
                 statusCategory={statusCategory}
                 isPulsing={pulsing.has(item.name)}
                 onToggleExcluded={onToggleExcluded}
+                onAnswerComponent={onAnswerComponent}
               />
             )
           })}
         </div>
-      )}
-
-      {!loading && mergedCdrs.length > 0 && (
-        <button
-          type="button"
-          className="cdr-card__view-btn"
-          onClick={onViewCdrs}
-          disabled={!onViewCdrs}
-          title={onViewCdrs ? undefined : 'Available after CDR matching completes'}
-        >
-          View CDRs
-        </button>
       )}
     </div>
   )

@@ -18,6 +18,15 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { generateEmbeddings } from '../backend/src/services/embeddingService'
 
+// Phase 1 batch CDR configs — real clinical components replacing placeholders
+import { batch1CardioCdrs } from './cdr-configs/batch-1-cardio'
+import { batch2TraumaCdrs } from './cdr-configs/batch-2-trauma'
+import { batch3PulmGiCdrs } from './cdr-configs/batch-3-pulm-gi'
+import { batch4NeuroCdrs } from './cdr-configs/batch-4-neuro'
+import { batch5IdToxCdrs } from './cdr-configs/batch-5-id-tox'
+import { batch6CritPedsCdrs } from './cdr-configs/batch-6-crit-peds'
+import { batch7MiscCdrs } from './cdr-configs/batch-7-misc'
+
 // Initialize Firebase Admin
 const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
 const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
@@ -5215,6 +5224,37 @@ const cdrs: CdrSeed[] = [
     },
   },
 ]
+
+// ---------------------------------------------------------------------------
+// Merge batch CDR configs (Phase 1) — replace placeholder entries by ID
+// ---------------------------------------------------------------------------
+
+const batchOverrides: CdrSeed[] = [
+  ...batch1CardioCdrs,
+  ...batch2TraumaCdrs,
+  ...batch3PulmGiCdrs,
+  ...batch4NeuroCdrs,
+  ...batch5IdToxCdrs,
+  ...batch6CritPedsCdrs,
+  ...batch7MiscCdrs,
+]
+
+const overrideMap = new Map(batchOverrides.map((cdr) => [cdr.id, cdr]))
+
+// Replace matching entries in-place; unmatched batch entries are appended
+for (let i = 0; i < cdrs.length; i++) {
+  const override = overrideMap.get(cdrs[i].id)
+  if (override) {
+    cdrs[i] = override
+    overrideMap.delete(cdrs[i].id)
+  }
+}
+// Append any batch CDRs not found in the original array
+for (const remaining of overrideMap.values()) {
+  cdrs.push(remaining)
+}
+
+console.log(`Merged ${batchOverrides.length} batch CDR overrides (${overrideMap.size} new, ${batchOverrides.length - overrideMap.size} replaced).`)
 
 // ---------------------------------------------------------------------------
 // Seed Firestore

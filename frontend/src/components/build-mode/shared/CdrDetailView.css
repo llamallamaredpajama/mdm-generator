@@ -1,3 +1,5 @@
+/* @deprecated — See CdrDetailView.tsx. Replaced by inline CdrCard accordion. */
+
 .cdr-detail-view {
   display: flex;
   flex-direction: column;

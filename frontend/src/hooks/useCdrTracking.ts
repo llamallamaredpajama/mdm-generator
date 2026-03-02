@@ -8,6 +8,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
 import { getAppDb, useAuth } from '../lib/firebase'
+import { calculateScore } from '../lib/cdrScoringEngine'
 import type {
   CdrTracking,
   CdrTrackingEntry,
@@ -43,28 +44,8 @@ function computeStatus(components: Record<string, CdrComponentState>): CdrStatus
   return 'partial'
 }
 
-/**
- * Calculate score for a CDR using its scoring method.
- * Returns null values if not all components are answered.
- */
-function calculateScore(
-  cdr: CdrDefinition,
-  components: Record<string, CdrComponentState>,
-): { score: number | null; interpretation: string | null } {
-  const allAnswered = Object.values(components).every((c) => c.answered)
-  if (!allAnswered) return { score: null, interpretation: null }
-
-  if (cdr.scoring.method === 'sum') {
-    const score = Object.values(components).reduce((sum, c) => sum + (c.value ?? 0), 0)
-    const range = cdr.scoring.ranges.find((r) => score >= r.min && score <= r.max)
-    return {
-      score,
-      interpretation: range ? `${range.risk}: ${range.interpretation}` : null,
-    }
-  }
-
-  return { score: null, interpretation: null }
-}
+// calculateScore is now imported from ../lib/cdrScoringEngine
+// which supports sum, threshold, and algorithm methods.
 
 /**
  * Find a CDR definition by ID from the library.

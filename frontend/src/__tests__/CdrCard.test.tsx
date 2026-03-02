@@ -4,7 +4,7 @@
 
 /// <reference types="vitest/globals" />
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import CdrCard from '../components/build-mode/shared/CdrCard'
 import type { IdentifiedCdr } from '../components/build-mode/shared/getIdentifiedCdrs'
 import type { CdrDefinition } from '../types/libraries'
@@ -87,35 +87,7 @@ describe('CdrCard', () => {
     expect(screen.getByText('No CDRs identified for this differential')).toBeDefined()
   })
 
-  it('"View CDRs" button is present', () => {
-    render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
-
-    const btn = screen.getByText('View CDRs')
-    expect(btn).toBeDefined()
-    expect(btn.tagName).toBe('BUTTON')
-  })
-
-  it('"View CDRs" button shows fallback text when no handler provided', () => {
-    render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
-
-    const btn = screen.getByText('View CDRs')
-    expect(btn.getAttribute('title')).toBe('Available after CDR matching completes')
-  })
-
-  it('calls onViewCdrs callback when button is clicked', () => {
-    const onViewCdrs = vi.fn()
-    render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} onViewCdrs={onViewCdrs} />)
-
-    fireEvent.click(screen.getByText('View CDRs'))
-    expect(onViewCdrs).toHaveBeenCalledTimes(1)
-  })
-
-  it('"View CDRs" button is disabled when no handler provided', () => {
-    render(<CdrCard identifiedCdrs={mockIdentifiedCdrs} loading={false} />)
-
-    const btn = screen.getByText('View CDRs') as HTMLButtonElement
-    expect(btn.disabled).toBe(true)
-  })
+  // "View CDRs" button removed — CDR data points are now inline in accordion
 
   it('shows error state when error is provided', () => {
     render(<CdrCard identifiedCdrs={[]} loading={false} error="Server error" />)

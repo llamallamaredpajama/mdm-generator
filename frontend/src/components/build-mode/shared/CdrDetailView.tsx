@@ -1,8 +1,12 @@
 /**
+ * @deprecated Replaced by inline CDR accordion in CdrCard (CDR Interactive Data Points Redesign).
+ * CDR data point editing now lives directly in CdrCard's expanded row via CdrComponentInput.
+ * Do NOT delete — kept per project convention (delete in cleanup pass only).
+ *
  * CdrDetailView Component
  *
  * Full CDR detail view showing all matched CDRs with interactive components.
- * Rendered as an overlay (popup) from DashboardOutput when user taps "View CDRs".
+ * Previously rendered as an overlay (popup) from DashboardOutput when user tapped "View CDRs".
  *
  * Features:
  * - Scrollable list of matched CDRs

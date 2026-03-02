@@ -44,16 +44,28 @@ const heartCdr: CdrDefinition = {
         { label: 'Highly suspicious', value: 2 },
       ],
     },
-    { id: 'age', label: 'Age', type: 'select', source: 'section1', options: [
-      { label: '<45', value: 0 },
-      { label: '45-64', value: 1 },
-      { label: '>=65', value: 2 },
-    ] },
-    { id: 'troponin', label: 'Troponin', type: 'select', source: 'section2', options: [
-      { label: 'Normal', value: 0 },
-      { label: '1-3x', value: 1 },
-      { label: '>3x', value: 2 },
-    ] },
+    {
+      id: 'age',
+      label: 'Age',
+      type: 'select',
+      source: 'section1',
+      options: [
+        { label: '<45', value: 0 },
+        { label: '45-64', value: 1 },
+        { label: '>=65', value: 2 },
+      ],
+    },
+    {
+      id: 'troponin',
+      label: 'Troponin',
+      type: 'select',
+      source: 'section2',
+      options: [
+        { label: 'Normal', value: 0 },
+        { label: '1-3x', value: 1 },
+        { label: '>3x', value: 2 },
+      ],
+    },
   ],
   scoring: {
     method: 'sum',
@@ -71,7 +83,13 @@ const wellsCdr: CdrDefinition = {
   applicableChiefComplaints: ['shortness of breath'],
   components: [
     { id: 'dvt_signs', label: 'DVT Signs', type: 'boolean', source: 'section1', value: 3 },
-    { id: 'pe_likely', label: 'PE Most Likely Diagnosis', type: 'boolean', source: 'user_input', value: 3 },
+    {
+      id: 'pe_likely',
+      label: 'PE Most Likely Diagnosis',
+      type: 'boolean',
+      source: 'user_input',
+      value: 3,
+    },
   ],
   scoring: {
     method: 'sum',
@@ -118,7 +136,11 @@ function makeTracking(overrides?: Partial<CdrTracking>): CdrTracking {
 }
 
 function makeEncounter(trackingOverrides?: Partial<CdrTracking>): EncounterDocument {
-  const ts = { toDate: () => new Date(), seconds: 0, nanoseconds: 0 } as unknown as import('firebase/firestore').Timestamp
+  const ts = {
+    toDate: () => new Date(),
+    seconds: 0,
+    nanoseconds: 0,
+  } as unknown as import('firebase/firestore').Timestamp
   return {
     id: 'enc-001',
     userId: 'test-uid',
@@ -158,9 +180,8 @@ describe('CdrDetailView', () => {
   it('selects the AI-populated option for HEART History', () => {
     render(<CdrDetailView encounter={makeEncounter()} cdrLibrary={cdrLibrary} onBack={vi.fn()} />)
 
-    // The "Moderately suspicious" option should have aria-pressed="true" (value: 1 matches auto-populated value)
-    const moderateBtn = screen.getByRole('button', { name: /Moderately suspicious/ })
-    expect(moderateBtn.getAttribute('aria-pressed')).toBe('true')
+    // The dropdown trigger for History should show "Moderately suspicious" (value: 1 matches auto-populated value)
+    expect(screen.getByText('Moderately suspicious')).toBeDefined()
   })
 
   it('shows "Pending results" for section2-sourced components', () => {
@@ -169,15 +190,19 @@ describe('CdrDetailView', () => {
     expect(screen.getByText('Pending results')).toBeDefined()
   })
 
-  it('calls onAnswer when clicking a component option', () => {
+  it('calls onAnswer when clicking a component option in dropdown', () => {
     render(<CdrDetailView encounter={makeEncounter()} cdrLibrary={cdrLibrary} onBack={vi.fn()} />)
 
-    // Click the "<45" age option for HEART Score
-    const ageBtn = screen.getByRole('button', { name: /<45/ })
-    fireEvent.click(ageBtn)
+    // Open the Age dropdown (find by "Select..." text — Age is unanswered)
+    const selectTriggers = screen.getAllByText('Select...')
+    fireEvent.click(selectTriggers[0])
 
-    // After clicking, the button should become selected
-    expect(ageBtn.getAttribute('aria-pressed')).toBe('true')
+    // Click the "<45" option in the dropdown
+    const ageOption = screen.getByText('<45')
+    fireEvent.click(ageOption)
+
+    // After clicking, dropdown should close and show selected value
+    expect(screen.queryByRole('listbox')).toBeNull()
   })
 
   it('removes "(AI)" badge after user overrides an AI-populated value', () => {
@@ -187,9 +212,13 @@ describe('CdrDetailView', () => {
     const initialBadges = screen.getAllByText('(AI)')
     const initialCount = initialBadges.length
 
-    // Click "Highly suspicious" to override AI value for History
-    const highBtn = screen.getByRole('button', { name: /Highly suspicious/ })
-    fireEvent.click(highBtn)
+    // Open History dropdown (it shows "Moderately suspicious" as answered)
+    const historyTrigger = screen.getByText('Moderately suspicious')
+    fireEvent.click(historyTrigger)
+
+    // Click "Highly suspicious" to override AI value
+    const highOption = screen.getByText('Highly suspicious')
+    fireEvent.click(highOption)
 
     // After user override, source changes to user_input so AI badge should disappear
     const remainingBadges = screen.queryAllByText('(AI)')
@@ -287,9 +316,9 @@ describe('CdrDetailView', () => {
   it('renders boolean toggle buttons for boolean components', () => {
     render(<CdrDetailView encounter={makeEncounter()} cdrLibrary={cdrLibrary} onBack={vi.fn()} />)
 
-    // Wells PE has boolean components — find Present/Absent buttons
-    expect(screen.getAllByText(/Present/).length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText(/Absent/).length).toBeGreaterThanOrEqual(1)
+    // Wells PE has boolean components — find Yes/No buttons
+    expect(screen.getAllByText('Yes').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('No').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows completed CDR after S2 auto-population fills remaining components', () => {
