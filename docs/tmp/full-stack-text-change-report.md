@@ -486,7 +486,178 @@ These files are only relevant for Category D changes that modify the differentia
 
 ## 7. Execution Checklist
 
-> *Placeholder — written in Task 7*
+A 10-phase workflow for executing any text or language change. Use the **Category Taxonomy** (Section 2) to determine which phases apply — Category B changes can skip directly to Phase 6.
+
+Each phase includes checkboxes, the relevant pipeline nodes, and file paths from the inventory (Section 6). Work bottom-up: backend foundations before frontend rendering before tests and docs.
+
+### Phase 0: Classify + Scope *(all categories)*
+
+**Pipeline nodes:** Pre-pipeline (scoping)
+
+- [ ] Classify change using the **Scope Decision Tree** (§2.2): Category A / B / C / D
+- [ ] Consult the **Pipeline Skip-List** (§2.3) to identify which phases below apply
+- [ ] Run discovery grep across all conventions (§5.1, Steps 1–2.5):
+  ```bash
+  grep -ri "<old_term>" --include="*.ts" --include="*.tsx" --include="*.css" --include="*.md" .
+  ```
+- [ ] Search for **naming divergences** — Legacy `snake_case` AND Build Mode `camelCase` AND known aliases:
+  ```bash
+  grep -ri "<snake_case_term>" --include="*.ts" --include="*.tsx" .
+  grep -ri "<camelCaseTerm>" --include="*.ts" --include="*.tsx" .
+  ```
+- [ ] Check `extractFinalMdm()` alias chains in `index.ts:~1250` for additional aliases
+- [ ] If Category A: determine if the field is persisted in Firestore → backward-compat required
+- [ ] Document the **Exclusion Table** (§5.3) — what you're NOT changing and why
+- [ ] Create a branch and commit plan
+
+### Phase 1: Constants *(Categories A, C, D)*
+
+**Pipeline node:** 1 (Constants)
+
+- [ ] Add or update the canonical value in `backend/src/constants.ts`
+- [ ] Verify no circular dependency issues (constants should be leaf imports)
+- [ ] `cd backend && pnpm build` — confirm TypeScript compiles
+
+### Phase 2: Backend Schemas *(Categories A, D)*
+
+**Pipeline node:** 2 (Zod Schemas)
+
+**Legacy / Quick Mode:**
+- [ ] Update `backend/src/outputSchema.ts`:
+  - [ ] Add new field name to the Zod schema
+  - [ ] If Category A: retain old field name with `.optional()` for backward compat
+  - [ ] If Category A: add `.transform()` to normalize old → new (Pattern 1, §4.1)
+  - [ ] Verify `z.infer<>` produces the correct type (no manual type update needed)
+
+**Build Mode:**
+- [ ] Update `backend/src/buildModeSchemas.ts`:
+  - [ ] Add/rename field in relevant section schema(s)
+  - [ ] Note: `Section1Request`, `Section2Request`, `FinalizeRequest` are frozen — do NOT modify request schemas
+  - [ ] Only response/document schemas should be updated
+
+- [ ] `cd backend && pnpm build` — confirm TypeScript compiles
+
+### Phase 3: Prompt Builders *(Categories A, C, D)*
+
+**Pipeline node:** 3 (Prompt Builders)
+
+- [ ] Update `backend/src/promptBuilder.ts` (Legacy one-shot):
+  - [ ] JSON schema instructions: update field name / value
+  - [ ] Prompt text: update any references to the old term
+- [ ] Update `backend/src/promptBuilderBuildMode.ts` (Build Mode):
+  - [ ] Section-specific prompt instructions
+  - [ ] **Attestation note:** Build Mode finalize embeds attestation as an inline prompt instruction (not a structured field) — change the instruction text, not a schema
+  - [ ] Verify conditional prompt numbering (Pattern 5, §4.5) — all numbers sequential
+- [ ] Update `backend/src/promptBuilderQuickMode.ts` (Quick Mode):
+  - [ ] JSON schema instructions: update field name / value
+- [ ] If Category D: update `backend/src/parsePromptBuilder.ts` (narrative parser)
+- [ ] `cd backend && pnpm build` — confirm TypeScript compiles
+
+### Phase 4: Backend Fallbacks + Extraction *(Categories A, C, D)*
+
+**Pipeline nodes:** 5–6 (Schema Parse + Field Extraction)
+
+- [ ] Update fallback/default MDM in `backend/src/index.ts` (~line 621):
+  - [ ] Ensure fallback uses the new field name / value
+  - [ ] Import constant if applicable
+- [ ] If Category A: update `extractFinalMdm()` alias chains in `index.ts` (~line 1250):
+  - [ ] **Add** old field name as a new alias — do NOT remove existing aliases (Pattern 2, §4.2)
+  - [ ] Search both `j.` (nested) and `raw.` (top-level) positions
+- [ ] `cd backend && pnpm build` — confirm TypeScript compiles
+
+### Phase 5: Frontend Types + Hooks *(Categories A, D)*
+
+**Pipeline node:** 8 (Frontend Types)
+
+- [ ] Update `frontend/src/types/encounter.ts`:
+  - [ ] Add/rename field in the relevant interface
+  - [ ] New fields MUST be optional (`?`) — existing Firestore documents won't have them
+- [ ] Update `frontend/src/hooks/useEncounter.ts` `onSnapshot` handler:
+  - [ ] Add defensive default for new field: `?? defaultValue` (Pattern 3, §4.3)
+  - [ ] Verify `null` → `undefined` bridging for any nullable fields
+- [ ] If changing LLM response shape: create/update extraction helper (Pattern 4, §4.4):
+  - [ ] Helper must handle both old and new shapes
+  - [ ] See `getDifferential()` in `DashboardOutput.tsx` as reference
+- [ ] `cd frontend && pnpm check` — confirm typecheck passes
+
+### Phase 6: Frontend UI *(all categories)*
+
+**Pipeline node:** 9 (Frontend Render)
+
+**Legacy rendering path:**
+- [ ] Update `frontend/src/routes/Output.tsx` — `renderMdmText()` section headers / content
+
+**Build Mode rendering paths:**
+- [ ] Update `frontend/src/components/build-mode/MdmPreviewPanel.tsx`:
+  - [ ] `SECTIONS` array: field IDs and display titles
+  - [ ] `normalizeToString()` handling if field type changes
+- [ ] Update `frontend/src/components/build-mode/EncounterEditor.tsx`:
+  - [ ] Finalized MDM display (note: `<pre>{text}</pre>` — headers are in the LLM text blob, controlled by prompts in Phase 3)
+  - [ ] Any non-finalized display of the affected field
+
+**Quick Mode rendering:**
+- [ ] Update `frontend/src/components/build-mode/QuickEncounterEditor.tsx`
+
+**Other UI pages:**
+- [ ] Update `frontend/src/routes/Start.tsx` — landing page text
+- [ ] Update `frontend/src/routes/Compose.tsx` — compose page text
+
+- [ ] `cd frontend && pnpm check` — confirm typecheck + lint pass
+
+### Phase 7: CSS *(Categories A, B, D — if BEM class contains the field name)*
+
+**Pipeline node:** 10 (CSS)
+
+- [ ] Rename BEM classes in affected CSS files:
+  - [ ] `frontend/src/routes/Start.css`
+  - [ ] `frontend/src/routes/Compose.css`
+  - [ ] `frontend/src/components/build-mode/MdmPreviewPanel.css`
+  - [ ] `frontend/src/components/build-mode/EncounterEditor.css`
+  - [ ] `frontend/src/components/build-mode/QuickEncounterEditor.css`
+- [ ] Update every JSX `className` reference to match
+- [ ] Visual verification: `cd frontend && pnpm dev` — check all affected pages
+
+### Phase 8: Tests *(all categories)*
+
+**Pipeline node:** 11 (Tests + Docs)
+
+**Backend tests:**
+- [ ] Update `backend/src/__tests__/outputSchema.test.ts` — schema parse assertions
+- [ ] Update `backend/src/__tests__/buildModeSchemas.test.ts` — Build Mode schema assertions
+- [ ] Update `backend/src/__tests__/promptBuilders.test.ts` — prompt output assertions
+- [ ] Update `backend/src/__tests__/routes.test.ts` — API response assertions
+- [ ] Update `backend/src/__tests__/helpers/mockFactories.ts` — mock data factories
+- [ ] If Category A: add backward-compat tests (old field → new field bridging)
+- [ ] `cd backend && pnpm build` — TypeScript compiles
+
+**Frontend tests:**
+- [ ] Search `frontend/src/__tests__/` for affected terms
+- [ ] Update test assertions for new field names / values
+- [ ] `cd frontend && pnpm check` — full gate (typecheck + lint + test)
+
+### Phase 9: Documentation *(all categories)*
+
+**Pipeline node:** 11 (Tests + Docs)
+
+- [ ] Update `docs/generator_engine.md` — schema and engine documentation
+- [ ] Update `docs/mdm-gen-guide-v2.md` — core prompt guide
+- [ ] If Build Mode affected: update `docs/mdm-gen-guide-build-s1.md`, `docs/mdm-gen-guide-build-s3.md`
+- [ ] Update `docs/prd.md` — product requirements
+- [ ] Update `CLAUDE.md` — project instructions
+- [ ] If prompt patterns changed: update `.claude/agents/prompt-reviewer.md`
+
+### Phase 10: Deploy + Smoke Test
+
+- [ ] Run full verification protocol (Section 8) before deploying
+- [ ] **Deploy order doesn't matter** if backward-compat patterns are in place:
+  - Frontend and backend can deploy independently / in parallel
+  - Zod `.transform()` (Pattern 1) ensures old LLM responses parse correctly
+  - `extractFinalMdm()` aliases (Pattern 2) ensure old field names still extract
+- [ ] **Smoke test all three modes after deploy:**
+  - [ ] Legacy one-shot: generate MDM, verify new text appears
+  - [ ] Build Mode: create encounter → S1 → S2 → finalize → verify output
+  - [ ] Quick Mode: generate MDM, verify new text appears
+- [ ] Verify no errors in Cloud Run logs: `gcloud logging read "resource.type=cloud_run_revision" --limit=20 --project=<project>`
 
 ---
 
