@@ -111,7 +111,8 @@ export default function Compose() {
   }, [location.state?.resetToQuick])
 
   // Fetch encounters from Firestore, filtered by mode
-  const { encounters, loading, error, createEncounter, deleteEncounter, clearAllEncounters } = useEncounterList(mode)
+  const { encounters, loading, error, createEncounter, deleteEncounter, clearAllEncounters } =
+    useEncounterList(mode)
 
   /**
    * Handle encounter selection from carousel.
@@ -160,10 +161,7 @@ export default function Compose() {
     if (selectedMode === 'quick') {
       return (
         <div className="compose-page compose-page--editor">
-          <QuickEncounterEditor
-            encounterId={selectedEncounterId}
-            onBack={handleBack}
-          />
+          <QuickEncounterEditor encounterId={selectedEncounterId} onBack={handleBack} />
         </div>
       )
     }
@@ -180,7 +178,6 @@ export default function Compose() {
     return (
       <div className="compose-page compose-page--carousel">
         <header className="compose-header">
-
           <ModeToggle mode={mode} onModeChange={handleModeChange} disabled />
         </header>
         <ModeDescription mode={mode} />
@@ -199,16 +196,15 @@ export default function Compose() {
     return (
       <div className="compose-page compose-page--carousel">
         <header className="compose-header">
-
           <ModeToggle mode={mode} onModeChange={handleModeChange} />
         </header>
         <ModeDescription mode={mode} />
         <main className="compose-main compose-main--carousel">
           <div className="compose-error">
-            <span className="compose-error-icon" aria-hidden="true">⚠️</span>
-            <p className="compose-error-message">
-              {error.message || 'Failed to load encounters'}
-            </p>
+            <span className="compose-error-icon" aria-hidden="true">
+              ⚠️
+            </span>
+            <p className="compose-error-message">{error.message || 'Failed to load encounters'}</p>
             <button
               type="button"
               className="compose-retry-button"
@@ -245,10 +241,11 @@ export default function Compose() {
         />
       </main>
 
-      {/* Footer Disclaimer */}
+      {/* Footer Attestation */}
       <footer className="compose-footer">
-        <p className="compose-disclaimer">
-          Educational tool only. All outputs require physician review before clinical use.
+        <p className="compose-attestation">
+          Educational tool only. All generated documentation reflects physician input and requires
+          physician review for accuracy and completeness.
         </p>
       </footer>
     </div>

@@ -246,7 +246,7 @@ describe('getQuickModeFallback', () => {
 
   it('returns non-empty text with review message', () => {
     expect(fallback.text).toContain('Unable to generate MDM')
-    expect(fallback.text).toContain('Physician must review')
+    expect(fallback.text).toContain('direct clinical input')
   })
 
   it('returns structured json with empty arrays', () => {

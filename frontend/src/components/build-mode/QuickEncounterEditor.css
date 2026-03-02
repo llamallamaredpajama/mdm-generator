@@ -467,7 +467,7 @@
   text-align: center;
 }
 
-.quick-editor__disclaimer {
+.quick-editor__attestation {
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);

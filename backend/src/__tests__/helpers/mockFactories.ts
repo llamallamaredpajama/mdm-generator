@@ -99,7 +99,7 @@ export const VALID_MDM_MODEL_RESPONSE = JSON.stringify({
     'Worst-first approach: ACS ruled out with serial troponins and EKG. PE low probability by Wells.',
   risk: ['Discussed risks/benefits of discharge', 'Return precautions given'],
   disposition: 'Discharge with cardiology follow-up in 48 hours',
-  disclaimers: 'Educational draft. Physician must review. No PHI.',
+  attestation: 'This documentation was generated from the direct clinical input of the treating physician, based on the patient encounter as described. All content has been reviewed by the physician for accuracy and completeness.',
 }) + '\n---TEXT---\nDifferential:\n- Acute coronary syndrome\n- PE\n- Costochondritis'
 
 /** Malformed model output (not valid JSON) */

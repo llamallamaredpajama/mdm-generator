@@ -1,12 +1,23 @@
 import { z } from 'zod'
+import { PHYSICIAN_ATTESTATION } from './constants.js'
 
-export const MdmSchema = z.object({
+// Accept both old 'disclaimers' and new 'attestation' from LLM output
+const RawMdmSchema = z.object({
   differential: z.union([z.string(), z.array(z.string())]),
   data_reviewed_ordered: z.union([z.string(), z.array(z.string())]),
   decision_making: z.string(),
   risk: z.union([z.string(), z.array(z.string())]),
   disposition: z.string().optional().default(''),
-  disclaimers: z.union([z.string(), z.array(z.string())]).optional().default('Educational draft. Physician must review. No PHI.'),
+  attestation: z.union([z.string(), z.array(z.string())]).optional(),
+  disclaimers: z.union([z.string(), z.array(z.string())]).optional(),
+})
+
+export const MdmSchema = RawMdmSchema.transform((data) => {
+  const { disclaimers, attestation, ...rest } = data
+  return {
+    ...rest,
+    attestation: attestation ?? disclaimers ?? PHYSICIAN_ATTESTATION,
+  }
 })
 
 export type Mdm = z.infer<typeof MdmSchema>
@@ -37,12 +48,12 @@ export function renderMdmText(mdm: Mdm): string {
     lines.push(mdm.disposition)
     lines.push('')
   }
-  if (mdm.disclaimers) {
-    lines.push('Notes:')
-    if (Array.isArray(mdm.disclaimers)) {
-      for (const d of mdm.disclaimers) lines.push(`- ${d}`)
+  if (mdm.attestation) {
+    lines.push('Attestation:')
+    if (Array.isArray(mdm.attestation)) {
+      for (const d of mdm.attestation) lines.push(`- ${d}`)
     } else {
-      lines.push(mdm.disclaimers)
+      lines.push(mdm.attestation)
     }
   }
   return lines.join('\n')

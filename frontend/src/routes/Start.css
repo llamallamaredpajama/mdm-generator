@@ -468,7 +468,7 @@
   color: #666;
 }
 
-.footer-disclaimer {
+.footer-attestation {
   padding: 1.5rem;
   background: rgba(220, 53, 69, 0.1);
   border: 1px solid rgba(220, 53, 69, 0.3);
@@ -477,13 +477,13 @@
   text-align: center;
 }
 
-.disclaimer-text {
+.attestation-text {
   color: #ccc;
   line-height: 1.6;
   font-size: 0.9rem;
 }
 
-.disclaimer-text strong {
+.attestation-text strong {
   color: #dc3545;
 }
 
@@ -730,7 +730,7 @@
     box-shadow: 0 0 8px rgba(220, 53, 69, 0.5);
   }
 
-  .footer-disclaimer {
+  .footer-attestation {
     padding: 1rem;
   }
 }
@@ -818,7 +818,7 @@
     padding: 0 0.75rem;
   }
 
-  .footer-disclaimer {
+  .footer-attestation {
     padding: 0.75rem;
     font-size: 0.85rem;
   }

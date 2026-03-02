@@ -176,7 +176,7 @@ Misalignment between prompt instructions and Zod schemas causes runtime parse fa
 ### 10. Safety Guardrails
 
 These must ALWAYS be present:
-- "Physician must review" disclaimer
+- Physician attestation statement (PHYSICIAN_ATTESTATION constant)
 - Explicit defaults for missing information per §2.6 (never silent omission)
 - Copy-pastable formatting (no markdown artifacts that break in EHR paste)
 - One-shot process — never ask follow-up questions

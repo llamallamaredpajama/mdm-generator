@@ -31,10 +31,7 @@ interface QuickEncounterEditorProps {
 /**
  * QuickEncounterEditor - Editor for quick mode MDM generation
  */
-export default function QuickEncounterEditor({
-  encounterId,
-  onBack,
-}: QuickEncounterEditorProps) {
+export default function QuickEncounterEditor({ encounterId, onBack }: QuickEncounterEditorProps) {
   const {
     encounter,
     loading,
@@ -79,7 +76,9 @@ export default function QuickEncounterEditor({
         const differential = result.mdm?.json?.differential
         const dxList = Array.isArray(differential)
           ? differential
-              .map((d: string | { diagnosis?: string }) => (typeof d === 'string' ? d : d.diagnosis || ''))
+              .map((d: string | { diagnosis?: string }) =>
+                typeof d === 'string' ? d : d.diagnosis || '',
+              )
               .filter(Boolean)
           : []
         if (dxList.length > 0) {
@@ -124,11 +123,7 @@ export default function QuickEncounterEditor({
         <div className="quick-editor__error">
           <span className="quick-editor__error-icon">⚠️</span>
           <p>{error?.message || 'Encounter not found'}</p>
-          <button
-            type="button"
-            className="quick-editor__back-btn"
-            onClick={onBack}
-          >
+          <button type="button" className="quick-editor__back-btn" onClick={onBack}>
             ← Back to Carousel
           </button>
         </div>
@@ -208,7 +203,9 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
               />
 
               <div className="quick-editor__input-footer">
-                <span className={`quick-editor__char-count ${narrative.length >= 1800 ? 'quick-editor__char-count--warning' : ''} ${narrative.length >= 2000 ? 'quick-editor__char-count--limit' : ''}`}>
+                <span
+                  className={`quick-editor__char-count ${narrative.length >= 1800 ? 'quick-editor__char-count--warning' : ''} ${narrative.length >= 2000 ? 'quick-editor__char-count--limit' : ''}`}
+                >
                   {narrative.length.toLocaleString()}/2,000 characters
                 </span>
 
@@ -313,7 +310,9 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
                       encounter.quickModeData.patientIdentifier.age,
                       encounter.quickModeData.patientIdentifier.sex,
                       encounter.quickModeData.patientIdentifier.chiefComplaint,
-                    ].filter(Boolean).join(' • ')}
+                    ]
+                      .filter(Boolean)
+                      .join(' • ')}
                   </span>
                 </div>
               )}
@@ -331,7 +330,9 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
           {/* Error state display */}
           {quickStatus === 'error' && (
             <div className="quick-editor__error-display">
-              <p>{encounter.quickModeData?.errorMessage || 'An error occurred during generation.'}</p>
+              <p>
+                {encounter.quickModeData?.errorMessage || 'An error occurred during generation.'}
+              </p>
               <button
                 type="button"
                 className="quick-editor__retry-btn"
@@ -354,10 +355,11 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
         )}
       </div>
 
-      {/* Disclaimer */}
+      {/* Attestation */}
       <footer className="quick-editor__footer">
-        <p className="quick-editor__disclaimer">
-          Educational tool only. All outputs require physician review before clinical use.
+        <p className="quick-editor__attestation">
+          Educational tool only. All generated documentation reflects physician input and requires
+          physician review for accuracy and completeness.
         </p>
       </footer>
 
