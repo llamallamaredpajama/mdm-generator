@@ -14,7 +14,7 @@ MDM Generator transforms Emergency Medicine physician narratives into compliant,
 
 ## Architecture
 
-> For comprehensive implementation rules and patterns, see `_bmad-output/project-context.md`.
+> For additional implementation patterns (component hierarchy, Firestore write details, testing mocks), see `_bmad-output/project-context.md`.
 
 ```
 /frontend          React 19 + Vite 7 + TypeScript + Firebase Auth
@@ -77,13 +77,9 @@ Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS
 
 ## Firebase Auth (Google Sign-In)
 
-- **Auth domain**: `VITE_FIREBASE_AUTH_DOMAIN=mdm-generator.web.app` (in `frontend/.env.production`)
-- **OAuth client**: [GCP Console credentials page](https://console.cloud.google.com/apis/credentials?project=mdm-generator) — auto-created by Firebase, no API to manage
-- **Redirect URIs must match authDomain**: If `authDomain` is `X`, then `https://X/__/auth/handler` must be in the OAuth client's authorized redirect URIs
-- **Current redirect URIs**: `https://mdm-generator.firebaseapp.com/__/auth/handler` and `https://mdm-generator.web.app/__/auth/handler`
-- **`redirect_uri_mismatch` errors**: Always check the OAuth client redirect URIs first — do NOT add COOP headers, redirect fallbacks, or other workarounds
-- **Sign-in method**: `signInWithPopup` only — no redirect fallback (causes more problems than it solves with cross-origin cookies)
-- **Propagation delay**: OAuth redirect URI changes can take 5 min to propagate
+- **`signInWithPopup` only** -- no redirect fallback (cross-origin cookie issues)
+- **`redirect_uri_mismatch` errors**: Check OAuth redirect URIs in [GCP Console](https://console.cloud.google.com/apis/credentials?project=mdm-generator) first -- do NOT add COOP headers or workarounds (5-min propagation delay on URI changes)
+- **Auth domain**: `mdm-generator.web.app` (set in `frontend/.env.production`)
 
 ## Commands
 
@@ -103,7 +99,10 @@ cd backend && pnpm build         # TypeScript compilation (REQUIRED before commi
 ### Medical Logic (Read Before Modifying MDM Behavior)
 | File | Purpose |
 |------|---------|
-| `docs/mdm-gen-guide.md` | Core prompting logic and MDM template |
+| `docs/mdm-gen-guide-v2.md` | Core prompting logic and MDM template (v2) |
+| `docs/mdm-gen-guide-build-s1.md` | Build Mode Section 1 prompt guide |
+| `docs/mdm-gen-guide-build-s3.md` | Build Mode Section 3 / finalize prompt guide |
+| `docs/generator_engine.md` | Generator engine documentation |
 | `docs/prd.md` | Product requirements and constraints |
 | `backend/src/promptBuilder.ts` | Legacy one-shot prompt construction |
 | `backend/src/promptBuilderBuildMode.ts` | Build Mode section prompts (S1/S2/finalize) |
@@ -111,6 +110,7 @@ cd backend && pnpm build         # TypeScript compilation (REQUIRED before commi
 | `backend/src/parsePromptBuilder.ts` | Narrative → structured fields parsing prompt |
 | `backend/src/outputSchema.ts` | Legacy MDM structure validation |
 | `backend/src/buildModeSchemas.ts` | Build Mode Zod schemas (requests, responses, Firestore) |
+| `backend/src/vertex.ts` | LLM interface (model config, temperature, safety) |
 
 ### Key Components
 - `frontend/src/components/DictationGuide.tsx` - Inline physician guidance
@@ -123,6 +123,14 @@ cd backend && pnpm build         # TypeScript compilation (REQUIRED before commi
 - `frontend/src/components/TrendResultsPanel.tsx` - Trend analysis results display
 - `frontend/src/components/TrendReportModal.tsx` - PDF report download modal
 - `frontend/src/contexts/TrendAnalysisContext.tsx` - Surveillance state (persists to localStorage)
+
+### Structured Data Pipeline
+| File | Purpose |
+|------|---------|
+| `backend/src/services/cdrMatcher.ts` | Maps clinical scenarios to applicable CDRs |
+| `backend/src/services/cdrCatalogFormatter.ts` | CDR catalog formatting for prompt injection |
+| `backend/src/services/cdrTrackingBuilder.ts` | Builds CDR tracking context for prompts |
+| `backend/src/services/testCatalogFormatter.ts` | Test catalog formatting for prompt injection |
 
 ## Security Patterns
 
@@ -154,11 +162,21 @@ router.post('/v1/endpoint', async (req, res) => {
 ### Error Messages
 Never include: stack traces, database queries, medical/PHI content, internal paths
 
+## Custom Agents & Hooks
+
+### Review Agents (`.claude/agents/`)
+| Agent | Trigger Files | Purpose |
+|-------|--------------|---------|
+| `security-reviewer` | Backend routes, Firestore rules, auth/payment code | 6-step auth pattern, logging safety, error response safety, rate limiting |
+| `prompt-reviewer` | Prompt builders, schemas, CDR/test services, medical docs | Worst-first ordering, forbidden patterns, schema-prompt alignment |
+
+PostToolUse hooks in `.claude/hooks/` surface reminders to run these agents when trigger files are edited. Non-blocking (always exit 0).
+
 ## MDM-Specific Requirements
 
 ### Differential Diagnosis
 - **Worst-first mentality**: Life-threatening conditions first (EM standard)
-- **Problem classification**: Use classes from `docs/mdm-gen-guide.md`
+- **Problem classification**: Use classes from `docs/mdm-gen-guide-v2.md`
 - **Risk stratification tools**: HEART, PERC, Wells, PECARN, etc.
 
 ### Output Requirements
@@ -166,6 +184,34 @@ Never include: stack traces, database queries, medical/PHI content, internal pat
 - All required MDM sections present
 - Explicit defaults for missing information
 - "Physician must review" disclaimer always included
+
+## Implementation Conventions
+
+> Full details (component hierarchy, Firestore write patterns, testing mocks): `_bmad-output/project-context.md`
+
+### CSS / Styling
+- **BEM naming**: `.component-name`, `.component-name__element`, `.component-name--modifier`
+- **CSS variables always have fallbacks**: `var(--color-surface, #f8fafc)` -- theme may not be loaded
+- **Urgency colors are hardcoded** (clinical meaning): `#dc2626` emergent, `#d97706` urgent, `#16a34a` routine
+- **Responsive**: `useIsMobile()` hook (767px breakpoint), conditional CSS class not inline styles
+
+### Data Shape Backward Compatibility
+- **S1 `llmResponse` has dual shape**: Old = flat `DifferentialItem[]`, new = `{ differential, processedAt }`. Use `getDifferential()` extraction helper.
+- **New fields must be optional**: Add `?` in interface + `?? defaultValue` in `useEncounter.ts` onSnapshot handler.
+- **`workingDiagnosis` is a union**: `string | WorkingDiagnosis` (legacy string vs structured object).
+
+### Build Mode Auth Quirk
+Build Mode endpoints pass `userIdToken` **in the request body**, not as a Bearer header. User profile CRUD endpoints use Bearer header.
+
+### Anti-Patterns
+| Rule | Why |
+|------|-----|
+| No PHI in logs | `{ userId, action }` OK. `{ narrative }` NEVER. |
+| No `z.any()` in new schemas | Legacy `MdmPreviewSchema` uses it; new schemas must use explicit types |
+| No modifying frozen request/response schemas | `Section1Request`, `Section2Request`, `FinalizeRequest` frozen until BM-8.1 |
+| No deleting deprecated components | Mark `@deprecated`, keep file. Delete in cleanup pass only |
+| No client writes for S3 finalize | Backend owns finalize write. Client blocked by rules after `status: 'finalized'` |
+| Always handle both `llmResponse` shapes | Flat array (old) + wrapped object (new). Use `getDifferential()` |
 
 ## Environment Variables
 
@@ -185,12 +231,6 @@ PROJECT_ID=
 VERTEX_LOCATION=us-central1
 ```
 
-### Stripe (`.envrc` via direnv)
-```env
-export STRIPE_SECRET_KEY="sk_test_..."
-export STRIPE_WEBHOOK_SECRET="whsec_..."
-```
-
 ## Stripe Integration
 
 Firebase Stripe Extension manages subscriptions via Firestore:
@@ -199,6 +239,8 @@ Firebase Stripe Extension manages subscriptions via Firestore:
 - `products` / `prices` - Synced from Stripe dashboard
 
 **Tiers**: Free (10/mo) | Pro (250/mo) | Enterprise (1000/mo)
+
+**Config**: `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in `.envrc` (via direnv, gitignored).
 
 ## Project-Specific Quality Gates
 
@@ -233,36 +275,10 @@ If `git diff` shows any of these, STOP and review:
 |------|--------|
 | Add route | Create in `frontend/src/routes/`, add to `App.tsx` router |
 | Modify MDM output | Update `outputSchema.ts` → `promptBuilder.ts` → `Output.tsx` |
-| Change prompting | Edit `docs/mdm-gen-guide.md` **→ also update `docs/generator_engine.md`** to reflect any changes to medical logic, template structure, or generation rules |
+| Change prompting | Edit prompt guide (`docs/mdm-gen-guide-v2.md` or section-specific `docs/mdm-gen-guide-build-s*.md`) **→ also update `docs/generator_engine.md`** |
 | Add Build Mode section | Schema in `buildModeSchemas.ts` → prompt in `promptBuilderBuildMode.ts` → endpoint in `index.ts` → UI in `components/build-mode/` |
 | Modify surveillance | Adapter in `surveillance/adapters/` → correlation in `correlationEngine.ts` → prompt augmenter → PDF generator |
 | Add Quick Mode feature | `promptBuilderQuickMode.ts` → endpoint in `index.ts` → `useQuickEncounter.ts` hook |
-
-## iOS Simulator Testing
-
-Prefix all `xcrun simctl` commands with `DEVELOPER_DIR` (avoids needing `sudo xcode-select -s`):
-
-```bash
-export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
-```
-
-Simulator: iPhone 16 Plus (iOS 26.0), UDID: `A9AE64DD-14FF-44CB-BFF4-080457DE8B3B`
-
-```bash
-# Navigate to dev server in simulator Safari
-xcrun simctl openurl booted "http://localhost:5173"
-
-# Take screenshot (Claude can read the resulting PNG)
-xcrun simctl io booted screenshot /tmp/sim-screenshot.png
-
-# Dark/light mode
-xcrun simctl ui booted appearance dark
-
-# Clean status bar for screenshots
-xcrun simctl status_bar booted override --time "9:41" --batteryState charged --batteryLevel 100
-```
-
-Screenshots are 3x Retina. If using AXe for tap interactions, divide pixel coordinates by 3 for point coordinates.
 
 ## Worktree Awareness
 
