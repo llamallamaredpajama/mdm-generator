@@ -39,7 +39,7 @@ const mockTests: TestDefinition[] = [
     id: 'ct_head',
     name: 'CT Head',
     category: 'imaging',
-    subcategory: 'head_neck',
+    subcategory: 'ct',
     commonIndications: ['head injury'],
     unit: null,
     normalRange: null,
@@ -217,14 +217,27 @@ describe('OrdersCard', () => {
     expect(onSelectionChange).toHaveBeenCalledWith(['troponin'])
   })
 
-  it('shows Create Orderset button in left panel when save/update callbacks provided', () => {
+  it('shows Save as Orderset button in panel header when save/update callbacks provided', () => {
     render(<OrdersCard {...defaultProps} onSaveOrderSet={vi.fn()} onUpdateOrderSet={vi.fn()} />)
-    expect(screen.getByText('Create Orderset')).toBeDefined()
+    expect(screen.getByText('Save as Orderset')).toBeDefined()
   })
 
-  it('hides Create Orderset button when save/update callbacks not provided', () => {
+  it('hides Save as Orderset button when save/update callbacks not provided', () => {
     render(<OrdersCard {...defaultProps} />)
-    expect(screen.queryByText('Create Orderset')).toBeNull()
+    expect(screen.queryByText('Save as Orderset')).toBeNull()
+  })
+
+  it('applies open state class to expanded section headers', () => {
+    render(<OrdersCard {...defaultProps} />)
+    const labsHeader = screen.getByText(/Labs \(2\)/)
+    // Before click — should NOT have open class
+    expect(labsHeader.closest('button')?.className).not.toContain(
+      'orders-card__section-header--open',
+    )
+    // Expand
+    fireEvent.click(labsHeader)
+    // After click — should have open class
+    expect(labsHeader.closest('button')?.className).toContain('orders-card__section-header--open')
   })
 
   it('shows selected count badge when tests are selected', () => {
