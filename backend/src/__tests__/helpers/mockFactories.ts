@@ -224,6 +224,40 @@ export const VALID_QUICK_MODE_RESPONSE = JSON.stringify({
   },
 })
 
+/** Section-1 response with a mix of valid and invalid items (partial failure) */
+export const PARTIAL_VALID_SECTION1_RESPONSE = JSON.stringify({
+  differential: [
+    { diagnosis: 'Acute MI', urgency: 'emergent', reasoning: 'Chest pain with risk factors' },
+    { diagnosis: 'PE', urgency: 'emergent', reasoning: 'Dyspnea and tachycardia' },
+    { diagnosis: null, urgency: 'urgent', reasoning: 'Invalid: no diagnosis' },           // invalid — null diagnosis
+    { diagnosis: 'Pneumothorax', urgency: 'urgent', reasoning: 'Pleuritic chest pain' },
+    { diagnosis: 'Costochondritis', urgency: 'routine', reasoning: 'Reproducible tenderness' },
+    { diagnosis: 'GERD', urgency: 'routine' },                                            // invalid — missing reasoning
+  ],
+  cdrAnalysis: [],
+  workupRecommendations: [],
+})
+
+/** Section-1 response where all items have completely unknown urgency values */
+export const ALL_UNMAPPED_URGENCY_SECTION1_RESPONSE = JSON.stringify({
+  differential: [
+    { diagnosis: 'Acute MI', urgency: 'semi-urgent', reasoning: 'Chest pain with risk factors' },
+    { diagnosis: 'PE', urgency: 'somewhat-concerning', reasoning: 'Dyspnea and tachycardia' },
+  ],
+  cdrAnalysis: [],
+  workupRecommendations: [],
+})
+
+/** Section-1 response with extra LLM fields (confidence, severity) that should be stripped */
+export const EXTRA_FIELDS_SECTION1_RESPONSE = JSON.stringify({
+  differential: [
+    { diagnosis: 'Acute MI', urgency: 'emergent', reasoning: 'Chest pain', confidence: 0.95, severity: 'high' },
+    { diagnosis: 'PE', urgency: 'emergent', reasoning: 'Dyspnea', likelihood: 'moderate' },
+  ],
+  cdrAnalysis: [],
+  workupRecommendations: [],
+})
+
 // ---------------------------------------------------------------------------
 // Sample narrative (fictional, educational only)
 // ---------------------------------------------------------------------------

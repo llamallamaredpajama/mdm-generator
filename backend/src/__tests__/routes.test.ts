@@ -35,6 +35,9 @@ import {
   VALID_FINALIZE_RESPONSE,
   WRAPPED_FINALIZE_RESPONSE,
   VALID_QUICK_MODE_RESPONSE,
+  PARTIAL_VALID_SECTION1_RESPONSE,
+  ALL_UNMAPPED_URGENCY_SECTION1_RESPONSE,
+  EXTRA_FIELDS_SECTION1_RESPONSE,
   SAMPLE_NARRATIVE,
 } from './helpers/mockFactories'
 
@@ -680,6 +683,59 @@ describe('POST /v1/build-mode/process-section1', () => {
     expect(res.body.workupRecommendations).toBeInstanceOf(Array)
     expect(res.body.workupRecommendations.length).toBeGreaterThan(0)
     expect(res.body.workupRecommendations[0].testId).toBe('troponin')
+  })
+
+  it('preserves valid items when some differential items fail validation (partial failure)', async () => {
+    mockCallGemini.mockResolvedValueOnce({ text: PARTIAL_VALID_SECTION1_RESPONSE })
+
+    const res = await request(app)
+      .post('/v1/build-mode/process-section1')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.differential).toBeInstanceOf(Array)
+    // 6 items in, 2 invalid (null diagnosis + missing reasoning) → 4 survive
+    expect(res.body.differential.length).toBe(4)
+    expect(res.body.differential.map((d: { diagnosis: string }) => d.diagnosis)).toEqual([
+      'Acute MI',
+      'PE',
+      'Pneumothorax',
+      'Costochondritis',
+    ])
+  })
+
+  it('defaults unmapped urgency to urgent instead of rejecting the item', async () => {
+    mockCallGemini.mockResolvedValueOnce({ text: ALL_UNMAPPED_URGENCY_SECTION1_RESPONSE })
+
+    const res = await request(app)
+      .post('/v1/build-mode/process-section1')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.differential).toBeInstanceOf(Array)
+    expect(res.body.differential.length).toBe(2)
+    // Both "semi-urgent" and "somewhat-concerning" should default to "urgent"
+    expect(res.body.differential[0].urgency).toBe('urgent')
+    expect(res.body.differential[1].urgency).toBe('urgent')
+  })
+
+  it('strips extra LLM fields without rejecting the item', async () => {
+    mockCallGemini.mockResolvedValueOnce({ text: EXTRA_FIELDS_SECTION1_RESPONSE })
+
+    const res = await request(app)
+      .post('/v1/build-mode/process-section1')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.differential).toBeInstanceOf(Array)
+    expect(res.body.differential.length).toBe(2)
+    // Extra fields (confidence, severity, likelihood) should be stripped by Zod
+    expect(res.body.differential[0]).not.toHaveProperty('confidence')
+    expect(res.body.differential[0]).not.toHaveProperty('severity')
+    expect(res.body.differential[1]).not.toHaveProperty('likelihood')
   })
 })
 

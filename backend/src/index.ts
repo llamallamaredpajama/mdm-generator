@@ -207,31 +207,45 @@ function extractJsonFromText(text: string): string | null {
 
 /**
  * Coerce LLM urgency values to valid schema values, then validate with Zod.
- * Returns validated differential items or empty array on failure.
+ * Uses item-level validation so one bad item doesn't reject the entire array.
+ * Returns validated differential items or empty array when ALL items fail.
  */
 function coerceAndValidateDifferential(items: unknown[]): DifferentialItem[] {
-  // First try direct validation (fast path — no coercion needed)
+  // Fast path: try validating the whole array at once (no coercion needed)
   const directResult = z.array(DifferentialItemSchema).safeParse(items)
   if (directResult.success) return directResult.data
 
-  // Coerce urgency values and retry
-  const coerced = items.map((item) => {
-    if (item && typeof item === 'object' && 'urgency' in item) {
-      const obj = item as Record<string, unknown>
-      const rawUrgency = String(obj.urgency || '').toLowerCase().trim()
-      const mapped = URGENCY_COERCION[rawUrgency]
-      if (mapped && mapped !== obj.urgency) {
-        return { ...obj, urgency: mapped }
-      }
+  // Item-level fallback: coerce and validate each item independently
+  const validated: DifferentialItem[] = []
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    if (!item || typeof item !== 'object') {
+      console.warn(`Section 1 differential item ${i}: not an object, skipping`)
+      continue
     }
-    return item
-  })
 
-  const coercedResult = z.array(DifferentialItemSchema).safeParse(coerced)
-  if (coercedResult.success) return coercedResult.data
+    const obj = { ...(item as Record<string, unknown>) }
 
-  console.warn('Section 1 differential validation failed after coercion:', coercedResult.error.message)
-  return []
+    // Coerce urgency: map known variations, default unmapped/missing to 'urgent'
+    const rawUrgency = String(obj.urgency ?? '').toLowerCase().trim()
+    if (rawUrgency && URGENCY_COERCION[rawUrgency]) {
+      obj.urgency = URGENCY_COERCION[rawUrgency]
+    } else {
+      // Unknown or missing urgency — default to 'urgent' (safe clinical middle tier)
+      obj.urgency = 'urgent'
+    }
+
+    const result = DifferentialItemSchema.safeParse(obj)
+    if (result.success) {
+      validated.push(result.data)
+    } else {
+      const diagName = typeof obj.diagnosis === 'string' ? obj.diagnosis.slice(0, 40) : '(no diagnosis)'
+      const paths = result.error.issues.map((iss) => `${iss.path.join('.')}: ${iss.message}`).join('; ')
+      console.warn(`Section 1 differential item ${i} ("${diagName}") failed validation: ${paths}`)
+    }
+  }
+
+  return validated
 }
 
 const app = express()
