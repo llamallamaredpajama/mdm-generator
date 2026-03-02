@@ -15,6 +15,8 @@ description: |
 
 Execute any text, label, field name, or language change across the MDM Generator's full stack. This skill covers all three MDM systems (Legacy, Build Mode, Quick Mode), the complete 11-node data pipeline, backward compatibility patterns, and a verification protocol.
 
+> **Scope:** This skill covers changes to the MDM output pipeline (differential, data reviewed, reasoning, risk, disposition, attestation, complexity). It does NOT cover: surveillance/trend analysis UI, settings/preferences UI, authentication flows, or payment/subscription text. For those, use standard find-and-replace without this workflow.
+
 Trace the change through the pipeline to identify all affected files. Work bottom-up: constants → schema → prompts → extraction → types → UI → tests → docs.
 
 ## 1. Classify the Change
