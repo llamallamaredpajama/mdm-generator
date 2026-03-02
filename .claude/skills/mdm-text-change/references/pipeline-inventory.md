@@ -109,6 +109,8 @@ Only relevant for Category D changes that modify the differential field structur
 **When:** Category A (field rename) in the Legacy/Quick Mode pipeline
 
 ```typescript
+import { PHYSICIAN_ATTESTATION } from './constants'
+
 // Accept BOTH old 'disclaimers' and new 'attestation' from LLM output
 const RawMdmSchema = z.object({
   // ... other fields ...
