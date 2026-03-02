@@ -70,6 +70,170 @@ import {
   CustomizableOptionsSchema,
 } from './types/userProfile'
 
+// ============================================================================
+// LLM Response Parsing Helpers
+// ============================================================================
+
+/**
+ * Map of common LLM urgency variations to valid DifferentialItemSchema values.
+ * LLMs sometimes return non-standard urgency strings; this coerces them.
+ */
+const URGENCY_COERCION: Record<string, 'emergent' | 'urgent' | 'routine'> = {
+  // Standard values (pass-through)
+  emergent: 'emergent',
+  urgent: 'urgent',
+  routine: 'routine',
+  // Common LLM variations
+  emergency: 'emergent',
+  critical: 'emergent',
+  high: 'emergent',
+  'life-threatening': 'emergent',
+  moderate: 'urgent',
+  medium: 'urgent',
+  low: 'routine',
+  standard: 'routine',
+  normal: 'routine',
+  'non-urgent': 'routine',
+}
+
+/**
+ * Clean raw LLM text output into parseable JSON.
+ * Handles: code fences (single/double, case-insensitive), preamble/postamble text,
+ * trailing commas, and other common LLM formatting artifacts.
+ */
+function cleanLlmJsonResponse(raw: string): string {
+  let text = raw
+
+  // Strip markdown code fences (case-insensitive, handles double fences like ````json)
+  text = text.replace(/^`{2,4}(?:json|JSON)?\s*\n?/gm, '')
+  text = text.replace(/^`{2,4}\s*$/gm, '')
+
+  text = text.trim()
+
+  // If the text has non-JSON preamble, extract the JSON portion
+  // Find the first { or [ which starts a JSON structure
+  if (text.length > 0 && text[0] !== '{' && text[0] !== '[') {
+    const objStart = text.indexOf('{')
+    const arrStart = text.indexOf('[')
+    let start = -1
+    if (objStart >= 0 && arrStart >= 0) {
+      start = Math.min(objStart, arrStart)
+    } else if (objStart >= 0) {
+      start = objStart
+    } else if (arrStart >= 0) {
+      start = arrStart
+    }
+    if (start >= 0) {
+      text = text.slice(start)
+    }
+  }
+
+  // If there's postamble text after the JSON, trim it
+  // Find the matching closing bracket
+  if (text.length > 0) {
+    const openChar = text[0]
+    const closeChar = openChar === '{' ? '}' : openChar === '[' ? ']' : null
+    if (closeChar) {
+      let depth = 0
+      let inString = false
+      let escape = false
+      let lastClose = -1
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i]
+        if (escape) {
+          escape = false
+          continue
+        }
+        if (ch === '\\' && inString) {
+          escape = true
+          continue
+        }
+        if (ch === '"') {
+          inString = !inString
+          continue
+        }
+        if (inString) continue
+        if (ch === openChar) depth++
+        if (ch === closeChar) {
+          depth--
+          if (depth === 0) {
+            lastClose = i
+            break
+          }
+        }
+      }
+      if (lastClose >= 0 && lastClose < text.length - 1) {
+        text = text.slice(0, lastClose + 1)
+      }
+    }
+  }
+
+  // Strip trailing commas before } or ] (common LLM artifact, invalid JSON)
+  text = text.replace(/,\s*([\]}])/g, '$1')
+
+  return text.trim()
+}
+
+/**
+ * Try to extract a JSON object or array from arbitrary text.
+ * Finds the outermost balanced { } or [ ] and returns it.
+ */
+function extractJsonFromText(text: string): string | null {
+  // Try object first, then array
+  for (const [open, close] of [['{', '}'], ['[', ']']] as const) {
+    const start = text.indexOf(open)
+    if (start < 0) continue
+
+    let depth = 0
+    let inString = false
+    let escape = false
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i]
+      if (escape) { escape = false; continue }
+      if (ch === '\\' && inString) { escape = true; continue }
+      if (ch === '"') { inString = !inString; continue }
+      if (inString) continue
+      if (ch === open) depth++
+      if (ch === close) {
+        depth--
+        if (depth === 0) {
+          return text.slice(start, i + 1)
+        }
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * Coerce LLM urgency values to valid schema values, then validate with Zod.
+ * Returns validated differential items or empty array on failure.
+ */
+function coerceAndValidateDifferential(items: unknown[]): DifferentialItem[] {
+  // First try direct validation (fast path — no coercion needed)
+  const directResult = z.array(DifferentialItemSchema).safeParse(items)
+  if (directResult.success) return directResult.data
+
+  // Coerce urgency values and retry
+  const coerced = items.map((item) => {
+    if (item && typeof item === 'object' && 'urgency' in item) {
+      const obj = item as Record<string, unknown>
+      const rawUrgency = String(obj.urgency || '').toLowerCase().trim()
+      const mapped = URGENCY_COERCION[rawUrgency]
+      if (mapped && mapped !== obj.urgency) {
+        return { ...obj, urgency: mapped }
+      }
+    }
+    return item
+  })
+
+  const coercedResult = z.array(DifferentialItemSchema).safeParse(coerced)
+  if (coercedResult.success) return coercedResult.data
+
+  console.warn('Section 1 differential validation failed after coercion:', coercedResult.error.message)
+  return []
+}
+
 const app = express()
 
 // CORS configuration
@@ -835,13 +999,11 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     let cdrAnalysis: CdrAnalysisItem[] = []
     let workupRecommendations: WorkupRecommendation[] = []
     try {
-      const result = await callGemini(prompt)
+      // Use JSON mode to force valid JSON output (no preamble, no code fences)
+      const result = await callGemini(prompt, { jsonMode: true })
 
-      // Parse response - expect JSON object with differential, cdrAnalysis, workupRecommendations
-      let cleanedText = result.text
-        .replace(/^```json\s*/gm, '')
-        .replace(/^```\s*$/gm, '')
-        .trim()
+      // Even with JSON mode, apply robust cleanup as a safety net
+      const cleanedText = cleanLlmJsonResponse(result.text)
 
       try {
         let rawParsed = JSON.parse(cleanedText)
@@ -849,21 +1011,12 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
         // Handle both legacy (array) and new (object) response formats
         if (Array.isArray(rawParsed)) {
           // Legacy format: raw array of differential items
-          const validated = z.array(DifferentialItemSchema).safeParse(rawParsed)
-          if (validated.success) {
-            differential = validated.data
-          }
+          differential = coerceAndValidateDifferential(rawParsed)
         } else if (rawParsed && typeof rawParsed === 'object') {
           // New format: { differential, cdrAnalysis, workupRecommendations }
           // Extract differential
-          let diffArray = rawParsed.differential
-          if (Array.isArray(diffArray)) {
-            const validated = z.array(DifferentialItemSchema).safeParse(diffArray)
-            if (validated.success) {
-              differential = validated.data
-            } else {
-              console.warn('Section 1 differential validation failed:', validated.error.message)
-            }
+          if (Array.isArray(rawParsed.differential)) {
+            differential = coerceAndValidateDifferential(rawParsed.differential)
           }
 
           // Extract cdrAnalysis (non-blocking — failures don't affect differential)
@@ -887,20 +1040,28 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
           }
         }
 
-        // Fallback: if no differential was parsed, try array extraction from text
+        // Fallback: if no differential was parsed, try extracting JSON object from text
         if (differential.length === 0) {
-          const jsonStart = cleanedText.indexOf('[')
-          const jsonEnd = cleanedText.lastIndexOf(']')
-          if (jsonStart >= 0 && jsonEnd > jsonStart) {
-            const arrayParsed = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
-            const validated = z.array(DifferentialItemSchema).safeParse(arrayParsed)
-            if (validated.success) {
-              differential = validated.data
+          const extracted = extractJsonFromText(cleanedText)
+          if (extracted) {
+            try {
+              const fallbackParsed = JSON.parse(extracted)
+              if (Array.isArray(fallbackParsed)) {
+                differential = coerceAndValidateDifferential(fallbackParsed)
+              } else if (fallbackParsed && typeof fallbackParsed === 'object' && Array.isArray(fallbackParsed.differential)) {
+                differential = coerceAndValidateDifferential(fallbackParsed.differential)
+              }
+            } catch {
+              // extraction attempt failed, continue to final fallback
             }
           }
         }
 
         if (differential.length === 0) {
+          console.warn('Section 1: no valid differential parsed from model output', {
+            responseLength: result.text.length,
+            cleanedLength: cleanedText.length,
+          })
           differential = [
             {
               diagnosis: 'Unable to validate differential',

@@ -27,6 +27,10 @@ import {
   MALFORMED_MODEL_RESPONSE,
   VALID_PARSE_RESPONSE,
   VALID_SECTION1_RESPONSE,
+  LEGACY_SECTION1_RESPONSE,
+  FENCED_SECTION1_RESPONSE,
+  NONSTANDARD_URGENCY_SECTION1_RESPONSE,
+  TRAILING_COMMA_SECTION1_RESPONSE,
   VALID_SECTION2_RESPONSE,
   VALID_FINALIZE_RESPONSE,
   WRAPPED_FINALIZE_RESPONSE,
@@ -587,6 +591,95 @@ describe('POST /v1/build-mode/process-section1', () => {
       .send({ ...validBody, content: oversizedContent })
 
     expect(res.status).toBe(400)
+  })
+
+  it('handles legacy flat-array response format', async () => {
+    mockCallGemini.mockResolvedValueOnce({ text: LEGACY_SECTION1_RESPONSE })
+
+    const res = await request(app)
+      .post('/v1/build-mode/process-section1')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.differential).toBeInstanceOf(Array)
+    expect(res.body.differential.length).toBe(3)
+    expect(res.body.differential[0].diagnosis).toBe('Acute MI')
+  })
+
+  it('handles response with code fences and preamble text', async () => {
+    mockCallGemini.mockResolvedValueOnce({ text: FENCED_SECTION1_RESPONSE })
+
+    const res = await request(app)
+      .post('/v1/build-mode/process-section1')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.differential).toBeInstanceOf(Array)
+    expect(res.body.differential.length).toBe(3)
+  })
+
+  it('coerces non-standard urgency values from LLM output', async () => {
+    mockCallGemini.mockResolvedValueOnce({ text: NONSTANDARD_URGENCY_SECTION1_RESPONSE })
+
+    const res = await request(app)
+      .post('/v1/build-mode/process-section1')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.differential).toBeInstanceOf(Array)
+    expect(res.body.differential.length).toBe(3)
+    // Verify coercion: "critical" → "emergent", "moderate" → "urgent", "low" → "routine"
+    expect(res.body.differential[0].urgency).toBe('emergent')
+    expect(res.body.differential[1].urgency).toBe('urgent')
+    expect(res.body.differential[2].urgency).toBe('routine')
+  })
+
+  it('handles response with trailing commas (common LLM artifact)', async () => {
+    mockCallGemini.mockResolvedValueOnce({ text: TRAILING_COMMA_SECTION1_RESPONSE })
+
+    const res = await request(app)
+      .post('/v1/build-mode/process-section1')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.differential).toBeInstanceOf(Array)
+    expect(res.body.differential.length).toBe(2)
+  })
+
+  it('returns fallback differential when model returns garbage text', async () => {
+    mockCallGemini.mockResolvedValueOnce({ text: 'This is not JSON at all, just random thoughts about medicine.' })
+
+    const res = await request(app)
+      .post('/v1/build-mode/process-section1')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.differential).toBeInstanceOf(Array)
+    expect(res.body.differential.length).toBe(1)
+    expect(res.body.differential[0].diagnosis).toMatch(/unable to parse/i)
+  })
+
+  it('extracts cdrAnalysis and workupRecommendations from new format', async () => {
+    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
+
+    const res = await request(app)
+      .post('/v1/build-mode/process-section1')
+      .send(validBody)
+
+    expect(res.status).toBe(200)
+    // cdrAnalysis should be present in the response
+    expect(res.body.cdrAnalysis).toBeInstanceOf(Array)
+    expect(res.body.cdrAnalysis.length).toBeGreaterThan(0)
+    expect(res.body.cdrAnalysis[0].name).toBe('HEART Score')
+    // workupRecommendations should be present
+    expect(res.body.workupRecommendations).toBeInstanceOf(Array)
+    expect(res.body.workupRecommendations.length).toBeGreaterThan(0)
+    expect(res.body.workupRecommendations[0].testId).toBe('troponin')
   })
 })
 

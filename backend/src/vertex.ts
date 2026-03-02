@@ -2,6 +2,13 @@ import { VertexAI } from '@google-cloud/vertexai'
 
 export type GenResult = { text: string }
 
+export interface CallGeminiOptions {
+  /** Force the model to output valid JSON (no preamble, no code fences) */
+  jsonMode?: boolean
+  /** Request timeout in milliseconds (default: 55000) */
+  timeoutMs?: number
+}
+
 // Singleton: create the VertexAI client once at module level
 const project = process.env.PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || 'mdm-generator'
 const location = process.env.VERTEX_LOCATION || process.env.GOOGLE_CLOUD_REGION || 'us-central1'
@@ -16,8 +23,24 @@ const vertex = new VertexAI({ project, location, googleAuthOptions })
 
 export async function callGemini(
   prompt: { system: string; user: string },
-  timeoutMs: number = 55_000
+  optionsOrTimeout: CallGeminiOptions | number = {}
 ): Promise<GenResult> {
+  // Backward-compatible: accept a number (timeoutMs) or options object
+  const options: CallGeminiOptions =
+    typeof optionsOrTimeout === 'number'
+      ? { timeoutMs: optionsOrTimeout }
+      : optionsOrTimeout
+  const timeoutMs = options.timeoutMs ?? 55_000
+
+  const generationConfig: Record<string, unknown> = {
+    temperature: 0.2,
+    topP: 0.95,
+    maxOutputTokens: 8192,
+  }
+  if (options.jsonMode) {
+    generationConfig.responseMimeType = 'application/json'
+  }
+
   const model = vertex.getGenerativeModel({
     model: 'gemini-2.5-pro',
     safetySettings: [
@@ -27,11 +50,7 @@ export async function callGemini(
       { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
       { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
     ] as any,
-    generationConfig: {
-      temperature: 0.2,
-      topP: 0.95,
-      maxOutputTokens: 8192,
-    },
+    generationConfig,
     systemInstruction: {
       role: 'system',
       parts: [{ text: prompt.system }]

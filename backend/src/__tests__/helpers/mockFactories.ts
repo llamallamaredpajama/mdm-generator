@@ -118,12 +118,57 @@ export const VALID_PARSE_RESPONSE = JSON.stringify({
   warnings: [],
 })
 
-/** Valid section-1 differential response */
-export const VALID_SECTION1_RESPONSE = JSON.stringify([
+/** Valid section-1 differential response (new object format matching prompt output) */
+export const VALID_SECTION1_RESPONSE = JSON.stringify({
+  differential: [
+    { diagnosis: 'Acute MI', urgency: 'emergent', reasoning: 'Chest pain with risk factors' },
+    { diagnosis: 'Pulmonary embolism', urgency: 'emergent', reasoning: 'Dyspnea and tachycardia' },
+    { diagnosis: 'Costochondritis', urgency: 'routine', reasoning: 'Reproducible tenderness' },
+  ],
+  cdrAnalysis: [
+    { name: 'HEART Score', applicable: true, score: null, missingData: ['troponin'], reasoning: 'Chest pain presentation' },
+  ],
+  workupRecommendations: [
+    { testName: 'Troponin', testId: 'troponin', reason: 'Evaluate for ACS', source: 'baseline', priority: 'stat' },
+  ],
+})
+
+/** Legacy section-1 response (flat array format for backward compat testing) */
+export const LEGACY_SECTION1_RESPONSE = JSON.stringify([
   { diagnosis: 'Acute MI', urgency: 'emergent', reasoning: 'Chest pain with risk factors' },
   { diagnosis: 'Pulmonary embolism', urgency: 'emergent', reasoning: 'Dyspnea and tachycardia' },
   { diagnosis: 'Costochondritis', urgency: 'routine', reasoning: 'Reproducible tenderness' },
 ])
+
+/** Section-1 response with code fences and preamble text */
+export const FENCED_SECTION1_RESPONSE = `Here is the differential diagnosis for this patient:
+
+\`\`\`json
+${VALID_SECTION1_RESPONSE}
+\`\`\`
+
+This differential follows the worst-first approach for emergency medicine.`
+
+/** Section-1 response with non-standard urgency values (LLM variation) */
+export const NONSTANDARD_URGENCY_SECTION1_RESPONSE = JSON.stringify({
+  differential: [
+    { diagnosis: 'Acute MI', urgency: 'critical', reasoning: 'Chest pain with risk factors' },
+    { diagnosis: 'Appendicitis', urgency: 'moderate', reasoning: 'RLQ pain' },
+    { diagnosis: 'GERD', urgency: 'low', reasoning: 'Epigastric burning' },
+  ],
+  cdrAnalysis: [],
+  workupRecommendations: [],
+})
+
+/** Section-1 response with trailing commas (common LLM artifact) */
+export const TRAILING_COMMA_SECTION1_RESPONSE = `{
+  "differential": [
+    { "diagnosis": "Acute MI", "urgency": "emergent", "reasoning": "Chest pain with risk factors" },
+    { "diagnosis": "Costochondritis", "urgency": "routine", "reasoning": "Reproducible tenderness" },
+  ],
+  "cdrAnalysis": [],
+  "workupRecommendations": [],
+}`
 
 /** Valid section-2 MDM preview response */
 export const VALID_SECTION2_RESPONSE = JSON.stringify({
