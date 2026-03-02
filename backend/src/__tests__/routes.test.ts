@@ -335,7 +335,7 @@ describe('POST /v1/generate', () => {
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(true)
     expect(res.body.draftJson).toBeDefined()
-    expect(res.body.draftJson.disclaimers).toMatch(/physician must review/i)
+    expect(res.body.draftJson.attestation).toMatch(/treating physician/i)
   })
 
   it('increments usage on successful generation', async () => {

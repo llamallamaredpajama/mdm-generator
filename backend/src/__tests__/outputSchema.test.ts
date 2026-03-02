@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { MdmSchema, renderMdmText, type Mdm } from '../outputSchema'
+import { PHYSICIAN_ATTESTATION } from '../constants'
 
 // ============================================================================
 // MdmSchema Zod validation
@@ -36,19 +37,37 @@ describe('MdmSchema', () => {
     expect(result.disposition).toBe('')
   })
 
-  it('defaults disclaimers when omitted', () => {
+  it('defaults attestation to PHYSICIAN_ATTESTATION when omitted', () => {
     const result = MdmSchema.parse(validMdm)
-    expect(result.disclaimers).toBe('Educational draft. Physician must review. No PHI.')
+    expect(result.attestation).toBe(PHYSICIAN_ATTESTATION)
   })
 
-  it('accepts explicit disposition and disclaimers', () => {
+  it('accepts explicit disposition and attestation', () => {
     const result = MdmSchema.parse({
       ...validMdm,
       disposition: 'Admit to telemetry',
-      disclaimers: ['Draft only', 'Physician review required'],
+      attestation: ['Reviewed by physician', 'Content verified'],
     })
     expect(result.disposition).toBe('Admit to telemetry')
-    expect(result.disclaimers).toEqual(['Draft only', 'Physician review required'])
+    expect(result.attestation).toEqual(['Reviewed by physician', 'Content verified'])
+  })
+
+  it('bridges old disclaimers field to attestation', () => {
+    const result = MdmSchema.parse({
+      ...validMdm,
+      disclaimers: 'Old disclaimer text',
+    })
+    expect(result.attestation).toBe('Old disclaimer text')
+    expect((result as Record<string, unknown>).disclaimers).toBeUndefined()
+  })
+
+  it('prefers attestation over disclaimers when both provided', () => {
+    const result = MdmSchema.parse({
+      ...validMdm,
+      attestation: 'New attestation',
+      disclaimers: 'Old disclaimer',
+    })
+    expect(result.attestation).toBe('New attestation')
   })
 
   it('rejects missing required field: differential', () => {
@@ -77,7 +96,7 @@ describe('renderMdmText', () => {
       decision_making: 'High concern for ACS given presentation and labs',
       risk: 'High risk encounter',
       disposition: 'Admit to cardiac care unit',
-      disclaimers: 'Educational draft. Physician must review. No PHI.',
+      attestation: PHYSICIAN_ATTESTATION,
     }
     const text = renderMdmText(mdm)
     expect(text).toContain('Differential:\nAcute coronary syndrome')
@@ -85,7 +104,7 @@ describe('renderMdmText', () => {
     expect(text).toContain('Decision making:\nHigh concern for ACS given presentation and labs')
     expect(text).toContain('Risk:\nHigh risk encounter')
     expect(text).toContain('Disposition:\nAdmit to cardiac care unit')
-    expect(text).toContain('Notes:\nEducational draft. Physician must review. No PHI.')
+    expect(text).toContain('Attestation:\n' + PHYSICIAN_ATTESTATION)
   })
 
   it('renders array fields as bullet lists', () => {
@@ -95,7 +114,7 @@ describe('renderMdmText', () => {
       decision_making: 'Clinical reasoning here',
       risk: ['High risk - ACS', 'Moderate risk - PE'],
       disposition: '',
-      disclaimers: ['Draft only', 'Physician review required'],
+      attestation: ['Reviewed by physician', 'Content verified'],
     }
     const text = renderMdmText(mdm)
     expect(text).toContain('- Acute coronary syndrome')
@@ -104,8 +123,8 @@ describe('renderMdmText', () => {
     expect(text).toContain('- EKG')
     expect(text).toContain('- CXR')
     expect(text).toContain('- High risk - ACS')
-    expect(text).toContain('- Draft only')
-    expect(text).toContain('- Physician review required')
+    expect(text).toContain('- Reviewed by physician')
+    expect(text).toContain('- Content verified')
   })
 
   it('skips sections with empty arrays', () => {
@@ -115,7 +134,7 @@ describe('renderMdmText', () => {
       decision_making: 'Some reasoning',
       risk: [],
       disposition: '',
-      disclaimers: 'Educational draft. Physician must review. No PHI.',
+      attestation: PHYSICIAN_ATTESTATION,
     }
     const text = renderMdmText(mdm)
     expect(text).not.toContain('Differential:')
@@ -131,7 +150,7 @@ describe('renderMdmText', () => {
       decision_making: 'Reasoning',
       risk: 'Some risk',
       disposition: '',
-      disclaimers: 'Educational draft. Physician must review. No PHI.',
+      attestation: PHYSICIAN_ATTESTATION,
     }
     const text = renderMdmText(mdm)
     expect(text).not.toContain('Differential:')
@@ -144,7 +163,7 @@ describe('renderMdmText', () => {
       decision_making: 'Test',
       risk: 'Test',
       disposition: '',
-      disclaimers: 'Educational draft. Physician must review. No PHI.',
+      attestation: PHYSICIAN_ATTESTATION,
     }
     const text = renderMdmText(mdm)
     expect(text).not.toContain('Disposition:')
@@ -157,11 +176,11 @@ describe('renderMdmText', () => {
       decision_making: '',
       risk: [],
       disposition: '',
-      disclaimers: 'Educational draft. Physician must review. No PHI.',
+      attestation: PHYSICIAN_ATTESTATION,
     }
     const text = renderMdmText(mdm)
-    // Only disclaimers should remain
-    expect(text).toContain('Notes:')
+    // Only attestation should remain
+    expect(text).toContain('Attestation:')
     expect(text).not.toContain('Differential:')
     expect(text).not.toContain('Decision making:')
     expect(text).not.toContain('Risk:')
@@ -175,7 +194,7 @@ describe('renderMdmText', () => {
       decision_making: 'Clinical assessment with \u00b0F temp noted',
       risk: 'Moderate \u2013 surgical risk',
       disposition: '',
-      disclaimers: 'Educational draft. Physician must review. No PHI.',
+      attestation: PHYSICIAN_ATTESTATION,
     }
     const text = renderMdmText(mdm)
     expect(text).toContain('\u2014 urgent')
@@ -184,22 +203,22 @@ describe('renderMdmText', () => {
     expect(text).toContain('\u2013 surgical')
   })
 
-  it('handles mixed string/array for disclaimers', () => {
+  it('handles mixed string/array for attestation', () => {
     const stringVersion: Mdm = {
       differential: 'Test',
       data_reviewed_ordered: 'Test',
       decision_making: 'Test',
       risk: 'Test',
       disposition: '',
-      disclaimers: 'Single disclaimer',
+      attestation: 'Single attestation',
     }
     const arrayVersion: Mdm = {
       ...stringVersion,
-      disclaimers: ['Disclaimer 1', 'Disclaimer 2'],
+      attestation: ['Attestation 1', 'Attestation 2'],
     }
-    expect(renderMdmText(stringVersion)).toContain('Notes:\nSingle disclaimer')
+    expect(renderMdmText(stringVersion)).toContain('Attestation:\nSingle attestation')
     const arrayText = renderMdmText(arrayVersion)
-    expect(arrayText).toContain('- Disclaimer 1')
-    expect(arrayText).toContain('- Disclaimer 2')
+    expect(arrayText).toContain('- Attestation 1')
+    expect(arrayText).toContain('- Attestation 2')
   })
 })
