@@ -124,7 +124,7 @@ Five patterns recur across text changes. See `references/pipeline-inventory.md` 
 
 1. **Zod `.transform()` migration gate** (`outputSchema.ts`) — Accept both old and new field names, normalize to new. Old field stays `.optional()`. Apply for Category A in Legacy/Quick.
 2. **`extractFinalMdm()` alias chains** (`index.ts:~1250`) — Try multiple alternative names in priority order. Add old name as new alias; never remove existing aliases. Apply for Category A in Build Mode.
-3. **`useEncounter.ts` defensive defaults** (`useEncounter.ts:90-130`) — Bridge Firestore `null` to TypeScript optional semantics. Every new optional field needs a `?? defaultValue` entry. Apply for Category A or D.
+3. **`useEncounter.ts` defensive defaults** (`useEncounter.ts` — search for `section2:`/`section3:` defaults in `onSnapshot`) — Bridge Firestore `null` to TypeScript optional semantics. Every new optional field needs a `?? defaultValue` entry. Apply for Category A or D.
 4. **Dual-shape extraction helpers** (`DashboardOutput.tsx`) — Handle both old and new LLM response shapes via extraction helper (e.g., `getDifferential()`). Apply when LLM response field structure changes.
 5. **Conditional prompt numbering** (`promptBuilderBuildMode.ts`) — Numbered instructions with conditional surveillance items. After inserting/removing an instruction, verify all subsequent numbers are correct.
 

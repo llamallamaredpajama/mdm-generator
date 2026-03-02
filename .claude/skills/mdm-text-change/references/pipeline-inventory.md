@@ -158,7 +158,7 @@ const extractFinalMdm = (raw: Record<string, unknown>): FinalMdm => {
 
 ### Pattern 3: `useEncounter.ts` Defensive Defaults
 
-**Where:** `frontend/src/hooks/useEncounter.ts:90-130`
+**Where:** `frontend/src/hooks/useEncounter.ts` (search for `section2:` and `section3:` defensive defaults inside the `onSnapshot` callback)
 **When:** Category A or D — any change that adds or renames a field in the encounter document
 
 ```typescript
@@ -205,7 +205,7 @@ function getDifferential(llmResponse: unknown): DifferentialItem[] {
 
 ### Pattern 5: Conditional Prompt Numbering
 
-**Where:** `backend/src/promptBuilderBuildMode.ts:477-489`
+**Where:** `backend/src/promptBuilderBuildMode.ts` (search for numbered attestation/surveillance instructions in the finalize prompt)
 **When:** Any prompt modification that inserts or removes a numbered instruction
 
 ```typescript
