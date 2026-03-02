@@ -1013,10 +1013,9 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     let cdrAnalysis: CdrAnalysisItem[] = []
     let workupRecommendations: WorkupRecommendation[] = []
     try {
-      // Use JSON mode to force valid JSON output (no preamble, no code fences)
-      const result = await callGemini(prompt, { jsonMode: true })
+      const result = await callGemini(prompt)
 
-      // Even with JSON mode, apply robust cleanup as a safety net
+      // Clean LLM response: strip code fences, preamble text, trailing commas
       const cleanedText = cleanLlmJsonResponse(result.text)
 
       try {
@@ -1096,7 +1095,9 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
         ]
       }
     } catch (modelError) {
-      console.error('Section 1 model error:', modelError)
+      const errMsg = modelError instanceof Error ? modelError.message : String(modelError)
+      const errStack = modelError instanceof Error ? modelError.stack : undefined
+      console.error('Section 1 model/parse error:', { error: errMsg, stack: errStack })
       return res.status(500).json({ error: 'Failed to process section 1' })
     }
 
