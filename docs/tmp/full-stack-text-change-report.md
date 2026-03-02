@@ -387,7 +387,100 @@ See **Appendix A §A.2** for a concrete example of this table.
 
 ## 6. Complete File Inventory
 
-> *Placeholder — written in Task 6*
+Organized by pipeline node. Use the **Categories** column to determine which files are relevant to your change type (see Section 2).
+
+### Node 1: Constants
+
+| File | System | Categories |
+|------|--------|------------|
+| `backend/src/constants.ts` | All | A, C, D |
+
+### Node 2: Schemas
+
+| File | System | Categories |
+|------|--------|------------|
+| `backend/src/outputSchema.ts` | Legacy / Quick | A, D |
+| `backend/src/buildModeSchemas.ts` | Build | A, D |
+
+### Node 3: Prompt Builders
+
+| File | System | Categories |
+|------|--------|------------|
+| `backend/src/promptBuilder.ts` | Legacy | A, C, D |
+| `backend/src/promptBuilderBuildMode.ts` | Build | A, C, D |
+| `backend/src/promptBuilderQuickMode.ts` | Quick | A, C, D |
+| `backend/src/parsePromptBuilder.ts` | All | D |
+
+### Nodes 5–6: Schema Parse + Field Extraction
+
+| File | System | Categories | Notes |
+|------|--------|------------|-------|
+| `backend/src/index.ts` (~line 621) | Legacy / Quick | A, C, D | Fallback defaults |
+| `backend/src/index.ts` (~line 1250) | Build | A, C, D | `extractFinalMdm()` alias chains |
+
+### Node 8: Frontend Types
+
+| File | System | Categories |
+|------|--------|------------|
+| `frontend/src/types/encounter.ts` | All | A, D |
+
+### Node 9: Frontend Render
+
+| File | System | Categories | Notes |
+|------|--------|------------|-------|
+| `frontend/src/routes/Output.tsx` | Legacy | B, C | `renderMdmText()` output display |
+| `frontend/src/routes/Start.tsx` | All | B, C | Landing page attestation text |
+| `frontend/src/routes/Compose.tsx` | All | B, C | Compose page attestation text |
+| `frontend/src/components/build-mode/MdmPreviewPanel.tsx` | Build | B, D | SECTIONS array (S2 preview) |
+| `frontend/src/components/build-mode/EncounterEditor.tsx` | Build | B, C | Finalized MDM display |
+| `frontend/src/components/build-mode/QuickEncounterEditor.tsx` | Quick | B, C | Quick Mode attestation notice |
+
+### Node 10: CSS
+
+| File | System | Categories |
+|------|--------|------------|
+| `frontend/src/routes/Start.css` | All | B |
+| `frontend/src/routes/Compose.css` | All | B |
+| `frontend/src/components/build-mode/MdmPreviewPanel.css` | Build | B |
+| `frontend/src/components/build-mode/EncounterEditor.css` | Build | B |
+| `frontend/src/components/build-mode/QuickEncounterEditor.css` | Quick | B |
+
+### Node 11: Tests
+
+| File | System | Categories |
+|------|--------|------------|
+| `backend/src/__tests__/outputSchema.test.ts` | Legacy | A, C, D |
+| `backend/src/__tests__/buildModeSchemas.test.ts` | Build | A, D |
+| `backend/src/__tests__/promptBuilders.test.ts` | All | A, C |
+| `backend/src/__tests__/routes.test.ts` | All | A, C, D |
+| `backend/src/__tests__/helpers/mockFactories.ts` | All | A, C, D |
+| `frontend/src/__tests__/` (27 files — search for affected terms) | varies | varies |
+
+### Node 11: Documentation
+
+| File | Categories | Notes |
+|------|------------|-------|
+| `docs/generator_engine.md` | A, C, D | Schema and engine documentation |
+| `docs/mdm-gen-guide-v2.md` | A, C, D | Core prompt guide |
+| `docs/mdm-gen-guide-build-s1.md` | A, D | Build Mode Section 1 prompt guide |
+| `docs/mdm-gen-guide-build-s3.md` | A, C, D | Build Mode Section 3 / finalize prompt guide |
+| `docs/prd.md` | A, C, D | Product requirements |
+| `CLAUDE.md` | A, C, D | Project instructions |
+| `.claude/agents/prompt-reviewer.md` | A, D | Review agent patterns |
+
+### Conditional Files (if differential/encounter field structure changes)
+
+These files are only relevant for Category D changes that modify the differential field structure or encounter document shape:
+
+| File | System | Why Conditional |
+|------|--------|----------------|
+| `backend/src/services/cdrMatcher.ts` | Build | Reads differential items for CDR matching |
+| `backend/src/services/cdrCatalogFormatter.ts` | Build | Formats CDR catalog for prompt injection |
+| `backend/src/services/testCatalogFormatter.ts` | Build | Formats test catalog for prompt injection |
+| `frontend/src/hooks/useEncounter.ts` | Build | `onSnapshot` defensive defaults (Pattern 3) |
+| `frontend/src/components/build-mode/shared/getRecommendedTestIds.ts` | Build | Reads workup recommendations from S1 |
+| `frontend/src/components/build-mode/shared/getIdentifiedCdrs.ts` | Build | Reads CDR analysis from S1 |
+| `frontend/src/components/build-mode/shared/DashboardOutput.tsx` | Build | `getDifferential()` dual-shape extraction (Pattern 4) |
 
 ---
 
