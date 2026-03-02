@@ -250,6 +250,10 @@ function coerceAndValidateDifferential(items: unknown[]): DifferentialItem[] {
 
 const app = express()
 
+// Trust proxy: Cloud Run sits behind a load balancer that injects X-Forwarded-For.
+// Required for express-rate-limit to correctly identify client IPs.
+app.set('trust proxy', true)
+
 // CORS configuration
 const allowedOrigins = [
   process.env.FRONTEND_URL, // Production frontend URL
@@ -1013,7 +1017,7 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     let cdrAnalysis: CdrAnalysisItem[] = []
     let workupRecommendations: WorkupRecommendation[] = []
     try {
-      const result = await callGemini(prompt)
+      const result = await callGemini(prompt, { timeoutMs: 90_000 })
 
       // Clean LLM response: strip code fences, preamble text, trailing commas
       const cleanedText = cleanLlmJsonResponse(result.text)

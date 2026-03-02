@@ -97,8 +97,8 @@ export const DifferentialItemSchema = z.object({
   diagnosis: z.string(),
   urgency: z.enum(['emergent', 'urgent', 'routine']),
   reasoning: z.string(),
-  regionalContext: z.string().optional(),
-  cdrContext: z.string().optional(),
+  regionalContext: z.string().nullish(),
+  cdrContext: z.string().nullish(),
 })
 
 export type DifferentialItem = z.infer<typeof DifferentialItemSchema>
