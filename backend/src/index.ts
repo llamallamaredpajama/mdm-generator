@@ -6,6 +6,7 @@ import { z } from 'zod'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import admin from 'firebase-admin'
+import { PHYSICIAN_ATTESTATION } from './constants'
 import { buildPrompt } from './promptBuilder'
 import { buildParsePrompt, getEmptyParsedNarrative, type ParsedNarrative } from './parsePromptBuilder'
 import { MdmSchema, renderMdmText } from './outputSchema'
@@ -621,10 +622,10 @@ app.post('/v1/generate', llmLimiter, async (req, res) => {
       draftJson = {
         differential: [],
         data_reviewed_ordered: 'Labs were considered but not indicated based on presentation; clinical monitoring prioritized.',
-        decision_making: 'Clinical reasoning provided narrative; defaults applied where data absent. Physician must review.',
+        decision_making: 'Clinical reasoning provided narrative; defaults applied where data absent.',
         risk: ['Discussed risks/benefits; return precautions given.'],
         disposition: '',
-        disclaimers: 'Educational draft. Physician must review. No PHI.',
+        attestation: PHYSICIAN_ATTESTATION,
       }
       draftText = renderMdmText(draftJson)
     }

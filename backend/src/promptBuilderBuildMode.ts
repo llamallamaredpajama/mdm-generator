@@ -482,9 +482,10 @@ export function buildFinalizePrompt(
     '5. Document disposition decision with clinical rationale',
     '6. Add appropriate discharge instructions if applicable',
     '7. NEVER fabricate information - use only what was provided',
+    '8. Include the physician attestation at the end of the MDM text: "This documentation was generated from the direct clinical input of the treating physician, based on the patient encounter as described. All content has been reviewed by the physician for accuracy and completeness."',
     ...(surveillanceContext ? [
-      '8. Include regional surveillance data sources in the Data Reviewed section (e.g., "Regional Surveillance Data: CDC Respiratory, NWSS Wastewater")',
-      '9. Note any regional epidemiologic context that influenced the differential or clinical reasoning',
+      '9. Include regional surveillance data sources in the Data Reviewed section (e.g., "Regional Surveillance Data: CDC Respiratory, NWSS Wastewater")',
+      '10. Note any regional epidemiologic context that influenced the differential or clinical reasoning',
     ] : []),
     '',
     'MDM COMPLEXITY DETERMINATION:',

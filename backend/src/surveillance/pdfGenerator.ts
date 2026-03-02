@@ -23,8 +23,8 @@ const COLORS = {
   alertInfo: '#0d6efd',
 } as const
 
-const DISCLAIMER =
-  'Educational tool only. All outputs require physician review before clinical use.'
+const ATTESTATION_NOTICE =
+  'Educational tool only. Generated documentation reflects physician input and requires physician review for accuracy and completeness before clinical use.'
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -113,7 +113,7 @@ function drawFooter(
     .font('Helvetica')
     .fontSize(7)
     .fillColor(COLORS.muted)
-    .text(DISCLAIMER, PAGE_MARGIN, FOOTER_Y + 6, {
+    .text(ATTESTATION_NOTICE, PAGE_MARGIN, FOOTER_Y + 6, {
       width: CONTENT_WIDTH,
       align: 'left',
       lineBreak: false,

@@ -8,6 +8,7 @@
 
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { PHYSICIAN_ATTESTATION } from './constants.js'
 
 /**
  * Patient identifier extracted from narrative
@@ -128,7 +129,7 @@ Return ONLY valid JSON in this exact structure (no markdown, no code fences):
 - If demographics cannot be determined, set those fields to null
 - The "text" field should be copy-paste ready for an EHR
 - Always use worst-first approach for differential diagnosis
-- Include appropriate disclaimers about physician review
+- Include the physician attestation statement at the end of the output text
 - This is educational use only - no real patient data`
 
   const userPrompt = `## Narrative Input
@@ -206,7 +207,7 @@ export function parseQuickModeResponse(rawResponse: string): QuickModeGeneration
  */
 export function getQuickModeFallback(): QuickModeGenerationResult {
   return {
-    text: 'Unable to generate MDM. Please review input and try again.\n\nEducational draft only. Physician must review.',
+    text: 'Unable to generate MDM. Please review input and try again.\n\n' + PHYSICIAN_ATTESTATION,
     json: {
       problems: [],
       differential: [],
