@@ -28,7 +28,7 @@ export default function SubcategoryGroup({
     <div className="subcategory-group">
       <button
         type="button"
-        className="subcategory-group__header"
+        className={`subcategory-group__header${open ? ' subcategory-group__header--open' : ''}`}
         onClick={() => setOpen(!open)}
         aria-expanded={open}
       >
@@ -40,7 +40,9 @@ export default function SubcategoryGroup({
         <span className="subcategory-group__count">({tests.length})</span>
       </button>
       {open && (
-        <div className="subcategory-group__list">
+        <div
+          className={`subcategory-group__list${tests.length > 8 ? ' subcategory-group__list--multi-col' : ''}`}
+        >
           {tests.map((test) => (
             <div key={test.id} className="orders-card__test-row">
               <input
