@@ -39,6 +39,57 @@ Task 6: Merge + deploy               ← depends on Task 5
 
 **Batch strategy:** Tasks 1-2 as backend batch, Task 3 as frontend batch, Tasks 4-5 as cleanup, Task 6 as deploy. Each batch committed separately for clean reviewability.
 
+## Commit Log
+
+| # | Hash | Message | Files | +/- |
+|---|------|---------|-------|-----|
+| 1 | `f97bc62` | `feat: add shared PHYSICIAN_ATTESTATION constant` | 1 | +2/+0 |
+| 2 | `3cb4379` | `feat: replace disclaimer with physician attestation in backend` | 6 | +32/-18 |
+| 3 | `78872ac` | `feat: replace disclaimer with attestation in frontend UI` | 6 | +169/-100 |
+| 4 | `5c61856` | `test: update tests for attestation field rename` | 4 | +45/-26 |
+| 5 | `f903d86` | `docs: update documentation for attestation language` | 5 | +19/-18 |
+| M | `454bbb5` | `feat: replace disclaimer with physician attestation` | 22 | +267/-162 |
+
+## Per-Task File Changes
+
+### Task 2: Backend (6 files)
+
+| File | Change |
+|------|--------|
+| `outputSchema.ts` | Zod `.transform()` bridging pattern (Pattern 1) |
+| `promptBuilder.ts` | Legacy one-shot: `"disclaimers"` → `"attestation"` in JSON schema instructions |
+| `promptBuilderBuildMode.ts` | Finalize prompt: add attestation instruction at position 8, bump surveillance to 9–10 |
+| `promptBuilderQuickMode.ts` | Quick Mode: `"disclaimers"` → `"attestation"` in JSON schema instructions |
+| `index.ts` | Import constant; update fallback/default MDM to use `attestation` field |
+| `surveillance/pdfGenerator.ts` | "Disclaimers" section header → "Attestation" in PDF output |
+
+### Task 3: Frontend (6 files)
+
+| File | Change |
+|------|--------|
+| `Start.tsx` | Landing page: disclaimer text → attestation language |
+| `Start.css` | BEM class rename: `.start-disclaimer` → `.start-attestation` |
+| `Compose.tsx` | Compose page: disclaimer text → attestation language |
+| `Compose.css` | BEM class rename: `.compose-disclaimer` → `.compose-attestation` |
+| `QuickEncounterEditor.tsx` | Quick Mode editor: disclaimer text → attestation notice |
+| `QuickEncounterEditor.css` | BEM class rename: `.quick-encounter-editor__disclaimer` → `.quick-encounter-editor__attestation` |
+
+### Task 4: Tests (4 files)
+
+| File | Change |
+|------|--------|
+| `outputSchema.test.ts` | Updated existing tests + added backward-compat tests |
+| `mockFactories.ts` | Mock MDM object: `disclaimers` → `attestation` |
+| `promptBuilders.test.ts` | Prompt output assertions: "disclaimers" → "attestation" |
+| `routes.test.ts` | API response assertions: `disclaimers` → `attestation` |
+
+### Task 5: Verification Grep
+
+```bash
+grep -ri "disclaimer" docs/ --include="*.md" | grep -v "wireframe" | grep -v "Clinical Decision"
+# Only expected hits: generator_engine.md documenting the .transform() bridge
+```
+
 ## Key Decisions
 
 ### 1. Shared Constant (Task 1)
