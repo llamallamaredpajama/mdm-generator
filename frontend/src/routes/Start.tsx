@@ -31,20 +31,23 @@ function useScrollDots(itemCount: number, childSelector?: string) {
     return () => container.removeEventListener('scroll', handleScroll)
   }, [itemCount])
 
-  const scrollTo = useCallback((index: number) => {
-    const container = scrollRef.current
-    if (!container) return
-    const children = childSelector
-      ? Array.from(container.querySelectorAll(childSelector))
-      : Array.from(container.children)
-    const child = children[index] as HTMLElement
-    if (child) {
-      container.scrollTo({
-        left: child.offsetLeft - container.offsetLeft,
-        behavior: 'smooth',
-      })
-    }
-  }, [childSelector])
+  const scrollTo = useCallback(
+    (index: number) => {
+      const container = scrollRef.current
+      if (!container) return
+      const children = childSelector
+        ? Array.from(container.querySelectorAll(childSelector))
+        : Array.from(container.children)
+      const child = children[index] as HTMLElement
+      if (child) {
+        container.scrollTo({
+          left: child.offsetLeft - container.offsetLeft,
+          behavior: 'smooth',
+        })
+      }
+    },
+    [childSelector],
+  )
 
   return { scrollRef, activeIndex, scrollTo }
 }
@@ -53,8 +56,16 @@ export default function Start() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isMobile = useIsMobile()
-  const { scrollRef: featuresRef, activeIndex: featuresActive, scrollTo: featuresScrollTo } = useScrollDots(4)
-  const { scrollRef: stepsRef, activeIndex: stepsActive, scrollTo: stepsScrollTo } = useScrollDots(3, '.step')
+  const {
+    scrollRef: featuresRef,
+    activeIndex: featuresActive,
+    scrollTo: featuresScrollTo,
+  } = useScrollDots(4)
+  const {
+    scrollRef: stepsRef,
+    activeIndex: stepsActive,
+    scrollTo: stepsScrollTo,
+  } = useScrollDots(3, '.step')
 
   const prefersReducedMotion = usePrefersReducedMotion()
   const electron1Ref = useRef<SVGGElement | null>(null)
@@ -77,7 +88,7 @@ export default function Start() {
     let rafId: number
 
     const cacheCharCenters = () => {
-      charCenters = charRefs.current.map(span => {
+      charCenters = charRefs.current.map((span) => {
         if (!span) return 0
         const rect = span.getBoundingClientRect()
         return rect.left + rect.width / 2
@@ -95,8 +106,10 @@ export default function Start() {
     let intersectionObs: IntersectionObserver | undefined
     if (typeof IntersectionObserver !== 'undefined') {
       intersectionObs = new IntersectionObserver(
-        ([entry]) => { visible = entry.isIntersecting },
-        { threshold: 0 }
+        ([entry]) => {
+          visible = entry.isIntersecting
+        },
+        { threshold: 0 },
       )
       intersectionObs.observe(title)
     }
@@ -193,16 +206,36 @@ export default function Start() {
           <div className="em-title-wrapper">
             <h1 className="em-title" ref={titleRef} aria-label="Emergency Medicine">
               {'Emergency'.split('').map((char, i) => (
-                <span key={i} className="em-char" ref={el => { charRefs.current[i] = el }}>{char}</span>
-              ))}
-              {' '}
+                <span
+                  key={i}
+                  className="em-char"
+                  ref={(el) => {
+                    charRefs.current[i] = el
+                  }}
+                >
+                  {char}
+                </span>
+              ))}{' '}
               {'Medicine'.split('').map((char, i) => (
-                <span key={i + 9} className="em-char" ref={el => { charRefs.current[i + 9] = el }}>{char}</span>
+                <span
+                  key={i + 9}
+                  className="em-char"
+                  ref={(el) => {
+                    charRefs.current[i + 9] = el
+                  }}
+                >
+                  {char}
+                </span>
               ))}
             </h1>
             <div className="ekg-underline" aria-hidden="true">
               <div className="ekg-track">
-                <svg className="ekg-svg" viewBox={ekgViewBox} preserveAspectRatio="none" overflow="visible">
+                <svg
+                  className="ekg-svg"
+                  viewBox={ekgViewBox}
+                  preserveAspectRatio="none"
+                  overflow="visible"
+                >
                   <defs>
                     <filter id="electron-blur" x="-300%" y="-300%" width="700%" height="700%">
                       <feGaussianBlur stdDeviation={5} />
@@ -225,15 +258,25 @@ export default function Start() {
                     vectorEffect="non-scaling-stroke"
                   />
                   <g className="electron-dot" ref={electron1Ref}>
-                    <animateMotion dur={electronDur} repeatCount="indefinite" calcMode="linear"
-                      keyPoints="0;1" keyTimes="0;1">
+                    <animateMotion
+                      dur={electronDur}
+                      repeatCount="indefinite"
+                      calcMode="linear"
+                      keyPoints="0;1"
+                      keyTimes="0;1"
+                    >
                       <mpath href="#ekg-trace-path" />
                     </animateMotion>
                     <circle r={18} fill="url(#ekg-glow)" filter="url(#electron-blur)" />
                     <circle r={4} fill="#fff" opacity={0.95} />
                   </g>
                 </svg>
-                <svg className="ekg-svg" viewBox={ekgViewBox} preserveAspectRatio="none" overflow="visible">
+                <svg
+                  className="ekg-svg"
+                  viewBox={ekgViewBox}
+                  preserveAspectRatio="none"
+                  overflow="visible"
+                >
                   <path
                     id="ekg-trace-path-2"
                     d={ekgPath}
@@ -245,8 +288,13 @@ export default function Start() {
                     vectorEffect="non-scaling-stroke"
                   />
                   <g className="electron-dot" ref={electron2Ref}>
-                    <animateMotion dur={electronDur} repeatCount="indefinite" calcMode="linear"
-                      keyPoints="0;1" keyTimes="0;1">
+                    <animateMotion
+                      dur={electronDur}
+                      repeatCount="indefinite"
+                      calcMode="linear"
+                      keyPoints="0;1"
+                      keyTimes="0;1"
+                    >
                       <mpath href="#ekg-trace-path-2" />
                     </animateMotion>
                     <circle r={18} fill="url(#ekg-glow)" filter="url(#electron-blur)" />
@@ -269,23 +317,27 @@ export default function Start() {
           </p>
           <div className="hero-cta">
             {user ? (
-              <button 
-                onClick={() => navigate('/compose')} 
-                className="btn-primary btn-large"
-              >
+              <button onClick={() => navigate('/compose')} className="btn-primary btn-large">
                 Start Documenting
                 <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
                 </svg>
               </button>
             ) : (
-              <button 
-                onClick={signInWithGoogle} 
-                className="btn-primary btn-large"
-              >
+              <button onClick={signInWithGoogle} className="btn-primary btn-large">
                 Get Started
                 <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
                 </svg>
               </button>
             )}
@@ -300,7 +352,7 @@ export default function Start() {
           </span>
           <span className="badge-item">
             <svg className="badge-icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M10 3v7H3v4h7v7h4v-7h7v-4h-7V3h-4z"/>
+              <path d="M10 3v7H3v4h7v7h4v-7h7v-4h-7V3h-4z" />
             </svg>
             Designed by ER Physicians for ER Physicians
           </span>
@@ -316,7 +368,12 @@ export default function Start() {
               <div className="feature-card">
                 <div className="feature-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                 </div>
                 <h3>Rapid Documentation</h3>
@@ -325,7 +382,12 @@ export default function Start() {
               <div className="feature-card">
                 <div className="feature-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                 </div>
                 <h3>Worst-First Approach</h3>
@@ -334,7 +396,12 @@ export default function Start() {
               <div className="feature-card">
                 <div className="feature-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
                   </svg>
                 </div>
                 <h3>PHI Protected</h3>
@@ -343,7 +410,12 @@ export default function Start() {
               <div className="feature-card">
                 <div className="feature-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
                   </svg>
                 </div>
                 <h3>AI-Powered</h3>
@@ -414,17 +486,11 @@ export default function Start() {
           <h2>Ready to Streamline Your Documentation?</h2>
           <p>Join emergency physicians who are saving time on every shift</p>
           {user ? (
-            <button 
-              onClick={() => navigate('/compose')} 
-              className="btn-primary btn-large"
-            >
+            <button onClick={() => navigate('/compose')} className="btn-primary btn-large">
               Start Documenting Now
             </button>
           ) : (
-            <button 
-              onClick={signInWithGoogle} 
-              className="btn-primary btn-large"
-            >
+            <button onClick={signInWithGoogle} className="btn-primary btn-large">
               Sign Up Free
             </button>
           )}
@@ -439,11 +505,12 @@ export default function Start() {
               <span className="footer-logo">MDM Generator</span>
               <p>Educational tool for Emergency Medicine documentation</p>
             </div>
-            <div className="footer-disclaimer">
-              <p className="disclaimer-text">
-                <strong>⚠️ Important Notice:</strong> This tool is for educational purposes only. 
-                Never enter Protected Health Information (PHI) or real patient data. 
-                All generated documentation must be reviewed and verified by a licensed physician before use.
+            <div className="footer-attestation">
+              <p className="attestation-text">
+                <strong>⚠️ Important Notice:</strong> This tool is for educational purposes only.
+                Never enter Protected Health Information (PHI) or real patient data. All generated
+                documentation reflects physician input and must be reviewed for accuracy and
+                completeness before clinical use.
               </p>
             </div>
           </div>
