@@ -309,7 +309,79 @@ Build Mode prompts use numbered instructions where surveillance items are condit
 
 ## 5. Scope Discovery Protocol
 
-> *Placeholder — written in Task 5*
+### 5.1 Discovery Steps
+
+**Step 0 — Classify your change** using the Category Taxonomy (Section 2). This determines which pipeline nodes are in scope and which you can skip. A Category B change (display text only) can skip straight to nodes 9-11.
+
+**Step 1 — Grep for the old term** across all relevant file types:
+
+```bash
+grep -ri "<old_term>" --include="*.ts" --include="*.tsx" --include="*.css" --include="*.md" .
+```
+
+This will surface many hits. Expect false positives — different features may use the same word in unrelated contexts.
+
+**Step 2 — Architectural knowledge to filter results:**
+
+Classify each hit as:
+- **(a) Must change** — part of the MDM data pipeline for this change
+- **(b) Intentionally retained** — backward-compat bridging code, migration gates
+- **(c) Different feature** — same word, unrelated context (e.g., surveillance disclaimers vs. MDM disclaimers)
+
+**Step 2.5 — Account for naming divergences** *(critical, often missed):*
+
+Legacy uses `snake_case`, Build Mode uses `camelCase`. Always search for **both naming conventions** plus known aliases:
+
+```bash
+# Example: searching for a field related to "data reviewed"
+grep -ri "data_reviewed_ordered" --include="*.ts" --include="*.tsx" .
+grep -ri "dataReviewed" --include="*.ts" --include="*.tsx" .
+grep -ri "dataReviewedOrdered" --include="*.ts" --include="*.tsx" .
+```
+
+Searching for only one convention will miss files in the other system. Also check `extractFinalMdm()` alias chains in `index.ts` — the field may have additional aliases you're not aware of.
+
+**Step 3 — Trace the data flow:**
+
+```
+Constants → Prompt instruction → LLM JSON response → Zod parse → API response → Frontend render
+                                                          ↑
+                                                 Fallback defaults (index.ts)
+                                                 extractFinalMdm() aliases (index.ts)
+```
+
+Every node in this chain that references the old term needs updating.
+
+### 5.2 Scope-by-Category Decision Matrix
+
+Quick reference: which pipeline nodes require changes for each category.
+
+| Pipeline Node | A: Field Rename | B: Display Text | C: Value Change | D: Section Add/Remove |
+|---------------|:-:|:-:|:-:|:-:|
+| 1. Constants | If canonical value | — | YES | If canonical value |
+| 2. Zod Schemas | YES | — | — | YES |
+| 3. Prompt Builders | YES | — | If value in prompt | YES |
+| 4. LLM Output | *(consequence)* | *(consequence)* | *(consequence)* | *(consequence)* |
+| 5. Schema Parse | YES | — | — | YES |
+| 6. Field Extraction | YES (add alias) | — | — | YES |
+| 7. API Response | *(consequence)* | — | — | YES |
+| 8. Frontend Types | YES | — | — | YES |
+| 9. Frontend Render | YES | YES | Maybe | YES |
+| 10. CSS | If BEM class contains field name | If BEM class contains field name | — | YES |
+| 11. Tests + Docs | YES | YES | YES | YES |
+
+### 5.3 Exclusion Table Template
+
+After discovery, document what you're **not** changing and why. This prevents future reviewers from filing bugs about "missed" files.
+
+| Category | Example Files | Why Excluded |
+|----------|---------------|--------------|
+| Different feature using same term | *(files)* | *(rationale — e.g., "surveillance disclaimers are a separate feature")* |
+| Archived/frozen artifacts | *(files)* | *(rationale — e.g., "BMAD planning docs, not active code")* |
+| Third-party/scraped content | *(files)* | *(rationale — e.g., "web content from external sources")* |
+| Intentional backward-compat | *(files)* | *(rationale — e.g., "Zod raw schema accepts old field name for migration")* |
+
+See **Appendix A §A.2** for a concrete example of this table.
 
 ---
 
