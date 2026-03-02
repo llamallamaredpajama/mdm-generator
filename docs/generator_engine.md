@@ -224,8 +224,9 @@ Requirements:
 - No fabrication of facts. If the narrative lacks info, state
   conservative defaults (e.g., labs/imaging/consults considered
   but not indicated) and explain reasoning briefly.
-- Educational draft only. The physician must review and is
-  responsible for accuracy.
+- Include the physician attestation: the treating physician
+  provided the clinical input and has reviewed the output for
+  accuracy and completeness.
 
 Use the following guide to structure the output and ensure completeness:
 --- GUIDE START ---
@@ -240,7 +241,7 @@ NARRATIVE (physician-provided; do not assume facts not stated):
 
 OUTPUT FORMAT INSTRUCTIONS:
 - Return a strict JSON object with keys: differential,
-  data_reviewed_ordered, decision_making, risk, disposition, disclaimers.
+  data_reviewed_ordered, decision_making, risk, disposition, attestation.
 - Each key should contain strings or arrays of strings as appropriate;
   avoid placeholders like 'TBD'.
 - After the JSON, include a delimiter line: '---TEXT---' and then
@@ -389,9 +390,9 @@ export const MdmSchema = z.object({
   decision_making: z.string(),
   risk: z.union([z.string(), z.array(z.string())]),
   disposition: z.string().optional().default(''),
-  disclaimers: z.union([z.string(), z.array(z.string())])
-    .optional()
-    .default('Educational draft. Physician must review. No PHI.'),
+  attestation: z.union([z.string(), z.array(z.string())]).optional(),
+  disclaimers: z.union([z.string(), z.array(z.string())]).optional(),
+  // .transform() bridges old disclaimers → attestation with PHYSICIAN_ATTESTATION fallback
 })
 ```
 
@@ -438,8 +439,8 @@ DISPOSITION DECISION PROCESS:
 
 DISPOSITION: [Admit/Discharge/Transfer/AMA with rationale]
 
-NOTES:
-  - Educational draft. Physician must review. No PHI.
+ATTESTATION:
+  This documentation was generated from the direct clinical input of the treating physician, based on the patient encounter as described. All content has been reviewed by the physician for accuracy and completeness.
 ```
 
 ### 6.3 Text Rendering Function
@@ -527,10 +528,10 @@ When all parsing fails, return safe defaults:
 {
   differential: [],
   data_reviewed_ordered: 'Labs were considered but not indicated based on presentation; clinical monitoring prioritized.',
-  decision_making: 'Clinical reasoning provided narrative; defaults applied where data absent. Physician must review.',
+  decision_making: 'Clinical reasoning provided narrative; defaults applied where data absent.',
   risk: ['Discussed risks/benefits; return precautions given.'],
   disposition: '',
-  disclaimers: 'Educational draft. Physician must review. No PHI.',
+  attestation: PHYSICIAN_ATTESTATION,
 }
 ```
 
@@ -917,4 +918,4 @@ The MDM Generator employs a multi-mode pipeline that:
 6. **Parses** and validates output against strict medical documentation schemas (Zod)
 7. **Handles** errors gracefully with medically-safe fallback defaults
 
-The system's core differentiator is its **worst-first approach** — prioritizing dangerous diagnoses over likely ones — combined with **explicit defaults** that prevent fabrication while maintaining clinical utility. Build Mode's progressive workflow allows physicians to iterate on each section, while Quick Mode provides a streamlined single-pass experience. The surveillance enrichment pipeline adds real-time epidemiological context without blocking MDM generation. All outputs include mandatory disclaimers emphasizing educational use and required physician review.
+The system's core differentiator is its **worst-first approach** — prioritizing dangerous diagnoses over likely ones — combined with **explicit defaults** that prevent fabrication while maintaining clinical utility. Build Mode's progressive workflow allows physicians to iterate on each section, while Quick Mode provides a streamlined single-pass experience. The surveillance enrichment pipeline adds real-time epidemiological context without blocking MDM generation. All outputs include a physician attestation statement confirming the documentation was generated from physician input and reviewed for accuracy.

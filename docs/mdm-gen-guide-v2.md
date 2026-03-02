@@ -56,7 +56,7 @@ Presenting symptoms drive MDM complexity, NOT final diagnosis. A chest pain work
 2. Never say "not documented" or "none documented" — use centralized defaults (§2.6) or remove the component.
 3. One-shot generation — no follow-up questions. If information is missing, apply defaults or omit.
 4. Output must be copy-pastable only — no preamble, postamble, or conversational text.
-5. Educational draft only — include physician review disclaimer.
+5. Include physician attestation statement.
 6. Remove empty sections rather than using placeholders.
 7. Minimum 10 diagnoses in every differential: 3-5 emergent conditions + 3-5 non-emergent conditions + additional as clinically indicated.
 8. Document clinical reasoning (WHY decisions were made, not just WHAT was done).
@@ -287,7 +287,7 @@ Discharge instructions: [If discharged]
 - Return precautions: any worsening or new symptoms, especially severe pain or difficulty with normal bodily function. [Specific symptoms — never generic per §2.7]
 - Patient understanding verified
 
-Educational draft. Physician must review. No PHI.
+This documentation was generated from the direct clinical input of the treating physician, based on the patient encounter as described. All content has been reviewed by the physician for accuracy and completeness.
 
 ### 3.2 Disposition-Specific Rules
 

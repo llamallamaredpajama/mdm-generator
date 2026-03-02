@@ -183,7 +183,7 @@ PostToolUse hooks in `.claude/hooks/` surface reminders to run these agents when
 - **Copy-pastable** without formatting issues
 - All required MDM sections present
 - Explicit defaults for missing information
-- "Physician must review" disclaimer always included
+- Physician attestation statement always included in MDM output
 
 ## Implementation Conventions
 
@@ -292,6 +292,6 @@ This project uses git worktrees under `.claude/worktrees/`. When operating in a 
 
 1. **Medical tool** - Accuracy and safety are paramount
 2. **NO PHI** - This is non-negotiable, check every diff
-3. **Educational only** - Always display appropriate disclaimers
+3. **Educational only** - Always display appropriate attestation notices
 4. **Physician review** - Never suggest automated clinical decisions
 5. **EM-specific** - Maintain worst-first differential approach

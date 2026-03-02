@@ -8,7 +8,7 @@ Last updated: 2025-08-08
 - One-liner: Turn your natural EM physician narrative into a compliant, high-complexity MDM draft in a clean, copy-pastable format.
 - Problem: EM physicians document under time pressure in systems not aligned with EM “worst-first” thinking, leading to under-documented complexity and missed billing levels.
 - Value: Physician‑centric input → complete, compliant, copy‑pastable MDM tailored to EM standards.
-- Differentiators: EM‑specific worst‑first orientation; curated prompting from guide; copy‑pastable output; strong safety disclaimers.
+- Differentiators: EM‑specific worst‑first orientation; curated prompting from guide; copy‑pastable output; physician attestation statement.
 - Constraints: Educational use only; no PHI; no long‑term storage.
 
 2. Target users and use cases
@@ -39,7 +39,7 @@ Last updated: 2025-08-08
 - Weekly active sessions (non‑PHI)
 
 5. UX overview
-- Start: disclaimers + Google Sign‑In
+- Start: attestation notice + Google Sign‑In
 - Compose: large textarea + Dictation Guide + checklist; Generate disabled until confirmations
 - Preflight: PHI confirm, token estimate, subscription check
 - Output: formatted MDM with copy; “Review required” banner; original narrative collapsible
