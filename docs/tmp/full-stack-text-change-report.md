@@ -663,7 +663,81 @@ Each phase includes checkboxes, the relevant pipeline nodes, and file paths from
 
 ## 8. Verification Protocol
 
-> *Placeholder — written in Task 8*
+After completing all execution phases, run this protocol to confirm no references to the old term remain in active code.
+
+### 8.1 Grep Sweep
+
+Run a comprehensive search for the old term across all file types:
+
+```bash
+grep -ri "<old_term>" \
+  --include="*.ts" --include="*.tsx" --include="*.css" --include="*.md" \
+  . | grep -v node_modules | grep -v dist | grep -v ".firecrawl"
+```
+
+**Zero hits expected in active code files:**
+
+| File Category | Files to Verify |
+|---------------|----------------|
+| Constants | `backend/src/constants.ts` |
+| Legacy schemas | `backend/src/outputSchema.ts` (except backward-compat `.transform()` bridging) |
+| Build Mode schemas | `backend/src/buildModeSchemas.ts` |
+| Legacy prompt | `backend/src/promptBuilder.ts` |
+| Build Mode prompt | `backend/src/promptBuilderBuildMode.ts` |
+| Quick Mode prompt | `backend/src/promptBuilderQuickMode.ts` |
+| Parse prompt | `backend/src/parsePromptBuilder.ts` |
+| Backend routes | `backend/src/index.ts` (except `extractFinalMdm()` alias chains) |
+| Frontend types | `frontend/src/types/encounter.ts` |
+| Frontend render — Legacy | `frontend/src/routes/Output.tsx` |
+| Frontend render — Build Mode | `MdmPreviewPanel.tsx`, `EncounterEditor.tsx` |
+| Frontend render — Quick Mode | `QuickEncounterEditor.tsx` |
+| Frontend pages | `Start.tsx`, `Compose.tsx` |
+| CSS files | All `.css` files for affected BEM classes |
+| Tests | All test files and mock factories |
+
+### 8.2 Allowed Residuals
+
+Some hits are expected and correct — these are intentional backward-compatibility mechanisms:
+
+| Location | What Remains | Why It's Correct |
+|----------|-------------|-----------------|
+| `outputSchema.ts` — raw schema | Old field name with `.optional()` | Zod `.transform()` migration gate (Pattern 1) — accepts old LLM output |
+| `index.ts` — `extractFinalMdm()` | Old field name in alias chain | Alias chain (Pattern 2) — catches non-deterministic LLM naming |
+| Documentation / this guide | References to old term | Documenting the change itself |
+
+**Rule:** If a hit doesn't fall into one of these categories, it's a missed update. Go back to the relevant phase and fix it.
+
+### 8.3 Residual Analysis Template
+
+Document every remaining hit:
+
+```markdown
+| # | File | Line | Content | Classification |
+|---|------|------|---------|----------------|
+| 1 | outputSchema.ts | 16 | `disclaimers: z.union(...)` | Allowed — backward-compat bridge |
+| 2 | index.ts | 1255 | `j.disclaimers` | Allowed — extraction alias |
+| 3 | ??? | ??? | ??? | ⚠️ MISSED — needs update |
+```
+
+### 8.4 Automated Verification Commands
+
+```bash
+# 1. Backend compiles clean
+cd backend && pnpm build
+
+# 2. Frontend full gate (typecheck + lint + test)
+cd frontend && pnpm check
+
+# 3. Grep sweep — pipe to file for review
+grep -ri "<old_term>" --include="*.ts" --include="*.tsx" --include="*.css" \
+  . | grep -v node_modules | grep -v dist > /tmp/residuals.txt
+cat /tmp/residuals.txt | wc -l  # Should match expected residual count
+
+# 4. Confirm all three modes reference the new term
+grep -r "<new_term>" backend/src/promptBuilder.ts         # Legacy
+grep -r "<new_term>" backend/src/promptBuilderBuildMode.ts # Build Mode
+grep -r "<new_term>" backend/src/promptBuilderQuickMode.ts # Quick Mode
+```
 
 ---
 
@@ -903,4 +977,102 @@ This was a worktree merge commit combining all 5 feature commits. The worktree w
 
 ## Appendix B: Architecture Reference
 
-> *Placeholder — written in Task 8*
+### B.1 Scope Decision Matrix (Quick Reference)
+
+Categories (rows) × Pipeline Nodes (columns). Copy of §5.2 for quick lookup.
+
+| Pipeline Node | A: Field Rename | B: Display Text | C: Value Change | D: Section Add/Remove |
+|---------------|:-:|:-:|:-:|:-:|
+| 1. Constants | If canonical value | — | YES | If canonical value |
+| 2. Zod Schemas | YES | — | — | YES |
+| 3. Prompt Builders | YES | — | If value in prompt | YES |
+| 4. LLM Output | *(consequence)* | *(consequence)* | *(consequence)* | *(consequence)* |
+| 5. Schema Parse | YES | — | — | YES |
+| 6. Field Extraction | YES (add alias) | — | — | YES |
+| 7. API Response | *(consequence)* | — | — | YES |
+| 8. Frontend Types | YES | — | — | YES |
+| 9. Frontend Render | YES | YES | Maybe | YES |
+| 10. CSS | If BEM class | If BEM class | — | YES |
+| 11. Tests + Docs | YES | YES | YES | YES |
+
+### B.2 Data Flow Diagrams
+
+#### Legacy One-Shot Pipeline
+
+```
+constants.ts ──→ outputSchema.ts ──→ promptBuilder.ts ──→ Vertex AI (Gemini)
+                                                               │
+                                                               ▼
+                                                         LLM JSON response
+                                                               │
+                                                               ▼
+                                              Zod .parse() + .transform()
+                                              (outputSchema.ts — Pattern 1)
+                                                               │
+                                                               ▼
+                                              renderMdmText() constructs text
+                                              (outputSchema.ts:25-60)
+                                                               │
+                                                               ▼
+                                              Express JSON response ──→ Output.tsx
+                                                                        │
+                                                                        ▼
+                                                                   Copy-paste MDM
+```
+
+#### Build Mode Pipeline (3-Section Progressive)
+
+```
+constants.ts ──→ buildModeSchemas.ts ──→ promptBuilderBuildMode.ts ──→ Vertex AI
+                                                                          │
+                                                                          ▼
+                    ┌─────────────────────────────────────────── LLM JSON response
+                    │                                                     │
+                    │                                                     ▼
+                    │                              extractFinalMdm() alias chains
+                    │                              (index.ts:~1250 — Pattern 2)
+                    │                                                     │
+                    │                                                     ▼
+                    │                              Firestore write (encounter doc)
+                    │                                                     │
+                    │                                                     ▼
+                    │                              onSnapshot + defensive defaults
+                    │                              (useEncounter.ts — Pattern 3)
+                    │                                                     │
+                    ▼                                                     ▼
+              S2 Preview                                          Finalized MDM
+        ┌─────────────────┐                                 ┌──────────────────┐
+        │ MdmPreviewPanel │                                 │ EncounterEditor  │
+        │ SECTIONS array  │                                 │ <pre>{text}</pre>│
+        │ (structured)    │                                 │ (LLM text blob)  │
+        └─────────────────┘                                 └──────────────────┘
+```
+
+#### Quick Mode Pipeline
+
+```
+constants.ts ──→ outputSchema.ts ──→ promptBuilderQuickMode.ts ──→ Vertex AI
+                                                                       │
+                                                                       ▼
+                                                                 LLM JSON response
+                                                                       │
+                                                                       ▼
+                                                      Zod .parse() + .transform()
+                                                      (same as Legacy — Pattern 1)
+                                                                       │
+                                                                       ▼
+                                               Express JSON response ──→ QuickEncounterEditor.tsx
+                                                                         │
+                                                                         ▼
+                                                                    Copy-paste MDM
+```
+
+### B.3 Key Architectural Patterns Summary
+
+| # | Pattern | Location | When to Apply |
+|---|---------|----------|---------------|
+| 1 | Zod `.transform()` migration gate | `outputSchema.ts` | Category A in Legacy/Quick |
+| 2 | `extractFinalMdm()` alias chains | `index.ts:~1250` | Category A in Build Mode |
+| 3 | `useEncounter.ts` defensive defaults | `useEncounter.ts:90-130` | Category A or D |
+| 4 | Dual-shape extraction helpers | `DashboardOutput.tsx` | When LLM response shape changes |
+| 5 | Conditional prompt numbering | `promptBuilderBuildMode.ts` | Any prompt modification |
