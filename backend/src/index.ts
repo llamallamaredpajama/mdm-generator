@@ -1040,7 +1040,14 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
           if (Array.isArray(rawParsed.cdrAnalysis)) {
             const cdrValidated = z.array(CdrAnalysisItemSchema).safeParse(rawParsed.cdrAnalysis)
             if (cdrValidated.success) {
-              cdrAnalysis = cdrValidated.data.filter((item) => item.applicable)
+              const applicableCdrs = cdrValidated.data.filter((item) => item.applicable)
+              const seenCdrNames = new Set<string>()
+              cdrAnalysis = applicableCdrs.filter((item) => {
+                const key = item.name.toLowerCase().trim()
+                if (seenCdrNames.has(key)) return false
+                seenCdrNames.add(key)
+                return true
+              })
             } else {
               console.warn('Section 1 cdrAnalysis validation failed (non-blocking)')
             }
