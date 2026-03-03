@@ -110,7 +110,15 @@ function findCdrDef(
     .trim()
     .toLowerCase()
   if (shortName.length >= 3) {
-    return cdrLibrary.find((c) => c.name.toLowerCase() === shortName)
+    return cdrLibrary.find((c) => {
+      if (c.name.toLowerCase() === shortName) return true
+      // Also match against CDR's fullName without its own parenthetical
+      const cdrShort = c.fullName
+        .replace(/\s*\(.*$/, '')
+        .trim()
+        .toLowerCase()
+      return cdrShort === shortName
+    })
   }
 
   return undefined
