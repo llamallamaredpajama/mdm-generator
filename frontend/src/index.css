@@ -204,6 +204,28 @@ textarea::placeholder {
 }
 
 /* ─────────────────────────────────────────
+   Neumorphic Interaction: Press-In Effect
+   ───────────────────────────────────────── */
+
+button:active:not(:disabled),
+[role='button']:active:not(:disabled),
+a.btn:active:not(:disabled) {
+  transition: all var(--transition-press);
+}
+
+/* ─────────────────────────────────────────
+   Responsive: Mobile Shadow Scaling
+   ───────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  :root {
+    --neu-flat: 3px 3px 8px var(--neu-dark), -3px -3px 8px var(--neu-light);
+    --neu-flat-lg: 6px 6px 16px var(--neu-dark), -6px -6px 16px var(--neu-light);
+    --neu-inset: inset 3px 3px 8px var(--neu-dark), inset -3px -3px 8px var(--neu-light);
+  }
+}
+
+/* ─────────────────────────────────────────
    Accessibility: Reduced Motion
    ───────────────────────────────────────── */
 
@@ -225,6 +247,16 @@ textarea::placeholder {
   .dark-card,
   .collapsible,
   .alert {
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  .form-input,
+  .form-textarea {
     border: 1px solid var(--color-border-subtle);
   }
 }
