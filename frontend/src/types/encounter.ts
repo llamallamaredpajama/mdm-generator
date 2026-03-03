@@ -110,6 +110,8 @@ export interface DifferentialItem {
 export interface CdrAnalysisItem {
   /** CDR name (e.g., "HEART Score", "Wells PE Criteria") */
   name: string
+  /** CDR library ID from backend catalog match */
+  cdrId?: string
   /** Whether this CDR is applicable to the presentation */
   applicable: boolean
   /** Partial or complete score (null if insufficient data) */

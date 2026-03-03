@@ -287,6 +287,7 @@ export interface FinalMdm {
 
 export interface CdrAnalysisItem {
   name: string
+  cdrId?: string
   applicable: boolean
   score?: number | null
   interpretation?: string | null

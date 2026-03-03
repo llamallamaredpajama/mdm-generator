@@ -110,6 +110,8 @@ export type DifferentialItem = z.infer<typeof DifferentialItemSchema>
 export const CdrAnalysisItemSchema = z.object({
   /** CDR name (e.g., "HEART Score", "Wells PE Criteria") */
   name: z.string(),
+  /** CDR library ID when matched from catalog (e.g., "heart", "wells_pe") */
+  cdrId: z.string().optional(),
   /** Whether this CDR is applicable to the presentation */
   applicable: z.boolean(),
   /** Partial or complete score (null if insufficient data) */

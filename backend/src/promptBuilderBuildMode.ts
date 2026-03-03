@@ -136,6 +136,7 @@ export function buildSection1Prompt(
     '  "cdrAnalysis": [',
     '    {',
     '      "name": "CDR name (e.g., HEART Score)",',
+    '      "cdrId": "exact_id_from_CDR_Index (e.g., heart). Omit if CDR is not in the index above.",',
     '      "applicable": true,',
     '      "score": null,',
     '      "interpretation": null,',
