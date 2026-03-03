@@ -3,8 +3,8 @@ import { batch19OncDermEntCdrs } from '../batch-19-onc-derm-ent'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 19 — Oncologic Emergency, Critical Care, Dermatology, ENT, Orthopedic CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch19OncDermEntCdrs).toHaveLength(10)
+  it('exports exactly 6 CDR definitions', () => {
+    expect(batch19OncDermEntCdrs).toHaveLength(6)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -216,17 +216,7 @@ describe('Batch 19 — Oncologic Emergency, Critical Care, Dermatology, ENT, Ort
   })
 
   describe('individual CDR spot checks', () => {
-    it('SINS Score has 6 select components and sum scoring with max 18', () => {
-      const sins = batch19OncDermEntCdrs.find((c) => c.id === 'sins_score')!
-      expect(sins.components).toHaveLength(6)
-      expect(sins.scoring.method).toBe('sum')
-      expect(sins.category).toBe('ONCOLOGIC EMERGENCY')
-      for (const comp of sins.components) {
-        expect(comp.type).toBe('select')
-      }
-      const ranges = [...sins.scoring.ranges].sort((a, b) => a.min - b.min)
-      expect(ranges[ranges.length - 1].max).toBe(18)
-    })
+    // SINS Score quarantined — only 1/6 components user-answerable (5 imaging-based)
 
     it('ABCDE Melanoma has 5 boolean components each worth 1 point and threshold scoring', () => {
       const abcde = batch19OncDermEntCdrs.find((c) => c.id === 'abcde_melanoma')!
@@ -280,20 +270,12 @@ describe('Batch 19 — Oncologic Emergency, Critical Care, Dermatology, ENT, Ort
       }
     })
 
-    it('Lund-Mackay has 12 select components (6 right + 6 left sinus regions)', () => {
-      const lm = batch19OncDermEntCdrs.find((c) => c.id === 'lund_mackay')!
-      expect(lm.components).toHaveLength(12)
-      expect(lm.scoring.method).toBe('sum')
-      expect(lm.category).toBe('ENT / OTOLARYNGOLOGY')
-      const rightComps = lm.components.filter((c) => c.id.startsWith('r_'))
-      const leftComps = lm.components.filter((c) => c.id.startsWith('l_'))
-      expect(rightComps).toHaveLength(6)
-      expect(leftComps).toHaveLength(6)
-    })
+    // Lund-Mackay quarantined — all 12 components imaging-based (section2)
+    // Salter-Harris quarantined — single imaging-based component
+    // Weber Ankle quarantined — single imaging-based component
 
-    it('covers 5 distinct categories', () => {
+    it('covers 4 distinct categories (after quarantine of ONCOLOGIC EMERGENCY + some ORTHO)', () => {
       const categories = new Set(batch19OncDermEntCdrs.map((c) => c.category))
-      expect(categories.has('ONCOLOGIC EMERGENCY')).toBe(true)
       expect(categories.has('CRITICAL CARE & ICU')).toBe(true)
       expect(categories.has('DERMATOLOGY')).toBe(true)
       expect(categories.has('ENT / OTOLARYNGOLOGY')).toBe(true)

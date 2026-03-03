@@ -82,6 +82,35 @@ export const batch16EnviroObPsychCdrs: CdrSeed[] = [
           },
         ],
       },
+      {
+        id: 'shivering',
+        label: 'Shivering present (key discriminator: present in HT I, absent in HT II+)',
+        type: 'boolean',
+        value: 0,
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+      },
+      {
+        id: 'consciousness_level',
+        label: 'Level of consciousness',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'Conscious and alert (HT I)', value: 0 },
+          { label: 'Impaired consciousness — confused, lethargic (HT II)', value: 0 },
+          { label: 'Unconscious — responsive to stimuli (HT III)', value: 0 },
+          { label: 'Unconscious — unresponsive (HT IV–V)', value: 0 },
+        ],
+      },
+      {
+        id: 'vital_signs_present',
+        label: 'Vital signs (pulse and respirations) detectable',
+        type: 'boolean',
+        value: 0,
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+      },
     ],
     scoring: {
       method: 'algorithm',
@@ -257,229 +286,14 @@ export const batch16EnviroObPsychCdrs: CdrSeed[] = [
   },
 
   // ---------------------------------------------------------------------------
-  // HELLP Syndrome Mississippi Classification
-  // Algorithm: Class 1/2/3 based on platelets + AST/LDH levels
+  // HELLP Mississippi: QUARANTINED → scripts/cdr-configs/_quarantine/hellp_mississippi.ts
+  // Reason: Pure lab-based classification (0 user-answerable components)
   // ---------------------------------------------------------------------------
-  {
-    id: 'hellp_mississippi',
-    name: 'HELLP Classification',
-    fullName: 'HELLP Syndrome Classification (Mississippi / Martin)',
-    category: 'OB/GYN & OBSTETRIC EMERGENCY',
-    application:
-      'Classifies severity of HELLP syndrome (Hemolysis, Elevated Liver enzymes, Low Platelets) to guide management intensity. All classes typically require delivery.',
-    applicableChiefComplaints: [
-      'preeclampsia',
-      'epigastric_pain',
-      'obstetric_emergency',
-      'thrombocytopenia',
-      'right_upper_quadrant_pain',
-    ],
-    keywords: [
-      'HELLP',
-      'Mississippi classification',
-      'Martin',
-      'hemolysis',
-      'elevated liver enzymes',
-      'low platelets',
-      'LDH',
-      'AST',
-      'obstetrics',
-      'preeclampsia',
-    ],
-    requiredTests: ['CBC', 'LFTs', 'LDH', 'peripheral blood smear'],
-    components: [
-      {
-        id: 'platelet_count',
-        label: 'Platelet count',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: '≤50,000/μL', value: 1 },
-          { label: '>50,000–100,000/μL', value: 2 },
-          { label: '>100,000–150,000/μL', value: 3 },
-        ],
-      },
-      {
-        id: 'ast_level',
-        label: 'AST (SGOT) level',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: 'AST ≥70 IU/L', value: 0 },
-          { label: 'AST <70 IU/L', value: 1 },
-        ],
-      },
-      {
-        id: 'ldh_level',
-        label: 'LDH level',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: 'LDH ≥600 IU/L', value: 0 },
-          { label: 'LDH <600 IU/L', value: 1 },
-        ],
-      },
-      {
-        id: 'hemolysis_evidence',
-        label: 'Evidence of hemolysis (schistocytes, elevated indirect bilirubin, low haptoglobin)',
-        type: 'boolean',
-        value: 0,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 1,
-          max: 1,
-          risk: 'Class 1 - Severe',
-          interpretation:
-            'Platelets ≤50,000 + AST ≥70 + LDH ≥600; highest maternal morbidity; most aggressive management required; delivery indicated',
-        },
-        {
-          min: 2,
-          max: 2,
-          risk: 'Class 2 - Moderate',
-          interpretation:
-            'Platelets >50,000–100,000 + AST ≥70 + LDH ≥600; intermediate risk; delivery typically indicated',
-        },
-        {
-          min: 3,
-          max: 3,
-          risk: 'Class 3 - Mild',
-          interpretation:
-            'Platelets >100,000–150,000 + AST ≥40 + LDH ≥600; lower risk but still requires close monitoring and likely delivery',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      'Class 1 - Severe': [
-        'immediate_ob_consult',
-        'magnesium_sulfate',
-        'antihypertensives',
-        'platelet_transfusion_if_below_20k',
-        'emergent_delivery',
-        'icu_admission',
-      ],
-      'Class 2 - Moderate': [
-        'ob_consult',
-        'magnesium_sulfate',
-        'antihypertensives',
-        'delivery_planning',
-        'serial_labs_q6h',
-      ],
-      'Class 3 - Mild': [
-        'ob_consult',
-        'magnesium_sulfate',
-        'serial_labs_q6_12h',
-        'close_monitoring',
-        'delivery_planning',
-      ],
-    },
-  },
 
   // ---------------------------------------------------------------------------
-  // Kleihauer-Betke / RhIG Dosing
-  // Algorithm: fetal cell % → estimated FMH volume → RhIG vials needed
+  // Kleihauer-Betke: QUARANTINED → scripts/cdr-configs/_quarantine/kleihauer_betke.ts
+  // Reason: Pure lab calculation / dosing tool (1 user-answerable component)
   // ---------------------------------------------------------------------------
-  {
-    id: 'kleihauer_betke',
-    name: 'Kleihauer-Betke / RhIG Dosing',
-    fullName: 'Kleihauer-Betke Interpretation & RhIG Dosing',
-    category: 'OB/GYN & OBSTETRIC EMERGENCY',
-    application:
-      'Quantifies fetal-maternal hemorrhage (FMH) volume to determine adequate RhIG (RhoGAM) dosing in Rh-negative mothers. Standard dose of 300 μg covers 30 mL of fetal whole blood.',
-    applicableChiefComplaints: [
-      'trauma_in_pregnancy',
-      'vaginal_bleeding_in_pregnancy',
-      'obstetric_emergency',
-      'placental_abruption',
-    ],
-    keywords: [
-      'Kleihauer-Betke',
-      'KB test',
-      'RhIG',
-      'RhoGAM',
-      'fetal-maternal hemorrhage',
-      'FMH',
-      'Rh negative',
-      'alloimmunization',
-      'anti-D',
-    ],
-    requiredTests: ['Kleihauer-Betke test', 'blood type', 'Rh factor'],
-    components: [
-      {
-        id: 'fetal_cell_percentage',
-        label: 'Fetal cell percentage (%)',
-        type: 'number_range',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        min: 0,
-        max: 100,
-      },
-      {
-        id: 'maternal_blood_volume',
-        label: 'Estimated maternal blood volume (mL)',
-        type: 'select',
-        source: 'user_input',
-        options: [
-          { label: '~4000 mL (average, non-pregnant baseline)', value: 4000 },
-          { label: '~5000 mL (term pregnancy, average)', value: 5000 },
-          { label: '~5500 mL (large maternal habitus or multiple gestation)', value: 5500 },
-        ],
-      },
-      {
-        id: 'rh_negative_confirmed',
-        label: 'Mother confirmed Rh-negative',
-        type: 'boolean',
-        value: 0,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 0,
-          max: 0,
-          risk: 'No FMH Detected',
-          interpretation:
-            'Fetal cell percentage = 0%; no detectable fetal-maternal hemorrhage; administer 1 standard dose (300 μg) RhIG if Rh-negative and <20 weeks, per protocol',
-        },
-        {
-          min: 1,
-          max: 30,
-          risk: 'Standard Dose',
-          interpretation:
-            'FMH ≤30 mL fetal whole blood: 1 standard dose (300 μg) RhIG adequate. Formula: FMH (mL) = fetal cell % × maternal blood volume (mL) / 100',
-        },
-        {
-          min: 31,
-          max: 500,
-          risk: 'Additional Doses',
-          interpretation:
-            'FMH >30 mL: Calculate vials = FMH (mL) ÷ 30, round up, then add 1 extra vial. Example: 75 mL FMH → 75/30 = 2.5 → round up to 3 + 1 = 4 vials',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      'No FMH Detected': ['rhig_300mcg_standard_dose', 'ob_follow_up'],
-      'Standard Dose': ['rhig_300mcg_standard_dose', 'repeat_kb_24h', 'ob_follow_up'],
-      'Additional Doses': [
-        'rhig_multiple_vials',
-        'blood_bank_consult',
-        'repeat_kb_24h',
-        'ob_consult',
-        'monitor_for_anemia',
-      ],
-    },
-  },
 
   // ---------------------------------------------------------------------------
   // PHQ-2 Depression Screen
@@ -525,6 +339,14 @@ export const batch16EnviroObPsychCdrs: CdrSeed[] = [
           { label: 'More than half the days', value: 2 },
           { label: 'Nearly every day', value: 3 },
         ],
+      },
+      {
+        id: 'prior_depression_or_treatment',
+        label: 'Known prior depression diagnosis or currently on psychiatric medication',
+        type: 'boolean',
+        value: 0,
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
       },
     ],
     scoring: {
@@ -921,6 +743,20 @@ export const batch16EnviroObPsychCdrs: CdrSeed[] = [
           { label: '−4 Deep sedation — no response to voice, movement to physical stimulation', value: -4 },
           { label: '−5 Unarousable — no response to voice or physical stimulation', value: -5 },
         ],
+      },
+      {
+        id: 'receiving_sedation',
+        label: 'Currently receiving continuous sedation (propofol, midazolam, dexmedetomidine, etc.)',
+        type: 'boolean',
+        value: 0,
+        source: 'section1',
+      },
+      {
+        id: 'mechanically_ventilated',
+        label: 'Patient is mechanically ventilated (intubated)',
+        type: 'boolean',
+        value: 0,
+        source: 'section1',
       },
     ],
     scoring: {

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { batch14PedsHemeCdrs } from '../batch-14-peds-heme'
-import type { CdrSeed, CdrComponent } from '../types'
+import type { CdrSeed } from '../types'
 
 describe('Batch 14 — Pediatric + Hematology CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch14PedsHemeCdrs).toHaveLength(10)
+  it('exports exactly 6 CDR definitions', () => {
+    expect(batch14PedsHemeCdrs).toHaveLength(6)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -247,30 +247,7 @@ describe('Batch 14 — Pediatric + Hematology CDRs', () => {
       }
     })
 
-    it('ISTH DIC has 4 select components and threshold at score 5 for overt DIC', () => {
-      const dic = batch14PedsHemeCdrs.find((c) => c.id === 'isth_dic')!
-      expect(dic.components).toHaveLength(4)
-      expect(dic.scoring.method).toBe('sum')
-      const highRange = dic.scoring.ranges.find((r) => r.risk === 'High')!
-      expect(highRange.min).toBe(5)
-    })
-
-    it('ANC Calculation uses algorithm method with 3 number_range components', () => {
-      const anc = batch14PedsHemeCdrs.find((c) => c.id === 'anc_calculation')!
-      expect(anc.scoring.method).toBe('algorithm')
-      expect(anc.components).toHaveLength(3)
-      for (const comp of anc.components) {
-        expect(comp.type).toBe('number_range')
-      }
-    })
-
-    it('Bhutani Nomogram uses algorithm method and has number_range components', () => {
-      const bhutani = batch14PedsHemeCdrs.find((c) => c.id === 'bhutani_nomogram')!
-      expect(bhutani.scoring.method).toBe('algorithm')
-      const numberRanges = bhutani.components.filter((c) => c.type === 'number_range')
-      expect(numberRanges.length).toBe(2) // TSB and postnatal age
-      expect(bhutani.category).toBe('PEDIATRIC')
-    })
+    // Bhutani Nomogram, ISTH DIC, ANC Calculation, RPI quarantined to _quarantine/
 
     it('Phoenix Sepsis has 4 organ-system select components with sum scoring', () => {
       const phoenix = batch14PedsHemeCdrs.find((c) => c.id === 'phoenix_sepsis')!

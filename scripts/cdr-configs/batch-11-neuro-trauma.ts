@@ -98,165 +98,14 @@ export const batch11NeuroTraumaCdrs: CdrSeed[] = [
   },
 
   // ---------------------------------------------------------------------------
-  // ASPECTS — Alberta Stroke Program Early CT Score
-  // Barber et al., Lancet 2000
-  // 10 MCA territory regions; starts at 10, subtract 1 per involved region
-  // Sum-based (inverted: each positive finding subtracts from 10)
+  // ASPECTS — QUARANTINED: All 10 components are CT imaging (section2).
+  // See _quarantine/aspects.ts
   // ---------------------------------------------------------------------------
-  {
-    id: 'aspects',
-    name: 'ASPECTS',
-    fullName: 'ASPECTS (Alberta Stroke Program Early CT Score)',
-    category: 'NEUROLOGY',
-    application: 'Standardized CT scoring system for quantifying early ischemic changes in MCA territory stroke. Used in endovascular thrombectomy eligibility.',
-    applicableChiefComplaints: ['stroke', 'focal_neurological_deficit', 'mca_stroke'],
-    keywords: ['ASPECTS', 'Alberta Stroke', 'CT score', 'ischemic changes', 'MCA', 'thrombectomy', 'infarct core', 'endovascular'],
-    requiredTests: ['CT head non-contrast'],
-    components: [
-      {
-        id: 'caudate',
-        label: 'C — Caudate nucleus: early ischemic changes present',
-        type: 'boolean',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        value: -1,
-      },
-      {
-        id: 'lentiform',
-        label: 'L — Lentiform nucleus: early ischemic changes present',
-        type: 'boolean',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        value: -1,
-      },
-      {
-        id: 'internal_capsule',
-        label: 'IC — Internal capsule: early ischemic changes present',
-        type: 'boolean',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        value: -1,
-      },
-      {
-        id: 'insular_ribbon',
-        label: 'I — Insular ribbon: early ischemic changes present',
-        type: 'boolean',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        value: -1,
-      },
-      {
-        id: 'mca_m1',
-        label: 'M1 — Anterior MCA cortex: early ischemic changes present',
-        type: 'boolean',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        value: -1,
-      },
-      {
-        id: 'mca_m2',
-        label: 'M2 — MCA cortex lateral to insular ribbon: early ischemic changes present',
-        type: 'boolean',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        value: -1,
-      },
-      {
-        id: 'mca_m3',
-        label: 'M3 — Posterior MCA cortex: early ischemic changes present',
-        type: 'boolean',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        value: -1,
-      },
-      {
-        id: 'mca_m4',
-        label: 'M4 — Anterior MCA territory above M1-M3 (superior): early ischemic changes present',
-        type: 'boolean',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        value: -1,
-      },
-      {
-        id: 'mca_m5',
-        label: 'M5 — Lateral MCA territory above M1-M3 (superior): early ischemic changes present',
-        type: 'boolean',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        value: -1,
-      },
-      {
-        id: 'mca_m6',
-        label: 'M6 — Posterior MCA territory above M1-M3 (superior): early ischemic changes present',
-        type: 'boolean',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        value: -1,
-      },
-    ],
-    scoring: {
-      // Sum method: 10 + sum(component values). Each checked region = -1, so total = 10 minus count.
-      // The scoring engine starts from 0 and sums, so we model as: base 10, each region subtracts 1.
-      // For the sum engine: total ranges from -10 (all regions) to 0 (no regions).
-      // We remap: the raw sum is -10 to 0, but clinically ASPECTS = 10 + raw_sum = 0 to 10.
-      // Since the scoring engine can't add a base, use algorithm method to handle the offset.
-      method: 'algorithm',
-      ranges: [
-        { min: 8, max: 10, risk: 'Favorable', interpretation: 'Small infarct core — favorable for reperfusion therapy (thrombectomy). ASPECTS ≥6 generally accepted for thrombectomy eligibility.' },
-        { min: 6, max: 7, risk: 'Moderate', interpretation: 'Moderate infarct — treatment decision based on clinical factors. ASPECTS 6-7 may still qualify for thrombectomy per AHA/ASA guidelines.' },
-        { min: 0, max: 5, risk: 'Unfavorable', interpretation: 'Large infarct core — generally unfavorable for thrombectomy; higher risk of hemorrhagic transformation. Consider goals of care discussion.' },
-      ],
-    },
-    suggestedTreatments: {
-      Favorable: ['tpa_if_within_window', 'thrombectomy_evaluation', 'stroke_team_activation', 'admit_stroke_unit'],
-      Moderate: ['stroke_team_activation', 'thrombectomy_evaluation', 'admit_stroke_unit', 'neurology_consult'],
-      Unfavorable: ['neurology_consult', 'supportive_care', 'goals_of_care_discussion', 'admit_icu'],
-    },
-  },
 
   // ---------------------------------------------------------------------------
-  // Modified Rankin Scale (mRS)
-  // van Swieten et al., Stroke 1988
-  // Single select component: 0-6 scale of disability after stroke
+  // Modified Rankin Scale — QUARANTINED: Single-item ordinal scale, cannot
+  // decompose into 3+ additive components. See _quarantine/modified_rankin.ts
   // ---------------------------------------------------------------------------
-  {
-    id: 'modified_rankin',
-    name: 'Modified Rankin Scale',
-    fullName: 'Modified Rankin Scale (mRS)',
-    category: 'NEUROLOGY',
-    application: 'Measures degree of disability/dependence after stroke. Primary outcome measure in stroke clinical trials.',
-    applicableChiefComplaints: ['stroke', 'neurological_disability', 'functional_impairment'],
-    keywords: ['mRS', 'modified Rankin scale', 'disability', 'stroke outcome', 'functional independence', 'dependence', 'clinical trial'],
-    components: [
-      {
-        id: 'mrs_grade',
-        label: 'Modified Rankin Scale grade',
-        type: 'select',
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-        options: [
-          { label: '0 — No symptoms', value: 0 },
-          { label: '1 — No significant disability: able to carry out all usual activities despite some symptoms', value: 1 },
-          { label: '2 — Slight disability: able to look after own affairs without assistance, but unable to carry out all previous activities', value: 2 },
-          { label: '3 — Moderate disability: requires some help, but able to walk unassisted', value: 3 },
-          { label: '4 — Moderately severe disability: unable to attend to own bodily needs without assistance, unable to walk unassisted', value: 4 },
-          { label: '5 — Severe disability: requires constant nursing care and attention, bedridden, incontinent', value: 5 },
-          { label: '6 — Dead', value: 6 },
-        ],
-      },
-    ],
-    scoring: {
-      method: 'sum',
-      ranges: [
-        { min: 0, max: 1, risk: 'Excellent Outcome', interpretation: 'mRS 0–1: No symptoms to no significant disability; excellent outcome' },
-        { min: 2, max: 2, risk: 'Good Outcome', interpretation: 'mRS 2: Slight disability; independent but unable to carry out all previous activities' },
-        { min: 3, max: 3, risk: 'Moderate Disability', interpretation: 'mRS 3: Moderate disability; requires some help but able to walk unassisted' },
-        { min: 4, max: 4, risk: 'Moderate-Severe Disability', interpretation: 'mRS 4: Moderately severe disability; unable to walk or attend to bodily needs unassisted' },
-        { min: 5, max: 5, risk: 'Severe Disability', interpretation: 'mRS 5: Severe disability; bedridden, incontinent, requires constant nursing care' },
-        { min: 6, max: 6, risk: 'Dead', interpretation: 'mRS 6: Death' },
-      ],
-    },
-  },
 
   // ---------------------------------------------------------------------------
   // CHALICE Rule — Children's Head Injury Algorithm for Important Clinical Events
@@ -701,7 +550,9 @@ export const batch11NeuroTraumaCdrs: CdrSeed[] = [
   // BIG Score — Pediatric Trauma Mortality
   // Borgman et al., Pediatrics 2011
   // Formula: BIG = (base deficit) + (2.5 × INR) + (15 − GCS)
-  // Continuous inputs; sum-based with weighted components
+  // GCS decomposed into Eye + Verbal + Motor sub-scales (Teasdale & Jennett 1974)
+  // since 15 − GCS = (4−E) + (5−V) + (6−M), which is mathematically equivalent.
+  // This gives 3 user-answerable section1 components instead of 1.
   // ---------------------------------------------------------------------------
   {
     id: 'big_score',
@@ -742,18 +593,48 @@ export const batch11NeuroTraumaCdrs: CdrSeed[] = [
           { label: 'INR >4.0', value: 12 },
         ],
       },
+      // GCS decomposed: 15 − GCS = (4−Eye) + (5−Verbal) + (6−Motor)
+      // Each sub-scale is a bedside clinical assessment (section1)
       {
-        id: 'gcs_big',
-        label: 'Glasgow Coma Scale',
+        id: 'gcs_eye',
+        label: 'GCS — Eye Opening (Teasdale & Jennett)',
         type: 'select',
         source: 'section1',
         autoPopulateFrom: 'physical_exam',
         options: [
-          { label: 'GCS 15 (normal)', value: 0 },
-          { label: 'GCS 13–14', value: 2 },
-          { label: 'GCS 9–12 (moderate TBI)', value: 5 },
-          { label: 'GCS 6–8 (severe TBI)', value: 9 },
-          { label: 'GCS 3–5 (critical)', value: 12 },
+          { label: 'E4 — Spontaneous eye opening', value: 0 },
+          { label: 'E3 — Eye opening to voice', value: 1 },
+          { label: 'E2 — Eye opening to pain', value: 2 },
+          { label: 'E1 — No eye opening', value: 3 },
+        ],
+      },
+      {
+        id: 'gcs_verbal',
+        label: 'GCS — Verbal Response (Teasdale & Jennett)',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'physical_exam',
+        options: [
+          { label: 'V5 — Oriented', value: 0 },
+          { label: 'V4 — Confused', value: 1 },
+          { label: 'V3 — Inappropriate words', value: 2 },
+          { label: 'V2 — Incomprehensible sounds', value: 3 },
+          { label: 'V1 — No verbal response', value: 4 },
+        ],
+      },
+      {
+        id: 'gcs_motor',
+        label: 'GCS — Motor Response (Teasdale & Jennett)',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'physical_exam',
+        options: [
+          { label: 'M6 — Obeys commands', value: 0 },
+          { label: 'M5 — Localizes pain', value: 1 },
+          { label: 'M4 — Withdraws from pain (flexion)', value: 2 },
+          { label: 'M3 — Abnormal flexion (decorticate)', value: 3 },
+          { label: 'M2 — Extension (decerebrate)', value: 4 },
+          { label: 'M1 — No motor response', value: 5 },
         ],
       },
     ],

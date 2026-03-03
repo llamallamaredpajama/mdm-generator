@@ -3,8 +3,8 @@ import { batch18NephroOncCdrs } from '../batch-18-nephro-onc'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 18 — Nephrology/Electrolytes & Oncologic CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch18NephroOncCdrs).toHaveLength(10)
+  it('exports exactly 1 CDR definition', () => {
+    expect(batch18NephroOncCdrs).toHaveLength(1)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -119,7 +119,7 @@ describe('Batch 18 — Nephrology/Electrolytes & Oncologic CDRs', () => {
 
     it('scoring ranges have no gaps between consecutive ranges', () => {
       for (const cdr of batch18NephroOncCdrs) {
-        if (cdr.scoring.method === 'algorithm') continue // Algorithm CDRs may have intentional gaps (e.g., KPS 10-point increments)
+        if (cdr.scoring.method === 'algorithm') continue
         const ranges = [...cdr.scoring.ranges].sort((a, b) => a.min - b.min)
         for (let i = 1; i < ranges.length; i++) {
           const prevMax = ranges[i - 1].max
@@ -136,7 +136,6 @@ describe('Batch 18 — Nephrology/Electrolytes & Oncologic CDRs', () => {
       for (const cdr of batch18NephroOncCdrs) {
         const ranges = [...cdr.scoring.ranges].sort((a, b) => a.min - b.min)
         for (let i = 1; i < ranges.length; i++) {
-          // Algorithm CDRs may have shared boundaries or intentional gaps
           expect(
             ranges[i].min,
             `CDR "${cdr.id}": overlap between ranges "${ranges[i - 1].risk}" and "${ranges[i].risk}"`,
@@ -149,14 +148,12 @@ describe('Batch 18 — Nephrology/Electrolytes & Oncologic CDRs', () => {
       for (const cdr of batch18NephroOncCdrs) {
         if (cdr.scoring.method !== 'sum') continue
 
-        // Calculate min and max achievable scores
         let minScore = 0
         let maxScore = 0
 
         for (const comp of cdr.components) {
           if (comp.type === 'boolean') {
             const v = comp.value ?? 0
-            // Boolean: contributes 0 (unchecked) or v (checked)
             if (v >= 0) {
               maxScore += v
             } else {
@@ -202,86 +199,35 @@ describe('Batch 18 — Nephrology/Electrolytes & Oncologic CDRs', () => {
   })
 
   describe('individual CDR spot checks', () => {
-    it('PLASMIC Score has 7 boolean components each worth 1 point with sum scoring', () => {
-      const plasmic = batch18NephroOncCdrs.find((c) => c.id === 'plasmic_score')!
-      expect(plasmic.components).toHaveLength(7)
-      expect(plasmic.scoring.method).toBe('sum')
-      expect(plasmic.category).toBe('ONCOLOGIC EMERGENCY')
-      for (const comp of plasmic.components) {
-        expect(comp.type).toBe('boolean')
-        expect(comp.value).toBe(1)
-      }
-    })
-
-    it('Cairo-Bishop TLS has 7 boolean components and threshold scoring', () => {
+    it('Cairo-Bishop TLS has 8 boolean components and threshold scoring', () => {
       const tls = batch18NephroOncCdrs.find((c) => c.id === 'cairo_bishop_tls')!
-      expect(tls.components).toHaveLength(7)
+      expect(tls.components).toHaveLength(8)
       expect(tls.scoring.method).toBe('threshold')
       expect(tls.category).toBe('ONCOLOGIC EMERGENCY')
-      // All booleans worth 1 point
       for (const comp of tls.components) {
         expect(comp.type).toBe('boolean')
-        expect(comp.value).toBe(1)
       }
     })
 
-    it('ECOG Performance Status has a single select component with 6 options (0-5)', () => {
-      const ecog = batch18NephroOncCdrs.find((c) => c.id === 'ecog_performance')!
-      expect(ecog.components).toHaveLength(1)
-      expect(ecog.scoring.method).toBe('sum')
-      const select = ecog.components[0]
-      expect(select.type).toBe('select')
-      expect(select.options).toHaveLength(6)
-      // Values should range from 0 to 5
-      const values = select.options!.map((o) => o.value)
-      expect(Math.min(...values)).toBe(0)
-      expect(Math.max(...values)).toBe(5)
+    it('Cairo-Bishop TLS has >= 3 user-answerable (section1/user_input boolean/select) components', () => {
+      const tls = batch18NephroOncCdrs.find((c) => c.id === 'cairo_bishop_tls')!
+      const userAnswerable = tls.components.filter(
+        (c) =>
+          (c.type === 'boolean' || c.type === 'select') &&
+          (c.source === 'section1' || c.source === 'user_input'),
+      )
+      expect(userAnswerable.length).toBeGreaterThanOrEqual(3)
     })
 
-    it('Karnofsky PS has a single select with 11 options (0-100 in 10-point increments) and algorithm scoring', () => {
-      const kps = batch18NephroOncCdrs.find((c) => c.id === 'karnofsky_ps')!
-      expect(kps.components).toHaveLength(1)
-      expect(kps.scoring.method).toBe('algorithm')
-      const select = kps.components[0]
-      expect(select.type).toBe('select')
-      expect(select.options).toHaveLength(11)
-      const values = select.options!.map((o) => o.value)
-      expect(Math.min(...values)).toBe(0)
-      expect(Math.max(...values)).toBe(100)
+    it('Cairo-Bishop TLS cytotoxic_therapy_timing has value 0 (qualifying condition, not scored)', () => {
+      const tls = batch18NephroOncCdrs.find((c) => c.id === 'cairo_bishop_tls')!
+      const timing = tls.components.find((c) => c.id === 'cytotoxic_therapy_timing')!
+      expect(timing.value).toBe(0)
+      expect(timing.source).toBe('section1')
     })
 
-    it('FEUrea has 4 number_range components and algorithm scoring', () => {
-      const feurea = batch18NephroOncCdrs.find((c) => c.id === 'feurea')!
-      expect(feurea.components).toHaveLength(4)
-      expect(feurea.scoring.method).toBe('algorithm')
-      expect(feurea.category).toBe('NEPHROLOGY & ELECTROLYTES')
-      for (const comp of feurea.components) {
-        expect(comp.type).toBe('number_range')
-      }
-    })
-
-    it('Schwartz Equation has 3 components including a select for k constant', () => {
-      const schwartz = batch18NephroOncCdrs.find((c) => c.id === 'schwartz_equation')!
-      expect(schwartz.components).toHaveLength(3)
-      expect(schwartz.scoring.method).toBe('algorithm')
-      const kConstant = schwartz.components.find((c) => c.id === 'k_constant')!
-      expect(kConstant.type).toBe('select')
-      expect(kConstant.options).toHaveLength(3)
-    })
-
-    it("Winter's Formula has 2 number_range components and algorithm scoring with 3 outcome ranges", () => {
-      const winters = batch18NephroOncCdrs.find((c) => c.id === 'winters_formula')!
-      expect(winters.components).toHaveLength(2)
-      expect(winters.scoring.method).toBe('algorithm')
-      expect(winters.scoring.ranges).toHaveLength(3)
-      for (const comp of winters.components) {
-        expect(comp.type).toBe('number_range')
-      }
-    })
-
-    it('covers 2 distinct categories', () => {
+    it('covers ONCOLOGIC EMERGENCY category', () => {
       const categories = new Set(batch18NephroOncCdrs.map((c) => c.category))
-      expect(categories.has('NEPHROLOGY & ELECTROLYTES')).toBe(true)
       expect(categories.has('ONCOLOGIC EMERGENCY')).toBe(true)
     })
   })

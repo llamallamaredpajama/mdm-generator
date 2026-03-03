@@ -50,8 +50,9 @@ function calcMaxScore(components: CdrComponent[]): number {
 // ---------------------------------------------------------------------------
 
 describe('batch-4-neuro CDR definitions', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch4NeuroCdrs).toHaveLength(10)
+  it('exports exactly 9 CDR definitions', () => {
+    // Modified Fisher quarantined (purely CT-based, 0 user-answerable components)
+    expect(batch4NeuroCdrs).toHaveLength(9)
   })
 
   // -------------------------------------------------------------------------
@@ -239,23 +240,35 @@ describe('batch-4-neuro CDR definitions', () => {
       expect(hints.scoring.method).toBe('algorithm')
     })
 
-    it('Hunt and Hess grades range from 1 to 5', () => {
+    it('Hunt and Hess has 4 clinical assessment components and grades range from 1 to 5', () => {
       const hh = batch4NeuroCdrs.find((c) => c.id === 'hunt_hess')!
+      expect(hh.components).toHaveLength(4)
+      expect(hh.scoring.method).toBe('algorithm')
       const sorted = [...hh.scoring.ranges].sort((a, b) => a.min - b.min)
       expect(sorted[0].min).toBe(1)
       expect(sorted[sorted.length - 1].max).toBe(5)
+      // All components should be section1 (clinical assessment)
+      for (const comp of hh.components) {
+        expect(comp.source).toBe('section1')
+        expect(comp.type).toBe('select')
+      }
     })
 
-    it('Modified Fisher grades range from 0 to 4', () => {
-      const fisher = batch4NeuroCdrs.find((c) => c.id === 'modified_fisher')!
-      const sorted = [...fisher.scoring.ranges].sort((a, b) => a.min - b.min)
-      expect(sorted[0].min).toBe(0)
-      expect(sorted[sorted.length - 1].max).toBe(4)
-    })
-
-    it('ICH Score max achievable is 6', () => {
+    it('ICH Score has 7 components (3 GCS sub-components + age + 3 imaging) and scoring ranges 0-6', () => {
       const ich = batch4NeuroCdrs.find((c) => c.id === 'ich_score')!
-      expect(calcMaxScore(ich.components)).toBe(6)
+      expect(ich.components).toHaveLength(7)
+      expect(ich.scoring.method).toBe('algorithm')
+      // GCS sub-components are section1
+      const gcsComps = ich.components.filter((c) => c.id.startsWith('gcs_'))
+      expect(gcsComps).toHaveLength(3)
+      for (const comp of gcsComps) {
+        expect(comp.source).toBe('section1')
+        expect(comp.type).toBe('select')
+      }
+      // Scoring ranges cover 0-6 (published ICH Score range)
+      const sorted = [...ich.scoring.ranges].sort((a, b) => a.min - b.min)
+      expect(sorted[0].min).toBe(0)
+      expect(sorted[sorted.length - 1].max).toBe(6)
     })
 
     it('FOUR Score max achievable is 16', () => {

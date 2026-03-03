@@ -3,8 +3,8 @@ import { batch1CardioCdrs } from '../batch-1-cardio'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 1 — Cardiovascular CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch1CardioCdrs).toHaveLength(10)
+  it('exports exactly 9 CDR definitions', () => {
+    expect(batch1CardioCdrs).toHaveLength(9)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -238,16 +238,6 @@ describe('Batch 1 — Cardiovascular CDRs', () => {
       // 3 risk categories each worth 1 point
       const riskCategories = addrs.components.filter((c) => c.value === 1)
       expect(riskCategories).toHaveLength(3)
-    })
-
-    it('Sgarbossa uses algorithm scoring method', () => {
-      const sgarbossa = batch1CardioCdrs.find((c) => c.id === 'sgarbossa')!
-      expect(sgarbossa.scoring.method).toBe('algorithm')
-      // Original weighted: concordant ST elevation = 5, depression = 3, discordant = 2
-      const concordantElev = sgarbossa.components.find((c) => c.id === 'concordant_st_elevation')!
-      expect(concordantElev.value).toBe(5)
-      const concordantDep = sgarbossa.components.find((c) => c.id === 'concordant_st_depression')!
-      expect(concordantDep.value).toBe(3)
     })
 
     it('PESI age select starts at 25 (representing 18-30 years)', () => {

@@ -957,6 +957,8 @@ export const batch4NeuroCdrs: CdrSeed[] = [
   // Hunt and Hess Scale
   // Hunt WE, Hess RM. J Neurosurg. 1968;28(1):14-20
   // Clinical grading of SAH at presentation; grades 1–5; predicts surgical risk
+  // Decomposed into the 4 clinical assessment domains evaluated at bedside.
+  // Algorithm scoring: grade determined by worst clinical feature, not sum.
   // ---------------------------------------------------------------------------
   {
     id: 'hunt_hess',
@@ -983,36 +985,51 @@ export const batch4NeuroCdrs: CdrSeed[] = [
     requiredTests: ['CT head non-contrast', 'CTA head', 'lumbar puncture'],
     components: [
       {
-        id: 'hunt_hess_grade',
-        label: 'Hunt and Hess Grade (select best description)',
+        id: 'consciousness_level',
+        label: 'Level of Consciousness',
         type: 'select',
         source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
         options: [
-          {
-            label:
-              'Grade I — Asymptomatic or mild headache and slight nuchal rigidity; no neurological deficit',
-            value: 1,
-          },
-          {
-            label:
-              'Grade II — Moderate to severe headache, nuchal rigidity, no neurological deficit except cranial nerve palsy',
-            value: 2,
-          },
-          {
-            label:
-              'Grade III — Drowsiness, confusion, or mild focal neurological deficit',
-            value: 3,
-          },
-          {
-            label:
-              'Grade IV — Stupor, moderate to severe hemiparesis, early decerebrate posturing',
-            value: 4,
-          },
-          {
-            label:
-              'Grade V — Deep coma, decerebrate rigidity, moribund appearance',
-            value: 5,
-          },
+          { label: 'Alert, oriented', value: 0 },
+          { label: 'Drowsy or confused', value: 1 },
+          { label: 'Stuporous (responds to stimulation only)', value: 2 },
+          { label: 'Deep coma, moribund appearance', value: 3 },
+        ],
+      },
+      {
+        id: 'headache_severity',
+        label: 'Headache Severity',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'Asymptomatic or minimal headache', value: 0 },
+          { label: 'Moderate to severe headache', value: 1 },
+        ],
+      },
+      {
+        id: 'meningeal_signs',
+        label: 'Meningeal Signs (Nuchal Rigidity)',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'None or slight nuchal rigidity', value: 0 },
+          { label: 'Nuchal rigidity present', value: 1 },
+        ],
+      },
+      {
+        id: 'focal_neuro_deficit',
+        label: 'Focal Neurological Deficit',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'No focal deficit', value: 0 },
+          { label: 'Cranial nerve palsy only', value: 0 },
+          { label: 'Mild focal deficit', value: 1 },
+          { label: 'Moderate to severe hemiparesis or decerebrate posturing', value: 2 },
         ],
       },
     ],
@@ -1104,140 +1121,17 @@ export const batch4NeuroCdrs: CdrSeed[] = [
   },
 
   // ---------------------------------------------------------------------------
-  // Modified Fisher Scale
-  // Frontera JA et al. Stroke. 2006;37(7):1705-1709
-  // CT-based grading 0–4; predicts delayed cerebral ischemia (vasospasm) after SAH
+  // Modified Fisher Scale — QUARANTINED
+  // Moved to _quarantine/modified_fisher.ts
+  // Reason: All components are CT-based (section2); 0 user-answerable components.
   // ---------------------------------------------------------------------------
-  {
-    id: 'modified_fisher',
-    name: 'Modified Fisher Scale',
-    fullName: 'Modified Fisher Scale (SAH CT Grading)',
-    category: 'NEUROLOGY',
-    application:
-      'CT-based classification of subarachnoid hemorrhage extent and intraventricular hemorrhage (IVH) presence. Predicts risk of delayed cerebral ischemia (DCI) due to vasospasm. Applied after SAH diagnosis is established. Grades 0–4.',
-    applicableChiefComplaints: [
-      'headache',
-      'subarachnoid_hemorrhage',
-      'thunderclap_headache',
-    ],
-    keywords: [
-      'Modified Fisher',
-      'Fisher scale',
-      'SAH',
-      'subarachnoid hemorrhage',
-      'vasospasm',
-      'CT',
-      'IVH',
-      'intraventricular hemorrhage',
-      'delayed cerebral ischemia',
-    ],
-    requiredTests: ['CT head non-contrast'],
-    components: [
-      {
-        id: 'modified_fisher_grade',
-        label: 'Modified Fisher Grade (CT findings)',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          {
-            label: 'Grade 0 — No SAH and no IVH',
-            value: 0,
-          },
-          {
-            label: 'Grade 1 — Thin SAH (<1 mm in basal cisterns), no IVH',
-            value: 1,
-          },
-          {
-            label: 'Grade 2 — Thin SAH (<1 mm), WITH IVH',
-            value: 2,
-          },
-          {
-            label: 'Grade 3 — Thick SAH (≥1 mm in basal cisterns or diffuse SAH), no IVH',
-            value: 3,
-          },
-          {
-            label: 'Grade 4 — Thick SAH (≥1 mm), WITH IVH',
-            value: 4,
-          },
-        ],
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 0,
-          max: 0,
-          risk: 'Grade 0 — Negligible Risk',
-          interpretation:
-            'No SAH on CT. DCI risk negligible. Reconsider diagnosis; if clinical suspicion high, LP or CTA indicated.',
-        },
-        {
-          min: 1,
-          max: 1,
-          risk: 'Grade 1 — Low Vasospasm Risk',
-          interpretation:
-            'Thin SAH, no IVH. ~15% risk of symptomatic vasospasm/DCI. Standard nimodipine prophylaxis x21 days; TCD monitoring q1–2 days.',
-        },
-        {
-          min: 2,
-          max: 2,
-          risk: 'Grade 2 — Moderate Vasospasm Risk',
-          interpretation:
-            'Thin SAH with IVH. ~20% risk of symptomatic vasospasm/DCI. Nimodipine x21 days; serial TCD; consider ventriculostomy if hydrocephalus.',
-        },
-        {
-          min: 3,
-          max: 3,
-          risk: 'Grade 3 — High Vasospasm Risk',
-          interpretation:
-            'Thick SAH, no IVH. ~30–35% risk of symptomatic vasospasm/DCI. Aggressive nimodipine; serial TCD; hypervolemia/hemodilution (HHH therapy) if vasospasm develops; CTA/DSA for vasospasm.',
-        },
-        {
-          min: 4,
-          max: 4,
-          risk: 'Grade 4 — Highest Vasospasm Risk',
-          interpretation:
-            'Thick SAH with IVH. ~40% risk of symptomatic vasospasm/DCI. Highest risk category. Aggressive vasospasm monitoring and prophylaxis; ventriculostomy often required; early neurointerventional consultation for possible angioplasty.',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      'Grade 4 — Highest Vasospasm Risk': [
-        'nimodipine_60mg_q4h_x21_days',
-        'neurosurgery_consult_ventriculostomy',
-        'admit_neuro_ICU',
-        'serial_TCD_daily',
-        'CTA_or_DSA_if_vasospasm_suspected',
-        'HHH_therapy_if_vasospasm',
-        'neurointerventional_consult_angioplasty',
-      ],
-      'Grade 3 — High Vasospasm Risk': [
-        'nimodipine_60mg_q4h_x21_days',
-        'admit_neuro_ICU',
-        'serial_TCD_q1_2_days',
-        'CTA_or_DSA_if_vasospasm_suspected',
-        'HHH_therapy_if_vasospasm',
-      ],
-      'Grade 2 — Moderate Vasospasm Risk': [
-        'nimodipine_60mg_q4h_x21_days',
-        'admit_neuro_ICU',
-        'serial_TCD',
-        'ventriculostomy_if_hydrocephalus',
-      ],
-      'Grade 1 — Low Vasospasm Risk': [
-        'nimodipine_60mg_q4h_x21_days',
-        'admit_neuro_ICU',
-        'serial_TCD',
-      ],
-    },
-  },
 
   // ---------------------------------------------------------------------------
   // ICH Score — Intracerebral Hemorrhage Score
   // Hemphill JC et al. Stroke. 2001;32(4):891-897
-  // Predicts 30-day mortality; 5 components; max 6 points
+  // Predicts 30-day mortality; 5 published components; max 6 points
+  // GCS decomposed into Eye/Verbal/Motor sub-components (Teasdale & Jennett 1974)
+  // for interactive assessment. Algorithm maps E+V+M → GCS total → ICH points.
   // ---------------------------------------------------------------------------
   {
     id: 'ich_score',
@@ -1262,19 +1156,60 @@ export const batch4NeuroCdrs: CdrSeed[] = [
       'prognosis',
       'ABC/2',
     ],
-    requiredTests: ['CT head non-contrast', 'GCS'],
+    requiredTests: ['CT head non-contrast'],
     components: [
+      // GCS decomposed into sub-components per Teasdale & Jennett (Lancet 1974).
+      // Algorithm: sum E+V+M → GCS total → ICH points (3-4=2, 5-12=1, 13-15=0).
       {
-        id: 'gcs',
-        label: 'GCS Score at Presentation',
+        id: 'gcs_eye',
+        label: 'GCS — Eye Opening (E)',
         type: 'select',
         source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
         options: [
-          { label: 'GCS 13–15', value: 0 },
-          { label: 'GCS 5–12', value: 1 },
-          { label: 'GCS 3–4', value: 2 },
+          { label: 'E1 — No eye opening', value: 1 },
+          { label: 'E2 — Eye opening to pain', value: 2 },
+          { label: 'E3 — Eye opening to voice', value: 3 },
+          { label: 'E4 — Spontaneous eye opening', value: 4 },
         ],
       },
+      {
+        id: 'gcs_verbal',
+        label: 'GCS — Verbal Response (V)',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'V1 — No verbal response', value: 1 },
+          { label: 'V2 — Incomprehensible sounds', value: 2 },
+          { label: 'V3 — Inappropriate words', value: 3 },
+          { label: 'V4 — Confused', value: 4 },
+          { label: 'V5 — Oriented', value: 5 },
+        ],
+      },
+      {
+        id: 'gcs_motor',
+        label: 'GCS — Motor Response (M)',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'M1 — No motor response', value: 1 },
+          { label: 'M2 — Extension to pain (decerebrate)', value: 2 },
+          { label: 'M3 — Abnormal flexion to pain (decorticate)', value: 3 },
+          { label: 'M4 — Withdrawal from pain', value: 4 },
+          { label: 'M5 — Localizing pain', value: 5 },
+          { label: 'M6 — Obeys commands', value: 6 },
+        ],
+      },
+      {
+        id: 'age_gte_80',
+        label: 'Age ≥80 years',
+        type: 'boolean',
+        source: 'section1',
+        value: 1,
+      },
+      // Imaging components (section2) — not user-answerable in S1
       {
         id: 'ich_volume',
         label: 'ICH Volume (ABC/2 method on CT)',
@@ -1300,16 +1235,9 @@ export const batch4NeuroCdrs: CdrSeed[] = [
         source: 'section2',
         value: 1,
       },
-      {
-        id: 'age_gte_80',
-        label: 'Age ≥80 years',
-        type: 'boolean',
-        source: 'section1',
-        value: 1,
-      },
     ],
     scoring: {
-      method: 'sum',
+      method: 'algorithm',
       ranges: [
         {
           min: 0,

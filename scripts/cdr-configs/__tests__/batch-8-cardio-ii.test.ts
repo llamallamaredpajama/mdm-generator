@@ -3,8 +3,8 @@ import { batch8CardioIiCdrs } from '../batch-8-cardio-ii'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 8 — Cardiovascular II CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch8CardioIiCdrs).toHaveLength(10)
+  it('exports exactly 8 CDR definitions', () => {
+    expect(batch8CardioIiCdrs).toHaveLength(8)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -247,14 +247,14 @@ describe('Batch 8 — Cardiovascular II CDRs', () => {
       expect(veryHigh.max).toBe(4)
     })
 
-    it('ESC hs-Troponin uses algorithm scoring with 5 components including 3 selects', () => {
-      const esc = batch8CardioIiCdrs.find((c) => c.id === 'esc_hs_troponin')!
-      expect(esc.scoring.method).toBe('algorithm')
-      expect(esc.components).toHaveLength(5)
-      const selects = esc.components.filter((c) => c.type === 'select')
-      expect(selects.length).toBe(3) // baseline_hs_ctn, delta_1h, time_from_onset
-      const booleans = esc.components.filter((c) => c.type === 'boolean')
-      expect(booleans.length).toBe(2) // ongoing_chest_pain, renal_impairment
+    it('ESC hs-Troponin is quarantined (only 2 user-answerable components)', () => {
+      const esc = batch8CardioIiCdrs.find((c) => c.id === 'esc_hs_troponin')
+      expect(esc).toBeUndefined()
+    })
+
+    it('FAINT Score is quarantined (only 2 user-answerable components)', () => {
+      const faint = batch8CardioIiCdrs.find((c) => c.id === 'faint_score')
+      expect(faint).toBeUndefined()
     })
 
     it('YEARS Algorithm has 3 boolean YEARS items plus a D-dimer select', () => {

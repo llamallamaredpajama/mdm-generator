@@ -3,8 +3,8 @@ import { batch16EnviroObPsychCdrs } from '../batch-16-enviro-ob-psych'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 16 — Environmental + OB/GYN + Psychiatry CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch16EnviroObPsychCdrs).toHaveLength(10)
+  it('exports exactly 8 CDR definitions', () => {
+    expect(batch16EnviroObPsychCdrs).toHaveLength(8)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -200,16 +200,26 @@ describe('Batch 16 — Environmental + OB/GYN + Psychiatry CDRs', () => {
   })
 
   describe('individual CDR spot checks', () => {
-    it('Swiss Staging has 1 select component with 5 hypothermia stages (HT I–V)', () => {
+    it('Swiss Staging has 4 components including stage select with 5 hypothermia stages (HT I–V)', () => {
       const swiss = batch16EnviroObPsychCdrs.find((c) => c.id === 'swiss_staging_hypothermia')!
       expect(swiss.category).toBe('ENVIRONMENTAL')
-      expect(swiss.components).toHaveLength(1)
+      expect(swiss.components).toHaveLength(4)
       expect(swiss.scoring.method).toBe('algorithm')
-      const stage = swiss.components[0]
+      const stage = swiss.components.find((c) => c.id === 'stage')!
       expect(stage.type).toBe('select')
       expect(stage.options).toHaveLength(5)
       const values = stage.options!.map((o) => o.value).sort((a, b) => a - b)
       expect(values).toEqual([1, 2, 3, 4, 5])
+      // Clinical discriminator components (value 0, informational)
+      const shivering = swiss.components.find((c) => c.id === 'shivering')!
+      expect(shivering.type).toBe('boolean')
+      expect(shivering.source).toBe('section1')
+      const consciousness = swiss.components.find((c) => c.id === 'consciousness_level')!
+      expect(consciousness.type).toBe('select')
+      expect(consciousness.source).toBe('section1')
+      const vitals = swiss.components.find((c) => c.id === 'vital_signs_present')!
+      expect(vitals.type).toBe('boolean')
+      expect(vitals.source).toBe('section1')
     })
 
     it('Bouchama Criteria uses threshold scoring with 3 core boolean criteria worth 1 point each', () => {
@@ -231,28 +241,29 @@ describe('Batch 16 — Environmental + OB/GYN + Psychiatry CDRs', () => {
       expect(heatStrokeRange.max).toBe(3)
     })
 
-    it('HELLP Mississippi Classification uses algorithm scoring with OB/GYN category', () => {
-      const hellp = batch16EnviroObPsychCdrs.find((c) => c.id === 'hellp_mississippi')!
-      expect(hellp.category).toBe('OB/GYN & OBSTETRIC EMERGENCY')
-      expect(hellp.scoring.method).toBe('algorithm')
-      expect(hellp.components).toHaveLength(4)
-      const compIds = hellp.components.map((c) => c.id)
-      expect(compIds).toContain('platelet_count')
-      expect(compIds).toContain('ast_level')
-      expect(compIds).toContain('ldh_level')
+    it('HELLP Mississippi is quarantined (pure lab-based classification)', () => {
+      const hellp = batch16EnviroObPsychCdrs.find((c) => c.id === 'hellp_mississippi')
+      expect(hellp).toBeUndefined()
     })
 
-    it('PHQ-2 has 2 select components each with 4 options (0–3) and max score 6', () => {
+    it('PHQ-2 has 3 components (2 scored selects + 1 clinical context boolean) and max score 6', () => {
       const phq2 = batch16EnviroObPsychCdrs.find((c) => c.id === 'phq2')!
-      expect(phq2.components).toHaveLength(2)
+      expect(phq2.components).toHaveLength(3)
       expect(phq2.category).toBe('PSYCHIATRY & BEHAVIORAL HEALTH')
       expect(phq2.scoring.method).toBe('sum')
-      for (const comp of phq2.components) {
-        expect(comp.type).toBe('select')
+      // The 2 core PHQ-2 questions are selects with 4 options each
+      const selects = phq2.components.filter((c) => c.type === 'select')
+      expect(selects).toHaveLength(2)
+      for (const comp of selects) {
         expect(comp.options).toHaveLength(4)
         const values = comp.options!.map((o) => o.value).sort((a, b) => a - b)
         expect(values).toEqual([0, 1, 2, 3])
       }
+      // Clinical context boolean (value 0 — does not change scoring)
+      const context = phq2.components.find((c) => c.id === 'prior_depression_or_treatment')!
+      expect(context.type).toBe('boolean')
+      expect(context.value).toBe(0)
+      expect(context.source).toBe('section1')
       const ranges = [...phq2.scoring.ranges].sort((a, b) => a.min - b.min)
       expect(ranges[ranges.length - 1].max).toBe(6)
     })
@@ -282,16 +293,25 @@ describe('Batch 16 — Environmental + OB/GYN + Psychiatry CDRs', () => {
       expect(q9Values).toEqual([0, 2, 4])
     })
 
-    it('RASS has 1 select component with scores from -5 to +4 and algorithm scoring', () => {
+    it('RASS has 3 components (scored select + 2 clinical context booleans) with algorithm scoring', () => {
       const rass = batch16EnviroObPsychCdrs.find((c) => c.id === 'rass')!
-      expect(rass.components).toHaveLength(1)
+      expect(rass.components).toHaveLength(3)
       expect(rass.scoring.method).toBe('algorithm')
-      const level = rass.components[0]
+      const level = rass.components.find((c) => c.id === 'sedation_agitation_level')!
       expect(level.type).toBe('select')
       expect(level.options).toHaveLength(10)
       const values = level.options!.map((o) => o.value).sort((a, b) => a - b)
       expect(values[0]).toBe(-5)
       expect(values[values.length - 1]).toBe(4)
+      // Clinical context booleans (value 0 — informational, don't affect scoring)
+      const sedation = rass.components.find((c) => c.id === 'receiving_sedation')!
+      expect(sedation.type).toBe('boolean')
+      expect(sedation.value).toBe(0)
+      expect(sedation.source).toBe('section1')
+      const ventilated = rass.components.find((c) => c.id === 'mechanically_ventilated')!
+      expect(ventilated.type).toBe('boolean')
+      expect(ventilated.value).toBe(0)
+      expect(ventilated.source).toBe('section1')
     })
 
     it('DAST-10 has 10 boolean components each worth 1 point', () => {
@@ -319,13 +339,9 @@ describe('Batch 16 — Environmental + OB/GYN + Psychiatry CDRs', () => {
       expect(ranges[ranges.length - 1].max).toBe(10)
     })
 
-    it('Kleihauer-Betke uses algorithm scoring with number_range and select components', () => {
-      const kb = batch16EnviroObPsychCdrs.find((c) => c.id === 'kleihauer_betke')!
-      expect(kb.category).toBe('OB/GYN & OBSTETRIC EMERGENCY')
-      expect(kb.scoring.method).toBe('algorithm')
-      expect(kb.components).toHaveLength(3)
-      const numberRanges = kb.components.filter((c) => c.type === 'number_range')
-      expect(numberRanges).toHaveLength(1) // fetal_cell_percentage
+    it('Kleihauer-Betke is quarantined (pure lab calculation / dosing tool)', () => {
+      const kb = batch16EnviroObPsychCdrs.find((c) => c.id === 'kleihauer_betke')
+      expect(kb).toBeUndefined()
     })
   })
 })

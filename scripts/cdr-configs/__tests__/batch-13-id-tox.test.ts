@@ -3,8 +3,8 @@ import { batch13IdToxCdrs } from '../batch-13-id-tox'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 13 — Infectious Disease, Toxicology & Pediatric CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch13IdToxCdrs).toHaveLength(10)
+  it('exports exactly 6 CDR definitions', () => {
+    expect(batch13IdToxCdrs).toHaveLength(6)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -40,6 +40,20 @@ describe('Batch 13 — Infectious Disease, Toxicology & Pediatric CDRs', () => {
         snakeCaseRegex.test(cdr.id),
         `CDR ID "${cdr.id}" is not snake_case`,
       ).toBe(true)
+    }
+  })
+
+  it('every CDR has >= 3 user-answerable interactive components', () => {
+    for (const cdr of batch13IdToxCdrs) {
+      const userAnswerable = cdr.components.filter(
+        (c) =>
+          (c.type === 'boolean' || c.type === 'select') &&
+          (c.source === 'section1' || c.source === 'user_input'),
+      )
+      expect(
+        userAnswerable.length,
+        `CDR "${cdr.id}" has only ${userAnswerable.length} user-answerable components (need >= 3)`,
+      ).toBeGreaterThanOrEqual(3)
     }
   })
 
@@ -117,8 +131,9 @@ describe('Batch 13 — Infectious Disease, Toxicology & Pediatric CDRs', () => {
       }
     })
 
-    it('scoring ranges have no gaps between consecutive ranges', () => {
+    it('scoring ranges have no gaps between consecutive ranges for sum-method CDRs', () => {
       for (const cdr of batch13IdToxCdrs) {
+        if (cdr.scoring.method !== 'sum') continue
         const ranges = [...cdr.scoring.ranges].sort((a, b) => a.min - b.min)
         for (let i = 1; i < ranges.length; i++) {
           const prevMax = ranges[i - 1].max
@@ -211,33 +226,6 @@ describe('Batch 13 — Infectious Disease, Toxicology & Pediatric CDRs', () => {
       expect(feverpain.category).toBe('INFECTIOUS DISEASE')
     })
 
-    it('Kocher Criteria has 4 boolean components with threshold scoring across 5 risk levels', () => {
-      const kocher = batch13IdToxCdrs.find((c) => c.id === 'kocher_criteria')!
-      expect(kocher.components).toHaveLength(4)
-      for (const comp of kocher.components) {
-        expect(comp.type).toBe('boolean')
-        expect(comp.value).toBe(1)
-      }
-      expect(kocher.scoring.method).toBe('threshold')
-      expect(kocher.scoring.ranges).toHaveLength(5)
-      expect(kocher.category).toBe('INFECTIOUS DISEASE')
-    })
-
-    it('Bacterial Meningitis Score has 5 boolean components with threshold scoring', () => {
-      const bms = batch13IdToxCdrs.find((c) => c.id === 'bacterial_meningitis_score')!
-      expect(bms.components).toHaveLength(5)
-      for (const comp of bms.components) {
-        expect(comp.type).toBe('boolean')
-        expect(comp.value).toBe(1)
-      }
-      expect(bms.scoring.method).toBe('threshold')
-      expect(bms.category).toBe('INFECTIOUS DISEASE')
-      // Low risk only at score 0
-      const lowRange = bms.scoring.ranges.find((r) => r.risk === 'Low')!
-      expect(lowRange.min).toBe(0)
-      expect(lowRange.max).toBe(0)
-    })
-
     it("King's College Criteria has 10 components with algorithm scoring", () => {
       const kings = batch13IdToxCdrs.find((c) => c.id === 'kings_college_criteria')!
       expect(kings.components).toHaveLength(10)
@@ -279,14 +267,23 @@ describe('Batch 13 — Infectious Disease, Toxicology & Pediatric CDRs', () => {
       expect(ranges[0].min).toBe(-4)
     })
 
-    it('Poisoning Severity Score has 1 select component with 5 options (grades 0-4)', () => {
+    it('Poisoning Severity Score has 5 select components (4 organ systems + overall grade) with algorithm scoring', () => {
       const pss = batch13IdToxCdrs.find((c) => c.id === 'poisoning_severity_score')!
-      expect(pss.components).toHaveLength(1)
-      expect(pss.components[0].type).toBe('select')
-      expect(pss.components[0].options).toHaveLength(5)
-      expect(pss.scoring.method).toBe('sum')
+      expect(pss.components).toHaveLength(5)
+      for (const comp of pss.components) {
+        expect(comp.type).toBe('select')
+      }
+      expect(pss.scoring.method).toBe('algorithm')
       expect(pss.category).toBe('TOXICOLOGY')
-      const values = pss.components[0].options!.map((o) => o.value)
+      // 4 organ system components (section1) + 1 overall grade (user_input)
+      const section1 = pss.components.filter((c) => c.source === 'section1')
+      const userInput = pss.components.filter((c) => c.source === 'user_input')
+      expect(section1).toHaveLength(4)
+      expect(userInput).toHaveLength(1)
+      // Overall grade has 5 options (grades 0-4)
+      const overall = pss.components.find((c) => c.id === 'overall_severity')!
+      expect(overall.options).toHaveLength(5)
+      const values = overall.options!.map((o) => o.value)
       expect(Math.min(...values)).toBe(0)
       expect(Math.max(...values)).toBe(4)
     })
@@ -300,31 +297,6 @@ describe('Batch 13 — Infectious Disease, Toxicology & Pediatric CDRs', () => {
       }
       expect(ten4.scoring.method).toBe('threshold')
       expect(ten4.category).toBe('PEDIATRIC')
-    })
-
-    it('QTc Calculation uses algorithm scoring and has number_range components', () => {
-      const qtc = batch13IdToxCdrs.find((c) => c.id === 'qtc_calculation')!
-      expect(qtc.components).toHaveLength(5)
-      expect(qtc.scoring.method).toBe('algorithm')
-      expect(qtc.category).toBe('TOXICOLOGY')
-      // Has number_range components for QT interval and heart rate
-      const numberRanges = qtc.components.filter((c) => c.type === 'number_range')
-      expect(numberRanges).toHaveLength(2)
-      const qtInterval = qtc.components.find((c) => c.id === 'qt_interval')!
-      expect(qtInterval.min).toBe(200)
-      expect(qtInterval.max).toBe(700)
-    })
-
-    it('Done Nomogram has 4 components with algorithm scoring', () => {
-      const done = batch13IdToxCdrs.find((c) => c.id === 'done_nomogram')!
-      expect(done.components).toHaveLength(4)
-      expect(done.scoring.method).toBe('algorithm')
-      expect(done.category).toBe('TOXICOLOGY')
-      // 3 select + 1 boolean
-      const selects = done.components.filter((c) => c.type === 'select')
-      const booleans = done.components.filter((c) => c.type === 'boolean')
-      expect(selects).toHaveLength(3)
-      expect(booleans).toHaveLength(1)
     })
   })
 })

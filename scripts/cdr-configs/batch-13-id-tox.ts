@@ -3,19 +3,20 @@ import type { CdrSeed } from './types'
 /**
  * Batch 13 — Infectious Disease, Toxicology & First Pediatric CDRs
  *
- * CDRs: feverpain, kocher_criteria, bacterial_meningitis_score,
- *       kings_college_criteria, done_nomogram, pawss, naranjo_adr,
- *       qtc_calculation, poisoning_severity_score, ten_4_faces_p
+ * CDRs: feverpain, kings_college_criteria, pawss, naranjo_adr,
+ *       poisoning_severity_score, ten_4_faces_p
+ *
+ * Quarantined (insufficient user-answerable components):
+ *   - kocher_criteria (2/4 clinical — lab-dominant)
+ *   - bacterial_meningitis_score (1/5 clinical — lab-dominant)
+ *   - done_nomogram (2/4 clinical — measurement-based, historically abandoned)
+ *   - qtc_calculation (2/5 clinical — mathematical formula)
  *
  * Sources:
  *  - FeverPAIN: Little et al., BMJ 2013
- *  - Kocher Criteria: Kocher et al., J Bone Joint Surg Am 1999; Caird et al., JBJS 2006
- *  - Bacterial Meningitis Score: Nigrovic et al., JAMA 2007
  *  - King's College Criteria: O'Grady et al., Gastroenterology 1989
- *  - Done Nomogram: Done, Pediatrics 1960 (historical; largely abandoned)
  *  - PAWSS: Maldonado et al., Alcohol 2014
  *  - Naranjo ADR Scale: Naranjo et al., Clin Pharmacol Ther 1981
- *  - QTc Calculation: Bazett, Heart 1920; Fridericia, Acta Med Scand 1920
  *  - Poisoning Severity Score: Persson et al., J Toxicol Clin Toxicol 1998 (IPCS/EAPCCT)
  *  - TEN-4-FACESp: Pierce et al., Pediatrics 2010; expanded Pierce et al., Pediatrics 2017
  */
@@ -114,220 +115,6 @@ export const batch13IdToxCdrs: CdrSeed[] = [
       Low: ['symptomatic_treatment', 'no_antibiotics'],
       Intermediate: ['delayed_antibiotics', 'rapid_antigen_test'],
       High: ['antibiotics_penicillin_v', 'rapid_antigen_test'],
-    },
-  },
-
-  // ===========================================================================
-  // INFECTIOUS DISEASE — Kocher Criteria
-  // 4 binary criteria (threshold scoring); probability brackets by count
-  // ===========================================================================
-  {
-    id: 'kocher_criteria',
-    name: 'Kocher Criteria',
-    fullName: 'Kocher Criteria',
-    category: 'INFECTIOUS DISEASE',
-    application:
-      'Predicts septic arthritis of the hip in children (typically age 3 months to 18 years) presenting with hip pain and/or refusal to bear weight.',
-    applicableChiefComplaints: [
-      'hip_pain',
-      'limp',
-      'joint_pain',
-      'fever',
-      'refusal_to_bear_weight',
-    ],
-    keywords: [
-      'Kocher',
-      'septic arthritis',
-      'hip',
-      'pediatric',
-      'Caird',
-      'ESR',
-      'CRP',
-      'non-weight-bearing',
-    ],
-    requiredTests: ['ESR', 'WBC', 'CRP'],
-    components: [
-      {
-        id: 'non_weight_bearing',
-        label: 'Non-weight-bearing on affected side',
-        type: 'boolean',
-        value: 1,
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-      },
-      {
-        id: 'esr_gt_40',
-        label: 'ESR >40 mm/hr',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'fever_gt_38_5',
-        label: 'Fever >38.5°C (101.3°F)',
-        type: 'boolean',
-        value: 1,
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-      },
-      {
-        id: 'wbc_gt_12k',
-        label: 'WBC >12,000 cells/µL',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-    ],
-    scoring: {
-      method: 'threshold',
-      ranges: [
-        {
-          min: 0,
-          max: 0,
-          risk: 'Very Low',
-          interpretation:
-            '0 predictors: ~0.2% probability; observation appropriate',
-        },
-        {
-          min: 1,
-          max: 1,
-          risk: 'Low',
-          interpretation:
-            '1 predictor: ~3% probability; consider observation vs. aspiration based on clinical picture',
-        },
-        {
-          min: 2,
-          max: 2,
-          risk: 'Moderate',
-          interpretation:
-            '2 predictors: ~40% probability; joint aspiration recommended',
-        },
-        {
-          min: 3,
-          max: 3,
-          risk: 'High',
-          interpretation:
-            '3 predictors: ~93.1% probability; aspiration +/- operative intervention',
-        },
-        {
-          min: 4,
-          max: 4,
-          risk: 'Very High',
-          interpretation:
-            '4 predictors: ~99.6% probability; operative drainage strongly recommended',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      'Very High': ['orthopedic_consult_emergent', 'iv_antibiotics', 'operative_drainage'],
-      High: ['orthopedic_consult_urgent', 'joint_aspiration', 'iv_antibiotics'],
-      Moderate: ['joint_aspiration', 'orthopedic_consult', 'iv_antibiotics'],
-      Low: ['observation', 'consider_aspiration'],
-      'Very Low': ['observation', 'outpatient_follow_up'],
-    },
-  },
-
-  // ===========================================================================
-  // INFECTIOUS DISEASE — Bacterial Meningitis Score
-  // 5 binary criteria (threshold: ANY positive = high risk)
-  // ===========================================================================
-  {
-    id: 'bacterial_meningitis_score',
-    name: 'Bacterial Meningitis Score',
-    fullName: 'Bacterial Meningitis Score',
-    category: 'INFECTIOUS DISEASE',
-    application:
-      'Differentiates bacterial from aseptic (viral) meningitis in children (≥2 months old) with CSF pleocytosis (CSF WBC ≥10/µL). NPV 99.7–100% when all criteria negative.',
-    applicableChiefComplaints: [
-      'headache',
-      'meningitis',
-      'fever',
-      'altered_mental_status',
-      'stiff_neck',
-      'seizure',
-    ],
-    keywords: [
-      'bacterial meningitis score',
-      'meningitis',
-      'CSF',
-      'pleocytosis',
-      'bacterial vs viral',
-      'pediatric',
-      'gram stain',
-      'aseptic meningitis',
-    ],
-    requiredTests: ['CSF gram stain', 'CSF ANC', 'CSF protein', 'peripheral ANC'],
-    components: [
-      {
-        id: 'csf_gram_stain_positive',
-        label: 'CSF Gram stain positive',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'csf_anc_gte_1000',
-        label: 'CSF ANC ≥1,000 cells/µL',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'csf_protein_gte_80',
-        label: 'CSF protein ≥80 mg/dL',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'peripheral_anc_gte_10000',
-        label: 'Peripheral blood ANC ≥10,000 cells/µL',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'seizure_at_presentation',
-        label: 'Seizure at or before presentation',
-        type: 'boolean',
-        value: 1,
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-      },
-    ],
-    scoring: {
-      method: 'threshold',
-      ranges: [
-        {
-          min: 0,
-          max: 0,
-          risk: 'Low',
-          interpretation:
-            'ALL 5 criteria NEGATIVE → Very low risk of bacterial meningitis (NPV 99.7–100%); aseptic meningitis likely; may consider outpatient management',
-        },
-        {
-          min: 1,
-          max: 5,
-          risk: 'High',
-          interpretation:
-            'ANY criterion POSITIVE → Cannot classify as low risk; treat empirically for bacterial meningitis',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      High: [
-        'empiric_antibiotics_meningitis_dose',
-        'dexamethasone_adjunctive',
-        'admit_icu',
-        'infectious_disease_consult',
-      ],
-      Low: ['observation', 'consider_outpatient_management', 'close_follow_up'],
     },
   },
 
@@ -479,133 +266,6 @@ export const batch13IdToxCdrs: CdrSeed[] = [
         'nac_if_acetaminophen',
         'close_monitoring',
         'hepatology_consult',
-      ],
-    },
-  },
-
-  // ===========================================================================
-  // TOXICOLOGY — Done Nomogram
-  // Algorithm: serum salicylate level + time since ingestion → severity prediction
-  // Historical tool — largely abandoned but still referenced
-  // ===========================================================================
-  {
-    id: 'done_nomogram',
-    name: 'Done Nomogram',
-    fullName: 'Done Nomogram',
-    category: 'TOXICOLOGY',
-    application:
-      'Historically used to predict salicylate toxicity severity based on serum salicylate level and time since ingestion. Now considered unreliable and NOT recommended for clinical decision-making.',
-    applicableChiefComplaints: [
-      'salicylate_overdose',
-      'aspirin_overdose',
-      'toxic_ingestion',
-      'tinnitus',
-      'tachypnea',
-    ],
-    keywords: [
-      'Done nomogram',
-      'salicylate',
-      'aspirin',
-      'overdose',
-      'toxicity',
-      'hemodialysis',
-      'historical',
-    ],
-    requiredTests: ['serum salicylate level', 'arterial blood gas', 'pH'],
-    components: [
-      {
-        id: 'hours_since_ingestion',
-        label: 'Hours since ingestion',
-        type: 'select',
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-        options: [
-          { label: '<6 hours (level may not yet reflect peak)', value: 0 },
-          { label: '6–12 hours', value: 1 },
-          { label: '12–24 hours', value: 2 },
-          { label: '>24 hours or unknown (nomogram unreliable)', value: 3 },
-        ],
-      },
-      {
-        id: 'serum_salicylate_level',
-        label: 'Serum salicylate level (mg/dL)',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: '<30 mg/dL (therapeutic range)', value: 0 },
-          { label: '30–50 mg/dL (mild toxicity)', value: 1 },
-          { label: '50–75 mg/dL (moderate toxicity)', value: 2 },
-          { label: '75–100 mg/dL (severe toxicity)', value: 3 },
-          { label: '>100 mg/dL (potentially lethal)', value: 4 },
-        ],
-      },
-      {
-        id: 'clinical_severity',
-        label: 'Clinical severity findings',
-        type: 'select',
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-        options: [
-          { label: 'Asymptomatic or tinnitus only', value: 0 },
-          { label: 'Tachypnea, nausea, vomiting', value: 1 },
-          { label: 'Altered mental status, hyperthermia, or severe acid-base disturbance', value: 2 },
-          { label: 'Seizures, coma, cardiovascular collapse, or pulmonary edema', value: 3 },
-        ],
-      },
-      {
-        id: 'acidemia_present',
-        label: 'Acidemia present (pH <7.35)',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 0,
-          max: 2,
-          risk: 'Mild',
-          interpretation:
-            'Mild toxicity: Tinnitus, nausea, vomiting; GI decontamination if early, supportive care, serial salicylate levels q2h until trending down, urine alkalinization',
-        },
-        {
-          min: 3,
-          max: 5,
-          risk: 'Moderate',
-          interpretation:
-            'Moderate toxicity: Tachypnea, diaphoresis, acid-base disturbance; aggressive IV fluids, urine alkalinization (target urine pH 7.5–8.0), serial levels, consider nephrology/toxicology consult',
-        },
-        {
-          min: 6,
-          max: 11,
-          risk: 'Severe',
-          interpretation:
-            'Severe toxicity: AMS, seizures, pulmonary edema, renal failure, or level >100 mg/dL — emergent hemodialysis indicated; ICU admission. Note: Done Nomogram is unreliable; treat based on clinical status, not nomogram position',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      Severe: [
-        'emergent_hemodialysis',
-        'icu_admission',
-        'toxicology_consult',
-        'intubation_caution_maintain_hyperventilation',
-      ],
-      Moderate: [
-        'iv_fluids_aggressive',
-        'urine_alkalinization',
-        'serial_salicylate_levels',
-        'toxicology_consult',
-      ],
-      Mild: [
-        'gi_decontamination_if_early',
-        'serial_salicylate_levels_q2h',
-        'urine_alkalinization',
-        'supportive_care',
       ],
     },
   },
@@ -927,131 +587,11 @@ export const batch13IdToxCdrs: CdrSeed[] = [
   },
 
   // ===========================================================================
-  // TOXICOLOGY — QTc Calculation / Bazett's Formula
-  // Algorithm: QT interval and RR interval → calculated QTc → risk thresholds
-  // ===========================================================================
-  {
-    id: 'qtc_calculation',
-    name: 'QTc Calculation',
-    fullName: 'QTc Calculation (Bazett and Fridericia)',
-    category: 'TOXICOLOGY',
-    application:
-      'Corrects QT interval for heart rate. Prolonged QTc increases risk of torsades de pointes. QTc >500 ms carries significant risk for TdP.',
-    applicableChiefComplaints: [
-      'palpitations',
-      'syncope',
-      'overdose',
-      'arrhythmia',
-      'QT_prolongation',
-      'torsades_de_pointes',
-    ],
-    keywords: [
-      'QTc',
-      'QT prolongation',
-      'Bazett',
-      'Fridericia',
-      'torsades de pointes',
-      'TdP',
-      'arrhythmia',
-      'corrected QT',
-      'ECG',
-    ],
-    requiredTests: ['ECG', 'QT interval measurement', 'heart rate'],
-    components: [
-      {
-        id: 'qt_interval',
-        label: 'Measured QT interval (ms)',
-        type: 'number_range',
-        min: 200,
-        max: 700,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'heart_rate',
-        label: 'Heart rate (bpm)',
-        type: 'number_range',
-        min: 30,
-        max: 250,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'patient_sex',
-        label: 'Patient sex (QTc thresholds differ)',
-        type: 'select',
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-        options: [
-          { label: 'Male (prolonged >450 ms)', value: 0 },
-          { label: 'Female (prolonged >470 ms)', value: 1 },
-        ],
-      },
-      {
-        id: 'qt_prolonging_meds',
-        label: 'Currently on QT-prolonging medication(s)',
-        type: 'boolean',
-        value: 1,
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-      },
-      {
-        id: 'electrolyte_abnormality',
-        label: 'Electrolyte abnormality (hypokalemia, hypomagnesemia, hypocalcemia)',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 200,
-          max: 449,
-          risk: 'Normal',
-          interpretation:
-            'Normal QTc (Male <450 ms, Female <470 ms); no immediate TdP risk. Continue monitoring if on QT-prolonging medications.',
-        },
-        {
-          min: 450,
-          max: 499,
-          risk: 'Borderline',
-          interpretation:
-            'Borderline-prolonged QTc; review and discontinue QT-prolonging medications if possible; correct electrolytes (K⁺ >4.0, Mg²⁺ >2.0); serial ECGs',
-        },
-        {
-          min: 500,
-          max: 700,
-          risk: 'High',
-          interpretation:
-            'QTc ≥500 ms: Significant risk for torsades de pointes; discontinue ALL QT-prolonging drugs; correct electrolytes aggressively (IV Mg²⁺, K⁺, Ca²⁺); continuous telemetry; consider isoproterenol or temporary pacing if TdP occurs. Increase >60 ms from baseline also concerning.',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      High: [
-        'discontinue_qt_prolonging_drugs',
-        'iv_magnesium_2g',
-        'correct_potassium_gt_4',
-        'continuous_telemetry',
-        'cardiology_consult',
-        'isoproterenol_or_pacing_if_tdp',
-      ],
-      Borderline: [
-        'review_qt_prolonging_medications',
-        'correct_electrolytes',
-        'serial_ecg',
-        'telemetry_monitoring',
-      ],
-      Normal: ['continue_monitoring_if_on_qt_prolonging_meds'],
-    },
-  },
-
-  // ===========================================================================
   // TOXICOLOGY — Poisoning Severity Score (PSS)
-  // Single select: 0–4 grade based on worst-affected organ system (IPCS/EAPCCT)
+  // 4 clinical organ system assessments + overall physician grade
+  // Each organ system graded 0–3 per IPCS/EAPCCT criteria;
+  // overall PSS = worst-affected organ system (algorithm)
+  // Source: Persson et al., J Toxicol Clin Toxicol 1998 (IPCS/EAPCCT)
   // ===========================================================================
   {
     id: 'poisoning_severity_score',
@@ -1059,7 +599,7 @@ export const batch13IdToxCdrs: CdrSeed[] = [
     fullName: 'Poisoning Severity Score (PSS)',
     category: 'TOXICOLOGY',
     application:
-      'Standardized grading of acute poisoning severity. Used for clinical communication and outcome tracking. Score the worst-affected organ system to determine overall grade.',
+      'Standardized grading of acute poisoning severity (IPCS/EAPCCT). Assesses multiple organ systems; overall grade = worst-affected system. Used for clinical communication and outcome tracking.',
     applicableChiefComplaints: ['overdose', 'toxic_ingestion', 'poisoning', 'ingestion'],
     keywords: [
       'PSS',
@@ -1068,11 +608,65 @@ export const batch13IdToxCdrs: CdrSeed[] = [
       'grading',
       'overdose',
       'severity',
+      'IPCS',
+      'EAPCCT',
     ],
     components: [
       {
+        id: 'gi_severity',
+        label: 'GI/Hepatic severity',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'Grade 0 — No GI symptoms', value: 0 },
+          { label: 'Grade 1 — Minor: nausea, vomiting, diarrhea, abdominal pain', value: 1 },
+          { label: 'Grade 2 — Moderate: prolonged vomiting/diarrhea, ileus, GI bleeding without hemodynamic compromise', value: 2 },
+          { label: 'Grade 3 — Severe: massive GI hemorrhage, GI perforation, pancreatitis with organ failure', value: 3 },
+        ],
+      },
+      {
+        id: 'respiratory_severity',
+        label: 'Respiratory severity',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'Grade 0 — No respiratory symptoms', value: 0 },
+          { label: 'Grade 1 — Minor: cough, irritation, mild dyspnea, mild bronchospasm', value: 1 },
+          { label: 'Grade 2 — Moderate: prolonged cough, bronchospasm, stridor, hypoxemia requiring O2', value: 2 },
+          { label: 'Grade 3 — Severe: respiratory failure, pulmonary edema, ARDS, pneumonitis with respiratory failure', value: 3 },
+        ],
+      },
+      {
+        id: 'cns_severity',
+        label: 'Nervous system severity',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'Grade 0 — No neurological symptoms', value: 0 },
+          { label: 'Grade 1 — Minor: drowsiness, dizziness, tinnitus, ataxia, restlessness', value: 1 },
+          { label: 'Grade 2 — Moderate: deep unconsciousness with appropriate pain response, brief/self-limited seizure', value: 2 },
+          { label: 'Grade 3 — Severe: deep coma, prolonged/repeated seizures, status epilepticus, respiratory depression from CNS cause', value: 3 },
+        ],
+      },
+      {
+        id: 'cv_severity',
+        label: 'Cardiovascular severity',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'Grade 0 — No cardiovascular symptoms', value: 0 },
+          { label: 'Grade 1 — Minor: isolated/transient hypotension or hypertension, sinus tachycardia', value: 1 },
+          { label: 'Grade 2 — Moderate: significant bradycardia or tachycardia, marked hypo/hypertension, conduction disturbances', value: 2 },
+          { label: 'Grade 3 — Severe: cardiac arrest, cardiogenic shock, severe arrhythmia with hemodynamic compromise', value: 3 },
+        ],
+      },
+      {
         id: 'overall_severity',
-        label: 'Overall poisoning severity grade (worst organ system)',
+        label: 'Overall PSS grade (worst organ system, including metabolic/renal/hepatic lab findings)',
         type: 'select',
         source: 'user_input',
         options: [
@@ -1082,17 +676,17 @@ export const batch13IdToxCdrs: CdrSeed[] = [
           },
           {
             label:
-              'Grade 1 — Minor: Mild, transient, spontaneously resolving symptoms (e.g., GI irritation, drowsiness, transient skin irritation)',
+              'Grade 1 — Minor: Mild, transient, spontaneously resolving symptoms',
             value: 1,
           },
           {
             label:
-              'Grade 2 — Moderate: Pronounced or prolonged symptoms (e.g., marked drowsiness, prolonged GI symptoms, isolated organ dysfunction, localized skin lesions)',
+              'Grade 2 — Moderate: Pronounced or prolonged symptoms; isolated organ dysfunction',
             value: 2,
           },
           {
             label:
-              'Grade 3 — Severe: Life-threatening symptoms (e.g., coma, seizures, respiratory failure, significant cardiac arrhythmias, circulatory shock, severe acid-base disturbance)',
+              'Grade 3 — Severe: Life-threatening symptoms (coma, seizures, respiratory failure, shock)',
             value: 3,
           },
           {
@@ -1103,7 +697,7 @@ export const batch13IdToxCdrs: CdrSeed[] = [
       },
     ],
     scoring: {
-      method: 'sum',
+      method: 'algorithm',
       ranges: [
         {
           min: 0,

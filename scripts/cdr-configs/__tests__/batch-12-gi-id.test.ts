@@ -3,8 +3,8 @@ import { batch12GiIdCdrs } from '../batch-12-gi-id'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 12 — Gastrointestinal / Genitourinary + Infectious Disease CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch12GiIdCdrs).toHaveLength(10)
+  it('exports exactly 8 CDR definitions', () => {
+    expect(batch12GiIdCdrs).toHaveLength(8)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -200,25 +200,19 @@ describe('Batch 12 — Gastrointestinal / Genitourinary + Infectious Disease CDR
   })
 
   describe('individual CDR spot checks', () => {
-    it("Ranson's Criteria has 11 boolean components each worth 1 point", () => {
-      const ransons = batch12GiIdCdrs.find((c) => c.id === 'ransons_criteria')!
-      expect(ransons.components).toHaveLength(11)
-      for (const comp of ransons.components) {
-        expect(comp.type).toBe('boolean')
-        expect(comp.value).toBe(1)
-      }
-      expect(ransons.scoring.method).toBe('sum')
-      expect(ransons.category).toBe('GASTROINTESTINAL')
-    })
-
-    it('Atlanta Classification uses algorithm scoring with 3 select components', () => {
+    it('Atlanta Classification uses algorithm scoring with 5 select components', () => {
       const atlanta = batch12GiIdCdrs.find((c) => c.id === 'atlanta_pancreatitis')!
-      expect(atlanta.components).toHaveLength(3)
+      expect(atlanta.components).toHaveLength(5)
       for (const comp of atlanta.components) {
         expect(comp.type).toBe('select')
       }
       expect(atlanta.scoring.method).toBe('algorithm')
       expect(atlanta.category).toBe('GASTROINTESTINAL')
+      // Has clinical (section1), lab (section2), and physician judgment (user_input) components
+      const section1Comps = atlanta.components.filter((c) => c.source === 'section1')
+      const userInputComps = atlanta.components.filter((c) => c.source === 'user_input')
+      expect(section1Comps.length).toBeGreaterThanOrEqual(2)
+      expect(userInputComps.length).toBeGreaterThanOrEqual(1)
     })
 
     it("Charcot's Triad / Reynolds' Pentad has 5 boolean components with threshold scoring", () => {
@@ -271,39 +265,33 @@ describe('Batch 12 — Gastrointestinal / Genitourinary + Infectious Disease CDR
       expect(lowRange.max).toBe(9)
     })
 
-    it('Boston Criteria has 6 boolean components with threshold scoring', () => {
+    it('Boston Criteria has 7 boolean components with threshold scoring (includes age criterion)', () => {
       const boston = batch12GiIdCdrs.find((c) => c.id === 'boston_criteria_febrile_infant')!
-      expect(boston.components).toHaveLength(6)
+      expect(boston.components).toHaveLength(7)
       expect(boston.scoring.method).toBe('threshold')
       expect(boston.category).toBe('INFECTIOUS DISEASE')
-      // Low risk at score = 6 (all criteria met)
+      // Low risk at score = 7 (all criteria met, including age)
       const lowRange = boston.scoring.ranges.find((r) => r.risk === 'Low')!
-      expect(lowRange.min).toBe(6)
-      expect(lowRange.max).toBe(6)
-    })
-
-    it('Lab-Score has 3 select components with sum scoring up to 7', () => {
-      const labScore = batch12GiIdCdrs.find((c) => c.id === 'lab_score')!
-      expect(labScore.components).toHaveLength(3)
-      for (const comp of labScore.components) {
-        expect(comp.type).toBe('select')
-      }
-      expect(labScore.scoring.method).toBe('sum')
-      expect(labScore.category).toBe('INFECTIOUS DISEASE')
-      const ranges = [...labScore.scoring.ranges].sort((a, b) => a.min - b.min)
-      expect(ranges[ranges.length - 1].max).toBe(7)
+      expect(lowRange.min).toBe(7)
+      expect(lowRange.max).toBe(7)
+      // Has 3 section1 components (age, well-appearing, no focal infection)
+      const section1Comps = boston.components.filter((c) => c.source === 'section1')
+      expect(section1Comps).toHaveLength(3)
     })
 
     it('AAP 2021 Febrile Infant uses algorithm scoring with mixed component types', () => {
       const aap = batch12GiIdCdrs.find((c) => c.id === 'aap_2021_febrile_infant')!
-      expect(aap.components).toHaveLength(5)
+      expect(aap.components).toHaveLength(6)
       expect(aap.scoring.method).toBe('algorithm')
       expect(aap.category).toBe('INFECTIOUS DISEASE')
       // Has both select (age_group) and boolean components
       const selects = aap.components.filter((c) => c.type === 'select')
       const booleans = aap.components.filter((c) => c.type === 'boolean')
       expect(selects).toHaveLength(1)
-      expect(booleans).toHaveLength(4)
+      expect(booleans).toHaveLength(5)
+      // Has 3 section1 user-answerable components (age_group, well_appearing, previously_healthy)
+      const section1Comps = aap.components.filter((c) => c.source === 'section1')
+      expect(section1Comps).toHaveLength(3)
     })
 
     it('CISNE Score has 6 boolean components with two weighted at 2 points', () => {

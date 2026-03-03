@@ -22,477 +22,29 @@ import type { CdrSeed } from './types'
 
 export const batch10PulmNeuroCdrs: CdrSeed[] = [
   // ---------------------------------------------------------------------------
-  // Light's Criteria — Pleural Effusion Classification
-  // Algorithm: Exudate if ANY of 3 criteria met; Transudate if none met
+  // Light's Criteria: QUARANTINED — see _quarantine/lights_criteria.ts
+  // Reason: 0 user-answerable components; all 3 criteria are lab ratios (section2).
   // ---------------------------------------------------------------------------
-  {
-    id: 'lights_criteria',
-    name: "Light's Criteria",
-    fullName: "Light's Criteria (Pleural Effusion)",
-    category: 'PULMONARY',
-    application:
-      'Differentiates transudative from exudative pleural effusions. Essential for determining the etiology of pleural effusion.',
-    applicableChiefComplaints: ['shortness_of_breath', 'chest_pain', 'pleural_effusion'],
-    keywords: [
-      "Light's criteria",
-      'pleural effusion',
-      'transudate',
-      'exudate',
-      'LDH',
-      'protein',
-      'thoracentesis',
-    ],
-    requiredTests: ['pleural fluid protein', 'serum protein', 'pleural fluid LDH', 'serum LDH'],
-    components: [
-      {
-        id: 'protein_ratio',
-        label: 'Pleural fluid protein / Serum protein ratio >0.5',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'ldh_ratio',
-        label: 'Pleural fluid LDH / Serum LDH ratio >0.6',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'ldh_upper_normal',
-        label: 'Pleural fluid LDH >2/3 upper limit of normal for serum LDH',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 0,
-          max: 0,
-          risk: 'Transudate',
-          interpretation:
-            'No criteria met. Transudative effusion — caused by systemic factors (CHF, cirrhosis, nephrotic syndrome). Treat the underlying condition.',
-        },
-        {
-          min: 1,
-          max: 3,
-          risk: 'Exudate',
-          interpretation:
-            'One or more criteria met. Exudative effusion — caused by local/inflammatory process (infection, malignancy, PE, autoimmune). Requires further workup: cell count, glucose, pH, cytology, cultures.',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      Transudate: ['treat_underlying_cause', 'diuretics', 'sodium_restriction'],
-      Exudate: [
-        'pleural_fluid_culture',
-        'pleural_fluid_cytology',
-        'pulmonology_consult',
-        'ct_chest_with_contrast',
-      ],
-    },
-  },
 
   // ---------------------------------------------------------------------------
-  // ROX Index — HFNC Failure Prediction
-  // Algorithm: (SpO2/FiO2) / Respiratory Rate
-  // Continuous calculation with time-based thresholds
+  // ROX Index: QUARANTINED — see _quarantine/rox_index.ts
+  // Reason: 1 user-answerable component; core inputs are continuous measurements (number_range).
   // ---------------------------------------------------------------------------
-  {
-    id: 'rox_index',
-    name: 'ROX Index',
-    fullName: 'ROX Index (HFNC Failure Prediction)',
-    category: 'PULMONARY',
-    application:
-      'Predicts failure of high-flow nasal cannula (HFNC) oxygen therapy, identifying patients who may need intubation.',
-    applicableChiefComplaints: ['shortness_of_breath', 'respiratory_failure', 'hypoxia'],
-    keywords: [
-      'ROX index',
-      'HFNC',
-      'high flow nasal cannula',
-      'intubation',
-      'respiratory failure',
-      'oxygen therapy',
-    ],
-    components: [
-      {
-        id: 'spo2',
-        label: 'SpO2 (%)',
-        type: 'number_range',
-        min: 50,
-        max: 100,
-        source: 'section1',
-        autoPopulateFrom: 'vital_signs',
-      },
-      {
-        id: 'fio2',
-        label: 'FiO2 (%, e.g. 60 for 60%)',
-        type: 'number_range',
-        min: 21,
-        max: 100,
-        source: 'section2',
-      },
-      {
-        id: 'respiratory_rate',
-        label: 'Respiratory Rate (breaths/min)',
-        type: 'number_range',
-        min: 1,
-        max: 60,
-        source: 'section1',
-        autoPopulateFrom: 'vital_signs',
-      },
-      {
-        id: 'assessment_time',
-        label: 'Time on HFNC',
-        type: 'select',
-        source: 'user_input',
-        options: [
-          { label: '2 hours', value: 0 },
-          { label: '6 hours', value: 1 },
-          { label: '12 hours', value: 2 },
-        ],
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 0,
-          max: 3,
-          risk: 'High Risk',
-          interpretation:
-            'ROX <3.85 at 2h or <3.47 at 6h or <3.85 at 12h: High risk of HFNC failure. Strongly consider intubation and mechanical ventilation.',
-        },
-        {
-          min: 3,
-          max: 4,
-          risk: 'Intermediate',
-          interpretation:
-            'ROX 3.85–4.87: Intermediate risk. Reassess frequently (every 1–2 hours) and trend ROX values.',
-        },
-        {
-          min: 4,
-          max: 20,
-          risk: 'Low Risk',
-          interpretation:
-            'ROX >=4.88 at 2, 6, or 12 hours: Low risk of HFNC failure. Continue current HFNC settings with routine monitoring.',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      'High Risk': ['intubation', 'mechanical_ventilation', 'icu_admission', 'rapid_sequence_intubation'],
-      Intermediate: ['continue_hfnc', 'frequent_reassessment', 'icu_monitoring'],
-      'Low Risk': ['continue_hfnc', 'routine_monitoring'],
-    },
-  },
 
   // ---------------------------------------------------------------------------
-  // BODE Index — COPD Mortality Prediction
-  // Sum-based: 4 components (BMI, FEV1%, 6MWD, mMRC), each scored 0–3
+  // BODE Index: QUARANTINED — see _quarantine/bode_index.ts
+  // Reason: 2 user-answerable components (BMI, mMRC); FEV1 and 6MWD are section2 tests.
   // ---------------------------------------------------------------------------
-  {
-    id: 'bode_index',
-    name: 'BODE Index',
-    fullName: 'BODE Index (COPD Prognosis)',
-    category: 'PULMONARY',
-    application:
-      'Multidimensional assessment of COPD prognosis. Predicts mortality better than FEV1 alone.',
-    applicableChiefComplaints: ['shortness_of_breath', 'copd', 'dyspnea', 'exercise_intolerance'],
-    keywords: [
-      'BODE',
-      'COPD',
-      'prognosis',
-      'mortality',
-      'FEV1',
-      'BMI',
-      'dyspnea',
-      'mMRC',
-      '6-minute walk',
-    ],
-    requiredTests: ['FEV1', '6-minute walk test', 'BMI'],
-    components: [
-      {
-        id: 'bmi',
-        label: 'Body Mass Index (BMI)',
-        type: 'select',
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-        options: [
-          { label: 'BMI >21', value: 0 },
-          { label: 'BMI <=21', value: 1 },
-        ],
-      },
-      {
-        id: 'fev1_percent',
-        label: 'FEV1 (% predicted)',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: '>=65%', value: 0 },
-          { label: '50–64%', value: 1 },
-          { label: '36–49%', value: 2 },
-          { label: '<=35%', value: 3 },
-        ],
-      },
-      {
-        id: 'six_mwd',
-        label: '6-Minute Walk Distance (meters)',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: '>=350 m', value: 0 },
-          { label: '250–349 m', value: 1 },
-          { label: '150–249 m', value: 2 },
-          { label: '<=149 m', value: 3 },
-        ],
-      },
-      {
-        id: 'mmrc_dyspnea',
-        label: 'mMRC Dyspnea Scale',
-        type: 'select',
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-        options: [
-          { label: '0 — Dyspnea only with strenuous exercise', value: 0 },
-          { label: '1 — Dyspnea when hurrying on level or walking up slight hill', value: 0 },
-          { label: '2 — Walks slower than people of same age or stops for breath on level', value: 1 },
-          { label: '3 — Stops for breath after ~100 m or a few minutes on level', value: 2 },
-          { label: '4 — Too dyspneic to leave house or breathless dressing/undressing', value: 3 },
-        ],
-      },
-    ],
-    scoring: {
-      method: 'sum',
-      ranges: [
-        {
-          min: 0,
-          max: 2,
-          risk: 'Low',
-          interpretation: 'Quartile 1: ~15% 4-year mortality. Optimize medical therapy.',
-        },
-        {
-          min: 3,
-          max: 4,
-          risk: 'Moderate',
-          interpretation:
-            'Quartile 2: ~25% 4-year mortality. Pulmonary rehabilitation, optimize bronchodilators.',
-        },
-        {
-          min: 5,
-          max: 6,
-          risk: 'High',
-          interpretation:
-            'Quartile 3: ~45% 4-year mortality. Consider lung volume reduction surgery evaluation.',
-        },
-        {
-          min: 7,
-          max: 10,
-          risk: 'Very High',
-          interpretation:
-            'Quartile 4: ~80% 4-year mortality. Discuss palliative care, goals of care, transplant evaluation.',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      'Very High': ['palliative_care_consult', 'transplant_evaluation', 'pulmonology_consult'],
-      High: ['pulmonary_rehabilitation', 'pulmonology_consult', 'lvrs_evaluation'],
-      Moderate: ['pulmonary_rehabilitation', 'optimize_bronchodilators'],
-      Low: ['continue_current_therapy', 'smoking_cessation'],
-    },
-  },
 
   // ---------------------------------------------------------------------------
-  // RSBI — Rapid Shallow Breathing Index
-  // Algorithm: Respiratory Rate / Tidal Volume (L)
-  // Threshold: <105 predicts weaning success
+  // RSBI: QUARANTINED — see _quarantine/rsbi.ts
+  // Reason: 0 user-answerable components; pure ventilator calculation (RR/Vt).
   // ---------------------------------------------------------------------------
-  {
-    id: 'rsbi',
-    name: 'RSBI',
-    fullName: 'Rapid Shallow Breathing Index (RSBI)',
-    category: 'PULMONARY',
-    application:
-      'Predicts success of weaning from mechanical ventilation (spontaneous breathing trial).',
-    applicableChiefComplaints: ['mechanical_ventilation', 'respiratory_failure', 'icu'],
-    keywords: [
-      'RSBI',
-      'rapid shallow breathing index',
-      'weaning',
-      'extubation',
-      'mechanical ventilation',
-      'spontaneous breathing trial',
-      'SBT',
-    ],
-    components: [
-      {
-        id: 'respiratory_rate',
-        label: 'Respiratory Rate during SBT (breaths/min)',
-        type: 'number_range',
-        min: 1,
-        max: 60,
-        source: 'section1',
-        autoPopulateFrom: 'vital_signs',
-      },
-      {
-        id: 'tidal_volume',
-        label: 'Tidal Volume during SBT (liters)',
-        type: 'select',
-        source: 'section2',
-        options: [
-          { label: '>=0.5 L (adequate depth)', value: 0 },
-          { label: '0.3–0.49 L (borderline)', value: 1 },
-          { label: '<0.3 L (shallow)', value: 2 },
-        ],
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 0,
-          max: 104,
-          risk: 'Favorable',
-          interpretation:
-            'RSBI <105 breaths/min/L: Likely to tolerate extubation (PPV ~78%). Proceed with spontaneous breathing trial and consider extubation.',
-        },
-        {
-          min: 105,
-          max: 300,
-          risk: 'Unfavorable',
-          interpretation:
-            'RSBI >=105 breaths/min/L: Likely to fail extubation (NPV ~95%). Continue mechanical ventilation and address reversible causes before reattempting.',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      Favorable: ['spontaneous_breathing_trial', 'extubation', 'post_extubation_monitoring'],
-      Unfavorable: [
-        'continue_mechanical_ventilation',
-        'address_reversible_causes',
-        'reassess_in_24_hours',
-      ],
-    },
-  },
 
   // ---------------------------------------------------------------------------
-  // Murray Lung Injury Score
-  // Sum-based (averaged): 4 components each scored 0–4; final = sum / # components
-  // Score >2.5 = severe (ECMO consideration)
+  // Murray Lung Injury Score: QUARANTINED — see _quarantine/murray_lung_injury.ts
+  // Reason: 0 user-answerable components; all 4 components are imaging/vent/lab (section2).
   // ---------------------------------------------------------------------------
-  {
-    id: 'murray_lung_injury',
-    name: 'Murray Lung Injury Score',
-    fullName: 'Murray Lung Injury Score',
-    category: 'PULMONARY',
-    application:
-      'Quantifies severity of acute lung injury. Can be used to identify patients who may benefit from ECMO.',
-    applicableChiefComplaints: ['respiratory_failure', 'shortness_of_breath', 'hypoxia', 'ards'],
-    keywords: [
-      'Murray score',
-      'lung injury score',
-      'ARDS',
-      'ECMO',
-      'acute lung injury',
-      'PaO2/FiO2',
-      'PEEP',
-      'compliance',
-    ],
-    requiredTests: ['arterial blood gas', 'chest x-ray', 'PaO2/FiO2 ratio', 'lung compliance', 'PEEP'],
-    components: [
-      {
-        id: 'cxr_consolidation',
-        label: 'Chest X-Ray (alveolar consolidation)',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: 'No alveolar consolidation', value: 0 },
-          { label: 'Consolidation confined to 1 quadrant', value: 1 },
-          { label: 'Consolidation confined to 2 quadrants', value: 2 },
-          { label: 'Consolidation confined to 3 quadrants', value: 3 },
-          { label: 'Consolidation in all 4 quadrants', value: 4 },
-        ],
-      },
-      {
-        id: 'pao2_fio2',
-        label: 'PaO2/FiO2 Ratio',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: '>=300', value: 0 },
-          { label: '225–299', value: 1 },
-          { label: '175–224', value: 2 },
-          { label: '100–174', value: 3 },
-          { label: '<100', value: 4 },
-        ],
-      },
-      {
-        id: 'peep',
-        label: 'PEEP (cmH2O)',
-        type: 'select',
-        source: 'section2',
-        options: [
-          { label: '<=5 cmH2O', value: 0 },
-          { label: '6–8 cmH2O', value: 1 },
-          { label: '9–11 cmH2O', value: 2 },
-          { label: '12–14 cmH2O', value: 3 },
-          { label: '>=15 cmH2O', value: 4 },
-        ],
-      },
-      {
-        id: 'compliance',
-        label: 'Lung Compliance (mL/cmH2O)',
-        type: 'select',
-        source: 'section2',
-        options: [
-          { label: '>=80 mL/cmH2O', value: 0 },
-          { label: '60–79 mL/cmH2O', value: 1 },
-          { label: '40–59 mL/cmH2O', value: 2 },
-          { label: '20–39 mL/cmH2O', value: 3 },
-          { label: '<=19 mL/cmH2O', value: 4 },
-        ],
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 0,
-          max: 0,
-          risk: 'No Injury',
-          interpretation: 'Average score 0: No lung injury.',
-        },
-        {
-          min: 0,
-          max: 2,
-          risk: 'Mild-Moderate',
-          interpretation:
-            'Average score 0.1–2.5: Mild to moderate lung injury. Continue lung-protective ventilation.',
-        },
-        {
-          min: 2,
-          max: 4,
-          risk: 'Severe',
-          interpretation:
-            'Average score >2.5: Severe lung injury (ARDS). Consider ECMO referral if refractory hypoxemia despite optimal conventional management.',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      Severe: ['ecmo_referral', 'prone_positioning', 'lung_protective_ventilation', 'icu_admission'],
-      'Mild-Moderate': ['lung_protective_ventilation', 'optimize_peep', 'icu_monitoring'],
-      'No Injury': ['routine_monitoring'],
-    },
-  },
 
   // ---------------------------------------------------------------------------
   // CPSS — Cincinnati Prehospital Stroke Scale
@@ -833,22 +385,21 @@ export const batch10PulmNeuroCdrs: CdrSeed[] = [
         label: 'CT performed within 6 hours of headache onset (ictus)',
         type: 'boolean',
         value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
+        source: 'user_input',
       },
       {
         id: 'modern_scanner',
         label: 'CT obtained on 3rd-generation or newer scanner',
         type: 'boolean',
         value: 1,
-        source: 'section2',
+        source: 'user_input',
       },
       {
         id: 'experienced_radiologist',
         label: 'CT interpreted by experienced (attending-level) radiologist',
         type: 'boolean',
         value: 1,
-        source: 'section2',
+        source: 'user_input',
       },
       {
         id: 'ct_negative',

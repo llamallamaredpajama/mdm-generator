@@ -732,6 +732,17 @@ export const batch3PulmGiCdrs: CdrSeed[] = [
         source: 'user_input',
       },
       {
+        id: 'respiratory_support',
+        label: 'Current respiratory support mode',
+        type: 'select',
+        source: 'section1',
+        options: [
+          { label: 'High-flow nasal cannula (HFNC) or CPAP ≥ 5 cmH₂O', value: 0 },
+          { label: 'Non-invasive ventilation (BiPAP/NIPPV)', value: 0 },
+          { label: 'Invasive mechanical ventilation', value: 0 },
+        ],
+      },
+      {
         id: 'peep_level',
         label: 'Minimum PEEP ≥ 5 cmH₂O (or CPAP ≥ 5 cmH₂O for non-intubated)',
         type: 'boolean',
@@ -954,7 +965,7 @@ export const batch3PulmGiCdrs: CdrSeed[] = [
         },
         {
           min: 6,
-          max: 23,
+          max: 29,
           risk: 'High',
           interpretation:
             'High risk; urgent endoscopy required; anticipate need for intervention (hemostasis, blood transfusion).',

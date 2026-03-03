@@ -1,19 +1,17 @@
 import type { CdrSeed } from './types'
 
 /**
- * Batch 20 — Orthopedic, Rheumatology, Geriatrics & Palliative CDRs (final batch)
+ * Batch 20 — Rheumatology, Geriatrics & Palliative CDRs (final batch)
  *
- * Covers: Garden Classification (Hip), Jones Criteria, ACR/EULAR RA Criteria,
- *         4AT Delirium Screen, Braden Scale, Morse Fall Scale,
- *         PPI, PPS, PaP Score
+ * CDRs: jones_criteria, 4at, braden_scale, morse_fall_scale,
+ *       ppi, pps, pap_score
  *
- * Each CDR replaces the placeholder `number_range` component from seed-cdr-library.ts
- * with real clinical criteria drawn from published literature.
+ * Quarantined (insufficient user-answerable components):
+ *   - garden_hip (0/1 clinical — imaging-based classification)
+ *   - acr_eular_ra (2/4 clinical — only joint involvement + duration are clinical)
  *
  * Sources:
- *  - Garden Classification: Garden RS, J Bone Joint Surg Br 1961
  *  - Jones Criteria: Gewitz et al., Circulation 2015 (AHA revision)
- *  - ACR/EULAR RA: Aletaha et al., Arthritis Rheum 2010
  *  - 4AT: Bellelli et al., Age Ageing 2014
  *  - Braden Scale: Bergstrom et al., Nurs Res 1987
  *  - Morse Fall Scale: Morse et al., West J Nurs Res 1989
@@ -23,69 +21,6 @@ import type { CdrSeed } from './types'
  */
 
 export const batch20OrthoGeriPallCdrs: CdrSeed[] = [
-  // ---------------------------------------------------------------------------
-  // Garden Classification for Hip Fractures
-  // Single select — classifies femoral neck fracture displacement (Type I–IV)
-  // ---------------------------------------------------------------------------
-  {
-    id: 'garden_hip',
-    name: 'Garden Classification',
-    fullName: 'Garden Classification (Hip Fractures)',
-    category: 'ORTHOPEDIC & MUSCULOSKELETAL',
-    application:
-      'Classifies femoral neck fractures by displacement to guide surgical management (internal fixation vs. arthroplasty). Garden III–IV carry high risk of avascular necrosis.',
-    applicableChiefComplaints: ['hip_fracture', 'hip_pain', 'fall_injury', 'trauma'],
-    keywords: [
-      'Garden',
-      'femoral neck fracture',
-      'hip fracture',
-      'avascular necrosis',
-      'AVN',
-      'hemiarthroplasty',
-      'total hip arthroplasty',
-      'intracapsular fracture',
-    ],
-    requiredTests: ['plain radiographs (hip AP and lateral)'],
-    components: [
-      {
-        id: 'garden_type',
-        label: 'Garden Type',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: 'Type I — Incomplete / valgus impacted (trabeculae angulated but intact)', value: 1 },
-          { label: 'Type II — Complete but non-displaced (trabeculae interrupted, no shift)', value: 2 },
-          { label: 'Type III — Complete, partially displaced (femoral head rotated, some contact)', value: 3 },
-          { label: 'Type IV — Complete, fully displaced (no contact between fragments)', value: 4 },
-        ],
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 1,
-          max: 2,
-          risk: 'Non-Displaced',
-          interpretation:
-            'Garden I–II: Non-displaced; lower AVN risk; internal fixation with cannulated screws preferred',
-        },
-        {
-          min: 3,
-          max: 4,
-          risk: 'Displaced',
-          interpretation:
-            'Garden III–IV: Displaced; high AVN risk (20–35%); arthroplasty (hemiarthroplasty vs THA based on age/activity)',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      'Non-Displaced': ['cannulated_screw_fixation', 'ortho_consult', 'non_weight_bearing'],
-      Displaced: ['arthroplasty', 'ortho_consult', 'admit_surgical'],
-    },
-  },
-
   // ---------------------------------------------------------------------------
   // Jones Criteria for Acute Rheumatic Fever
   // Algorithm — 5 major + 4 minor criteria with evidence of preceding GAS infection
@@ -224,104 +159,6 @@ export const batch20OrthoGeriPallCdrs: CdrSeed[] = [
         'secondary_prophylaxis',
       ],
       'Not Met': ['monitor_and_reassess', 'alternative_diagnosis'],
-    },
-  },
-
-  // ---------------------------------------------------------------------------
-  // ACR/EULAR 2010 RA Classification Criteria
-  // Sum: 4 domains — joint involvement (0–5), serology (0–3),
-  //   acute phase reactants (0–1), duration (0–1); max 10; >=6 = definite RA
-  // ---------------------------------------------------------------------------
-  {
-    id: 'acr_eular_ra',
-    name: 'ACR/EULAR RA Criteria',
-    fullName: 'ACR/EULAR 2010 Rheumatoid Arthritis Classification Criteria',
-    category: 'RHEUMATOLOGY',
-    application:
-      'Classifies definite RA in patients with at least 1 joint with synovitis not better explained by another disease. Score >=6/10 defines definite RA.',
-    applicableChiefComplaints: ['joint_swelling', 'polyarthritis', 'rheumatoid_arthritis', 'inflammatory_arthritis'],
-    keywords: [
-      'ACR',
-      'EULAR',
-      'rheumatoid arthritis',
-      'RA classification',
-      'RF',
-      'anti-CCP',
-      'synovitis',
-      'DMARD',
-      '2010 criteria',
-    ],
-    requiredTests: ['RF', 'anti-CCP', 'CRP', 'ESR', 'joint examination'],
-    components: [
-      {
-        id: 'joint_involvement',
-        label: 'Joint Involvement',
-        type: 'select',
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-        options: [
-          { label: '1 large joint (shoulder, elbow, hip, knee, ankle)', value: 0 },
-          { label: '2–10 large joints', value: 1 },
-          { label: '1–3 small joints (MCP, PIP, MTP, thumb IP, wrist)', value: 2 },
-          { label: '4–10 small joints', value: 3 },
-          { label: '>10 joints (at least 1 small joint)', value: 5 },
-        ],
-      },
-      {
-        id: 'serology',
-        label: 'Serology (RF and anti-CCP)',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: 'Negative RF AND negative anti-CCP', value: 0 },
-          { label: 'Low-positive RF OR low-positive anti-CCP (<=3x ULN)', value: 2 },
-          { label: 'High-positive RF OR high-positive anti-CCP (>3x ULN)', value: 3 },
-        ],
-      },
-      {
-        id: 'acute_phase_reactants',
-        label: 'Acute Phase Reactants',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: 'Normal CRP AND normal ESR', value: 0 },
-          { label: 'Abnormal CRP OR abnormal ESR', value: 1 },
-        ],
-      },
-      {
-        id: 'duration',
-        label: 'Duration of Symptoms',
-        type: 'select',
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-        options: [
-          { label: '<6 weeks', value: 0 },
-          { label: '>=6 weeks', value: 1 },
-        ],
-      },
-    ],
-    scoring: {
-      method: 'sum',
-      ranges: [
-        {
-          min: 0,
-          max: 5,
-          risk: 'Not Classifiable',
-          interpretation: 'Score <6: Not classifiable as RA at this time; monitor and reassess',
-        },
-        {
-          min: 6,
-          max: 10,
-          risk: 'Definite RA',
-          interpretation: 'Score >=6: Definite RA; initiate disease-modifying therapy (DMARD)',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      'Definite RA': ['methotrexate', 'rheumatology_consult', 'baseline_labs', 'xrays_hands_feet'],
-      'Not Classifiable': ['monitor_and_reassess', 'nsaids_symptomatic', 'follow_up_rheumatology'],
     },
   },
 
@@ -842,8 +679,10 @@ export const batch20OrthoGeriPallCdrs: CdrSeed[] = [
 
   // ---------------------------------------------------------------------------
   // Palliative Performance Scale (PPS)
-  // Select: single value 0–100 in 10-point increments
-  // Based on ambulation, activity/evidence of disease, self-care, intake, consciousness
+  // 5 functional dimensions: ambulation, activity/evidence of disease, self-care,
+  //   intake, conscious level (Anderson et al., J Palliat Care 1996)
+  // Each dimension assessed independently; overall PPS level = integrated clinical judgment
+  // Algorithm scoring — not a simple sum
   // ---------------------------------------------------------------------------
   {
     id: 'pps',
@@ -851,7 +690,7 @@ export const batch20OrthoGeriPallCdrs: CdrSeed[] = [
     fullName: 'Palliative Performance Scale (PPS)',
     category: 'PALLIATIVE CARE & PROGNOSIS',
     application:
-      'Measures functional status in palliative care patients on a 0–100% scale across ambulation, activity, self-care, intake, and conscious level. Component of PPI; decline >=30% over 1–2 months suggests weeks prognosis.',
+      'Measures functional status in palliative care patients across 5 dimensions: ambulation, activity, self-care, intake, and conscious level. Component of PPI; decline >=30% over 1–2 months suggests weeks prognosis.',
     applicableChiefComplaints: ['terminal_illness', 'cancer', 'end_of_life', 'functional_decline', 'palliative_care'],
     keywords: [
       'PPS',
@@ -866,23 +705,70 @@ export const batch20OrthoGeriPallCdrs: CdrSeed[] = [
     ],
     components: [
       {
-        id: 'pps_level',
-        label: 'PPS Level',
+        id: 'ambulation',
+        label: 'Ambulation',
         type: 'select',
         source: 'section1',
         autoPopulateFrom: 'narrative_analysis',
         options: [
-          { label: '100% — Full ambulation, normal activity, full self-care, normal intake, fully conscious', value: 100 },
-          { label: '90% — Full ambulation, normal activity with effort, full self-care, normal intake, fully conscious', value: 90 },
-          { label: '80% — Full ambulation, normal activity with effort, full self-care, normal or reduced intake, fully conscious', value: 80 },
-          { label: '70% — Reduced ambulation, unable to do normal job/work, full self-care, normal or reduced intake, fully conscious', value: 70 },
-          { label: '60% — Reduced ambulation, unable to do hobbies/housework, occasional assistance needed, normal or reduced intake, full or confusion', value: 60 },
-          { label: '50% — Mainly sit/lie, unable to do any work, considerable assistance, normal or reduced intake, full or confusion', value: 50 },
-          { label: '40% — Mainly in bed, unable to do most activity, mainly assistance, normal or reduced intake, full or drowsy +/- confusion', value: 40 },
-          { label: '30% — Totally bed-bound, unable to do any activity, total care, reduced intake, full or drowsy +/- confusion', value: 30 },
-          { label: '20% — Totally bed-bound, unable to do any activity, total care, minimal sips, full or drowsy +/- confusion', value: 20 },
-          { label: '10% — Totally bed-bound, unable to do any activity, total care, mouth care only, drowsy or coma', value: 10 },
-          { label: '0% — Death', value: 0 },
+          { label: 'Full ambulation (normal activity, no evidence of disease)', value: 4 },
+          { label: 'Reduced ambulation (unable to carry out normal job/work, significant disease)', value: 3 },
+          { label: 'Mainly sit/lie (unable to do most activity, extensive disease)', value: 2 },
+          { label: 'Mainly in bed (unable to do any activity, extensive disease)', value: 1 },
+          { label: 'Totally bed-bound', value: 0 },
+        ],
+      },
+      {
+        id: 'activity_level',
+        label: 'Activity & Evidence of Disease',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'Normal activity & work, no evidence of disease', value: 4 },
+          { label: 'Normal activity with effort, some evidence of disease', value: 3 },
+          { label: 'Unable normal job/work, significant disease', value: 2 },
+          { label: 'Unable to do most/any activity, extensive disease', value: 1 },
+          { label: 'Unable to do any activity, extensive disease', value: 0 },
+        ],
+      },
+      {
+        id: 'self_care',
+        label: 'Self-Care',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'Full self-care', value: 3 },
+          { label: 'Occasional assistance necessary', value: 2 },
+          { label: 'Considerable assistance required', value: 1 },
+          { label: 'Mainly assistance or total care', value: 0 },
+        ],
+      },
+      {
+        id: 'intake',
+        label: 'Intake (oral)',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'Normal intake', value: 3 },
+          { label: 'Normal or reduced intake', value: 2 },
+          { label: 'Reduced intake (sips to minimal)', value: 1 },
+          { label: 'Mouth care only', value: 0 },
+        ],
+      },
+      {
+        id: 'conscious_level',
+        label: 'Conscious Level',
+        type: 'select',
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+        options: [
+          { label: 'Fully conscious', value: 3 },
+          { label: 'Full or confusion', value: 2 },
+          { label: 'Full or drowsy +/- confusion', value: 1 },
+          { label: 'Drowsy or coma +/- confusion', value: 0 },
         ],
       },
     ],
@@ -891,21 +777,21 @@ export const batch20OrthoGeriPallCdrs: CdrSeed[] = [
       ranges: [
         {
           min: 0,
-          max: 30,
+          max: 5,
           risk: 'Nearing End of Life',
           interpretation:
             'PPS 0–30%: Nearing end of life; hospice appropriate; median survival days to weeks',
         },
         {
-          min: 40,
-          max: 60,
+          min: 6,
+          max: 10,
           risk: 'Significant Decline',
           interpretation:
             'PPS 40–60%: Significant functional decline; transition conversations appropriate; median survival weeks to months',
         },
         {
-          min: 70,
-          max: 100,
+          min: 11,
+          max: 17,
           risk: 'Relatively Preserved',
           interpretation:
             'PPS 70–100%: Relatively preserved function; may continue disease-directed therapy',

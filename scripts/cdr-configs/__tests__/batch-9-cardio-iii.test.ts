@@ -3,8 +3,8 @@ import { batch9CardioIiiCdrs } from '../batch-9-cardio-iii'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 9 — Cardiovascular III + Pulmonary CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch9CardioIiiCdrs).toHaveLength(10)
+  it('exports exactly 9 CDR definitions', () => {
+    expect(batch9CardioIiiCdrs).toHaveLength(9)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -281,17 +281,7 @@ describe('Batch 9 — Cardiovascular III + Pulmonary CDRs', () => {
       }
     })
 
-    it('DECAF has 5 components with one select (dyspnea eMRCD 0/1/2) and 4 booleans', () => {
-      const decaf = batch9CardioIiiCdrs.find((c) => c.id === 'decaf')!
-      expect(decaf.components).toHaveLength(5)
-      expect(decaf.scoring.method).toBe('sum')
-      expect(decaf.category).toBe('PULMONARY')
-      const dyspnea = decaf.components.find((c) => c.id === 'dyspnea_emrcd')!
-      expect(dyspnea.type).toBe('select')
-      expect(dyspnea.options).toHaveLength(3)
-      const booleans = decaf.components.filter((c) => c.type === 'boolean')
-      expect(booleans).toHaveLength(4)
-    })
+    // DECAF quarantined — only 1/5 components user-answerable (section2 lab/imaging)
 
     it('PASS has 3 select components scored 1-3 each (min 3, max 9)', () => {
       const pass = batch9CardioIiiCdrs.find((c) => c.id === 'pass_asthma')!

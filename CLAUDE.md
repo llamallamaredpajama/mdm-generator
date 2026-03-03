@@ -185,6 +185,14 @@ PostToolUse hooks in `.claude/hooks/` surface reminders to run these agents when
 - Explicit defaults for missing information
 - Physician attestation statement always included in MDM output
 
+### CDR Library Accuracy (Non-Negotiable)
+- **100% accuracy or exclusion** — every CDR component's point value must match the original published source
+- **Never guess scoring values** — if unsure, web search the original paper. If still unclear, quarantine the CDR
+- **Quarantine over inaccuracy** — CDRs that cannot be verified go to `scripts/cdr-configs/_quarantine/` for manual review
+- **This is a medical application with life/death consequences** — a miscalculated CDR is worse than no CDR
+- **Web search verification required** for any new CDR or scoring modification not already documented in the codebase
+- **Minimum 3 user-answerable components** — each CDR must have >= 3 components with `(type === 'boolean' || type === 'select') && (source === 'section1' || source === 'user_input')`
+
 ## Implementation Conventions
 
 > Full details (component hierarchy, Firestore write patterns, testing mocks): `_bmad-output/project-context.md`

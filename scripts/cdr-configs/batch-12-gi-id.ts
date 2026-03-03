@@ -25,160 +25,6 @@ import type { CdrSeed } from './types'
 
 export const batch12GiIdCdrs: CdrSeed[] = [
   // ---------------------------------------------------------------------------
-  // Ranson's Criteria
-  // 5 admission criteria + 6 at 48 hours; total 11 binary criteria
-  // ---------------------------------------------------------------------------
-  {
-    id: 'ransons_criteria',
-    name: "Ranson's Criteria",
-    fullName: "Ranson's Criteria",
-    category: 'GASTROINTESTINAL',
-    application:
-      'Predicts severity and mortality in acute pancreatitis. Assessed at admission AND at 48 hours.',
-    applicableChiefComplaints: ['abdominal_pain', 'pancreatitis', 'epigastric_pain'],
-    keywords: [
-      "Ranson's criteria",
-      'pancreatitis',
-      'acute pancreatitis',
-      'severity',
-      'mortality',
-      'LDH',
-      'AST',
-      'calcium',
-      'hematocrit',
-    ],
-    requiredTests: ['WBC', 'glucose', 'LDH', 'AST', 'hematocrit', 'BUN', 'calcium', 'arterial blood gas'],
-    components: [
-      // --- At Admission (5 criteria) ---
-      {
-        id: 'admission_age',
-        label: 'At Admission: Age >55 years',
-        type: 'boolean',
-        value: 1,
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-      },
-      {
-        id: 'admission_wbc',
-        label: 'At Admission: WBC >16,000/µL',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'admission_glucose',
-        label: 'At Admission: Blood glucose >200 mg/dL (>11.1 mmol/L)',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'admission_ldh',
-        label: 'At Admission: LDH >350 IU/L',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: 'admission_ast',
-        label: 'At Admission: AST >250 IU/L',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      // --- At 48 Hours (6 criteria) ---
-      {
-        id: '48h_hct_drop',
-        label: 'At 48h: Hematocrit decrease >10%',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: '48h_bun_rise',
-        label: 'At 48h: BUN increase >5 mg/dL (>1.8 mmol/L)',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: '48h_calcium',
-        label: 'At 48h: Serum calcium <8 mg/dL (<2 mmol/L)',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: '48h_pao2',
-        label: 'At 48h: PaO₂ <60 mmHg',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: '48h_base_deficit',
-        label: 'At 48h: Base deficit >4 mEq/L',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-      },
-      {
-        id: '48h_fluid_sequestration',
-        label: 'At 48h: Estimated fluid sequestration >6 L',
-        type: 'boolean',
-        value: 1,
-        source: 'section2',
-      },
-    ],
-    scoring: {
-      method: 'sum',
-      ranges: [
-        { min: 0, max: 2, risk: 'Mild', interpretation: '~1% mortality; mild pancreatitis' },
-        { min: 3, max: 4, risk: 'Moderate', interpretation: '~15% mortality' },
-        { min: 5, max: 6, risk: 'Severe', interpretation: '~40% mortality' },
-        {
-          min: 7,
-          max: 11,
-          risk: 'Critical',
-          interpretation: '~100% mortality; requires ICU-level care',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      Critical: [
-        'icu_admission',
-        'aggressive_iv_fluid_resuscitation',
-        'pain_management',
-        'npo',
-        'surgery_consult',
-      ],
-      Severe: [
-        'icu_admission',
-        'aggressive_iv_fluid_resuscitation',
-        'pain_management',
-        'npo',
-        'gi_consult',
-      ],
-      Moderate: [
-        'iv_fluid_resuscitation',
-        'pain_management',
-        'npo',
-        'admit_monitored_bed',
-      ],
-      Mild: ['iv_fluids', 'pain_management', 'advance_diet_as_tolerated'],
-    },
-  },
-
-  // ---------------------------------------------------------------------------
   // Revised Atlanta Classification
   // Select-based classification: mild / moderately severe / severe
   // ---------------------------------------------------------------------------
@@ -200,13 +46,38 @@ export const batch12GiIdCdrs: CdrSeed[] = [
       'Marshall score',
     ],
     components: [
+      // Cardiovascular organ failure — based on systolic BP (Modified Marshall cardiovascular component)
       {
-        id: 'organ_failure',
-        label: 'Organ Failure (modified Marshall score ≥2)',
+        id: 'organ_failure_cardiovascular',
+        label: 'Cardiovascular Organ Failure (Modified Marshall — Systolic BP)',
+        type: 'select',
+        source: 'section1',
+        options: [
+          { label: 'SBP >90 mmHg (no cardiovascular failure)', value: 0 },
+          { label: 'SBP <90 mmHg, fluid responsive', value: 1 },
+          { label: 'SBP <90 mmHg, not fluid responsive (Marshall ≥2)', value: 2 },
+        ],
+      },
+      // Respiratory/renal organ failure — lab-based (PaO2/FiO2 ratio or creatinine)
+      {
+        id: 'organ_failure_respiratory_renal',
+        label: 'Respiratory/Renal Organ Failure (PaO₂/FiO₂ or Creatinine — Modified Marshall ≥2)',
         type: 'select',
         source: 'section2',
+        autoPopulateFrom: 'test_result',
         options: [
-          { label: 'No organ failure', value: 0 },
+          { label: 'No respiratory or renal organ failure', value: 0 },
+          { label: 'Respiratory failure (PaO₂/FiO₂ ≤300) OR Renal failure (Creatinine ≥1.9 mg/dL)', value: 1 },
+        ],
+      },
+      // Duration of organ failure — clinical judgment
+      {
+        id: 'organ_failure_duration',
+        label: 'Duration of Organ Failure (if any organ failure present)',
+        type: 'select',
+        source: 'user_input',
+        options: [
+          { label: 'No organ failure present', value: 0 },
           { label: 'Transient organ failure (resolves within 48 hours)', value: 1 },
           { label: 'Persistent organ failure (>48 hours)', value: 2 },
         ],
@@ -252,14 +123,14 @@ export const batch12GiIdCdrs: CdrSeed[] = [
         },
         {
           min: 1,
-          max: 2,
+          max: 3,
           risk: 'Moderately Severe',
           interpretation:
             'Transient organ failure (<48 hours) AND/OR local complications (peripancreatic fluid, necrosis, pseudocyst, walled-off necrosis) AND/OR exacerbation of comorbidities.',
         },
         {
-          min: 3,
-          max: 4,
+          min: 4,
+          max: 7,
           risk: 'Severe',
           interpretation:
             'Persistent organ failure (>48 hours) — defined by modified Marshall score ≥2 in any organ system. Mortality 36–50%.',
@@ -760,6 +631,14 @@ export const batch12GiIdCdrs: CdrSeed[] = [
     requiredTests: ['WBC', 'CSF WBC', 'urinalysis', 'CXR'],
     components: [
       {
+        id: 'age_28_89_days',
+        label: 'Age 28–89 days (inclusion criterion per Baskin et al.)',
+        type: 'boolean',
+        value: 1,
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+      },
+      {
         id: 'well_appearing',
         label: 'Infant appears well (non-toxic)',
         type: 'boolean',
@@ -812,15 +691,15 @@ export const batch12GiIdCdrs: CdrSeed[] = [
       method: 'threshold',
       ranges: [
         {
-          min: 6,
-          max: 6,
+          min: 7,
+          max: 7,
           risk: 'Low',
           interpretation:
             'ALL criteria met → Low risk; NPV 94.6% for SBI; may consider outpatient management with ceftriaxone and 24-hour follow-up',
         },
         {
           min: 0,
-          max: 5,
+          max: 6,
           risk: 'High',
           interpretation:
             'ANY criterion not met → Not low risk; further workup required; admit for empiric antibiotics',
@@ -841,102 +720,6 @@ export const batch12GiIdCdrs: CdrSeed[] = [
         'mandatory_24h_follow_up',
         'return_precautions',
       ],
-    },
-  },
-
-  // ---------------------------------------------------------------------------
-  // Lab-Score
-  // Sum-based: CRP + PCT + UA; range 0–7
-  // ---------------------------------------------------------------------------
-  {
-    id: 'lab_score',
-    name: 'Lab-Score',
-    fullName: 'Lab-Score',
-    category: 'INFECTIOUS DISEASE',
-    application:
-      'Biomarker-based risk stratification for febrile infants (7–90 days). Uses procalcitonin, CRP, and urine dipstick to estimate serious bacterial infection risk.',
-    applicableChiefComplaints: ['fever', 'infant_fever', 'neonatal_fever'],
-    keywords: [
-      'Lab-Score',
-      'febrile infant',
-      'procalcitonin',
-      'CRP',
-      'serious bacterial infection',
-      'SBI',
-      '7-90 days',
-      'biomarker',
-    ],
-    requiredTests: ['procalcitonin', 'CRP', 'urinalysis'],
-    components: [
-      {
-        id: 'procalcitonin',
-        label: 'Procalcitonin (PCT)',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: 'PCT <0.5 ng/mL', value: 0 },
-          { label: 'PCT ≥0.5 ng/mL', value: 2 },
-        ],
-      },
-      {
-        id: 'crp',
-        label: 'C-Reactive Protein (CRP)',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: 'CRP <40 mg/L', value: 0 },
-          { label: 'CRP ≥40 mg/L', value: 4 },
-        ],
-      },
-      {
-        id: 'urine_dipstick',
-        label: 'Urine Dipstick (leukocyte esterase or nitrites)',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: 'Negative (no leukocyte esterase, no nitrites)', value: 0 },
-          { label: 'Positive (leukocyte esterase and/or nitrites)', value: 1 },
-        ],
-      },
-    ],
-    scoring: {
-      method: 'sum',
-      ranges: [
-        {
-          min: 0,
-          max: 0,
-          risk: 'Very Low',
-          interpretation: 'Score 0: Very low risk of SBI (<3%)',
-        },
-        {
-          min: 1,
-          max: 2,
-          risk: 'Low',
-          interpretation: 'Score 1–2: Low-intermediate risk; close monitoring and re-evaluation',
-        },
-        {
-          min: 3,
-          max: 7,
-          risk: 'High',
-          interpretation:
-            'Score ≥3: High risk of SBI; full workup and empiric treatment indicated',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      High: [
-        'full_sepsis_workup',
-        'empiric_iv_antibiotics',
-        'admit',
-        'blood_culture',
-        'urine_culture',
-        'csf_if_indicated',
-      ],
-      Low: ['observation', 'close_follow_up', 'consider_outpatient_if_well_appearing'],
-      'Very Low': ['outpatient_management', 'close_follow_up_24h', 'return_precautions'],
     },
   },
 
@@ -980,6 +763,14 @@ export const batch12GiIdCdrs: CdrSeed[] = [
       {
         id: 'well_appearing',
         label: 'Infant appears well (non-toxic)',
+        type: 'boolean',
+        value: 0,
+        source: 'section1',
+        autoPopulateFrom: 'narrative_analysis',
+      },
+      {
+        id: 'previously_healthy',
+        label: 'Previously healthy (born at term ≥37 weeks, no prior hospitalization, no chronic illness)',
         type: 'boolean',
         value: 0,
         source: 'section1',

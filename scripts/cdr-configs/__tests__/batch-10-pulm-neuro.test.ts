@@ -3,8 +3,8 @@ import { batch10PulmNeuroCdrs } from '../batch-10-pulm-neuro'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 10 — Pulmonary & Neurology CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch10PulmNeuroCdrs).toHaveLength(10)
+  it('exports exactly 5 CDR definitions', () => {
+    expect(batch10PulmNeuroCdrs).toHaveLength(5)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -204,19 +204,14 @@ describe('Batch 10 — Pulmonary & Neurology CDRs', () => {
   })
 
   describe('individual CDR spot checks', () => {
-    it("Light's Criteria has 3 boolean components each worth 1 point with algorithm scoring", () => {
-      const lights = batch10PulmNeuroCdrs.find((c) => c.id === 'lights_criteria')!
-      expect(lights.components).toHaveLength(3)
-      expect(lights.category).toBe('PULMONARY')
-      expect(lights.scoring.method).toBe('algorithm')
-      for (const comp of lights.components) {
-        expect(comp.type).toBe('boolean')
-        expect(comp.value).toBe(1)
+    it('quarantined CDRs are not in the export array', () => {
+      const quarantinedIds = ['lights_criteria', 'rox_index', 'bode_index', 'rsbi', 'murray_lung_injury']
+      for (const id of quarantinedIds) {
+        expect(
+          batch10PulmNeuroCdrs.find((c) => c.id === id),
+          `CDR "${id}" should be quarantined but is still in export`,
+        ).toBeUndefined()
       }
-      // Score 0 = Transudate, 1-3 = Exudate
-      const transudate = lights.scoring.ranges.find((r) => r.risk === 'Transudate')!
-      expect(transudate.min).toBe(0)
-      expect(transudate.max).toBe(0)
     })
 
     it('CPSS has 3 boolean components for stroke screening with threshold scoring', () => {
@@ -274,6 +269,17 @@ describe('Batch 10 — Pulmonary & Neurology CDRs', () => {
       expect(excluded.max).toBe(5)
     })
 
+    it('6-Hour CT SAH has >= 3 user-answerable components (section1/user_input boolean/select)', () => {
+      const sixHour = batch10PulmNeuroCdrs.find((c) => c.id === 'six_hour_ct_sah')!
+      const userAnswerable = sixHour.components.filter(
+        (c) =>
+          (c.type === 'boolean' || c.type === 'select') &&
+          (c.source === 'section1' || c.source === 'user_input'),
+      )
+      // gcs_15 (section1), ct_within_6h (user_input), modern_scanner (user_input), experienced_radiologist (user_input)
+      expect(userAnswerable.length).toBeGreaterThanOrEqual(3)
+    })
+
     it('STANDING Algorithm has 6 components (5 selects + 1 boolean) with algorithm scoring', () => {
       const standing = batch10PulmNeuroCdrs.find((c) => c.id === 'standing_algorithm')!
       expect(standing.components).toHaveLength(6)
@@ -288,37 +294,11 @@ describe('Batch 10 — Pulmonary & Neurology CDRs', () => {
       expect(booleans[0].value).toBe(2)
     })
 
-    it('BODE Index has 4 select components (BMI, FEV1, 6MWD, mMRC) with sum scoring', () => {
-      const bode = batch10PulmNeuroCdrs.find((c) => c.id === 'bode_index')!
-      expect(bode.components).toHaveLength(4)
-      expect(bode.category).toBe('PULMONARY')
-      expect(bode.scoring.method).toBe('sum')
-      for (const comp of bode.components) {
-        expect(comp.type).toBe('select')
-      }
-      // FEV1 has 4 options scored 0-3
-      const fev1 = bode.components.find((c) => c.id === 'fev1_percent')!
-      expect(fev1.options).toHaveLength(4)
-      expect(Math.max(...(fev1.options?.map((o) => o.value) ?? []))).toBe(3)
-    })
-
-    it('Murray Lung Injury Score has 4 select components each scored 0-4 with algorithm method', () => {
-      const murray = batch10PulmNeuroCdrs.find((c) => c.id === 'murray_lung_injury')!
-      expect(murray.components).toHaveLength(4)
-      expect(murray.category).toBe('PULMONARY')
-      expect(murray.scoring.method).toBe('algorithm')
-      for (const comp of murray.components) {
-        expect(comp.type).toBe('select')
-        const values = comp.options?.map((o) => o.value) ?? []
-        expect(Math.min(...values)).toBe(0)
-        expect(Math.max(...values)).toBe(4)
-      }
-    })
-
-    it('batch contains mixed categories: PULMONARY and NEUROLOGY', () => {
+    it('remaining batch contains only NEUROLOGY CDRs (all PULMONARY quarantined)', () => {
       const categories = new Set(batch10PulmNeuroCdrs.map((c) => c.category))
-      expect(categories.has('PULMONARY')).toBe(true)
       expect(categories.has('NEUROLOGY')).toBe(true)
+      // All PULMONARY CDRs were quarantined
+      expect(categories.has('PULMONARY')).toBe(false)
     })
   })
 })

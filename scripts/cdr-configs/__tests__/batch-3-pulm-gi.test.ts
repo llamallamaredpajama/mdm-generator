@@ -26,7 +26,7 @@ const SNAKE_CASE_RE = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/
  */
 const CDRS_WITH_MUTUALLY_EXCLUSIVE_COMPONENTS: Record<string, number> = {
   // GBS: male and female hemoglobin are mutually exclusive; practical max = 23
-  glasgow_blatchford: 23,
+  glasgow_blatchford: 29,
   // PSI/PORT: age select caps at 90, but range max 395 accounts for ages > 90
   // in original literature.  Step 1 screening booleans add 10 to a score that
   // normally uses only step 2 components (theoretical 385 vs range 395).

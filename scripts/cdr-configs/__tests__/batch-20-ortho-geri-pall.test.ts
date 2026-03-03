@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { batch20OrthoGeriPallCdrs } from '../batch-20-ortho-geri-pall'
 import type { CdrSeed, CdrComponent } from '../types'
 
-describe('Batch 20 — Orthopedic, Rheumatology, Geriatrics & Palliative CDRs', () => {
-  it('exports exactly 9 CDR definitions', () => {
-    expect(batch20OrthoGeriPallCdrs).toHaveLength(9)
+describe('Batch 20 — Rheumatology, Geriatrics & Palliative CDRs', () => {
+  it('exports exactly 7 CDR definitions', () => {
+    expect(batch20OrthoGeriPallCdrs).toHaveLength(7)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -40,6 +40,20 @@ describe('Batch 20 — Orthopedic, Rheumatology, Geriatrics & Palliative CDRs', 
         snakeCaseRegex.test(cdr.id),
         `CDR ID "${cdr.id}" is not snake_case`,
       ).toBe(true)
+    }
+  })
+
+  it('every CDR has >= 3 user-answerable interactive components', () => {
+    for (const cdr of batch20OrthoGeriPallCdrs) {
+      const userAnswerable = cdr.components.filter(
+        (c) =>
+          (c.type === 'boolean' || c.type === 'select') &&
+          (c.source === 'section1' || c.source === 'user_input'),
+      )
+      expect(
+        userAnswerable.length,
+        `CDR "${cdr.id}" has only ${userAnswerable.length} user-answerable components (need >= 3)`,
+      ).toBeGreaterThanOrEqual(3)
     }
   })
 
@@ -210,19 +224,6 @@ describe('Batch 20 — Orthopedic, Rheumatology, Geriatrics & Palliative CDRs', 
   })
 
   describe('individual CDR spot checks', () => {
-    it('Garden Classification has a single select with 4 options (Type I-IV) and algorithm scoring', () => {
-      const garden = batch20OrthoGeriPallCdrs.find((c) => c.id === 'garden_hip')!
-      expect(garden.components).toHaveLength(1)
-      expect(garden.scoring.method).toBe('algorithm')
-      expect(garden.category).toBe('ORTHOPEDIC & MUSCULOSKELETAL')
-      const select = garden.components[0]
-      expect(select.type).toBe('select')
-      expect(select.options).toHaveLength(4)
-      const values = select.options!.map((o) => o.value)
-      expect(Math.min(...values)).toBe(1)
-      expect(Math.max(...values)).toBe(4)
-    })
-
     it('4AT Delirium Screen has 4 select components and sum scoring with max 12', () => {
       const fourAT = batch20OrthoGeriPallCdrs.find((c) => c.id === '4at')!
       expect(fourAT.components).toHaveLength(4)
@@ -280,19 +281,23 @@ describe('Batch 20 — Orthopedic, Rheumatology, Geriatrics & Palliative CDRs', 
       }
     })
 
-    it('ACR/EULAR RA has 4 select components and sum scoring with max 10', () => {
-      const ra = batch20OrthoGeriPallCdrs.find((c) => c.id === 'acr_eular_ra')!
-      expect(ra.components).toHaveLength(4)
-      expect(ra.scoring.method).toBe('sum')
-      expect(ra.category).toBe('RHEUMATOLOGY')
-      for (const comp of ra.components) {
+    it('PPS has 5 dimension components with algorithm scoring', () => {
+      const pps = batch20OrthoGeriPallCdrs.find((c) => c.id === 'pps')!
+      expect(pps.components).toHaveLength(5)
+      expect(pps.scoring.method).toBe('algorithm')
+      expect(pps.category).toBe('PALLIATIVE CARE & PROGNOSIS')
+      // All 5 components are select type and section1 source
+      for (const comp of pps.components) {
         expect(comp.type).toBe('select')
+        expect(comp.source).toBe('section1')
       }
-      const ranges = [...ra.scoring.ranges].sort((a, b) => a.min - b.min)
-      expect(ranges[ranges.length - 1].max).toBe(10)
-      // Score >=6 = definite RA
-      const definiteRange = ra.scoring.ranges.find((r) => r.risk === 'Definite RA')!
-      expect(definiteRange.min).toBe(6)
+      // 5 dimensions: ambulation, activity, self-care, intake, consciousness
+      const ids = pps.components.map((c) => c.id)
+      expect(ids).toContain('ambulation')
+      expect(ids).toContain('activity_level')
+      expect(ids).toContain('self_care')
+      expect(ids).toContain('intake')
+      expect(ids).toContain('conscious_level')
     })
 
     it('PaP Score has 6 select components and sum scoring with max 17.5', () => {
@@ -307,9 +312,8 @@ describe('Batch 20 — Orthopedic, Rheumatology, Geriatrics & Palliative CDRs', 
       expect(ranges[ranges.length - 1].max).toBe(17.5)
     })
 
-    it('covers 4 distinct categories', () => {
+    it('covers 3 distinct categories (after quarantine removed ORTHOPEDIC)', () => {
       const categories = new Set(batch20OrthoGeriPallCdrs.map((c) => c.category))
-      expect(categories.has('ORTHOPEDIC & MUSCULOSKELETAL')).toBe(true)
       expect(categories.has('RHEUMATOLOGY')).toBe(true)
       expect(categories.has('GERIATRICS & DELIRIUM')).toBe(true)
       expect(categories.has('PALLIATIVE CARE & PROGNOSIS')).toBe(true)

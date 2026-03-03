@@ -3,8 +3,8 @@ import { batch11NeuroTraumaCdrs } from '../batch-11-neuro-trauma'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 11 — Neurology, Trauma & GI CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch11NeuroTraumaCdrs).toHaveLength(10)
+  it('exports exactly 8 CDR definitions', () => {
+    expect(batch11NeuroTraumaCdrs).toHaveLength(8)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -212,26 +212,8 @@ describe('Batch 11 — Neurology, Trauma & GI CDRs', () => {
       expect(ranges[ranges.length - 1].max).toBe(6)
     })
 
-    it('ASPECTS has 10 boolean components each worth -1 (inverted scoring)', () => {
-      const aspects = batch11NeuroTraumaCdrs.find((c) => c.id === 'aspects')!
-      expect(aspects.components).toHaveLength(10)
-      for (const comp of aspects.components) {
-        expect(comp.type).toBe('boolean')
-        expect(comp.value).toBe(-1)
-      }
-      expect(aspects.scoring.method).toBe('algorithm')
-      expect(aspects.category).toBe('NEUROLOGY')
-    })
-
-    it('Modified Rankin Scale has 1 select component with 7 options (0-6)', () => {
-      const mrs = batch11NeuroTraumaCdrs.find((c) => c.id === 'modified_rankin')!
-      expect(mrs.components).toHaveLength(1)
-      expect(mrs.components[0].type).toBe('select')
-      expect(mrs.components[0].options).toHaveLength(7)
-      const values = mrs.components[0].options!.map((o) => o.value)
-      expect(Math.min(...values)).toBe(0)
-      expect(Math.max(...values)).toBe(6)
-    })
+    // ASPECTS quarantined: all imaging (section2), 0 user-answerable components
+    // Modified Rankin quarantined: single-item ordinal scale, cannot decompose
 
     it('CHALICE has 14 boolean components with threshold scoring', () => {
       const chalice = batch11NeuroTraumaCdrs.find((c) => c.id === 'chalice_rule')!
@@ -291,14 +273,22 @@ describe('Batch 11 — Neurology, Trauma & GI CDRs', () => {
       }
     })
 
-    it('BIG Score has 3 select components and sum scoring', () => {
+    it('BIG Score has 5 select components (2 labs + 3 GCS sub-scales) and sum scoring', () => {
       const big = batch11NeuroTraumaCdrs.find((c) => c.id === 'big_score')!
-      expect(big.components).toHaveLength(3)
+      expect(big.components).toHaveLength(5)
       for (const comp of big.components) {
         expect(comp.type).toBe('select')
       }
       expect(big.scoring.method).toBe('sum')
       expect(big.category).toBe('TRAUMA')
+      // GCS decomposed into Eye (0-3) + Verbal (0-4) + Motor (0-5) = 0-12
+      // which equals 15 − GCS per the BIG formula
+      const eye = big.components.find((c) => c.id === 'gcs_eye')!
+      const verbal = big.components.find((c) => c.id === 'gcs_verbal')!
+      const motor = big.components.find((c) => c.id === 'gcs_motor')!
+      expect(Math.max(...eye.options!.map((o) => o.value))).toBe(3)
+      expect(Math.max(...verbal.options!.map((o) => o.value))).toBe(4)
+      expect(Math.max(...motor.options!.map((o) => o.value))).toBe(5)
     })
   })
 })

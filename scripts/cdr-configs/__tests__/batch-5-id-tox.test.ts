@@ -3,8 +3,8 @@ import { batch5IdToxCdrs } from '../batch-5-id-tox'
 import type { CdrSeed } from '../types'
 
 describe('Batch 5 — Infectious Disease & Toxicology CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch5IdToxCdrs).toHaveLength(10)
+  it('exports exactly 6 CDR definitions', () => {
+    expect(batch5IdToxCdrs).toHaveLength(6)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -256,19 +256,6 @@ describe('Batch 5 — Infectious Disease & Toxicology CDRs', () => {
       expect(ranges[ranges.length - 1].max).toBe(26)
     })
 
-    it('LRINEC max score is 13 (CRP 4 + WBC 2 + Hgb 2 + Na 2 + Cr 2 + Glc 1)', () => {
-      const lrinec = batch5IdToxCdrs.find((c) => c.id === 'lrinec')!
-      expect(lrinec.components).toHaveLength(6)
-      let maxScore = 0
-      for (const comp of lrinec.components) {
-        if (comp.options) {
-          maxScore += Math.max(...comp.options.map((o) => o.value))
-        }
-      }
-      expect(maxScore).toBe(13)
-      expect(lrinec.scoring.method).toBe('sum')
-    })
-
     it('CIWA-Ar has 10 components: 9 scored 0–7 and 1 scored 0–4', () => {
       const ciwa = batch5IdToxCdrs.find((c) => c.id === 'ciwa_ar')!
       expect(ciwa.components).toHaveLength(10)
@@ -280,16 +267,6 @@ describe('Batch 5 — Infectious Disease & Toxicology CDRs', () => {
       expect(maxes.reduce((sum, v) => sum + v, 0)).toBe(67)
     })
 
-    it('Rumack-Matthew uses algorithm scoring method', () => {
-      const rumack = batch5IdToxCdrs.find((c) => c.id === 'rumack_matthew')!
-      expect(rumack.scoring.method).toBe('algorithm')
-      expect(rumack.components).toHaveLength(3)
-      // Has a boolean for risk factors
-      const riskFactors = rumack.components.find((c) => c.id === 'risk_factors')!
-      expect(riskFactors.type).toBe('boolean')
-      expect(riskFactors.value).toBe(1)
-    })
-
     it('BWPS temperature component includes normal option with value 0', () => {
       const bwps = batch5IdToxCdrs.find((c) => c.id === 'bwps')!
       const temp = bwps.components.find((c) => c.id === 'temperature')!
@@ -298,16 +275,6 @@ describe('Batch 5 — Infectious Disease & Toxicology CDRs', () => {
       expect(values).toContain(0)
       // Max temperature score = 30
       expect(Math.max(...values)).toBe(30)
-    })
-
-    it('ADA DKA Severity uses algorithm scoring with 3 severity levels', () => {
-      const dka = batch5IdToxCdrs.find((c) => c.id === 'ada_dka_severity')!
-      expect(dka.scoring.method).toBe('algorithm')
-      expect(dka.scoring.ranges).toHaveLength(3)
-      const risks = dka.scoring.ranges.map((r) => r.risk)
-      expect(risks).toContain('Low')
-      expect(risks).toContain('Moderate')
-      expect(risks).toContain('High')
     })
 
     it('4Ts Score has 4 select components each scored 0–2', () => {
@@ -325,19 +292,12 @@ describe('Batch 5 — Infectious Disease & Toxicology CDRs', () => {
       expect(ranges[ranges.length - 1].max).toBe(8)
     })
 
-    it('Anion Gap uses algorithm scoring with 4 severity levels', () => {
-      const ag = batch5IdToxCdrs.find((c) => c.id === 'anion_gap')!
-      expect(ag.scoring.method).toBe('algorithm')
-      expect(ag.scoring.ranges).toHaveLength(4)
-    })
-
     it('batch spans correct categories', () => {
       const categories = new Set(batch5IdToxCdrs.map((c) => c.category))
       expect(categories.has('INFECTIOUS DISEASE')).toBe(true)
       expect(categories.has('TOXICOLOGY')).toBe(true)
       expect(categories.has('ENDOCRINE')).toBe(true)
       expect(categories.has('HEMATOLOGY / COAGULATION')).toBe(true)
-      expect(categories.has('NEPHROLOGY & ELECTROLYTES')).toBe(true)
     })
   })
 })

@@ -3,8 +3,10 @@ import { batch15DispositionProcCdrs } from '../batch-15-disposition-proc'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 15 — Disposition / Risk Stratification + Procedural / Airway CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch15DispositionProcCdrs).toHaveLength(10)
+  it('exports exactly 7 CDR definitions', () => {
+    // Quarantined: MELD (0 section1 components), Child-Pugh (only 2 section1),
+    // ASA Classification (single-component ordinal scale, not decomposable)
+    expect(batch15DispositionProcCdrs).toHaveLength(7)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -239,19 +241,7 @@ describe('Batch 15 — Disposition / Risk Stratification + Procedural / Airway C
       expect(minValue2).toBe(0)
     })
 
-    it('Child-Pugh has 5 select components each scored 1–3 starting at score 5', () => {
-      const cp = batch15DispositionProcCdrs.find((c) => c.id === 'child_pugh')!
-      expect(cp.components).toHaveLength(5)
-      expect(cp.scoring.method).toBe('sum')
-      for (const comp of cp.components) {
-        expect(comp.type).toBe('select')
-        const values = comp.options!.map((o) => o.value).sort((a, b) => a - b)
-        expect(values).toEqual([1, 2, 3])
-      }
-      const ranges = [...cp.scoring.ranges].sort((a, b) => a.min - b.min)
-      expect(ranges[0].min).toBe(5) // Class A starts at 5
-      expect(ranges[ranges.length - 1].max).toBe(15) // Class C ends at 15
-    })
+    // Child-Pugh quarantined: only 2 section1 components (ascites, encephalopathy)
 
     it('MOANS has 5 boolean components each worth 1 and uses threshold scoring', () => {
       const moans = batch15DispositionProcCdrs.find((c) => c.id === 'moans')!
@@ -293,25 +283,8 @@ describe('Batch 15 — Disposition / Risk Stratification + Procedural / Airway C
       expect(standardRange.max).toBe(3)
     })
 
-    it('ASA Classification has 1 select component with 6 classes and uses algorithm scoring', () => {
-      const asa = batch15DispositionProcCdrs.find((c) => c.id === 'asa_classification')!
-      expect(asa.components).toHaveLength(1)
-      expect(asa.scoring.method).toBe('algorithm')
-      const asaClass = asa.components[0]
-      expect(asaClass.type).toBe('select')
-      expect(asaClass.options).toHaveLength(6)
-      const values = asaClass.options!.map((o) => o.value).sort((a, b) => a - b)
-      expect(values).toEqual([1, 2, 3, 4, 5, 6])
-    })
+    // ASA Classification quarantined: single-component ordinal scale, not decomposable
 
-    it('MELD uses algorithm scoring with 3 lab select components', () => {
-      const meld = batch15DispositionProcCdrs.find((c) => c.id === 'meld')!
-      expect(meld.scoring.method).toBe('algorithm')
-      expect(meld.components).toHaveLength(3)
-      const compIds = meld.components.map((c) => c.id)
-      expect(compIds).toContain('bilirubin')
-      expect(compIds).toContain('inr')
-      expect(compIds).toContain('creatinine')
-    })
+    // MELD quarantined: all 3 components are lab-based (section2)
   })
 })

@@ -3,8 +3,8 @@ import { batch17PsychBurnsNephroCdrs } from '../batch-17-psych-burns-nephro'
 import type { CdrSeed, CdrComponent } from '../types'
 
 describe('Batch 17 — Psychiatry, Burns & Wound Management, Nephrology CDRs', () => {
-  it('exports exactly 10 CDR definitions', () => {
-    expect(batch17PsychBurnsNephroCdrs).toHaveLength(10)
+  it('exports exactly 4 CDR definitions', () => {
+    expect(batch17PsychBurnsNephroCdrs).toHaveLength(4)
   })
 
   it('all entries conform to CdrSeed type (required fields present)', () => {
@@ -244,15 +244,6 @@ describe('Batch 17 — Psychiatry, Burns & Wound Management, Nephrology CDRs', (
       }
     })
 
-    it('Baux Score has inhalation_injury boolean worth 17 points and uses algorithm scoring', () => {
-      const baux = batch17PsychBurnsNephroCdrs.find((c) => c.id === 'baux_score')!
-      expect(baux.scoring.method).toBe('algorithm')
-      expect(baux.components).toHaveLength(3)
-      const inhalation = baux.components.find((c) => c.id === 'inhalation_injury')!
-      expect(inhalation.type).toBe('boolean')
-      expect(inhalation.value).toBe(17)
-    })
-
     it('ABSI has 5 components (3 select + 2 boolean) with sum scoring starting at min 2', () => {
       const absi = batch17PsychBurnsNephroCdrs.find((c) => c.id === 'absi')!
       expect(absi.components).toHaveLength(5)
@@ -262,35 +253,10 @@ describe('Batch 17 — Psychiatry, Burns & Wound Management, Nephrology CDRs', (
       expect(ranges[0].min).toBe(2)
     })
 
-    it('Lund-Browder has 18 body region components and algorithm scoring', () => {
-      const lb = batch17PsychBurnsNephroCdrs.find((c) => c.id === 'lund_browder')!
-      expect(lb.components).toHaveLength(18)
-      expect(lb.scoring.method).toBe('algorithm')
-      expect(lb.category).toBe('BURNS & WOUND MANAGEMENT')
-    })
-
-    it('FENa has 4 number_range components and algorithm scoring', () => {
-      const fena = batch17PsychBurnsNephroCdrs.find((c) => c.id === 'fena')!
-      expect(fena.components).toHaveLength(4)
-      expect(fena.scoring.method).toBe('algorithm')
-      expect(fena.category).toBe('NEPHROLOGY & ELECTROLYTES')
-      for (const comp of fena.components) {
-        expect(comp.type).toBe('number_range')
-      }
-    })
-
-    it('KDIGO AKI has 2 select components and algorithm scoring', () => {
-      const kdigo = batch17PsychBurnsNephroCdrs.find((c) => c.id === 'kdigo_aki')!
-      expect(kdigo.components).toHaveLength(2)
-      expect(kdigo.scoring.method).toBe('algorithm')
-      expect(kdigo.category).toBe('NEPHROLOGY & ELECTROLYTES')
-    })
-
-    it('covers 3 distinct categories', () => {
+    it('covers 2 distinct categories (nephrology quarantined)', () => {
       const categories = new Set(batch17PsychBurnsNephroCdrs.map((c) => c.category))
       expect(categories.has('PSYCHIATRY & BEHAVIORAL HEALTH')).toBe(true)
       expect(categories.has('BURNS & WOUND MANAGEMENT')).toBe(true)
-      expect(categories.has('NEPHROLOGY & ELECTROLYTES')).toBe(true)
     })
   })
 })

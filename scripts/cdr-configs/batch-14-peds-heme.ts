@@ -3,8 +3,8 @@ import type { CdrSeed } from './types'
 /**
  * Batch 14 — Pediatric + Hematology CDRs
  *
- * Covers: PIBS, Tal Score, CDS (Pediatric), YOS, Bhutani Nomogram,
- *         Phoenix Sepsis, HEMORR₂HAGES, ISTH DIC, ANC Calculation, RPI
+ * Covers: PIBS, Tal Score, CDS (Pediatric), YOS, Phoenix Sepsis, HEMORR₂HAGES
+ * Quarantined (lab-only, <3 user-answerable): Bhutani Nomogram, ISTH DIC, ANC Calculation, RPI
  *
  * Each CDR replaces the placeholder `number_range` component from seed-cdr-library.ts
  * with real clinical criteria drawn from published literature.
@@ -468,110 +468,7 @@ export const batch14PedsHemeCdrs: CdrSeed[] = [
     },
   },
 
-  // ---------------------------------------------------------------------------
-  // Bhutani Nomogram — Neonatal Jaundice Risk Stratification
-  // Algorithm: TSB (mg/dL) vs postnatal age in hours → risk zone
-  // ---------------------------------------------------------------------------
-  {
-    id: 'bhutani_nomogram',
-    name: 'Bhutani Nomogram',
-    fullName: 'Bhutani Nomogram (Neonatal Jaundice)',
-    category: 'PEDIATRIC',
-    application:
-      'Risk-stratifies neonatal hyperbilirubinemia by plotting total serum bilirubin (TSB) against postnatal age in hours. Guides need for phototherapy.',
-    applicableChiefComplaints: ['neonatal_jaundice', 'hyperbilirubinemia', 'jaundice', 'newborn_jaundice'],
-    keywords: [
-      'Bhutani',
-      'neonatal jaundice',
-      'hyperbilirubinemia',
-      'bilirubin',
-      'phototherapy',
-      'newborn',
-      'nomogram',
-      'kernicterus',
-      'AAP 2022',
-    ],
-    requiredTests: ['total serum bilirubin', 'postnatal age in hours'],
-    components: [
-      {
-        id: 'total_serum_bilirubin',
-        label: 'Total Serum Bilirubin (mg/dL)',
-        type: 'number_range',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        min: 0,
-        max: 30,
-      },
-      {
-        id: 'postnatal_age_hours',
-        label: 'Postnatal Age (hours)',
-        type: 'number_range',
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-        min: 0,
-        max: 144,
-      },
-      {
-        id: 'gestational_age',
-        label: 'Gestational Age',
-        type: 'select',
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-        options: [
-          { label: '≥38 weeks (low risk)', value: 0 },
-          { label: '35–37 6/7 weeks (medium risk)', value: 1 },
-          { label: '<35 weeks (higher risk)', value: 2 },
-        ],
-      },
-      {
-        id: 'neurotoxicity_risk_factors',
-        label: 'Neurotoxicity risk factors (isoimmune hemolytic disease, G6PD deficiency, asphyxia, lethargy, temp instability, sepsis, albumin <3.0)',
-        type: 'boolean',
-        value: 1,
-        source: 'section1',
-        autoPopulateFrom: 'narrative_analysis',
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 0,
-          max: 0,
-          risk: 'Low',
-          interpretation:
-            'Low-risk zone (<40th percentile for age in hours): ~0% risk of subsequent significant hyperbilirubinemia; routine follow-up per AAP guidelines.',
-        },
-        {
-          min: 1,
-          max: 1,
-          risk: 'Low-Intermediate',
-          interpretation:
-            'Low-intermediate zone (40th–75th percentile): ~2.2% risk; follow-up within 48 hours; repeat TSB if clinically indicated.',
-        },
-        {
-          min: 2,
-          max: 2,
-          risk: 'High-Intermediate',
-          interpretation:
-            'High-intermediate zone (75th–95th percentile): ~13% risk; follow-up within 24–48 hours; consider phototherapy if rising or risk factors present.',
-        },
-        {
-          min: 3,
-          max: 3,
-          risk: 'High',
-          interpretation:
-            'High-risk zone (>95th percentile): ~40% risk; initiate phototherapy per AAP thresholds; close follow-up within 24 hours; consider exchange transfusion if approaching critical levels.',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      High: ['phototherapy', 'repeat_tsb_4_6h', 'consider_exchange_transfusion'],
-      'High-Intermediate': ['phototherapy_if_rising', 'repeat_tsb_12_24h', 'follow_up_24_48h'],
-      'Low-Intermediate': ['repeat_tsb_if_indicated', 'follow_up_48h'],
-      Low: ['routine_follow_up'],
-    },
-  },
+  // NOTE: Bhutani Nomogram quarantined to _quarantine/ (lab-driven nomogram, <3 user-answerable)
 
   // ---------------------------------------------------------------------------
   // Phoenix Sepsis Criteria (2024)
@@ -599,12 +496,12 @@ export const batch14PedsHemeCdrs: CdrSeed[] = [
     requiredTests: ['PaO2', 'SpO2', 'FiO2', 'lactate', 'MAP', 'platelets', 'INR', 'D-dimer', 'GCS'],
     components: [
       // --- Respiratory (0–3 points) ---
+      // Source: user_input — SpO2/FiO2 is bedside (pulse ox + O2 delivery), physician determines level
       {
         id: 'respiratory',
         label: 'Respiratory Dysfunction',
         type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
+        source: 'user_input',
         options: [
           { label: 'No respiratory dysfunction', value: 0 },
           { label: 'PaO2/FiO2 ratio <400 OR SpO2/FiO2 ratio <292 (on any respiratory support)', value: 1 },
@@ -613,12 +510,12 @@ export const batch14PedsHemeCdrs: CdrSeed[] = [
         ],
       },
       // --- Cardiovascular (0–6 points) ---
+      // Source: user_input — MAP is bedside vital, vasopressor status is treatment assessment
       {
         id: 'cardiovascular',
         label: 'Cardiovascular Dysfunction',
         type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
+        source: 'user_input',
         options: [
           { label: 'No cardiovascular dysfunction', value: 0 },
           { label: 'Lactate >5 mmol/L OR age-adjusted MAP below threshold (1 vasoactive)', value: 1 },
@@ -834,312 +731,5 @@ export const batch14PedsHemeCdrs: CdrSeed[] = [
     },
   },
 
-  // ---------------------------------------------------------------------------
-  // ISTH DIC Score
-  // Sum-based: 4 lab components (platelet count, D-dimer, prolonged PT, fibrinogen)
-  // ---------------------------------------------------------------------------
-  {
-    id: 'isth_dic',
-    name: 'ISTH DIC Score',
-    fullName: 'ISTH DIC Score',
-    category: 'HEMATOLOGY / COAGULATION',
-    application:
-      'Diagnoses overt disseminated intravascular coagulation. Requires underlying condition known to be associated with DIC (sepsis, trauma, malignancy, obstetric complications).',
-    applicableChiefComplaints: ['DIC', 'coagulopathy', 'sepsis', 'bleeding', 'thrombocytopenia'],
-    keywords: [
-      'ISTH',
-      'DIC',
-      'disseminated intravascular coagulation',
-      'coagulopathy',
-      'platelets',
-      'D-dimer',
-      'fibrinogen',
-      'PT',
-    ],
-    requiredTests: ['platelet count', 'D-dimer', 'fibrin degradation products', 'PT', 'fibrinogen'],
-    components: [
-      {
-        id: 'platelet_count',
-        label: 'Platelet Count',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: '≥100 × 10⁹/L', value: 0 },
-          { label: '50–99 × 10⁹/L', value: 1 },
-          { label: '<50 × 10⁹/L', value: 2 },
-        ],
-      },
-      {
-        id: 'd_dimer',
-        label: 'D-dimer / Fibrin Degradation Products (FDP)',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: 'No increase (normal)', value: 0 },
-          { label: 'Moderate increase (elevated but <5× ULN)', value: 2 },
-          { label: 'Strong increase (≥5× ULN or markedly elevated)', value: 3 },
-        ],
-      },
-      {
-        id: 'prolonged_pt',
-        label: 'Prolonged Prothrombin Time (PT)',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: '<3 seconds above upper limit of normal', value: 0 },
-          { label: '3–6 seconds above upper limit of normal', value: 1 },
-          { label: '>6 seconds above upper limit of normal', value: 2 },
-        ],
-      },
-      {
-        id: 'fibrinogen',
-        label: 'Fibrinogen Level',
-        type: 'select',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        options: [
-          { label: '≥100 mg/dL (≥1.0 g/L)', value: 0 },
-          { label: '<100 mg/dL (<1.0 g/L)', value: 1 },
-        ],
-      },
-    ],
-    scoring: {
-      method: 'sum',
-      ranges: [
-        {
-          min: 0,
-          max: 4,
-          risk: 'Low',
-          interpretation:
-            'Score <5: Not suggestive of overt DIC; repeat in 1–2 days if clinical suspicion remains. Monitor for evolving coagulopathy.',
-        },
-        {
-          min: 5,
-          max: 8,
-          risk: 'High',
-          interpretation:
-            'Score ≥5: Compatible with overt DIC; treat underlying cause aggressively + supportive care (platelets if <20 or bleeding, FFP/cryoprecipitate if fibrinogen <100). Repeat score daily.',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      High: [
-        'treat_underlying_cause',
-        'platelet_transfusion_if_bleeding',
-        'ffp_cryoprecipitate',
-        'monitor_coags_q6_12h',
-      ],
-    },
-  },
-
-  // ---------------------------------------------------------------------------
-  // ANC Calculation — Absolute Neutrophil Count
-  // Algorithm: WBC × (%neutrophils + %bands) / 100
-  // ---------------------------------------------------------------------------
-  {
-    id: 'anc_calculation',
-    name: 'ANC Calculation',
-    fullName: 'Absolute Neutrophil Count (ANC) Calculation',
-    category: 'HEMATOLOGY / COAGULATION',
-    application:
-      'Determines severity of neutropenia to guide infection risk assessment and management. ANC <500 triggers febrile neutropenia protocol.',
-    applicableChiefComplaints: ['fever', 'febrile_neutropenia', 'neutropenia', 'immunocompromised', 'cancer'],
-    keywords: [
-      'ANC',
-      'absolute neutrophil count',
-      'neutropenia',
-      'febrile neutropenia',
-      'infection risk',
-      'neutrophils',
-      'bands',
-      'WBC',
-    ],
-    requiredTests: ['CBC with differential'],
-    components: [
-      {
-        id: 'wbc',
-        label: 'WBC (× 10³/µL)',
-        type: 'number_range',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        min: 0,
-        max: 100,
-      },
-      {
-        id: 'pct_neutrophils',
-        label: '% Neutrophils (segs)',
-        type: 'number_range',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        min: 0,
-        max: 100,
-      },
-      {
-        id: 'pct_bands',
-        label: '% Bands',
-        type: 'number_range',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        min: 0,
-        max: 100,
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 1500,
-          max: 100000,
-          risk: 'Normal',
-          interpretation: 'ANC >1500/µL: Normal; baseline infection risk.',
-        },
-        {
-          min: 1000,
-          max: 1499,
-          risk: 'Low',
-          interpretation: 'ANC 1000–1500/µL: Mild neutropenia; slight increase in infection risk.',
-        },
-        {
-          min: 500,
-          max: 999,
-          risk: 'Moderate',
-          interpretation:
-            'ANC 500–1000/µL: Moderate neutropenia; moderate infection risk; monitor closely.',
-        },
-        {
-          min: 100,
-          max: 499,
-          risk: 'High',
-          interpretation:
-            'ANC 100–500/µL: Severe neutropenia; high risk — febrile neutropenia protocol: blood cultures + empiric antipseudomonal beta-lactam (e.g., cefepime, piperacillin-tazobactam).',
-        },
-        {
-          min: 0,
-          max: 99,
-          risk: 'Very High',
-          interpretation:
-            'ANC <100/µL: Profound neutropenia; very high risk; empiric broad-spectrum antibiotics; consider empiric antifungal if fever persists >4–7 days.',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      'Very High': [
-        'blood_cultures',
-        'empiric_cefepime_or_pip_tazo',
-        'consider_empiric_antifungal',
-        'admission',
-        'infectious_disease_consult',
-      ],
-      High: [
-        'blood_cultures',
-        'empiric_cefepime_or_pip_tazo',
-        'admission',
-      ],
-      Moderate: ['close_monitoring', 'blood_cultures_if_febrile'],
-    },
-  },
-
-  // ---------------------------------------------------------------------------
-  // RPI — Reticulocyte Production Index
-  // Algorithm: Reticulocyte% × (Patient Hct / Normal Hct) / Maturation factor
-  // ---------------------------------------------------------------------------
-  {
-    id: 'rpi',
-    name: 'Reticulocyte Production Index',
-    fullName: 'Reticulocyte Production Index (RPI)',
-    category: 'HEMATOLOGY / COAGULATION',
-    application:
-      'Corrects reticulocyte count for anemia severity and reticulocyte maturation time. Distinguishes hypoproliferative vs. hyperproliferative anemia.',
-    applicableChiefComplaints: ['anemia', 'fatigue', 'weakness', 'pallor'],
-    keywords: [
-      'RPI',
-      'reticulocyte production index',
-      'anemia',
-      'reticulocyte',
-      'hemolysis',
-      'bone marrow',
-      'hypoproliferative',
-      'hyperproliferative',
-    ],
-    requiredTests: ['CBC', 'reticulocyte count', 'hematocrit'],
-    components: [
-      {
-        id: 'reticulocyte_pct',
-        label: 'Reticulocyte Count (%)',
-        type: 'number_range',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        min: 0,
-        max: 30,
-      },
-      {
-        id: 'patient_hct',
-        label: 'Patient Hematocrit (%)',
-        type: 'number_range',
-        source: 'section2',
-        autoPopulateFrom: 'test_result',
-        min: 5,
-        max: 65,
-      },
-      {
-        id: 'normal_hct',
-        label: 'Normal Hematocrit (% — typically 45 for males, 40 for females)',
-        type: 'select',
-        source: 'user_input',
-        options: [
-          { label: 'Male (normal Hct = 45%)', value: 45 },
-          { label: 'Female (normal Hct = 40%)', value: 40 },
-        ],
-      },
-      {
-        id: 'maturation_factor',
-        label: 'Maturation Factor (based on Hct)',
-        type: 'select',
-        source: 'user_input',
-        options: [
-          { label: 'Hct ≥35% → Factor 1.0', value: 1 },
-          { label: 'Hct 25–34% → Factor 1.5', value: 2 },
-          { label: 'Hct 15–24% → Factor 2.0', value: 3 },
-          { label: 'Hct <15% → Factor 2.5', value: 4 },
-        ],
-      },
-    ],
-    scoring: {
-      method: 'algorithm',
-      ranges: [
-        {
-          min: 0,
-          max: 1,
-          risk: 'Hypoproliferative',
-          interpretation:
-            'RPI <2: Inadequate bone marrow response (hypoproliferative) — consider iron deficiency, B12/folate deficiency, anemia of chronic disease, myelodysplastic syndrome, or bone marrow failure. Order iron studies, B12, folate, reticulocyte count.',
-        },
-        {
-          min: 2,
-          max: 30,
-          risk: 'Hyperproliferative',
-          interpretation:
-            'RPI ≥2: Appropriate bone marrow response (hyperproliferative) — consistent with hemolysis or acute blood loss. Order LDH, haptoglobin, indirect bilirubin, peripheral smear, direct Coombs test.',
-        },
-      ],
-    },
-    suggestedTreatments: {
-      Hypoproliferative: [
-        'iron_studies',
-        'b12_folate_levels',
-        'consider_bone_marrow_biopsy',
-        'hematology_consult',
-      ],
-      Hyperproliferative: [
-        'ldh_haptoglobin_indirect_bilirubin',
-        'peripheral_smear',
-        'direct_coombs',
-        'type_and_screen',
-        'transfuse_if_symptomatic',
-      ],
-    },
-  },
+  // NOTE: ISTH DIC, ANC Calculation, and RPI quarantined to _quarantine/ (lab-only, <3 user-answerable)
 ]

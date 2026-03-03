@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { batch6CritPedsCdrs } from '../batch-6-crit-peds'
 import type { CdrSeed, CdrComponent } from '../types'
 
-const EXPECTED_CDR_COUNT = 10
+const EXPECTED_CDR_COUNT = 9
 
 const REQUIRED_CDR_FIELDS: (keyof CdrSeed)[] = [
   'id',
