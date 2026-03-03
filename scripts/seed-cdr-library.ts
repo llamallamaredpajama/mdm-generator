@@ -142,7 +142,7 @@ function buildEmbeddingText(cdr: CdrSeed): string {
 // - BM-1.1 `rapid_strep` uses `feedsCdrs: ['centor_mcisaac']` matching this library's CDR id.
 // ---------------------------------------------------------------------------
 
-const cdrs: CdrSeed[] = [
+let cdrs: CdrSeed[] = [
   // =========================================================================
   // ORIGINAL 13 CDRs (full component definitions retained)
   // =========================================================================
@@ -5305,6 +5305,19 @@ for (const remaining of overrideMap.values()) {
 console.log(`Merged ${batchOverrides.length} batch CDR overrides (${overrideMap.size} new, ${batchOverrides.length - overrideMap.size} replaced).`)
 
 // ---------------------------------------------------------------------------
+// Filter out placeholder CDRs that were never replaced by a batch config.
+// Placeholders have a single number_range component and no real clinical data.
+// ---------------------------------------------------------------------------
+
+const batchIds = new Set(batchOverrides.map((cdr) => cdr.id))
+const beforeCount = cdrs.length
+cdrs = cdrs.filter((cdr) => batchIds.has(cdr.id))
+const removedCount = beforeCount - cdrs.length
+if (removedCount > 0) {
+  console.log(`Filtered out ${removedCount} placeholder CDRs without batch configs (${beforeCount} → ${cdrs.length}).`)
+}
+
+// ---------------------------------------------------------------------------
 // Seed Firestore
 // ---------------------------------------------------------------------------
 
@@ -5325,7 +5338,21 @@ async function seed() {
     console.log(`✅ Generated ${embeddings.length} embeddings.`)
   }
 
-  // Firestore batch limit is 500; 216 fits in one batch
+  // Delete stale docs (placeholders that no longer exist in the filtered set)
+  const cdrIds = new Set(cdrs.map((c) => c.id))
+  const existingDocs = await db.collection('cdrLibrary').listDocuments()
+  const staleIds = existingDocs.filter((d) => !cdrIds.has(d.id)).map((d) => d.id)
+
+  if (staleIds.length > 0) {
+    const deleteBatch = db.batch()
+    for (const id of staleIds) {
+      deleteBatch.delete(db.collection('cdrLibrary').doc(id))
+    }
+    await deleteBatch.commit()
+    console.log(`🗑️  Deleted ${staleIds.length} stale CDR docs from Firestore.`)
+  }
+
+  // Firestore batch limit is 500; CDR count fits in one batch
   const batch = db.batch()
 
   for (let i = 0; i < cdrs.length; i++) {
