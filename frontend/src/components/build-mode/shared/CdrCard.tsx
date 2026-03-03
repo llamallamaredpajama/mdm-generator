@@ -6,6 +6,16 @@ import { calculateScore } from '../../../lib/cdrScoringEngine'
 import CdrComponentInput from './CdrComponentInput'
 import './CdrCard.css'
 
+/** Normalize CDR name for fuzzy comparison — strips punctuation the LLM commonly varies */
+function normalizeCdrName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[—–\-,;:()]/g, ' ')
+    .replace(/[''""]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 interface CdrCardProps {
   identifiedCdrs: IdentifiedCdr[]
   /** S1 LLM-generated CDR analysis (may be empty on older encounters) */
@@ -57,13 +67,44 @@ function getMergedCdrDisplay(
 }
 
 /**
- * Find the CDR definition that matches a display name.
+ * Find the CDR definition using tiered matching: ID → exact name → normalized → short-name prefix.
  */
-function findCdrDef(name: string, cdrLibrary: CdrDefinition[]): CdrDefinition | undefined {
+function findCdrDef(
+  name: string,
+  cdrLibrary: CdrDefinition[],
+  cdrId?: string,
+): CdrDefinition | undefined {
+  // Strategy 1: exact ID match (most reliable)
+  if (cdrId) {
+    const byId = cdrLibrary.find((c) => c.id === cdrId)
+    if (byId) return byId
+  }
+
   const lower = name.toLowerCase()
-  return cdrLibrary.find(
+
+  // Strategy 2: exact name/fullName match (existing behavior)
+  const exact = cdrLibrary.find(
     (c) => c.name.toLowerCase() === lower || c.fullName.toLowerCase() === lower,
   )
+  if (exact) return exact
+
+  // Strategy 3: normalized fuzzy match (handles punctuation variants)
+  const normalized = normalizeCdrName(name)
+  const fuzzy = cdrLibrary.find(
+    (c) => normalizeCdrName(c.name) === normalized || normalizeCdrName(c.fullName) === normalized,
+  )
+  if (fuzzy) return fuzzy
+
+  // Strategy 4: short-name prefix (text before first parenthesis)
+  const shortName = name
+    .replace(/\s*\(.*$/, '')
+    .trim()
+    .toLowerCase()
+  if (shortName.length >= 3) {
+    return cdrLibrary.find((c) => c.name.toLowerCase() === shortName)
+  }
+
+  return undefined
 }
 
 /**
@@ -73,8 +114,9 @@ function findTrackingId(
   name: string,
   cdrTracking: CdrTracking,
   cdrLibrary: CdrDefinition[],
+  cdrId?: string,
 ): string | undefined {
-  const def = findCdrDef(name, cdrLibrary)
+  const def = findCdrDef(name, cdrLibrary, cdrId)
   if (def && cdrTracking[def.id]) return def.id
   for (const [id, entry] of Object.entries(cdrTracking)) {
     if (entry.name.toLowerCase() === name.toLowerCase()) return id
@@ -336,7 +378,7 @@ export default function CdrCard({
   useEffect(() => {
     const newPulsing = new Set<string>()
     for (const item of mergedCdrs) {
-      const trackingId = findTrackingId(item.name, cdrTracking, cdrLibrary)
+      const trackingId = findTrackingId(item.name, cdrTracking, cdrLibrary, item.cdrId)
       const currentScore = trackingId ? cdrTracking[trackingId]?.score : item.score
       const prevScore = prevScoresRef.current[item.name]
       if (prevScore !== undefined && currentScore !== prevScore && currentScore != null) {
@@ -354,8 +396,8 @@ export default function CdrCard({
   // Compute status categories for all CDRs
   const cdrStatuses = useMemo(() => {
     return mergedCdrs.map((item) => {
-      const cdrDef = findCdrDef(item.name, cdrLibrary)
-      const trackingId = findTrackingId(item.name, cdrTracking, cdrLibrary)
+      const cdrDef = findCdrDef(item.name, cdrLibrary, item.cdrId)
+      const trackingId = findTrackingId(item.name, cdrTracking, cdrLibrary, item.cdrId)
       const trackingEntry = trackingId ? cdrTracking[trackingId] : undefined
       return getCdrStatusCategory(item, cdrDef, trackingEntry)
     })
@@ -419,10 +461,10 @@ export default function CdrCard({
       ) : (
         <div className="cdr-card__rows">
           {mergedCdrs.map((item, index) => {
-            const trackingId = findTrackingId(item.name, cdrTracking, cdrLibrary)
+            const trackingId = findTrackingId(item.name, cdrTracking, cdrLibrary, item.cdrId)
             const trackingEntry = trackingId ? cdrTracking[trackingId] : undefined
             const isExcluded = trackingEntry?.excluded === true
-            const cdrDef = findCdrDef(item.name, cdrLibrary)
+            const cdrDef = findCdrDef(item.name, cdrLibrary, item.cdrId)
             const statusCategory = cdrStatuses[index]
 
             return (
