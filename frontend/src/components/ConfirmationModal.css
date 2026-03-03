@@ -21,7 +21,7 @@
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: var(--shadow-neu-floating);
+  box-shadow: var(--shadow-neu-floating, none);
 }
 
 .modal-content h2 {

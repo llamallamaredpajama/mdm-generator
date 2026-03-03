@@ -61,7 +61,7 @@
   max-height: 90vh;
   background: var(--color-bg-elevated, #242428);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-neu-floating);
+  box-shadow: var(--shadow-neu-floating, none);
   display: flex;
   flex-direction: column;
   overflow: hidden;
