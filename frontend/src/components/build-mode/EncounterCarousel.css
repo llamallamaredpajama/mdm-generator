@@ -106,12 +106,16 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .encounter-carousel__modal {
-  background: #1a1a1a;
+  background: var(--color-bg-elevated, #242428);
   border: 1px solid var(--color-error, #dc3545);
   border-radius: var(--radius-lg);
   padding: var(--space-xl);
@@ -119,6 +123,7 @@
   width: 90%;
   text-align: center;
   animation: slideUp 0.2s ease;
+  box-shadow: var(--shadow-neu-floating, none);
 }
 
 @keyframes slideUp {

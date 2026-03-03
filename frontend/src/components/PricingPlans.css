@@ -12,13 +12,13 @@
 .pricing-header h2 {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #212529;
+  color: var(--color-text-primary, #fff);
   margin-bottom: 0.5rem;
 }
 
 .pricing-header p {
   font-size: 1.125rem;
-  color: #6c757d;
+  color: var(--color-text-muted, #888888);
 }
 
 .pricing-plans-loading {
@@ -33,15 +33,19 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #f3f3f3;
+  border: 3px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
   border-top: 3px solid #dc3545;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .pricing-grid {
@@ -53,16 +57,17 @@
 
 .pricing-card {
   position: relative;
-  background: white;
-  border: 1px solid #dee2e6;
+  background: var(--color-bg-elevated, #242428);
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
   border-radius: 12px;
   padding: 2rem;
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-neu-raised);
 }
 
 .pricing-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-neu-floating);
 }
 
 .pricing-card.highlighted {
@@ -76,7 +81,7 @@
 }
 
 .pricing-card.current {
-  background: #f8f9fa;
+  background: var(--color-bg-secondary, #1c1c1e);
 }
 
 .popular-badge {
@@ -117,7 +122,7 @@
 .plan-name {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #212529;
+  color: var(--color-text-primary, #fff);
   margin-bottom: 1rem;
 }
 
@@ -132,17 +137,17 @@
 .price-amount {
   font-size: 3rem;
   font-weight: 700;
-  color: #212529;
+  color: var(--color-text-primary, #fff);
 }
 
 .price-interval {
   font-size: 1.125rem;
-  color: #6c757d;
+  color: var(--color-text-muted, #888888);
 }
 
 .plan-mdms {
   font-size: 1rem;
-  color: #6c757d;
+  color: var(--color-text-muted, #888888);
   font-weight: 500;
 }
 
@@ -157,7 +162,7 @@
   align-items: start;
   gap: 0.75rem;
   padding: 0.75rem 0;
-  color: #495057;
+  color: var(--color-text-secondary, #b0b0b0);
   font-size: 0.95rem;
 }
 
@@ -211,7 +216,7 @@
 }
 
 .pricing-note {
-  color: #6c757d;
+  color: var(--color-text-muted, #888888);
   font-size: 0.95rem;
   margin-bottom: 1rem;
 }

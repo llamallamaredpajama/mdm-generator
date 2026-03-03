@@ -7,7 +7,7 @@
 
 .new-encounter-card {
   width: 280px;
-  height: 360px;              /* Match flippable-card height */
+  height: 360px; /* Match flippable-card height */
   flex-shrink: 0;
   background: #ffffff;
   border: 2px solid #3b82f6;

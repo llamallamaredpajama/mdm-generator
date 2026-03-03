@@ -1,7 +1,7 @@
 /* Reset and base styles */
 .landing-page {
   min-height: 100vh;
-  background: #000;
+  background: var(--color-bg-primary, #171717);
   color: #fff;
   overflow-x: hidden;
 }
@@ -19,7 +19,7 @@
   left: 0;
   right: 0;
   width: 100%;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(23, 23, 23, 0.95);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(220, 53, 69, 0.3);
   z-index: 1000;
@@ -302,7 +302,11 @@
 /* Features Section */
 .features {
   padding: 5rem 2rem;
-  background: linear-gradient(180deg, #000 0%, #0a0a0a 100%);
+  background: linear-gradient(
+    180deg,
+    var(--color-bg-primary, #171717) 0%,
+    var(--color-bg-secondary, #1c1c1e) 100%
+  );
   border-top: 1px solid rgba(220, 53, 69, 0.2);
   width: 100%;
 }
@@ -333,6 +337,7 @@
   border-radius: 12px;
   padding: 2rem;
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-neu-raised, none);
 }
 
 .feature-card:hover {
@@ -362,7 +367,7 @@
 /* How It Works */
 .how-it-works {
   padding: 5rem 2rem;
-  background: #000;
+  background: var(--color-bg-primary, #171717);
   width: 100%;
 }
 
@@ -415,7 +420,7 @@
 /* CTA Section */
 .cta {
   padding: 5rem 2rem;
-  background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(0, 0, 0, 0.5) 100%);
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(23, 23, 23, 0.5) 100%);
   text-align: center;
   border-top: 1px solid rgba(220, 53, 69, 0.2);
   width: 100%;
@@ -435,7 +440,7 @@
 
 /* Footer */
 .footer {
-  background: #000;
+  background: var(--color-bg-primary, #171717);
   padding: 3rem 0 1rem;
   border-top: 1px solid rgba(220, 53, 69, 0.2);
 }
@@ -475,6 +480,7 @@
   border-radius: 8px;
   max-width: 800px;
   text-align: center;
+  box-shadow: var(--shadow-neu-raised-sm, none);
 }
 
 .attestation-text {
@@ -675,7 +681,7 @@
     right: 0;
     bottom: 2.5rem;
     width: 4rem;
-    background: linear-gradient(to right, transparent, #000);
+    background: linear-gradient(to right, transparent, var(--color-bg-primary, #171717));
     pointer-events: none;
     z-index: 2;
   }
