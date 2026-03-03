@@ -39,6 +39,17 @@ import { batch17PsychBurnsNephroCdrs } from './cdr-configs/batch-17-psych-burns-
 import { batch18NephroOncCdrs } from './cdr-configs/batch-18-nephro-onc'
 import { batch19OncDermEntCdrs } from './cdr-configs/batch-19-onc-derm-ent'
 import { batch20OrthoGeriPallCdrs } from './cdr-configs/batch-20-ortho-geri-pall'
+// Rescue batches — quarantined CDRs with lab components converted to user_input
+import { batch21RescueCardioCdrs } from './cdr-configs/batch-21-rescue-cardio'
+import { batch22RescueHepaticCdrs } from './cdr-configs/batch-22-rescue-hepatic'
+import { batch23RescuePedsCdrs } from './cdr-configs/batch-23-rescue-peds'
+import { batch24RescueHemeCdrs } from './cdr-configs/batch-24-rescue-heme'
+import { batch25RescuePulmCdrs } from './cdr-configs/batch-25-rescue-pulm'
+import { batch26RescueId1Cdrs } from './cdr-configs/batch-26-rescue-id1'
+import { batch27RescueId2Cdrs } from './cdr-configs/batch-27-rescue-id2'
+import { batch28RescueObCdrs } from './cdr-configs/batch-28-rescue-ob'
+import { batch29RescueGiCdrs } from './cdr-configs/batch-29-rescue-gi'
+import { batch30RescueEndoCdrs } from './cdr-configs/batch-30-rescue-endo'
 
 // Initialize Firebase Admin
 const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
@@ -5263,6 +5274,17 @@ const batchOverrides: CdrSeed[] = [
   ...batch18NephroOncCdrs,
   ...batch19OncDermEntCdrs,
   ...batch20OrthoGeriPallCdrs,
+  // Rescue batches (quarantined CDRs with lab→user_input conversion)
+  ...batch21RescueCardioCdrs,
+  ...batch22RescueHepaticCdrs,
+  ...batch23RescuePedsCdrs,
+  ...batch24RescueHemeCdrs,
+  ...batch25RescuePulmCdrs,
+  ...batch26RescueId1Cdrs,
+  ...batch27RescueId2Cdrs,
+  ...batch28RescueObCdrs,
+  ...batch29RescueGiCdrs,
+  ...batch30RescueEndoCdrs,
 ]
 
 const overrideMap = new Map(batchOverrides.map((cdr) => [cdr.id, cdr]))

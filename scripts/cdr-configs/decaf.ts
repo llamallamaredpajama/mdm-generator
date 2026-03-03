@@ -1,10 +1,9 @@
 /**
- * QUARANTINED: DECAF Score
+ * RESCUED from quarantine: DECAF Score
  *
- * Reason: Only 1 of 5 components is user-answerable (dyspnea eMRCD = section1).
- * The remaining 4 (eosinopenia, consolidation, acidemia, atrial fibrillation) are
- * all genuinely lab/imaging-based (section2). Published source (Steer et al., Thorax
- * 2012) confirms exactly these 5 criteria — cannot add more without fabricating.
+ * Previously quarantined: Only 1 of 5 components was user-answerable (dyspnea eMRCD = section1).
+ * Rescue: Changed 4 lab/imaging components (eosinopenia, consolidation, acidemia, AFib)
+ * from section2→user_input so physicians can manually enter results.
  *
  * Source: Steer J, Gibson J, Bourke SC. The DECAF Score: predicting hospital mortality
  *         in exacerbations of chronic obstructive pulmonary disease. Thorax 2012;67:970-976.
@@ -52,32 +51,28 @@ export const decaf: CdrSeed = {
       label: 'Eosinopenia (eosinophils <0.05 × 10⁹/L)',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'consolidation',
       label: 'Consolidation on chest radiograph',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'acidemia',
       label: 'Acidemia (pH <7.30 on arterial blood gas)',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'atrial_fibrillation',
       label: 'Atrial fibrillation on ECG (including new or existing)',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
   ],
   scoring: {

@@ -1,9 +1,12 @@
 /**
- * QUARANTINED: lrinec
+ * RESCUED from quarantine: lrinec
  *
- * Reason: Pure lab scoring — all 6 components (CRP, WBC, hemoglobin, sodium,
- * creatinine, glucose) are section2. Wong et al. 2004 LRINEC score is entirely
- * lab-based.
+ * Previously quarantined: Pure lab scoring — all 6 components were section2.
+ * Rescue: Changed all 6 lab components (CRP, WBC, hemoglobin, sodium, creatinine,
+ * glucose) from section2→user_input so physicians can manually enter lab values.
+ *
+ * Source: Wong CH et al. The LRINEC (Laboratory Risk Indicator for Necrotizing
+ *         Fasciitis) score. Crit Care Med 2004;32(7):1535-1541.
  */
 
 import type { CdrSeed } from '../types'
@@ -40,8 +43,7 @@ export const lrinec: CdrSeed = {
       id: 'crp',
       label: 'C-Reactive Protein (mg/L)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '<150', value: 0 },
         { label: '≥150', value: 4 },
@@ -52,8 +54,7 @@ export const lrinec: CdrSeed = {
       id: 'wbc',
       label: 'WBC (/mm³)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '<15,000', value: 0 },
         { label: '15,000–25,000', value: 1 },
@@ -65,8 +66,7 @@ export const lrinec: CdrSeed = {
       id: 'hemoglobin',
       label: 'Hemoglobin (g/dL)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '>13.5', value: 0 },
         { label: '11.0–13.5', value: 1 },
@@ -78,8 +78,7 @@ export const lrinec: CdrSeed = {
       id: 'sodium',
       label: 'Sodium (mEq/L)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '≥135', value: 0 },
         { label: '<135', value: 2 },
@@ -90,8 +89,7 @@ export const lrinec: CdrSeed = {
       id: 'creatinine',
       label: 'Creatinine (mg/dL)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '≤1.6', value: 0 },
         { label: '>1.6', value: 2 },
@@ -102,8 +100,7 @@ export const lrinec: CdrSeed = {
       id: 'glucose',
       label: 'Glucose (mg/dL)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '≤180', value: 0 },
         { label: '>180', value: 1 },

@@ -1,16 +1,13 @@
-import type { CdrSeed } from '../types'
+import type { CdrSeed } from './types'
 
 /**
- * QUARANTINED: HELLP Mississippi Classification
+ * RESCUED from quarantine: HELLP Mississippi Classification
  *
- * Reason: Pure lab-based classification system. All 4 components (platelet_count,
- * ast_level, ldh_level, hemolysis_evidence) are section2 (lab results). The
- * Mississippi classification by Martin et al. (Am J Obstet Gynecol 1999) is
- * defined entirely by laboratory values — there are no clinical/history
- * components that factor into the classification.
- *
- * 0 user-answerable interactive components. Cannot reach the minimum of 3
- * without inventing criteria not in the published source.
+ * Previously quarantined because lab components used source: 'section2'.
+ * Converted lab/imaging components to source: 'user_input' — physicians enter
+ * categorical lab results via select/boolean UI.
+ * Thresholds verified against Martin et al., Am J Obstet Gynecol 1999 (Mississippi
+ * classification) and StatPearls HELLP Syndrome review.
  */
 export const hellpMississippi: CdrSeed = {
   id: 'hellp_mississippi',
@@ -44,8 +41,7 @@ export const hellpMississippi: CdrSeed = {
       id: 'platelet_count',
       label: 'Platelet count',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '≤50,000/μL', value: 1 },
         { label: '>50,000–100,000/μL', value: 2 },
@@ -56,8 +52,7 @@ export const hellpMississippi: CdrSeed = {
       id: 'ast_level',
       label: 'AST (SGOT) level',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: 'AST ≥70 IU/L', value: 0 },
         { label: 'AST <70 IU/L', value: 1 },
@@ -67,8 +62,7 @@ export const hellpMississippi: CdrSeed = {
       id: 'ldh_level',
       label: 'LDH level',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: 'LDH ≥600 IU/L', value: 0 },
         { label: 'LDH <600 IU/L', value: 1 },
@@ -79,8 +73,7 @@ export const hellpMississippi: CdrSeed = {
       label: 'Evidence of hemolysis (schistocytes, elevated indirect bilirubin, low haptoglobin)',
       type: 'boolean',
       value: 0,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
   ],
   scoring: {

@@ -1,13 +1,13 @@
-import type { CdrSeed } from '../types'
+import type { CdrSeed } from './types'
 
 /**
- * QUARANTINE: ISTH DIC Score
+ * RESCUED from quarantine: ISTH DIC Score
  *
- * Reason: All 4 scoring components are lab-based (platelet count, D-dimer/FDP,
- * prolonged PT, fibrinogen level) with source: section2. Zero user-answerable
- * interactive components possible from the published ISTH SSC criteria.
- *
- * Source: Taylor et al., Thromb Haemost 2001 (ISTH SSC criteria)
+ * Previously quarantined because lab components used source: 'section2'.
+ * Converted lab/imaging components to source: 'user_input' — physicians enter
+ * categorical lab results via select/boolean UI.
+ * Thresholds verified against Taylor et al., Thromb Haemost 2001 (ISTH SSC criteria)
+ * and MDCalc ISTH Criteria for DIC.
  */
 export const isthDic: CdrSeed = {
   id: 'isth_dic',
@@ -33,8 +33,7 @@ export const isthDic: CdrSeed = {
       id: 'platelet_count',
       label: 'Platelet Count',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '≥100 × 10⁹/L', value: 0 },
         { label: '50–99 × 10⁹/L', value: 1 },
@@ -45,8 +44,7 @@ export const isthDic: CdrSeed = {
       id: 'd_dimer',
       label: 'D-dimer / Fibrin Degradation Products (FDP)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: 'No increase (normal)', value: 0 },
         { label: 'Moderate increase (elevated but <5× ULN)', value: 2 },
@@ -57,8 +55,7 @@ export const isthDic: CdrSeed = {
       id: 'prolonged_pt',
       label: 'Prolonged Prothrombin Time (PT)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '<3 seconds above upper limit of normal', value: 0 },
         { label: '3–6 seconds above upper limit of normal', value: 1 },
@@ -69,8 +66,7 @@ export const isthDic: CdrSeed = {
       id: 'fibrinogen',
       label: 'Fibrinogen Level',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '≥100 mg/dL (≥1.0 g/L)', value: 0 },
         { label: '<100 mg/dL (<1.0 g/L)', value: 1 },

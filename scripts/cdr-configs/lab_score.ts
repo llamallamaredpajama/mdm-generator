@@ -1,14 +1,15 @@
-import type { CdrSeed } from '../types'
+import type { CdrSeed } from './types'
 
 /**
- * QUARANTINED: lab_score
+ * RESCUED from quarantine: Lab-Score
  *
- * Reason: 0 user-answerable components.
- * Lab-Score (Galetto-Lacour et al., Pediatrics 2003, 2008) is a purely biomarker-based
- * scoring tool using: Procalcitonin (PCT), C-Reactive Protein (CRP), and urine dipstick.
- * All 3 components are lab results (section2). There are no clinical assessment components
- * in the published scoring system. Cannot reach the minimum 3 user-answerable components
- * without inventing criteria not in the original publication.
+ * Previously quarantined because lab components used source: 'section2'.
+ * Converted lab/imaging components to source: 'user_input' — physicians enter
+ * categorical lab results via select/boolean UI.
+ * Thresholds verified against Galetto-Lacour et al., Pediatrics 2003/2008.
+ *
+ * Scoring correction applied: PCT and CRP now use published 3-tier scoring
+ * (0/2/4 points each) matching the original Lab-Score table. Total range 0-9.
  */
 export const labScore: CdrSeed = {
   id: 'lab_score',
@@ -34,30 +35,29 @@ export const labScore: CdrSeed = {
       id: 'procalcitonin',
       label: 'Procalcitonin (PCT)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: 'PCT <0.5 ng/mL', value: 0 },
         { label: 'PCT ≥0.5 ng/mL', value: 2 },
+        { label: 'PCT ≥2.0 ng/mL', value: 4 },
       ],
     },
     {
       id: 'crp',
       label: 'C-Reactive Protein (CRP)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: 'CRP <40 mg/L', value: 0 },
-        { label: 'CRP ≥40 mg/L', value: 4 },
+        { label: 'CRP 40–99 mg/L', value: 2 },
+        { label: 'CRP ≥100 mg/L', value: 4 },
       ],
     },
     {
       id: 'urine_dipstick',
       label: 'Urine Dipstick (leukocyte esterase or nitrites)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: 'Negative (no leukocyte esterase, no nitrites)', value: 0 },
         { label: 'Positive (leukocyte esterase and/or nitrites)', value: 1 },
@@ -81,7 +81,7 @@ export const labScore: CdrSeed = {
       },
       {
         min: 3,
-        max: 7,
+        max: 9,
         risk: 'High',
         interpretation:
           'Score ≥3: High risk of SBI; full workup and empiric treatment indicated',

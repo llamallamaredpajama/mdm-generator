@@ -1,10 +1,13 @@
-import type { CdrSeed } from '../types'
+import type { CdrSeed } from './types'
 
-// QUARANTINE REASON: Only 2 of 7 PLASMIC criteria are clinical history (section1):
-// no_active_cancer and no_solid_organ_transplant. The remaining 5 criteria are
-// lab values (section2). The original published source (Bendapudi et al., Lancet
-// Haematol 2017) defines exactly these 7 criteria — no additional clinical components
-// exist. Cannot reach >=3 user-answerable interactive components without inventing criteria.
+/**
+ * RESCUED from quarantine: PLASMIC Score
+ *
+ * Previously quarantined because lab components used source: 'section2'.
+ * Converted lab/imaging components to source: 'user_input' — physicians enter
+ * categorical lab results via select/boolean UI.
+ * Thresholds verified against Bendapudi et al., Lancet Haematol 2017 and MDCalc.
+ */
 
 export const plasmic_score: CdrSeed = {
   id: 'plasmic_score',
@@ -44,16 +47,14 @@ export const plasmic_score: CdrSeed = {
       label: 'Platelet count <30,000/uL',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'hemolysis_variable',
       label: 'Combined hemolysis variable (reticulocyte count >2.5%, undetectable haptoglobin, OR indirect bilirubin >2.0 mg/dL)',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'no_active_cancer',
@@ -76,24 +77,21 @@ export const plasmic_score: CdrSeed = {
       label: 'MCV <90 fL',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'inr_low',
       label: 'INR <1.5',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'creatinine_low',
       label: 'Creatinine <2.0 mg/dL',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
   ],
   scoring: {

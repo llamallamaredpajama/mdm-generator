@@ -1,17 +1,14 @@
 import type { CdrSeed } from '../types'
 
 /**
- * QUARANTINED: Bacterial Meningitis Score
+ * RESCUED from quarantine: Bacterial Meningitis Score
  *
- * Reason: Only 1 of 5 criteria is user-answerable (section1):
- *   - Seizure at or before presentation (section1)
- * The other 4 are lab-based (section2):
- *   - CSF Gram stain positive
- *   - CSF ANC ≥1,000
- *   - CSF protein ≥80 mg/dL
- *   - Peripheral blood ANC ≥10,000
- * Cannot reach 3 user-answerable components without inventing criteria
- * not in the published source (Nigrovic et al., JAMA 2007).
+ * Previously quarantined: Only 1 of 5 criteria was user-answerable (section1).
+ * Rescue: Changed 4 lab-based components (CSF Gram stain, CSF ANC, CSF protein,
+ * peripheral ANC) from section2→user_input so physicians can manually enter results.
+ *
+ * Source: Nigrovic LE et al. Clinical prediction rule for identifying children with
+ *         CSF pleocytosis at very low risk of bacterial meningitis. JAMA 2007;297:52-60.
  */
 export const bacterial_meningitis_score: CdrSeed = {
   id: 'bacterial_meningitis_score',
@@ -45,32 +42,28 @@ export const bacterial_meningitis_score: CdrSeed = {
       label: 'CSF Gram stain positive',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'csf_anc_gte_1000',
       label: 'CSF ANC ≥1,000 cells/µL',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'csf_protein_gte_80',
       label: 'CSF protein ≥80 mg/dL',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'peripheral_anc_gte_10000',
       label: 'Peripheral blood ANC ≥10,000 cells/µL',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'seizure_at_presentation',

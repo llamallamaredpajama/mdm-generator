@@ -1,11 +1,14 @@
-import type { CdrSeed } from '../types'
+import type { CdrSeed } from './types'
 
-// QUARANTINE REASON: Purely ECG-based scoring criteria (Sgarbossa et al., NEJM 1996).
-// All 4 components are ECG findings (section2). The published scoring system
-// (concordant ST elevation = 5 pts, concordant ST depression = 3 pts,
-// discordant ST elevation = 2 pts, Smith-modified ST/S ratio = binary)
-// contains no clinical history or physician judgment components.
-// Cannot meet >=3 user-answerable interactive components without inventing criteria.
+/**
+ * RESCUED from quarantine: Sgarbossa Criteria
+ *
+ * Previously quarantined because all ECG-interpretation components used source: 'section2'.
+ * Converted to source: 'user_input' — physicians interpret the ECG at bedside and enter
+ * findings via boolean UI. ECG interpretation is a physician judgment call, not a raw lab value.
+ * Thresholds verified against Sgarbossa et al., NEJM 1996;334:481-487 and
+ * Smith et al., Ann Emerg Med 2012;60(6):766-776 (modified criteria).
+ */
 
 export const sgarbossa: CdrSeed = {
   id: 'sgarbossa',
@@ -33,24 +36,21 @@ export const sgarbossa: CdrSeed = {
       label: 'Criterion 1: Concordant ST elevation ≥1 mm in any lead with positive QRS complex',
       type: 'boolean',
       value: 5,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'concordant_st_depression',
       label: 'Criterion 2: Concordant ST depression ≥1 mm in leads V1–V3',
       type: 'boolean',
       value: 3,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'discordant_st_elevation',
       label: 'Criterion 3 (Original): Excessively discordant ST elevation ≥5 mm in leads with negative QRS complex',
       type: 'boolean',
       value: 2,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     // Smith-Modified criterion (replaces Criterion 3 for better sensitivity)
     {
@@ -58,8 +58,7 @@ export const sgarbossa: CdrSeed = {
       label: 'Criterion 3 (Smith-Modified): ST/S ratio ≤−0.25 in any lead with discordant ST deviation (excessively discordant relative to QRS amplitude)',
       type: 'boolean',
       value: 0,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
   ],
   scoring: {

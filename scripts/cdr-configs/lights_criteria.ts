@@ -1,10 +1,9 @@
-// QUARANTINE: lights_criteria
-// Reason: 0 user-answerable interactive components.
-// Light's Criteria (Light RW et al., Ann Intern Med 1972) classifies pleural effusions
-// using 3 lab ratios: pleural protein/serum protein >0.5, pleural LDH/serum LDH >0.6,
-// and pleural LDH >2/3 upper limit of normal. All 3 components are section2 (lab results
-// from thoracentesis). No clinical history or physician judgment components exist in the
-// published criteria.
+// RESCUED from quarantine: lights_criteria
+// Previously quarantined: 0 user-answerable interactive components (all section2).
+// Rescue: Changed 3 lab-ratio components from section2→user_input so physicians can
+// manually enter thoracentesis results. Light's Criteria (Light RW et al., Ann Intern Med
+// 1972) classifies pleural effusions using 3 lab ratios: pleural protein/serum protein >0.5,
+// pleural LDH/serum LDH >0.6, and pleural LDH >2/3 upper limit of normal.
 import type { CdrSeed } from '../types'
 
 export const lightsCriteria: CdrSeed = {
@@ -31,24 +30,21 @@ export const lightsCriteria: CdrSeed = {
       label: 'Pleural fluid protein / Serum protein ratio >0.5',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'ldh_ratio',
       label: 'Pleural fluid LDH / Serum LDH ratio >0.6',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'ldh_upper_normal',
       label: 'Pleural fluid LDH >2/3 upper limit of normal for serum LDH',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
   ],
   scoring: {

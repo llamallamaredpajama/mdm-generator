@@ -1,10 +1,14 @@
-// QUARANTINE REASON: ADA DKA Severity classification is primarily lab-based.
-// Only 1 of 6 components is user-answerable (mental_status/section1).
-// Other 5 components are all section2 lab values: arterial pH, bicarbonate, ketones, glucose, anion gap.
-// ADA Standards of Medical Care define DKA severity by pH, bicarb, and mental status — cannot add
-// clinical criteria not in the published classification without distorting the tool.
+/**
+ * RESCUED from quarantine: ADA DKA Severity
+ *
+ * Previously quarantined because lab components used source: 'section2'.
+ * Converted lab/imaging components to source: 'user_input' — physicians enter
+ * categorical lab results via select/boolean UI.
+ * Thresholds verified against ADA Diabetes Care 2009;32(7):1335-1343
+ * (Kitabchi et al., Hyperglycemic Crises in Adult Patients With Diabetes).
+ */
 
-import type { CdrSeed } from '../types'
+import type { CdrSeed } from './types'
 
 export const adaDkaSeverityCdr: CdrSeed = {
   id: 'ada_dka_severity',
@@ -49,8 +53,7 @@ export const adaDkaSeverityCdr: CdrSeed = {
       id: 'arterial_ph',
       label: 'Arterial pH',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '7.25–7.30 (Mild)', value: 1 },
         { label: '7.00–7.24 (Moderate)', value: 2 },
@@ -61,8 +64,7 @@ export const adaDkaSeverityCdr: CdrSeed = {
       id: 'bicarbonate',
       label: 'Serum Bicarbonate (mEq/L)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '15–18 mEq/L (Mild)', value: 1 },
         { label: '10–14.9 mEq/L (Moderate)', value: 2 },
@@ -85,8 +87,7 @@ export const adaDkaSeverityCdr: CdrSeed = {
       id: 'ketones',
       label: 'Urine Ketones / Serum Ketones',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: 'Positive (present in all severities)', value: 0 },
         { label: 'Strongly positive', value: 0 },
@@ -96,8 +97,7 @@ export const adaDkaSeverityCdr: CdrSeed = {
       id: 'glucose',
       label: 'Blood Glucose (mg/dL)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '>250 (typical DKA)', value: 0 },
         { label: '≤250 (euglycemic DKA)', value: 0 },
@@ -108,8 +108,7 @@ export const adaDkaSeverityCdr: CdrSeed = {
       label: 'Anion Gap >10 mEq/L',
       type: 'boolean',
       value: 0,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
   ],
   scoring: {

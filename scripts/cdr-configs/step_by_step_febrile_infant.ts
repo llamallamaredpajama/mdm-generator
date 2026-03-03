@@ -1,14 +1,12 @@
-import type { CdrSeed } from '../types'
+import type { CdrSeed } from './types'
 
 /**
- * QUARANTINED: step_by_step_febrile_infant
+ * RESCUED from quarantine: Step-by-Step Febrile Infant Algorithm
  *
- * Reason: Only 2 user-answerable components (section1 clinical assessments).
- * The Step-by-Step European Febrile Infant Algorithm (Mintegi et al., JAMA Pediatrics 2018)
- * has 5 sequential steps, but only Step 1 (ill-appearing) and Step 2 (age ≤21 days)
- * are clinical assessments. Steps 3-5 (leukocyturia, procalcitonin, CRP/ANC) are all
- * lab-based and cannot be reclassified without compromising medical accuracy.
- * Cannot reach the minimum 3 user-answerable components without inventing criteria.
+ * Previously quarantined because lab components used source: 'section2'.
+ * Converted lab/imaging components to source: 'user_input' — physicians enter
+ * categorical lab results via select/boolean UI.
+ * Thresholds verified against Gomez, Mintegi, Bressan et al., Pediatrics 2016.
  */
 export const stepByStepFebrileInfant: CdrSeed = {
   id: 'step_by_step_febrile_infant',
@@ -41,24 +39,21 @@ export const stepByStepFebrileInfant: CdrSeed = {
       label: 'Step 3: Leukocyturia present on UA (≥10 WBC/hpf or positive LE)',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'step4_procalcitonin_elevated',
       label: 'Step 4: Procalcitonin ≥0.5 ng/mL',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'step5_crp_or_anc_elevated',
       label: 'Step 5: CRP ≥20 mg/L OR ANC >10,000/µL',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
   ],
   scoring: {

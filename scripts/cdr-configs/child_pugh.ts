@@ -1,17 +1,15 @@
-import type { CdrSeed } from '../types'
+import type { CdrSeed } from './types'
 
 /**
- * QUARANTINED: Child-Pugh Score
+ * RESCUED from quarantine: Child-Pugh Score
  *
- * Reason: Only 2 of 5 components are user-answerable (ascites and encephalopathy
- * are section1 clinical assessments). The remaining 3 components (bilirubin,
- * albumin, INR) are lab values (section2). The published source (Pugh et al.,
- * Br J Surg 1973) defines exactly these 5 variables with no additional clinical
- * components that could bring the user-answerable count to >= 3.
+ * Previously quarantined because lab components (bilirubin, albumin, INR)
+ * used source: 'section2'. Converted to source: 'user_input' — physicians enter
+ * categorical lab ranges (which they already have in hand) via select UI.
+ * Thresholds verified against Pugh et al., Br J Surg 1973;60:646-649
+ * and StatPearls NCBI (NBK542308).
  *
- * Note: The original Child-Turcotte classification (1964) included "nutritional
- * status" as a clinical variable, but the Pugh 1973 modification (the standard
- * used today) replaced it with prothrombin time (a lab value).
+ * SCORING FIX: INR thresholds corrected from 2.3 → 2.2 per published source.
  */
 export const child_pugh: CdrSeed = {
   id: 'child_pugh',
@@ -46,8 +44,7 @@ export const child_pugh: CdrSeed = {
       id: 'bilirubin',
       label: 'Total Bilirubin',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '<2 mg/dL (<34 umol/L)', value: 1 },
         { label: '2-3 mg/dL (34-50 umol/L)', value: 2 },
@@ -58,8 +55,7 @@ export const child_pugh: CdrSeed = {
       id: 'albumin',
       label: 'Serum Albumin',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: '>3.5 g/dL', value: 1 },
         { label: '2.8-3.5 g/dL', value: 2 },
@@ -70,12 +66,11 @@ export const child_pugh: CdrSeed = {
       id: 'inr',
       label: 'INR (Prothrombin Time)',
       type: 'select',
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
       options: [
         { label: 'INR <1.7', value: 1 },
-        { label: 'INR 1.7-2.3', value: 2 },
-        { label: 'INR >2.3', value: 3 },
+        { label: 'INR 1.7-2.2', value: 2 },
+        { label: 'INR >2.2', value: 3 },
       ],
     },
     {

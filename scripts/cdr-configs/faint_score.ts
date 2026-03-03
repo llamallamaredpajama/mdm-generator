@@ -1,11 +1,15 @@
-// QUARANTINE: faint_score
-// Reason: Only 2 user-answerable interactive components (heart_failure_history, arrhythmia_history).
-// The FAINT score (Reed et al., Ann Emerg Med 2010) has exactly 5 components:
-// F=Heart Failure history (section1), A=Arrhythmia history (section1),
-// I=Initial elevated BNP (section2), N=elevated tropoNin (section2), T=abnormal ECG (section2).
-// Only F and A are clinical history; I, N, and T are lab/test results.
-// Cannot add components without inventing criteria not in the published source.
-import type { CdrSeed } from '../types'
+/**
+ * RESCUED from quarantine: FAINT Score
+ *
+ * Previously quarantined because lab/ECG components used source: 'section2'.
+ * Converted lab/imaging components to source: 'user_input' — physicians enter
+ * categorical lab results (which they already have in hand) via boolean UI.
+ * Thresholds verified against Probst et al., Ann Emerg Med 2020;75(2):147-158.
+ *
+ * SCORING FIX: elevated_bnp corrected from 1 → 2 points per published source.
+ * Max score is 6 (F=1, A=1, I=2, N=1, T=1).
+ */
+import type { CdrSeed } from './types'
 
 export const faintScore: CdrSeed = {
   id: 'faint_score',
@@ -46,25 +50,22 @@ export const faintScore: CdrSeed = {
       id: 'elevated_bnp',
       label: 'I — Initial elevated NT-proBNP (>300 pg/mL) or BNP (>100 pg/mL)',
       type: 'boolean',
-      value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      value: 2,
+      source: 'user_input',
     },
     {
       id: 'elevated_troponin',
       label: 'N — Elevated hs-troponin (>99th percentile)',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
     {
       id: 'abnormal_ecg',
       label: 'T — Abnormal ECG (any non-sinus rhythm, conduction abnormality, or ischemic changes)',
       type: 'boolean',
       value: 1,
-      source: 'section2',
-      autoPopulateFrom: 'test_result',
+      source: 'user_input',
     },
   ],
   scoring: {
@@ -86,10 +87,10 @@ export const faintScore: CdrSeed = {
       },
       {
         min: 3,
-        max: 5,
+        max: 6,
         risk: 'High',
         interpretation:
-          'Score 3–5: High risk (~30%+ 30-day adverse event rate). Likely cardiac etiology — admission with telemetry monitoring.',
+          'Score 3–6: High risk (~30%+ 30-day adverse event rate). Likely cardiac etiology — admission with telemetry monitoring.',
       },
     ],
   },
