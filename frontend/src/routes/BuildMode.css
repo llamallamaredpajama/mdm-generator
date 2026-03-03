@@ -333,7 +333,7 @@
 }
 
 .build-mode-error__retry:hover {
-  background: #2563eb;
+  background: var(--color-primary, #3b82f6);
 }
 
 /* ─────────────────────────────────────────
@@ -445,7 +445,7 @@
 .build-mode-page .section-textarea {
   background: var(--color-bg-primary);
   border-color: var(--color-border-subtle);
-  color: #212529;
+  color: var(--color-text-primary, #e8e8ec);
 }
 
 .build-mode-page .section-textarea:focus {
@@ -481,7 +481,7 @@
 }
 
 .build-mode-page .submit-button:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--color-primary, #3b82f6);
 }
 
 .build-mode-page .submit-button:disabled {
@@ -568,7 +568,7 @@
 }
 
 .build-mode-page .encounter-dashboard__submit-button:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--color-primary, #3b82f6);
 }
 
 /* Status badges - keep their semantic colors */

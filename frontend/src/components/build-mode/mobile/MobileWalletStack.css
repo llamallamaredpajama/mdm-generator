@@ -18,9 +18,11 @@
   background: rgba(28, 28, 30, 1);
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--neu-flat, 0 2px 8px rgba(0, 0, 0, 0.4));
   overflow: hidden;
-  transition: top 500ms ease, box-shadow 350ms ease-out;
+  transition:
+    top 500ms ease,
+    box-shadow 350ms ease-out;
   will-change: top;
 }
 
@@ -52,7 +54,7 @@
   height: auto;
   min-height: 200px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--neu-flat-lg, 0 4px 16px rgba(0, 0, 0, 0.6));
   border-radius: 16px;
   overflow: visible;
 }
@@ -72,7 +74,7 @@
   /* Opaque background so glow is masked — only edges visible */
   background: rgba(38, 38, 42, 1);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--neu-flat-lg, 0 4px 16px rgba(0, 0, 0, 0.6));
 }
 
 /* ===== Active Card Glow — applied via .mobile-card--active-glow ===== */
@@ -86,7 +88,7 @@
 
 /* Soft edge glow — box-shadow layers naturally fade outward */
 .mobile-card--active-glow::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -100,7 +102,8 @@
 }
 
 @keyframes glow-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.5;
   }
   50% {
@@ -367,7 +370,9 @@
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.3);
   cursor: pointer;
-  transition: color 150ms ease, background 150ms ease;
+  transition:
+    color 150ms ease,
+    background 150ms ease;
 }
 
 .mobile-card__delete-icon:active {
