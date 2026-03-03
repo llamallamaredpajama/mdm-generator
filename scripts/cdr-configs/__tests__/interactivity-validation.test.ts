@@ -131,6 +131,34 @@ describe('CDR Interactivity Validation (all batches)', () => {
     expect(dupes).toEqual([])
   })
 
+  it('all CDR names are globally unique', () => {
+    const names = ALL_CDRS.map((c) => c.name.toLowerCase())
+    const dupes = names.filter((name, i) => names.indexOf(name) !== i)
+    expect(dupes, `Duplicate CDR names: ${dupes.join(', ')}`).toEqual([])
+  })
+
+  it('all CDR fullNames are globally unique', () => {
+    const fullNames = ALL_CDRS.map((c) => c.fullName.toLowerCase())
+    const dupes = fullNames.filter((fn, i) => fullNames.indexOf(fn) !== i)
+    expect(dupes, `Duplicate CDR fullNames: ${dupes.join(', ')}`).toEqual([])
+  })
+
+  it('no CDR names collide after normalization', () => {
+    function normalize(s: string): string {
+      return s.toLowerCase().replace(/[—–\-,;:()]/g, ' ').replace(/\s+/g, ' ').trim()
+    }
+    const seen = new Map<string, string>()
+    const collisions: string[] = []
+    for (const cdr of ALL_CDRS) {
+      const key = normalize(cdr.name)
+      if (seen.has(key)) {
+        collisions.push(`${cdr.id} collides with ${seen.get(key)} ("${key}")`)
+      }
+      seen.set(key, cdr.id)
+    }
+    expect(collisions).toEqual([])
+  })
+
   describe.each(ALL_CDRS.map((cdr) => [cdr.id, cdr] as const))(
     '%s',
     (_id, cdr) => {
