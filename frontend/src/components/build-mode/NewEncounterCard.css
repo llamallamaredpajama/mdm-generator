@@ -7,7 +7,7 @@
 
 .new-encounter-card {
   width: 280px;
-  height: 360px;              /* Match flippable-card height */
+  height: 360px; /* Match flippable-card height */
   flex-shrink: 0;
   background: #ffffff;
   border: 2px solid #3b82f6;
@@ -62,12 +62,12 @@
 }
 
 .new-encounter-card__input {
-  background: #f5f5f5;
+  background: var(--color-bg-tertiary, #1f1e22);
   border: 1px solid #e0e0e0;
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
   font-size: var(--font-size-base);
-  color: #1a1a1a;
+  color: var(--color-text-primary, #f0f0f0);
   transition: border-color var(--transition-fast);
 }
 

@@ -40,8 +40,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .pricing-grid {
@@ -53,16 +57,17 @@
 
 .pricing-card {
   position: relative;
-  background: white;
+  background: var(--color-bg-elevated, #242428);
   border: 1px solid #dee2e6;
   border-radius: 12px;
   padding: 2rem;
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-neu-raised);
 }
 
 .pricing-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-neu-floating);
 }
 
 .pricing-card.highlighted {
@@ -76,7 +81,7 @@
 }
 
 .pricing-card.current {
-  background: #f8f9fa;
+  background: var(--color-bg-secondary, #1c1c1e);
 }
 
 .popular-badge {
