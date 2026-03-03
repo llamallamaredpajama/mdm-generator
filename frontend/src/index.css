@@ -59,7 +59,7 @@ h6 {
   margin: 0;
   color: var(--color-text-primary);
   line-height: var(--line-height-tight);
-  font-family: var(--font-display);
+  font-family: var(--font-display, 'Jost', system-ui, sans-serif);
 }
 
 h1 {
@@ -147,13 +147,13 @@ textarea,
 select {
   font-family: inherit;
   font-size: var(--font-size-base);
-  color: var(--color-text-primary);
-  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary, #fff);
+  background-color: var(--color-bg-tertiary, #1f1e22);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--color-text-muted);
+  color: var(--color-text-muted, #888888);
 }
 
 /* ─────────────────────────────────────────
