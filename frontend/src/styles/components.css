@@ -148,23 +148,23 @@
   width: 100%;
   padding: var(--space-lg);
   background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border-secondary);
+  border: none;
   border-radius: var(--radius-md);
-  color: #212529;
+  color: var(--color-text-primary);
   font-family: inherit;
   font-size: var(--font-size-base);
   line-height: var(--line-height-relaxed);
   resize: vertical;
-  transition:
-    border-color var(--transition-fast),
-    box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-neu-inset);
+  transition: box-shadow var(--transition-fast);
   box-sizing: border-box;
 }
 
 .form-textarea:focus {
   outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+  box-shadow:
+    var(--shadow-neu-inset),
+    0 0 0 2px var(--color-accent-subtle);
 }
 
 .form-textarea::placeholder {
@@ -175,21 +175,21 @@
   width: 100%;
   padding: var(--space-md);
   background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border-secondary);
+  border: none;
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   font-family: inherit;
   font-size: var(--font-size-base);
-  transition:
-    border-color var(--transition-fast),
-    box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-neu-inset);
+  transition: box-shadow var(--transition-fast);
   box-sizing: border-box;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+  box-shadow:
+    var(--shadow-neu-inset),
+    0 0 0 2px var(--color-accent-subtle);
 }
 
 .form-input::placeholder {
@@ -260,6 +260,7 @@
 .tab--active {
   color: var(--color-accent);
   background: var(--color-accent-subtle);
+  box-shadow: var(--shadow-neu-raised-sm);
 }
 
 .tab--active::after {
@@ -278,10 +279,11 @@
 
 .code-block {
   background: var(--color-bg-code);
-  border: 1px solid var(--color-border-secondary);
+  border: none;
   border-radius: var(--radius-md);
   padding: var(--space-lg);
   overflow-x: auto;
+  box-shadow: var(--shadow-neu-inset);
 }
 
 .code-block pre {
@@ -377,6 +379,7 @@
   background: var(--color-bg-hover);
   border-radius: var(--radius-md);
   overflow: hidden;
+  box-shadow: var(--shadow-neu-inset);
 }
 
 .progress-bar--sm {
@@ -486,11 +489,12 @@
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   overflow: hidden;
+  box-shadow: var(--shadow-neu-raised-sm);
 }
 
 .collapsible summary {
   padding: var(--space-md) var(--space-lg);
-  background: var(--color-bg-elevated);
+  background: var(--color-bg-tertiary);
   color: var(--color-text-secondary);
   cursor: pointer;
   font-weight: var(--font-weight-medium);
