@@ -43,16 +43,25 @@ function getMergedCdrDisplay(
   identifiedCdrs: IdentifiedCdr[],
 ): CdrAnalysisItem[] {
   if (cdrAnalysis.length > 0) {
-    const analysisNames = new Set(cdrAnalysis.map((c) => c.name.toLowerCase()))
+    // Deduplicate within LLM array (LLM may return same CDR twice)
+    const seenNames = new Set<string>()
+    const dedupedAnalysis = cdrAnalysis.filter((c) => {
+      const key = normalizeCdrName(c.name)
+      if (seenNames.has(key)) return false
+      seenNames.add(key)
+      return true
+    })
+
+    const analysisNames = new Set(dedupedAnalysis.map((c) => normalizeCdrName(c.name)))
     const additionalFromLibrary: CdrAnalysisItem[] = identifiedCdrs
-      .filter((ic) => !analysisNames.has(ic.cdr.name.toLowerCase()))
+      .filter((ic) => !analysisNames.has(normalizeCdrName(ic.cdr.name)))
       .map((ic) => ({
         name: ic.cdr.name,
         applicable: true,
         missingData: ic.readiness === 'needs_results' ? ['Requires workup results'] : undefined,
         reasoning: `Identified from CDR library (${ic.readiness === 'completable' ? 'completable now' : 'needs results'})`,
       }))
-    return [...cdrAnalysis, ...additionalFromLibrary]
+    return [...dedupedAnalysis, ...additionalFromLibrary]
   }
 
   return identifiedCdrs.map((ic) => ({
