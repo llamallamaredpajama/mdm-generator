@@ -14,7 +14,9 @@
   z-index: var(--z-modal-backdrop);
   opacity: 0;
   visibility: hidden;
-  transition: opacity var(--transition-normal), visibility var(--transition-normal);
+  transition:
+    opacity var(--transition-normal),
+    visibility var(--transition-normal);
 }
 
 .guide-slideover__backdrop--visible {
@@ -32,8 +34,9 @@
   width: 380px;
   max-width: 100vw;
   height: 100vh;
-  background: var(--color-bg-secondary);
-  border-left: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-secondary, #1e1e22);
+  border-left: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+  box-shadow: var(--neu-floating, 12px 12px 24px #0a0a0c, -12px -12px 24px #2a2a2e);
   z-index: var(--z-modal);
   transform: translateX(100%);
   transition: transform var(--transition-normal);
@@ -180,7 +183,8 @@
 .guide-mode {
   padding: var(--space-md);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-subtle);
+  border: none;
+  box-shadow: var(--neu-flat-sm, 3px 3px 6px #111114, -3px -3px 6px #2a2a2e);
 }
 
 .guide-mode--simple {
@@ -218,7 +222,7 @@
 
 .guide-mode__badge--build {
   background: var(--color-build-accent);
-  color: white;
+  color: var(--color-text-primary, #e8e8ec);
 }
 
 .guide-mode__title {

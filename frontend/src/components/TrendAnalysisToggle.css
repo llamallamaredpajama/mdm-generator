@@ -45,16 +45,17 @@
   width: 40px;
   height: 22px;
   border-radius: 11px;
-  border: 1px solid var(--color-border-subtle);
-  background: var(--color-bg-tertiary);
+  border: none;
+  background: var(--color-surface-depressed, #18181b);
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  transition: background var(--transition-fast);
   padding: 0;
+  box-shadow: var(--neu-inset-sm, inset 2px 2px 4px #111114, inset -2px -2px 4px #2a2a2e);
 }
 
 .trend-toggle__switch--on {
   background: var(--color-surveillance-accent);
-  border-color: var(--color-surveillance-accent);
+  box-shadow: none;
 }
 
 .trend-toggle__switch-thumb {

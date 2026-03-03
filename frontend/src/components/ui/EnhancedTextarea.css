@@ -45,20 +45,21 @@
   padding: var(--space-sm) var(--space-md);
   padding-bottom: calc(var(--space-sm) + 1.25rem); /* Extra space for char count */
 
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-depressed, #18181b);
+  border: none;
   border-radius: var(--radius-md);
 
   font-family: inherit;
   font-size: var(--font-size-base);
   line-height: var(--line-height-relaxed);
-  color: #212529;
+  color: var(--color-text-primary, #e8e8ec);
 
   box-sizing: border-box;
   overflow-y: auto;
-  transition: border-color var(--transition-fast),
-              box-shadow var(--transition-fast),
-              height var(--transition-fast);
+  box-shadow: var(--neu-inset, inset 4px 4px 8px #111114, inset -4px -4px 8px #2a2a2e);
+  transition:
+    box-shadow var(--transition-fast),
+    height var(--transition-fast);
 }
 
 .enhanced-textarea__input::placeholder {
@@ -74,7 +75,7 @@
 
 /* Hover state (when not focused) */
 .enhanced-textarea__input:hover:not(:focus) {
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-bg-tertiary, #222327);
 }
 
 /* Disabled state */
@@ -84,12 +85,12 @@
 }
 
 /* Invalid/error state */
-.enhanced-textarea__input[aria-invalid="true"] {
+.enhanced-textarea__input[aria-invalid='true'] {
   border-color: var(--color-error);
 }
 
-.enhanced-textarea__input[aria-invalid="true"]:focus {
-  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.3);
+.enhanced-textarea__input[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 3px rgba(255, 26, 26, 0.3);
 }
 
 /* ─────────────────────────────────────────

@@ -4,20 +4,20 @@
    =========================================== */
 
 .accordion-section {
-  border: 1px solid var(--color-border-subtle);
+  border: none;
   border-radius: var(--radius-md);
-  background: var(--color-bg-tertiary);
+  background: var(--color-surface, #222327);
   overflow: hidden;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: box-shadow var(--transition-fast);
+  box-shadow: var(--neu-flat, 6px 6px 12px #111114, -6px -6px 12px #2a2a2e);
 }
 
 .accordion-section:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: var(--neu-flat-lg, 10px 10px 20px #111114, -10px -10px 20px #2a2a2e);
 }
 
 .accordion-section--expanded {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--neu-flat-lg, 10px 10px 20px #111114, -10px -10px 20px #2a2a2e);
 }
 
 /* ─────────────────────────────────────────
@@ -36,7 +36,7 @@
 }
 
 .accordion-section__header:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-bg-hover, #2f2f34);
 }
 
 .accordion-section__header:focus-visible {
@@ -133,7 +133,7 @@
    ───────────────────────────────────────── */
 .accordion-section__content {
   padding: 0 var(--space-md) var(--space-md);
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
 }
 
 /* ─────────────────────────────────────────

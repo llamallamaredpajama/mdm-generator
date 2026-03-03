@@ -37,16 +37,14 @@
 .compose-mode-toggle {
   position: relative;
   display: flex;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--color-surface-depressed, #18181b);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: none;
   border-radius: 14px;
   padding: 4px;
   gap: 0;
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: var(--neu-inset, inset 4px 4px 8px #111114, inset -4px -4px 8px #2a2a2e);
 }
 
 /* Sliding indicator */
@@ -63,7 +61,9 @@
     transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     background 0.3s ease,
     box-shadow 0.3s ease;
-  box-shadow: 0 0 20px rgba(220, 53, 69, 0.4);
+  box-shadow:
+    var(--neu-flat-sm, 3px 3px 6px #111114, -3px -3px 6px #2a2a2e),
+    0 0 20px rgba(255, 26, 26, 0.4);
   z-index: 0;
 }
 
@@ -71,7 +71,9 @@
 .compose-mode-toggle[data-mode='build']::before {
   transform: translateX(100%);
   background: var(--color-build-accent);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+  box-shadow:
+    var(--neu-flat-sm, 3px 3px 6px #111114, -3px -3px 6px #2a2a2e),
+    0 0 20px rgba(59, 130, 246, 0.4);
 }
 
 .compose-mode-toggle__btn {
@@ -87,7 +89,7 @@
   border-radius: 10px;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-muted, #6e6e78);
   cursor: pointer;
   transition: color 0.2s ease;
   flex: 1;
@@ -98,20 +100,20 @@
 .compose-mode-toggle__btn:hover:not(:disabled):not(.compose-mode-toggle__btn--active):not(
     .compose-mode-toggle__btn--active-build
   ) {
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text-secondary, #b0b0b8);
   background: transparent;
 }
 
 .compose-mode-toggle__btn--active,
 .compose-mode-toggle__btn--active-build {
-  color: #ffffff;
+  color: var(--color-text-primary, #e8e8ec);
   background: transparent;
 }
 
 .compose-mode-toggle__btn--active:hover:not(:disabled),
 .compose-mode-toggle__btn--active-build:hover:not(:disabled) {
   background: transparent;
-  color: #ffffff;
+  color: var(--color-text-primary, #e8e8ec);
 }
 
 .compose-mode-toggle__btn:disabled {
@@ -166,7 +168,7 @@
 .compose-loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e0e0e0;
+  border: 3px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: compose-spin 0.8s linear infinite;
@@ -202,7 +204,7 @@
 
 .compose-retry-button {
   background: var(--color-accent);
-  color: #ffffff;
+  color: var(--color-text-primary, #e8e8ec);
   border: none;
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-lg);
