@@ -266,6 +266,7 @@ export const batch20OrthoGeriPallCdrs: CdrSeed[] = [
         'geriatrics_consult',
       ],
       'Possible Cognitive Impairment': ['formal_cognitive_testing', 'delirium_workup_if_acute'],
+      Unlikely: ['reassurance', 'routine_monitoring'],
     },
   },
 
@@ -425,6 +426,7 @@ export const batch20OrthoGeriPallCdrs: CdrSeed[] = [
       ],
       'Moderate Risk': ['reposition_q2h', 'foam_mattress', 'nutritional_support'],
       'Mild Risk': ['standard_prevention', 'reposition_q2_4h', 'reassess_regularly'],
+      'Low Risk': ['routine_care', 'reassess_on_condition_change'],
     },
   },
 

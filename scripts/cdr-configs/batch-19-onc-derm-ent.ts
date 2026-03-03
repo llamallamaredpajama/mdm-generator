@@ -280,6 +280,44 @@ export const batch19OncDermEntCdrs: CdrSeed[] = [
         },
       ],
     },
+    suggestedTreatments: {
+      Extreme: [
+        'icu_admission',
+        'aggressive_resuscitation',
+        'goals_of_care_discussion',
+        'palliative_care_consult',
+        'organ_support',
+      ],
+      'Very High': [
+        'icu_admission',
+        'aggressive_resuscitation',
+        'vasopressor_support',
+        'mechanical_ventilation_if_indicated',
+        'goals_of_care_discussion',
+      ],
+      High: [
+        'icu_admission',
+        'hemodynamic_optimization',
+        'source_control',
+        'organ_support',
+      ],
+      Moderate: [
+        'icu_monitoring',
+        'fluid_resuscitation',
+        'source_control',
+        'antibiotic_optimization',
+      ],
+      'Low-Moderate': [
+        'icu_admission',
+        'close_monitoring',
+        'early_goal_directed_therapy',
+      ],
+      'Low Mortality': [
+        'icu_monitoring',
+        'standard_icu_care',
+        'reassess_in_24h',
+      ],
+    },
   },
 
   // ---------------------------------------------------------------------------

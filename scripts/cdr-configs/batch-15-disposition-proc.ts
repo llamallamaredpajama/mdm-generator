@@ -438,6 +438,18 @@ export const batch15DispositionProcCdrs: CdrSeed[] = [
         },
       ],
     },
+    suggestedTreatments: {
+      High: [
+        'two_person_bvm_technique',
+        'oral_nasal_airway_adjuncts',
+        'supraglottic_device_at_bedside',
+        'early_intubation_consideration',
+      ],
+      Standard: [
+        'standard_bvm_technique',
+        'routine_airway_preparation',
+      ],
+    },
   },
 
   // ---------------------------------------------------------------------------
@@ -516,6 +528,18 @@ export const batch15DispositionProcCdrs: CdrSeed[] = [
           interpretation:
             'Any positive factor → EGD may not be a reliable rescue; plan for surgical airway',
         },
+      ],
+    },
+    suggestedTreatments: {
+      High: [
+        'surgical_airway_preparation',
+        'cricothyrotomy_kit_at_bedside',
+        'consider_awake_intubation',
+        'ent_or_anesthesia_consult',
+      ],
+      Standard: [
+        'egd_as_rescue_device',
+        'standard_airway_algorithm',
       ],
     },
   },
@@ -607,6 +631,18 @@ export const batch15DispositionProcCdrs: CdrSeed[] = [
         },
       ],
     },
+    suggestedTreatments: {
+      High: [
+        'awake_intubation_preferred',
+        'double_setup_with_tracheostomy',
+        'ent_or_surgery_standby',
+        'ultrasound_guided_landmark_identification',
+      ],
+      Standard: [
+        'cricothyrotomy_as_last_resort_rescue',
+        'standard_surgical_airway_kit',
+      ],
+    },
   },
 
   // ---------------------------------------------------------------------------
@@ -673,6 +709,19 @@ export const batch15DispositionProcCdrs: CdrSeed[] = [
           interpretation:
             'Any measurement reduced → Predicts difficulty; plan for difficult airway accordingly',
         },
+      ],
+    },
+    suggestedTreatments: {
+      High: [
+        'video_laryngoscopy_first_attempt',
+        'bougie_available',
+        'difficult_airway_cart',
+        'backup_supraglottic_device',
+        'consider_awake_intubation',
+      ],
+      Standard: [
+        'standard_laryngoscopy',
+        'routine_intubation_preparation',
       ],
     },
   },

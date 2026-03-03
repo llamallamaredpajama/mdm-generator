@@ -99,5 +99,10 @@ export const isthDic: CdrSeed = {
       'ffp_cryoprecipitate',
       'monitor_coags_q6_12h',
     ],
+    Low: [
+      'repeat_score_in_1_2_days',
+      'monitor_for_evolving_coagulopathy',
+      'treat_underlying_condition',
+    ],
   },
 }

@@ -238,7 +238,10 @@ export const batch6CritPedsCdrs: CdrSeed[] = [
       Critical: ['icu_admission', 'vasopressors', 'mechanical_ventilation', 'palliative_goals_of_care'],
       'Very High': ['icu_admission', 'vasopressors', 'invasive_monitoring'],
       High: ['icu_admission', 'aggressive_resuscitation', 'specialist_consult'],
+      'Moderate-High': ['icu_admission', 'aggressive_monitoring', 'specialist_consult'],
       Moderate: ['icu_or_step_down', 'close_monitoring', 'specialist_consult'],
+      'Low-Moderate': ['step_down_unit', 'close_monitoring', 'reassess_in_24h'],
+      Low: ['routine_icu_monitoring', 'reassess_per_protocol'],
     },
   },
 
@@ -511,6 +514,7 @@ export const batch6CritPedsCdrs: CdrSeed[] = [
         'pain_control_optimization',
         'antipsychotic_if_agitated_and_safe',
       ],
+      Negative: ['continue_routine_monitoring', 'reassess_q4_8h_per_protocol'],
     },
   },
 
@@ -767,6 +771,7 @@ export const batch6CritPedsCdrs: CdrSeed[] = [
       High: ['immediate_physician_evaluation', 'rapid_response_team', 'picu_transfer_consideration', 'continuous_monitoring'],
       Moderate: ['physician_notification', 'increased_monitoring', 'diagnostic_workup'],
       'Low-Moderate': ['increased_monitoring_frequency', 'nursing_reassessment'],
+      Low: ['routine_monitoring', 'reassess_per_unit_protocol'],
     },
   },
 

@@ -119,4 +119,26 @@ export const adaDkaSeverityCdr: CdrSeed = {
       { min: 3, max: 3, risk: 'High', interpretation: 'Severe DKA' },
     ],
   },
+  suggestedTreatments: {
+    High: [
+      'icu_admission',
+      'iv_insulin_infusion',
+      'aggressive_iv_fluid_resuscitation',
+      'electrolyte_replacement',
+      'continuous_monitoring',
+      'arterial_blood_gas_monitoring',
+    ],
+    Moderate: [
+      'iv_insulin_infusion',
+      'iv_fluid_resuscitation',
+      'electrolyte_monitoring_and_replacement',
+      'stepdown_or_monitored_bed',
+    ],
+    Low: [
+      'iv_fluids',
+      'subcutaneous_insulin_protocol',
+      'electrolyte_monitoring',
+      'serial_bmp_monitoring',
+    ],
+  },
 }

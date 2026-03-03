@@ -741,6 +741,7 @@ export const batch2TraumaCdrs: CdrSeed[] = [
     },
     suggestedTreatments: {
       High: ['cta_head_neck', 'neurosurgery_or_vascular_consult', 'antiplatelet_or_anticoagulation_if_bcvi_confirmed', 'stroke_team_consult_if_neurological_deficit', 'serial_neuro_checks'],
+      Low: ['no_cta_required', 'standard_trauma_evaluation', 'reassess_if_new_neurological_findings'],
     },
   },
 
@@ -874,6 +875,7 @@ export const batch2TraumaCdrs: CdrSeed[] = [
     },
     suggestedTreatments: {
       High: ['cta_head_neck', 'neurosurgery_or_vascular_surgery_consult', 'antiplatelet_if_bcvi_no_hemorrhage', 'anticoagulation_if_bcvi_and_indicated', 'stroke_neurology_consult_if_neurological_deficit', 'serial_neuro_checks'],
+      Low: ['no_cta_required', 'standard_trauma_evaluation', 'reassess_if_new_neurological_findings'],
     },
   },
 

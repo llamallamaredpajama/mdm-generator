@@ -135,6 +135,10 @@ export const batch7MiscCdrs: CdrSeed[] = [
         'outpatient_follow_up',
         'crisis_hotline_education',
       ],
+      'Negative Screen': [
+        'document_negative_screen',
+        'reassess_if_clinical_concern',
+      ],
     },
   },
 
@@ -327,6 +331,7 @@ export const batch7MiscCdrs: CdrSeed[] = [
       ],
       Moderate: ['ssri_initiation', 'psychotherapy_referral', 'outpatient_follow_up'],
       Mild: ['watchful_waiting', 'psychotherapy_referral', 'outpatient_follow_up'],
+      Minimal: ['no_treatment_indicated', 'routine_follow_up'],
     },
   },
 
@@ -431,6 +436,7 @@ export const batch7MiscCdrs: CdrSeed[] = [
         'thiamine_100mg_iv',
       ],
       'Low-Moderate': ['brief_motivational_intervention', 'outpatient_follow_up'],
+      Low: ['routine_counseling', 'no_further_screening_needed'],
     },
   },
 
@@ -649,6 +655,7 @@ export const batch7MiscCdrs: CdrSeed[] = [
       ],
       Moderate: ['buprenorphine_induction', 'clonidine_0_1mg', 'antiemetic'],
       Mild: ['symptomatic_management', 'addiction_medicine_referral'],
+      'Minimal / No Withdrawal': ['do_not_initiate_buprenorphine', 'reassess_cows_in_1_2h'],
     },
   },
 
@@ -775,6 +782,7 @@ export const batch7MiscCdrs: CdrSeed[] = [
         'polysomnography_order',
         'perioperative_monitoring',
       ],
+      'Low Risk': ['routine_perioperative_care', 'no_additional_sleep_monitoring'],
     },
   },
 
@@ -1399,6 +1407,7 @@ export const batch7MiscCdrs: CdrSeed[] = [
         'medication_review',
         'geriatrics_consult',
       ],
+      'Unlikely Delirium': ['reassess_if_clinical_concern', 'routine_care'],
     },
   },
 ]

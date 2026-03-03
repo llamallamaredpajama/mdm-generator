@@ -278,6 +278,12 @@ export const batch5IdToxCdrs: CdrSeed[] = [
         'lactate',
         'source_investigation',
       ],
+      Low: [
+        'monitor_vitals',
+        'reassess_clinically',
+        'consider_alternative_diagnoses',
+        'supportive_care',
+      ],
     },
   },
 

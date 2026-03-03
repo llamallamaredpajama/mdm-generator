@@ -122,6 +122,11 @@ export const batch14PedsHemeCdrs: CdrSeed[] = [
         'social_work_consult',
         'child_protective_services',
       ],
+      Low: [
+        'clinical_observation',
+        'document_history_and_mechanism',
+        'routine_follow_up',
+      ],
     },
   },
 
@@ -589,6 +594,11 @@ export const batch14PedsHemeCdrs: CdrSeed[] = [
         'fluid_resuscitation',
         'picu_consult',
       ],
+      Low: [
+        'clinical_monitoring',
+        'reassess_if_clinical_change',
+        'treat_underlying_infection',
+      ],
     },
   },
 
@@ -727,6 +737,26 @@ export const batch14PedsHemeCdrs: CdrSeed[] = [
           interpretation:
             'Score ≥4: Annual hemorrhage rate ≥10.4%; high bleeding risk; reassess anticoagulation indication; consider shorter courses or alternatives.',
         },
+      ],
+    },
+    suggestedTreatments: {
+      High: [
+        'reassess_anticoagulation_indication',
+        'consider_doac_over_warfarin',
+        'gastroenterology_consult_if_gi_bleed_risk',
+        'fall_prevention_assessment',
+        'frequent_inr_monitoring',
+      ],
+      Moderate: [
+        'consider_doac_over_warfarin',
+        'monitor_inr_closely',
+        'assess_modifiable_risk_factors',
+        'outpatient_follow_up',
+      ],
+      Low: [
+        'continue_anticoagulation',
+        'routine_inr_monitoring',
+        'standard_follow_up',
       ],
     },
   },

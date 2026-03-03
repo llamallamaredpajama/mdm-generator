@@ -185,6 +185,33 @@ export const batch17PsychBurnsNephroCdrs: CdrSeed[] = [
         { min: 24, max: 30, risk: 'Normal', interpretation: 'Normal (adjust for education level)' },
       ],
     },
+    suggestedTreatments: {
+      Severe: [
+        'neurology_consult',
+        'dementia_workup',
+        'safety_assessment',
+        'caregiver_support',
+        'consider_inpatient_evaluation',
+      ],
+      Moderate: [
+        'neurology_referral',
+        'dementia_workup',
+        'cognitive_rehabilitation',
+        'home_safety_evaluation',
+        'caregiver_education',
+      ],
+      Mild: [
+        'neurology_referral',
+        'cognitive_screening_follow_up',
+        'reversible_cause_evaluation',
+        'lifestyle_modifications',
+      ],
+      Normal: [
+        'reassurance',
+        'routine_follow_up',
+        'age_appropriate_screening',
+      ],
+    },
   },
 
   // ---------------------------------------------------------------------------
@@ -325,6 +352,33 @@ export const batch17PsychBurnsNephroCdrs: CdrSeed[] = [
         { min: 10, max: 17, risk: 'Moderate', interpretation: 'Moderate cognitive impairment' },
         { min: 18, max: 25, risk: 'Mild', interpretation: 'Mild cognitive impairment' },
         { min: 26, max: 31, risk: 'Normal', interpretation: 'Normal cognitive function' },
+      ],
+    },
+    suggestedTreatments: {
+      Severe: [
+        'neurology_consult',
+        'dementia_workup',
+        'safety_assessment',
+        'caregiver_support',
+        'consider_inpatient_evaluation',
+      ],
+      Moderate: [
+        'neurology_referral',
+        'dementia_workup',
+        'cognitive_rehabilitation',
+        'home_safety_evaluation',
+        'caregiver_education',
+      ],
+      Mild: [
+        'neurology_referral',
+        'cognitive_screening_follow_up',
+        'reversible_cause_evaluation',
+        'lifestyle_modifications',
+      ],
+      Normal: [
+        'reassurance',
+        'routine_follow_up',
+        'age_appropriate_screening',
       ],
     },
   },

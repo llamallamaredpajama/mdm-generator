@@ -292,6 +292,11 @@ export const batch4NeuroCdrs: CdrSeed[] = [
         'antiplatelet_dual_therapy_POINT_CHANCE',
         'admit_or_expedited_outpatient_evaluation',
       ],
+      None: [
+        'reassess_for_stroke_mimics',
+        'consider_alternative_diagnoses',
+        'standard_neurological_monitoring',
+      ],
     },
   },
 
@@ -510,6 +515,12 @@ export const batch4NeuroCdrs: CdrSeed[] = [
         'neurosurgery_consult_if_SAH_confirmed',
         'nimodipine_60mg_q4h_if_SAH_confirmed',
         'admit_neurosurgery_if_SAH_confirmed',
+      ],
+      'Very Low Risk': [
+        'clinical_reassessment',
+        'consider_alternative_headache_diagnosis',
+        'discharge_with_return_precautions',
+        'outpatient_neurology_followup_if_recurrent',
       ],
     },
   },

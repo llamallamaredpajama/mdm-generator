@@ -173,6 +173,11 @@ export const batch16EnviroObPsychCdrs: CdrSeed[] = [
         'warm_iv_fluids',
         'icu_admission',
       ],
+      Fatal: [
+        'death_pronouncement',
+        'medical_examiner_notification',
+        'family_notification',
+      ],
     },
   },
 
@@ -370,6 +375,7 @@ export const batch16EnviroObPsychCdrs: CdrSeed[] = [
     },
     suggestedTreatments: {
       'Positive Screen': ['administer_phq9', 'safety_assessment', 'behavioral_health_referral'],
+      'Negative Screen': ['routine_follow_up', 'rescreen_if_clinical_concern'],
     },
   },
 
@@ -503,6 +509,7 @@ export const batch16EnviroObPsychCdrs: CdrSeed[] = [
       Severe: ['psychiatry_referral', 'anxiolytic_consideration', 'safety_assessment', 'cbt_referral'],
       Moderate: ['behavioral_health_referral', 'cbt_referral', 'consider_pharmacotherapy'],
       Mild: ['psychoeducation', 'outpatient_follow_up'],
+      Minimal: ['reassurance', 'routine_follow_up'],
     },
   },
 
@@ -696,6 +703,7 @@ export const batch16EnviroObPsychCdrs: CdrSeed[] = [
       ],
       Harmful: ['brief_intervention', 'behavioral_health_referral', 'outpatient_follow_up'],
       Hazardous: ['brief_intervention', 'motivational_interviewing', 'outpatient_follow_up'],
+      'Low Risk': ['positive_reinforcement', 'alcohol_education'],
     },
   },
 
@@ -823,6 +831,11 @@ export const batch16EnviroObPsychCdrs: CdrSeed[] = [
       ],
       Agitated: ['verbal_de_escalation', 'anxiolytic', 'reassess_pain', 'adjust_sedation'],
       Restless: ['verbal_reassurance', 'reorientation', 'reassess_pain'],
+      'Alert & Calm': ['maintain_current_management', 'continue_monitoring'],
+      'Light Sedation': ['target_sedation_achieved', 'continue_monitoring', 'reassess_sedation_goal'],
+      'Moderate Sedation': ['reassess_sedation_depth', 'consider_lightening_sedation', 'daily_sedation_vacation'],
+      'Deep Sedation': ['lighten_sedation_if_safe', 'assess_for_oversedation', 'neurologic_assessment'],
+      Unarousable: ['hold_sedation', 'neurologic_assessment', 'ct_head_if_unexplained', 'assess_for_metabolic_causes'],
     },
   },
 
@@ -951,6 +964,8 @@ export const batch16EnviroObPsychCdrs: CdrSeed[] = [
       ],
       Substantial: ['addiction_medicine_referral', 'intensive_outpatient_referral'],
       Moderate: ['brief_intervention', 'outpatient_substance_use_referral'],
+      Low: ['monitor', 'brief_counseling', 'outpatient_follow_up'],
+      'No Problem': ['positive_reinforcement', 'routine_follow_up'],
     },
   },
 

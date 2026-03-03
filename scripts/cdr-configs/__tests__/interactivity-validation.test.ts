@@ -32,6 +32,16 @@ import { batch17PsychBurnsNephroCdrs } from '../batch-17-psych-burns-nephro'
 import { batch18NephroOncCdrs } from '../batch-18-nephro-onc'
 import { batch19OncDermEntCdrs } from '../batch-19-onc-derm-ent'
 import { batch20OrthoGeriPallCdrs } from '../batch-20-ortho-geri-pall'
+import { batch21RescueCardioCdrs } from '../batch-21-rescue-cardio'
+import { batch22RescueHepaticCdrs } from '../batch-22-rescue-hepatic'
+import { batch23RescuePedsCdrs } from '../batch-23-rescue-peds'
+import { batch24RescueHemeCdrs } from '../batch-24-rescue-heme'
+import { batch25RescuePulmCdrs } from '../batch-25-rescue-pulm'
+import { batch26RescueId1Cdrs } from '../batch-26-rescue-id1'
+import { batch27RescueId2Cdrs } from '../batch-27-rescue-id2'
+import { batch28RescueObCdrs } from '../batch-28-rescue-ob'
+import { batch29RescueGiCdrs } from '../batch-29-rescue-gi'
+import { batch30RescueEndoCdrs } from '../batch-30-rescue-endo'
 
 const ALL_CDRS: CdrSeed[] = [
   ...batch1CardioCdrs,
@@ -54,6 +64,17 @@ const ALL_CDRS: CdrSeed[] = [
   ...batch18NephroOncCdrs,
   ...batch19OncDermEntCdrs,
   ...batch20OrthoGeriPallCdrs,
+  // Rescue batches (quarantined CDRs with lab components converted to user_input)
+  ...batch21RescueCardioCdrs,
+  ...batch22RescueHepaticCdrs,
+  ...batch23RescuePedsCdrs,
+  ...batch24RescueHemeCdrs,
+  ...batch25RescuePulmCdrs,
+  ...batch26RescueId1Cdrs,
+  ...batch27RescueId2Cdrs,
+  ...batch28RescueObCdrs,
+  ...batch29RescueGiCdrs,
+  ...batch30RescueEndoCdrs,
 ]
 
 function isUserAnswerable(c: CdrComponent): boolean {
@@ -62,6 +83,42 @@ function isUserAnswerable(c: CdrComponent): boolean {
     (c.source === 'section1' || c.source === 'user_input')
   )
 }
+
+const VALID_CATEGORIES = [
+  'BURNS & WOUND MANAGEMENT',
+  'CARDIOVASCULAR',
+  'CRITICAL CARE & ICU',
+  'DERMATOLOGY',
+  'DISPOSITION / RISK STRATIFICATION',
+  'ENDOCRINE',
+  'ENT / OTOLARYNGOLOGY',
+  'ENVIRONMENTAL',
+  'GASTROINTESTINAL',
+  'GENITOURINARY',
+  'GERIATRICS & DELIRIUM',
+  'HEMATOLOGY / COAGULATION',
+  'INFECTIOUS DISEASE',
+  'NEUROLOGY',
+  'OB/GYN & OBSTETRIC EMERGENCY',
+  'ONCOLOGIC EMERGENCY',
+  'ORTHOPEDIC & MUSCULOSKELETAL',
+  'PALLIATIVE CARE & PROGNOSIS',
+  'PEDIATRIC',
+  'PROCEDURAL / AIRWAY',
+  'PSYCHIATRY & BEHAVIORAL HEALTH',
+  'PULMONARY',
+  'RHEUMATOLOGY',
+  'TOXICOLOGY',
+  'TRAUMA',
+] as const
+
+const VALID_AUTO_POPULATE = [
+  'narrative_analysis',
+  'physical_exam',
+  'vital_signs',
+  'vitals',
+  'test_result',
+] as const
 
 describe('CDR Interactivity Validation (all batches)', () => {
   it('has at least one CDR loaded', () => {
@@ -161,4 +218,96 @@ describe('CDR Interactivity Validation (all batches)', () => {
       }
     }
   )
+
+  describe('Content quality and data integrity', () => {
+    describe.each(ALL_CDRS.map((cdr) => [cdr.id, cdr] as const))(
+      '%s',
+      (_id, cdr) => {
+        it('has a valid category', () => {
+          expect(
+            VALID_CATEGORIES as readonly string[],
+            `${cdr.id} has unknown category "${cdr.category}"`,
+          ).toContain(cdr.category)
+        })
+
+        it('has at least one applicableChiefComplaint', () => {
+          expect(
+            cdr.applicableChiefComplaints.length,
+            `${cdr.id} has no applicableChiefComplaints`,
+          ).toBeGreaterThan(0)
+        })
+
+        it('has at least one keyword', () => {
+          expect(
+            cdr.keywords.length,
+            `${cdr.id} has no keywords`,
+          ).toBeGreaterThan(0)
+        })
+
+        it('all component labels are non-empty', () => {
+          for (const c of cdr.components) {
+            expect(
+              c.label.trim().length,
+              `${cdr.id}.${c.id} has empty label`,
+            ).toBeGreaterThan(0)
+          }
+        })
+
+        it('autoPopulateFrom values are from known set', () => {
+          for (const c of cdr.components) {
+            if (c.autoPopulateFrom) {
+              expect(
+                VALID_AUTO_POPULATE as readonly string[],
+                `${cdr.id}.${c.id} has unknown autoPopulateFrom "${c.autoPopulateFrom}"`,
+              ).toContain(c.autoPopulateFrom)
+            }
+          }
+        })
+
+        it('scoring range min <= max for every range', () => {
+          for (const range of cdr.scoring.ranges) {
+            expect(
+              range.min,
+              `${cdr.id} range "${range.risk}" has min (${range.min}) > max (${range.max})`,
+            ).toBeLessThanOrEqual(range.max)
+          }
+        })
+      },
+    )
+  })
+
+  describe('suggestedTreatments compliance', () => {
+    describe.each(ALL_CDRS.map((cdr) => [cdr.id, cdr] as const))(
+      '%s',
+      (_id, cdr) => {
+        const uniqueRisks = [...new Set(cdr.scoring.ranges.map((r) => r.risk))].sort()
+
+        it('has suggestedTreatments', () => {
+          expect(
+            cdr.suggestedTreatments,
+            `${cdr.id} is missing suggestedTreatments`,
+          ).toBeDefined()
+        })
+
+        it('suggestedTreatments keys match scoring risk levels', () => {
+          if (!cdr.suggestedTreatments) return
+          const treatmentKeys = Object.keys(cdr.suggestedTreatments).sort()
+          expect(
+            treatmentKeys,
+            `${cdr.id} treatment keys ${JSON.stringify(treatmentKeys)} don't match risks ${JSON.stringify(uniqueRisks)}`,
+          ).toEqual(uniqueRisks)
+        })
+
+        it('suggestedTreatments values are non-empty string arrays', () => {
+          if (!cdr.suggestedTreatments) return
+          for (const [risk, treatments] of Object.entries(cdr.suggestedTreatments)) {
+            expect(
+              treatments.length,
+              `${cdr.id} suggestedTreatments["${risk}"] is empty`,
+            ).toBeGreaterThan(0)
+          }
+        })
+      },
+    )
+  })
 })

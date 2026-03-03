@@ -670,6 +670,13 @@ export const batch8CardioIiCdrs: CdrSeed[] = [
         },
       ],
     },
+    suggestedTreatments: {
+      'Very High': ['admit_telemetry', 'cardiology_consult', 'echocardiogram', 'continuous_monitoring', 'goals_of_care_discussion'],
+      High: ['admit_telemetry', 'cardiology_consult', 'echocardiogram', 'continuous_monitoring'],
+      Moderate: ['admit_observation', 'cardiology_consult', 'echocardiogram'],
+      Low: ['discharge_with_follow_up', 'outpatient_cardiology_referral'],
+      'Very Low': ['discharge_with_follow_up', 'return_precautions'],
+    },
   },
 
   // ---------------------------------------------------------------------------

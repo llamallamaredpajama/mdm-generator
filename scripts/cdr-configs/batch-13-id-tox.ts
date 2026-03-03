@@ -584,6 +584,29 @@ export const batch13IdToxCdrs: CdrSeed[] = [
         },
       ],
     },
+    suggestedTreatments: {
+      Definite: [
+        'discontinue_suspected_drug',
+        'report_to_pharmacovigilance',
+        'alternative_medication',
+        'monitor_for_recurrence',
+      ],
+      Probable: [
+        'discontinue_suspected_drug',
+        'consider_alternative_medication',
+        'monitor_closely',
+        'report_to_pharmacovigilance',
+      ],
+      Possible: [
+        'monitor_closely',
+        'consider_dose_adjustment',
+        'evaluate_alternative_causes',
+      ],
+      Doubtful: [
+        'continue_current_medication',
+        'reassess_if_symptoms_persist',
+      ],
+    },
   },
 
   // ===========================================================================
@@ -745,6 +768,7 @@ export const batch13IdToxCdrs: CdrSeed[] = [
       Moderate: ['inpatient_admission', 'toxicology_consult', 'monitoring', 'supportive_care'],
       Minor: ['observation_4_6h', 'supportive_care', 'poison_control_consultation'],
       None: ['observation_period', 'discharge_if_no_delayed_toxicity_concern'],
+      Fatal: ['death_pronouncement', 'medical_examiner_notification', 'family_notification'],
     },
   },
 
