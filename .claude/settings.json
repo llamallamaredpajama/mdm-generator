@@ -27,6 +27,15 @@
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/prompt-review-reminder.sh"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cdr-validation-reminder.sh"
+          }
+        ]
       }
     ]
   }
