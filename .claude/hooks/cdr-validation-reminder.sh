@@ -23,6 +23,7 @@ case "$FILE_PATH" in
 esac
 case "$BASENAME" in
   types.ts) exit 0 ;;
+  audit-name-matching.ts) exit 0 ;;
 esac
 
 # CDR config file changed — surface validation checklist
@@ -32,4 +33,5 @@ echo "  2. Verify batch is imported in __tests__/interactivity-validation.test.t
 echo "  3. Verify batch is imported in scripts/seed-cdr-library.ts (batchOverrides array)"
 echo "  4. Verify a corresponding __tests__/batch-*.test.ts file exists"
 echo "  5. Run full suite: cd scripts/cdr-configs && npx vitest run"
+echo "  6. If names/fullNames changed: npx tsx audit-name-matching.ts"
 exit 0
