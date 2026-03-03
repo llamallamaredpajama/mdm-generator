@@ -1,6 +1,6 @@
 .result-entry {
-  background: var(--color-surface, #f8fafc);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #222327);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   transition:
@@ -14,18 +14,18 @@
 
 /* Status modifiers */
 .result-entry--unremarkable {
-  border-color: #86efac;
-  background: #f0fdf4;
+  border-color: rgba(22, 163, 74, 0.3);
+  background: rgba(22, 163, 74, 0.08);
 }
 
 .result-entry--abnormal {
-  border-color: #fca5a5;
-  background: #fef2f2;
+  border-color: rgba(220, 38, 38, 0.3);
+  background: rgba(220, 38, 38, 0.08);
 }
 
 .result-entry--pending {
-  border-color: var(--color-border, #e2e8f0);
-  background: var(--color-surface, #f8fafc);
+  border-color: var(--color-border, rgba(255, 255, 255, 0.06));
+  background: var(--color-surface, #222327);
 }
 
 /* D4: Table-row layout */
@@ -48,16 +48,16 @@
 .result-entry__name {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
   white-space: nowrap;
 }
 
 .result-entry__category {
   font-size: 0.65rem;
   font-weight: 500;
-  color: var(--color-text-muted, #94a3b8);
-  background: var(--color-background, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
+  color: var(--color-text-muted, #6e6e78);
+  background: var(--color-surface-raised, #2a2a2e);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   padding: 0 0.25rem;
   border-radius: 3px;
   text-transform: uppercase;
@@ -67,8 +67,8 @@
 .result-entry__cdr-badge {
   font-size: 0.65rem;
   font-weight: 600;
-  color: #7c3aed;
-  background: #ede9fe;
+  color: #a78bfa;
+  background: rgba(124, 58, 237, 0.12);
   border-radius: 3px;
   padding: 0 0.25rem;
   white-space: nowrap;
@@ -90,17 +90,17 @@
 }
 
 .result-entry__checkbox-label:hover {
-  background: #f1f5f9;
+  background: var(--color-bg-hover, #2f2f34);
 }
 
 .result-entry__checkbox-label--wnl-active {
-  background: #dcfce7;
-  border-color: #86efac;
+  background: rgba(22, 163, 74, 0.12);
+  border-color: rgba(22, 163, 74, 0.3);
 }
 
 .result-entry__checkbox-label--abnl-active {
-  background: #fee2e2;
-  border-color: #fca5a5;
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(220, 38, 38, 0.3);
 }
 
 .result-entry__checkbox {
@@ -113,7 +113,7 @@
 .result-entry__checkbox-text {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--color-text-secondary, #64748b);
+  color: var(--color-text-secondary-bm, #8e8e98);
   user-select: none;
 }
 
@@ -123,10 +123,10 @@
   min-width: 6rem;
   font-size: 0.8125rem;
   padding: 0.25rem 0.5rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 4px;
-  background: var(--color-background, #ffffff);
-  color: var(--color-text, #1e293b);
+  background: var(--color-surface-raised, #2a2a2e);
+  color: var(--color-text-primary, #e8e8ec);
   outline: none;
   transition: border-color 0.15s;
 }
@@ -136,7 +136,7 @@
 }
 
 .result-entry__comment::placeholder {
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted, #6e6e78);
 }
 
 .result-entry__check {
@@ -179,10 +179,10 @@
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   font-weight: 500;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 6px;
-  background: var(--color-background, #ffffff);
-  color: var(--color-text, #1e293b);
+  background: var(--color-surface-raised, #2a2a2e);
+  color: var(--color-text-primary, #e8e8ec);
   cursor: pointer;
   transition:
     border-color 0.15s,
@@ -192,26 +192,26 @@
 
 .result-entry__radio:hover {
   border-color: var(--color-primary, #3b82f6);
-  background: #eff6ff;
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .result-entry__radio--selected.result-entry__radio--unremarkable {
   border-color: #16a34a;
-  background: #dcfce7;
-  color: #15803d;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
 }
 
 .result-entry__radio--selected.result-entry__radio--abnormal {
   border-color: #dc2626;
-  background: #fee2e2;
-  color: #b91c1c;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
 }
 
 /* CDR warning */
 .result-entry__cdr-warning {
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: #7c3aed;
+  color: #a78bfa;
   font-style: italic;
   padding-left: 0.75rem;
 }

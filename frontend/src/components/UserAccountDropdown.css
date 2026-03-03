@@ -7,18 +7,18 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  color: #fff;
+  background: var(--color-surface, #222327);
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  color: var(--color-text-primary, #e8e8ec);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.875rem;
+  box-shadow: var(--neu-flat-sm, 3px 3px 6px #111114, -3px -3px 6px #2a2a2e);
 }
 
 .user-email-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-bg-hover, #2f2f34);
 }
 
 .user-icon {
@@ -30,13 +30,13 @@
 .user-email-button--icon-only {
   padding: 0.5rem;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   border-radius: 50%;
+  box-shadow: none;
 }
 
 .user-email-button--icon-only:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--color-bg-hover, #2f2f34);
 }
 
 .user-email-button--icon-only .user-icon {
@@ -64,10 +64,10 @@
   top: calc(100% + 8px);
   right: 0;
   min-width: 280px;
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  background: var(--color-surface, #222327);
+  border: none;
+  border-radius: var(--radius-md, 8px);
+  box-shadow: var(--neu-floating, 12px 12px 24px #0a0a0c, -12px -12px 24px #2a2a2e);
   z-index: 1000;
   animation: dropdownSlide 0.2s ease;
   overflow: hidden;
@@ -86,7 +86,7 @@
 
 .dropdown-section {
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--color-surface-depressed, #18181b);
 }
 
 .account-status {
@@ -97,7 +97,7 @@
 }
 
 .status-label {
-  color: #999;
+  color: var(--color-text-muted, #6e6e78);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -108,8 +108,8 @@
   font-size: 0.875rem;
   letter-spacing: 0.05em;
   padding: 0.125rem 0.5rem;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-bg-hover, #2f2f34);
 }
 
 .usage-summary {
@@ -120,20 +120,20 @@
 }
 
 .usage-label {
-  color: #999;
+  color: var(--color-text-muted, #6e6e78);
 }
 
 .usage-count {
-  color: #fff;
+  color: var(--color-text-primary, #e8e8ec);
   font-weight: 600;
 }
 
 .usage-alert {
   margin-top: 0.5rem;
   padding: 0.375rem 0.5rem;
-  background: rgba(255, 193, 7, 0.1);
-  border: 1px solid rgba(255, 193, 7, 0.2);
-  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-sm, 4px);
   color: #ffc107;
   font-size: 0.75rem;
   font-weight: 500;
@@ -141,7 +141,7 @@
 
 .dropdown-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-border, rgba(255, 255, 255, 0.06));
   margin: 0;
 }
 
@@ -153,7 +153,7 @@
   padding: 0.75rem 1rem;
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--color-text-primary, #e8e8ec);
   cursor: pointer;
   transition: background 0.2s ease;
   font-size: 0.875rem;
@@ -162,7 +162,7 @@
 }
 
 .dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-bg-hover, #2f2f34);
 }
 
 .dropdown-icon {
@@ -174,7 +174,11 @@
 .upgrade-hint {
   margin-left: auto;
   padding: 0.125rem 0.375rem;
-  background: linear-gradient(135deg, #dc3545, #c82333);
+  background: linear-gradient(
+    135deg,
+    var(--color-accent, #ff1a1a),
+    var(--color-accent-dark, #e01515)
+  );
   border-radius: 3px;
   font-size: 0.625rem;
   font-weight: 600;

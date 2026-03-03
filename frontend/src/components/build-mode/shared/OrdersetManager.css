@@ -8,7 +8,7 @@
 .orderset-manager__backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   z-index: 50;
   display: flex;
@@ -20,8 +20,8 @@
 /* ── Modal Container ────────────────────────────────────────────────────── */
 
 .orderset-manager {
-  background: var(--color-background, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-bg-secondary, #1e1e22);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 12px;
   width: 90vw;
   max-width: 720px;
@@ -29,7 +29,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--neu-floating);
 }
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
@@ -39,7 +39,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.875rem 1.25rem;
-  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   flex-shrink: 0;
 }
 
@@ -47,7 +47,7 @@
   margin: 0;
   font-size: 1.0625rem;
   font-weight: 600;
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
 }
 
 .orderset-manager__close-btn {
@@ -55,13 +55,13 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted, #6e6e78);
   padding: 0 0.25rem;
   line-height: 1;
 }
 
 .orderset-manager__close-btn:hover {
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
 }
 
 /* ── Search ─────────────────────────────────────────────────────────────── */
@@ -74,12 +74,12 @@
 .orderset-manager__search-input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 6px;
   font-size: 0.875rem;
   font-family: inherit;
-  color: var(--color-text, #1e293b);
-  background: var(--color-surface, #f8fafc);
+  color: var(--color-text-primary, #e8e8ec);
+  background: var(--color-surface, #222327);
   outline: none;
   transition: border-color 0.15s;
 }
@@ -90,7 +90,7 @@
 }
 
 .orderset-manager__search-input::placeholder {
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted, #6e6e78);
 }
 
 /* ── Body (scrollable content) ──────────────────────────────────────────── */
@@ -115,10 +115,10 @@
   padding: 0.625rem 0;
   background: none;
   border: none;
-  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   cursor: pointer;
   text-align: left;
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
   font-size: 0.8125rem;
   font-weight: 600;
 }
@@ -183,7 +183,7 @@
   align-items: center;
   gap: 0.375rem;
   font-size: 0.8125rem;
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
   cursor: pointer;
   flex-wrap: wrap;
 }
@@ -194,7 +194,7 @@
 
 .orderset-manager__subcategory-tag {
   font-size: 0.6875rem;
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted, #6e6e78);
 }
 
 /* ── AI Badge ───────────────────────────────────────────────────────────── */
@@ -206,7 +206,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--color-primary, #3b82f6);
-  background: #eff6ff;
+  background: rgba(59, 130, 246, 0.08);
   padding: 0.0625rem 0.3125rem;
   border-radius: 4px;
   line-height: 1.2;
@@ -218,14 +218,14 @@
 .orderset-manager__saved-section {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 2px solid var(--color-border, #e2e8f0);
+  border-top: 2px solid var(--color-border, rgba(255, 255, 255, 0.06));
 }
 
 .orderset-manager__saved-title {
   margin: 0 0 0.625rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--color-text-muted, #64748b);
+  color: var(--color-text-muted, #6e6e78);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -241,8 +241,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 0.625rem;
-  background: var(--color-surface, #f8fafc);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #222327);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 6px;
 }
 
@@ -256,7 +256,7 @@
 .orderset-manager__orderset-name {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -265,9 +265,9 @@
 .orderset-manager__orderset-count {
   font-size: 0.6875rem;
   font-weight: 500;
-  color: var(--color-text-muted, #94a3b8);
-  background: var(--color-background, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
+  color: var(--color-text-muted, #6e6e78);
+  background: var(--color-surface-raised, #2a2a2e);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   padding: 0.0625rem 0.375rem;
   border-radius: 9999px;
   white-space: nowrap;
@@ -303,7 +303,7 @@
 
 .orderset-manager__orderset-delete-btn {
   font-size: 0.875rem;
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted, #6e6e78);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -353,20 +353,20 @@
 }
 
 .orderset-manager__confirm-no {
-  color: var(--color-text-muted, #64748b);
-  background: var(--color-border, #e2e8f0);
+  color: var(--color-text-muted, #6e6e78);
+  background: var(--color-border, rgba(255, 255, 255, 0.06));
 }
 
 .orderset-manager__confirm-no:hover {
-  background: #cbd5e1;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* ── Create Form (above footer) ─────────────────────────────────────────── */
 
 .orderset-manager__create-form {
   padding: 0.75rem 1.25rem;
-  border-top: 1px solid var(--color-border, #e2e8f0);
-  background: var(--color-surface, #f8fafc);
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+  background: var(--color-surface, #222327);
   flex-shrink: 0;
 }
 
@@ -374,17 +374,18 @@
   margin: 0 0 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
 }
 
 .orderset-manager__create-input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 6px;
   font-size: 0.875rem;
   font-family: inherit;
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
+  background: var(--color-surface-raised, #2a2a2e);
   outline: none;
   transition: border-color 0.15s;
   margin-bottom: 0.375rem;
@@ -398,7 +399,7 @@
 .orderset-manager__create-count {
   display: block;
   font-size: 0.75rem;
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted, #6e6e78);
   margin-bottom: 0.5rem;
 }
 
@@ -415,7 +416,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
-  border-top: 1px solid var(--color-border, #e2e8f0);
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   flex-shrink: 0;
 }
 
@@ -453,7 +454,7 @@
 }
 
 .orderset-manager__footer-btn--secondary:hover:not(:disabled) {
-  background: #eff6ff;
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .orderset-manager__footer-btn--secondary:focus-visible {

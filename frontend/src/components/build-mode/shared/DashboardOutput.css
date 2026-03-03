@@ -44,23 +44,24 @@
 
 /* Stub cards */
 .dashboard-output__stub-card {
-  background: var(--color-surface, #f8fafc);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #222327);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 8px;
   padding: 1rem;
+  box-shadow: var(--neu-flat-sm);
 }
 
 .dashboard-output__stub-title {
   margin: 0 0 0.5rem;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
 }
 
 .dashboard-output__stub-text {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted, #6e6e78);
   line-height: 1.5;
 }
 
@@ -96,14 +97,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   padding: 1rem;
 }
 
 .dashboard-output__overlay-content {
-  background: var(--color-bg, #ffffff);
+  background: var(--color-bg-secondary, #1e1e22);
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--neu-floating);
   max-width: 720px;
   width: 100%;
   max-height: 85vh;

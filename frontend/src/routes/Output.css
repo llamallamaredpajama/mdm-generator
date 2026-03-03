@@ -38,7 +38,7 @@
   display: flex;
   gap: var(--space-xs);
   padding-bottom: var(--space-sm);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   margin-bottom: var(--space-lg);
 }
 
@@ -71,7 +71,8 @@
 
 .output-tab--active {
   color: var(--color-accent);
-  background: var(--color-accent-subtle);
+  background: var(--color-surface-raised, #2a2a2e);
+  box-shadow: var(--neu-flat-sm, 3px 3px 6px #111114, -3px -3px 6px #2a2a2e);
 }
 
 .output-tab--active::after {
@@ -94,13 +95,14 @@
 }
 
 .output-code {
-  background: var(--color-bg-code);
-  border: 1px solid var(--color-border-secondary);
+  background: var(--color-surface-depressed, #18181b);
+  border: none;
   border-radius: var(--radius-lg);
   padding: var(--space-xl);
   overflow-x: auto;
   max-height: 500px;
   overflow-y: auto;
+  box-shadow: var(--neu-inset, inset 4px 4px 8px #111114, inset -4px -4px 8px #2a2a2e);
 }
 
 .output-code pre {
@@ -148,15 +150,15 @@
 }
 
 .output-btn--secondary {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface, #222327);
+  color: var(--color-text-secondary, #b0b0b8);
+  border: none;
+  box-shadow: var(--neu-flat-sm, 3px 3px 6px #111114, -3px -3px 6px #2a2a2e);
 }
 
 .output-btn--secondary:hover {
-  background: var(--color-bg-hover);
-  color: var(--color-text-primary);
-  border-color: var(--color-border-primary);
+  background: var(--color-bg-hover, #2f2f34);
+  color: var(--color-text-primary, #e8e8ec);
 }
 
 .output-btn svg {
@@ -172,11 +174,12 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-md);
-  background: var(--color-accent-subtle);
-  border: 1px solid var(--color-border-primary);
+  background: var(--color-surface-depressed, #18181b);
+  border: none;
   border-radius: var(--radius-md);
   padding: var(--space-lg);
   margin-top: var(--space-xl);
+  box-shadow: var(--neu-inset-sm, inset 2px 2px 4px #111114, inset -2px -2px 4px #2a2a2e);
 }
 
 .output-notice-icon {
@@ -203,9 +206,10 @@
 
 .output-collapsible {
   margin-top: var(--space-xl);
-  border: 1px solid var(--color-border-subtle);
+  border: none;
   border-radius: var(--radius-md);
   overflow: hidden;
+  box-shadow: var(--neu-flat-sm, 3px 3px 6px #111114, -3px -3px 6px #2a2a2e);
 }
 
 .output-collapsible summary {

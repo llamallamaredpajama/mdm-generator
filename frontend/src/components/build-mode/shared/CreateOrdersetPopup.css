@@ -9,10 +9,10 @@
   left: 0;
   right: 0;
   z-index: 10;
-  background: var(--color-bg, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-bg-secondary, #1e1e22);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--neu-floating);
   padding: 0.75rem;
 }
 
@@ -23,14 +23,14 @@
 .create-orderset-popup__title {
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--color-text-muted, #64748b);
+  color: var(--color-text-muted, #6e6e78);
 }
 
 .create-orderset-popup__tabs {
   display: flex;
   gap: 0.25rem;
   margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   padding-bottom: 0.375rem;
 }
 
@@ -42,7 +42,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--color-text-muted, #64748b);
+  color: var(--color-text-muted, #6e6e78);
   transition:
     color 0.15s ease,
     background 0.15s ease;
@@ -54,7 +54,7 @@
 
 .create-orderset-popup__tab--active {
   color: var(--color-primary, #3b82f6);
-  background: #eff6ff;
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .create-orderset-popup__body {
@@ -69,10 +69,10 @@
   width: 100%;
   padding: 0.5rem;
   font-size: 0.8125rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 6px;
-  background: var(--color-bg, #ffffff);
-  color: var(--color-text, #1e293b);
+  background: var(--color-surface, #222327);
+  color: var(--color-text-primary, #e8e8ec);
   box-sizing: border-box;
 }
 
@@ -119,11 +119,11 @@
 }
 
 .create-orderset-popup__btn--secondary {
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
   background: transparent;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
 }
 
 .create-orderset-popup__btn--secondary:hover {
-  background: var(--color-surface, #f8fafc);
+  background: var(--color-bg-hover, #2f2f34);
 }

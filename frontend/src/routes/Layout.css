@@ -21,10 +21,11 @@
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
-  background: rgba(0, 0, 0, 0.9);
+  background: var(--color-bg-secondary, #1e1e22);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+  box-shadow: var(--neu-flat, 6px 6px 12px #111114, -6px -6px 12px #2a2a2e);
 }
 
 .layout-nav {
@@ -90,14 +91,16 @@
 }
 
 .layout-nav-link:hover {
-  color: var(--color-text-primary);
-  background: var(--color-bg-hover);
+  color: var(--color-text-primary, #e8e8ec);
+  background: var(--color-bg-hover, #2f2f34);
+  box-shadow: var(--neu-flat-sm, 3px 3px 6px #111114, -3px -3px 6px #2a2a2e);
   text-decoration: none;
 }
 
 .layout-nav-link.active {
-  color: var(--color-accent);
-  background: var(--color-accent-subtle);
+  color: var(--color-accent, #ff1a1a);
+  background: var(--color-surface-depressed, #18181b);
+  box-shadow: var(--neu-inset-sm, inset 2px 2px 4px #111114, inset -2px -2px 4px #2a2a2e);
 }
 
 .layout-nav-link svg {
