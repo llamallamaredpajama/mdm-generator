@@ -134,7 +134,7 @@ describe('CdrCard', () => {
 
   // --- LLM cdrAnalysis prop tests ---
 
-  it('renders LLM cdrAnalysis with score and interpretation in name', () => {
+  it('renders LLM cdrAnalysis with score — header shows only name, score in Results', () => {
     const cdrAnalysis: CdrAnalysisItem[] = [
       {
         name: 'HEART Score',
@@ -144,11 +144,19 @@ describe('CdrCard', () => {
         reasoning: 'Calculated from available data',
       },
     ]
-    render(<CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />)
+    const { container } = render(
+      <CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />,
+    )
 
-    // Score should be in the CDR row name area
-    const nameEl = screen.getByText(/HEART Score.*4/)
-    expect(nameEl.textContent).toContain('Moderate risk')
+    // Header should show ONLY the CDR name (no score, no interpretation)
+    const nameEl = container.querySelector('.cdr-row__name')!
+    expect(nameEl.textContent).toBe('HEART Score')
+
+    // Expand to see Results section
+    fireEvent.click(container.querySelector('.cdr-row__header')!)
+    const resultText = container.querySelector('.cdr-row__detail-text--result')!
+    expect(resultText.textContent).toContain('4')
+    expect(resultText.textContent).toContain('Moderate risk')
   })
 
   it('renders LLM cdrAnalysis with missing data as needs_data status', () => {
@@ -201,11 +209,55 @@ describe('CdrCard', () => {
     ]
     const clientCdrs: IdentifiedCdr[] = [{ cdr: heartCdr, readiness: 'needs_results' }]
 
-    render(<CdrCard identifiedCdrs={clientCdrs} cdrAnalysis={cdrAnalysis} loading={false} />)
+    const { container } = render(
+      <CdrCard identifiedCdrs={clientCdrs} cdrAnalysis={cdrAnalysis} loading={false} />,
+    )
 
-    // Should show LLM score
-    const nameEl = screen.getByText(/HEART Score.*5/)
-    expect(nameEl.textContent).toContain('High risk')
+    // Header should show ONLY the CDR name
+    const nameEl = container.querySelector('.cdr-row__name')!
+    expect(nameEl.textContent).toBe('HEART Score')
+
+    // Expand to verify score appears in Results section
+    fireEvent.click(container.querySelector('.cdr-row__header')!)
+    const resultText = container.querySelector('.cdr-row__detail-text--result')!
+    expect(resultText.textContent).toContain('5')
+    expect(resultText.textContent).toContain('High risk')
+
+    // Client-side reasoning should NOT appear (LLM takes priority)
     expect(screen.queryByText('Requires workup results')).toBeNull()
+  })
+
+  it('scored CDR header never contains score or interpretation', () => {
+    const cdrAnalysis: CdrAnalysisItem[] = [
+      {
+        name: 'Wells PE',
+        applicable: true,
+        score: 6,
+        interpretation: 'PE likely',
+      },
+      {
+        name: 'HEART Score',
+        applicable: true,
+        score: 3,
+        interpretation: 'Low risk',
+      },
+    ]
+    const { container } = render(
+      <CdrCard identifiedCdrs={[]} cdrAnalysis={cdrAnalysis} loading={false} />,
+    )
+
+    // ALL header name elements should show ONLY the CDR name
+    const nameEls = container.querySelectorAll('.cdr-row__name')
+    expect(nameEls.length).toBe(2)
+    expect(nameEls[0].textContent).toBe('Wells PE')
+    expect(nameEls[1].textContent).toBe('HEART Score')
+
+    // No name element should contain score numbers or interpretation text
+    nameEls.forEach((el) => {
+      expect(el.textContent).not.toContain('6')
+      expect(el.textContent).not.toContain('3')
+      expect(el.textContent).not.toContain('PE likely')
+      expect(el.textContent).not.toContain('Low risk')
+    })
   })
 })

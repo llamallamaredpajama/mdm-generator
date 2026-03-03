@@ -192,8 +192,7 @@ function CdrRow({
     return calculateScore(cdrDef, trackingEntry?.components ?? {})
   }, [cdrDef, trackingEntry?.components])
 
-  // Pill text: name, or name + score when scored
-  const pillText = status.type === 'score' ? `${item.name}: ${status.text}` : item.name
+  const pillText = item.name
 
   return (
     <div className={`cdr-row cdr-row--${statusCategory}${isExcluded ? ' cdr-row--excluded' : ''}`}>
