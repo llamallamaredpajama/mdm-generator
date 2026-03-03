@@ -2,9 +2,10 @@
 
 .cdr-results {
   padding: 1rem;
-  background: var(--color-surface, #f9fafb);
-  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-surface, #222327);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 0.5rem;
+  box-shadow: var(--neu-flat-sm);
 }
 
 /* Sections */
@@ -22,7 +23,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-text-muted, #9ca3af);
+  color: var(--color-text-muted, #6e6e78);
 }
 
 /* Working Diagnosis */
@@ -30,14 +31,14 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--color-text, #111827);
+  color: var(--color-text-primary, #e8e8ec);
 }
 
 /* Results Summary */
 .cdr-results__summary {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--color-text, #374151);
+  color: var(--color-text-secondary, #b0b0b8);
 }
 
 .cdr-results__abnormal-count {
@@ -65,8 +66,8 @@
 }
 
 .cdr-results__score-card {
-  background: var(--color-background, #ffffff);
-  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-surface-raised, #2a2a2e);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 0.375rem;
   overflow: hidden;
 }
@@ -82,12 +83,12 @@
   cursor: pointer;
   text-align: left;
   font-size: 0.875rem;
-  color: var(--color-text, #111827);
+  color: var(--color-text-primary, #e8e8ec);
   transition: background 0.15s;
 }
 
 .cdr-results__score-header:hover {
-  background: var(--color-hover, #f3f4f6);
+  background: var(--color-bg-hover, #2f2f34);
 }
 
 .cdr-results__score-name {
@@ -103,21 +104,21 @@
 
 .cdr-results__chevron {
   font-size: 0.625rem;
-  color: var(--color-text-muted, #9ca3af);
+  color: var(--color-text-muted, #6e6e78);
 }
 
 .cdr-results__interpretation {
   margin: 0;
   padding: 0 0.75rem 0.375rem;
   font-size: 0.8125rem;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--color-text-secondary-bm, #8e8e98);
   font-style: italic;
 }
 
 /* Component Breakdown */
 .cdr-results__components {
   padding: 0.375rem 0.75rem 0.5rem;
-  border-top: 1px solid var(--color-border, #e5e7eb);
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
 }
 
 .cdr-results__comp-row {
@@ -129,12 +130,12 @@
 }
 
 .cdr-results__comp-name {
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--color-text-secondary-bm, #8e8e98);
 }
 
 .cdr-results__comp-value {
   font-weight: 500;
-  color: var(--color-text, #374151);
+  color: var(--color-text-secondary, #b0b0b8);
   font-family: monospace;
   font-size: 0.8125rem;
 }
@@ -151,7 +152,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.375rem 0;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   font-size: 0.8125rem;
 }
 
@@ -160,21 +161,21 @@
 }
 
 .cdr-results__pending-name {
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--color-text-secondary-bm, #8e8e98);
 }
 
 .cdr-results__pending-progress {
   font-family: monospace;
   font-size: 0.75rem;
-  color: var(--color-text-muted, #9ca3af);
+  color: var(--color-text-muted, #6e6e78);
 }
 
 /* Footer */
 .cdr-results__footer {
   margin: 0;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--color-border, #e5e7eb);
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   font-size: 0.8125rem;
-  color: var(--color-text-muted, #9ca3af);
+  color: var(--color-text-muted, #6e6e78);
   text-align: center;
 }

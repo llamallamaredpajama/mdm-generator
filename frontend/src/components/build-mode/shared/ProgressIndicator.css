@@ -29,7 +29,7 @@
 
 .progress-indicator__dot--pending {
   background: transparent;
-  border: 1.5px solid var(--color-border, #e2e8f0);
+  border: 1.5px solid var(--color-text-dim, #55555e);
 }
 
 .progress-indicator__summary {
@@ -40,7 +40,7 @@
 }
 
 .progress-indicator__count {
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted, #6e6e78);
 }
 
 .progress-indicator__abnormal {

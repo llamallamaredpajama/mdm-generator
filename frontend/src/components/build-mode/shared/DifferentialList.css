@@ -8,10 +8,11 @@
  */
 
 .diff-list {
-  background: var(--color-surface, #f8fafc);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #222327);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 8px;
   padding: 1rem;
+  box-shadow: var(--neu-flat-sm);
 }
 
 /* Header */
@@ -21,30 +22,30 @@
   align-items: center;
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
 }
 
 .diff-list__title {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
 }
 
 .diff-list__toggle-btn {
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
-  background: var(--color-background, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #222327);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 4px;
-  color: var(--color-text-secondary, #64748b);
+  color: var(--color-text-secondary-bm, #8e8e98);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .diff-list__toggle-btn:hover {
-  background: var(--color-surface, #f8fafc);
-  color: var(--color-text, #1e293b);
+  background: var(--color-bg-hover, #2f2f34);
+  color: var(--color-text-primary, #e8e8ec);
 }
 
 /* Summary badges */
@@ -63,17 +64,17 @@
 }
 
 .diff-list__badge--emergent {
-  background: #fef2f2;
+  background: rgba(220, 38, 38, 0.08);
   color: #dc2626;
 }
 
 .diff-list__badge--urgent {
-  background: #fffbeb;
+  background: rgba(217, 119, 6, 0.08);
   color: #d97706;
 }
 
 .diff-list__badge--routine {
-  background: #f0fdf4;
+  background: rgba(22, 163, 74, 0.08);
   color: #16a34a;
 }
 
@@ -86,15 +87,15 @@
 
 /* Individual row */
 .diff-row {
-  background: var(--color-background, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface-raised, #2a2a2e);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   border-radius: 6px;
   overflow: hidden;
   transition: box-shadow 0.15s ease;
 }
 
 .diff-row:hover {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--neu-flat-sm);
 }
 
 .diff-row--emergent {
@@ -124,7 +125,7 @@
 }
 
 .diff-row__header:hover {
-  background: var(--color-surface, #f8fafc);
+  background: var(--color-bg-hover, #2f2f34);
 }
 
 /* Color dot */
@@ -151,7 +152,7 @@
 .diff-row__diagnosis {
   flex: 1;
   font-weight: 500;
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
   min-width: 0;
   word-break: break-word;
 }
@@ -180,7 +181,7 @@
 /* Chevron (DOWN/UP arrows) */
 .diff-row__chevron {
   font-size: 0.75rem;
-  color: var(--color-text-secondary, #64748b);
+  color: var(--color-text-secondary-bm, #8e8e98);
   flex-shrink: 0;
 }
 
@@ -188,8 +189,8 @@
 .diff-row__details {
   padding: 0.75rem;
   padding-top: 0.5rem;
-  border-top: 1px solid var(--color-border, #e2e8f0);
-  background: var(--color-surface, #f8fafc);
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+  background: var(--color-surface-depressed, #18181b);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -199,14 +200,14 @@
   display: block;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--color-text-secondary, #64748b);
+  color: var(--color-text-secondary-bm, #8e8e98);
   margin-bottom: 0.125rem;
 }
 
 .diff-row__detail-text {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--color-text, #1e293b);
+  color: var(--color-text-primary, #e8e8ec);
   line-height: 1.5;
 }
 
@@ -214,9 +215,9 @@
 .diff-list__note {
   margin: 0.75rem 0 0;
   padding-top: 0.5rem;
-  border-top: 1px solid var(--color-border, #e2e8f0);
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
   font-size: 0.75rem;
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted, #6e6e78);
   font-style: italic;
   text-align: center;
 }
