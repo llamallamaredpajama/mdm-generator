@@ -88,6 +88,13 @@
   letter-spacing: 0.15em;
 }
 
+.cl-preloader__ai {
+  color: var(--cl-color-accent);
+  font-family: var(--cl-font-sans);
+  font-weight: 600;
+  font-size: 0.78em;
+}
+
 .cl-preloader__dot {
   color: var(--cl-color-accent);
 }
@@ -154,6 +161,14 @@
   border: none;
   color: inherit;
   cursor: pointer;
+}
+
+.cl-nav__logo-ai {
+  color: var(--cl-color-accent);
+  mix-blend-mode: normal;
+  font-family: var(--cl-font-sans);
+  font-weight: 600;
+  font-size: 0.78em;
 }
 
 .cl-nav__logo-dot {

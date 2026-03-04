@@ -255,7 +255,8 @@ export default function LandingPage() {
       {/* Preloader */}
       <div className={`cl-preloader${preloaderLoaded ? ' loaded' : ''}`}>
         <div className="cl-preloader__brand">
-          MDM<span className="cl-preloader__dot">.</span>
+          <span className="cl-preloader__ai">ai</span>MDM
+          <span className="cl-preloader__dot">.</span>
         </div>
         <div className="cl-preloader__bar">
           <div className="cl-preloader__bar-fill" style={{ width: `${preloaderProgress}%` }} />
@@ -272,12 +273,8 @@ export default function LandingPage() {
 
       {/* Navigation */}
       <nav className="cl-nav" role="navigation" aria-label="Main navigation">
-        <button
-          className="cl-nav__logo"
-          onClick={() => scrollToSlide(0)}
-          aria-label="MDM Generator Home"
-        >
-          MDM<span className="cl-nav__logo-dot">.</span>
+        <button className="cl-nav__logo" onClick={() => scrollToSlide(0)} aria-label="aiMDM Home">
+          <span className="cl-nav__logo-ai">ai</span>MDM<span className="cl-nav__logo-dot">.</span>
         </button>
         <div className="cl-nav__links">
           <button className="cl-nav__link" onClick={() => handleNavScroll('features')}>
