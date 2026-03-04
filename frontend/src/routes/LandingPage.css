@@ -353,7 +353,7 @@
   bottom: 13vh;
   left: 2.5rem;
   z-index: 10;
-  max-width: 520px;
+  max-width: clamp(300px, 40vw, 520px);
 }
 
 .cl-slide__dept {
@@ -452,18 +452,22 @@
 .cl-slide__content-right {
   position: absolute;
   right: 2.5rem;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 6rem;
+  bottom: 6rem;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 2.15rem;
-  max-width: 525px;
+  justify-content: center;
+  gap: clamp(0.75rem, 1.8vh, 2.15rem);
+  max-width: clamp(280px, 36vw, 525px);
+  overflow: hidden;
 }
 
 .cl-slide__card {
-  padding: 2.2rem 2.5rem;
+  padding: clamp(1rem, 1.8vh + 0.2rem, 2.2rem) clamp(1.8rem, 2.5vw + 0.2rem, 2.5rem);
   background: rgba(0, 0, 0, 0.4);
+  flex-shrink: 1;
+  min-height: 0;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-right: 1px solid rgba(255, 255, 255, 0.06);
@@ -482,7 +486,7 @@
 
 .cl-slide__card-label {
   font-family: var(--cl-font-sans);
-  font-size: 0.95rem;
+  font-size: clamp(0.82rem, 0.9vw + 0.1rem, 0.95rem);
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -499,7 +503,7 @@
 
 .cl-slide__card-quote {
   font-family: var(--cl-font-serif);
-  font-size: 1.6rem;
+  font-size: clamp(1.15rem, 1.2vw + 0.2rem, 1.6rem);
   font-style: italic;
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.82);
@@ -624,6 +628,40 @@
 /* ═══════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .cl-slide__content-right {
+    right: 1.5rem;
+    top: 5.5rem;
+    bottom: 5.5rem;
+    max-width: clamp(260px, 34vw, 460px);
+  }
+  .cl-slide__card-quote {
+    font-size: clamp(1.1rem, 1.2vw + 0.2rem, 1.45rem);
+  }
+}
+
+@media (max-height: 700px) and (min-width: 901px) {
+  .cl-slide__content-right {
+    top: 5rem;
+    bottom: 5rem;
+    gap: clamp(0.5rem, 1.2vh, 1rem);
+  }
+  .cl-slide__card {
+    padding: clamp(0.75rem, 1.4vh, 1.5rem) clamp(1.4rem, 2vw, 2rem);
+  }
+  .cl-slide__card-label {
+    margin-bottom: 0.2rem;
+  }
+  .cl-slide__card-stars {
+    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+  }
+  .cl-slide__card-quote {
+    font-size: clamp(1rem, 1.1vw + 0.15rem, 1.3rem);
+    line-height: 1.4;
+  }
+}
+
 @media (max-width: 900px) {
   .cl-nav__links {
     display: none;
