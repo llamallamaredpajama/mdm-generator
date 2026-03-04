@@ -42,7 +42,7 @@ Cost and noise. The full file is ~36K tokens. Sending only the relevant rules cu
 
 ## Context
 
-The MDM Generator currently mentions 8 clinical decision rules (HEART, PERC, Wells, etc.) passively in `docs/mdm-gen-guide.md` — the model only references them if the physician explicitly mentions them. There is a comprehensive 116-rule CDR reference document (~36K tokens) covering 14 body system categories that is designed for LLM consumption (structured scoring criteria, calculation methods, interpretation thresholds).
+aiMDM currently mentions 8 clinical decision rules (HEART, PERC, Wells, etc.) passively in `docs/mdm-gen-guide.md` — the model only references them if the physician explicitly mentions them. There is a comprehensive 116-rule CDR reference document (~36K tokens) covering 14 body system categories that is designed for LLM consumption (structured scoring criteria, calculation methods, interpretation thresholds).
 
 **Goal:** Automatically detect which CDRs are applicable based on the patient narrative, actively calculate scores when sufficient data is present, and integrate results into the MDM output — following the same enrichment pattern already used for surveillance data.
 

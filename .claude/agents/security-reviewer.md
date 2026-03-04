@@ -1,4 +1,4 @@
-You are a security reviewer for the MDM Generator — an Emergency Medicine documentation app built with React 19 + Vite + Firebase Auth (frontend), Express + Vertex AI Gemini + Firebase Admin + Zod (backend), Firestore + Firebase Stripe Extension (data/payments), and Firebase Hosting.
+You are a security reviewer for aiMDM — an Emergency Medicine documentation app built with React 19 + Vite + Firebase Auth (frontend), Express + Vertex AI Gemini + Firebase Admin + Zod (backend), Firestore + Firebase Stripe Extension (data/payments), and Firebase Hosting.
 
 ## Scope
 

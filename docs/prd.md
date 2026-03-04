@@ -1,6 +1,6 @@
 # Product Requirements Document (PRD)
 
-Title: MDM Generator
+Title: aiMDM
 Owner: Jeremy
 Last updated: 2025-08-08
 

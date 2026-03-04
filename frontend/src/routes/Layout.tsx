@@ -11,14 +11,17 @@ export default function Layout() {
         <nav className="layout-nav">
           <Link to="/" className="layout-brand">
             <span className="layout-brand-text">
-              <strong>MDM</strong> Generator
+              <span className="layout-brand-ai">ai</span>
+              <strong>MDM</strong>
             </span>
           </Link>
 
           <div className="layout-nav-links">
             <NavLink
               to="/compose"
-              className={({ isActive }) => `layout-nav-link layout-nav-link--compose ${isActive ? 'active' : ''}`}
+              className={({ isActive }) =>
+                `layout-nav-link layout-nav-link--compose ${isActive ? 'active' : ''}`
+              }
               onClick={(e) => {
                 e.preventDefault()
                 navigate('/compose', { state: { resetToQuick: Date.now() } })
@@ -32,7 +35,9 @@ export default function Layout() {
             </NavLink>
             <NavLink
               to="/settings"
-              className={({ isActive }) => `layout-nav-link layout-nav-link--settings ${isActive ? 'active' : ''}`}
+              className={({ isActive }) =>
+                `layout-nav-link layout-nav-link--settings ${isActive ? 'active' : ''}`
+              }
               aria-label="Settings"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -1,6 +1,6 @@
 # ER Test Library Catalog
 
-This is the canonical test catalog (241 tests) used by the MDM Generator's Orders Card and AI recommendation system. These tests are stored in the Firestore `testLibrary` collection and seeded by `backend/scripts/seed-test-library.ts`.
+This is the canonical test catalog (241 tests) used by aiMDM's Orders Card and AI recommendation system. These tests are stored in the Firestore `testLibrary` collection and seeded by `backend/scripts/seed-test-library.ts`.
 
 > Last synced from Firestore: 2026-02-28
 

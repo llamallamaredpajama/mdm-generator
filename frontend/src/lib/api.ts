@@ -1,4 +1,4 @@
-// Frontend API client for MDM Generator
+// Frontend API client for aiMDM
 
 import type {
   OrderSet,

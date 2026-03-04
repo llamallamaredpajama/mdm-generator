@@ -1,10 +1,10 @@
-# CLAUDE.md - MDM Generator
+# CLAUDE.md - aiMDM
 
 > Workflow orchestration, skills, and agent strategies are defined in `~/.claude/CLAUDE.md` (global config).
 
 ## What This Is
 
-MDM Generator transforms Emergency Medicine physician narratives into compliant, high-complexity Medical Decision Making documentation using an EM-specific "worst-first" approach.
+aiMDM transforms Emergency Medicine physician narratives into compliant, high-complexity Medical Decision Making documentation using an EM-specific "worst-first" approach.
 
 **CRITICAL CONSTRAINTS (Non-Negotiable):**
 - **NO PHI EVER** - Protected Health Information must never appear in code, logs, comments, or outputs

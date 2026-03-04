@@ -5,7 +5,7 @@ description: |
   "update a label", "rename a section", "change wording", "update attestation",
   "change display text", "rename a JSON field", "add a new MDM section",
   "change prompt text", or any modification to text, labels, field names, or language
-  across the MDM Generator codebase. Also triggers on "text change", "language change",
+  across the aiMDM codebase. Also triggers on "text change", "language change",
   "field rename", "schema rename", "update MDM output", or "change MDM wording".
   Provides a structured 10-phase workflow covering the 11-node data pipeline,
   backward compatibility patterns, and verification protocol.
@@ -13,7 +13,7 @@ description: |
 
 # Full-Stack MDM Text Change
 
-Execute any text, label, field name, or language change across the MDM Generator's full stack. This skill covers all three MDM systems (Legacy, Build Mode, Quick Mode), the complete 11-node data pipeline, backward compatibility patterns, and a verification protocol.
+Execute any text, label, field name, or language change across the aiMDM's full stack. This skill covers all three MDM systems (Legacy, Build Mode, Quick Mode), the complete 11-node data pipeline, backward compatibility patterns, and a verification protocol.
 
 > **Scope:** This skill covers changes to the MDM output pipeline (differential, data reviewed, reasoning, risk, disposition, attestation, complexity). It does NOT cover: surveillance/trend analysis UI, settings/preferences UI, authentication flows, or payment/subscription text. For those, use standard find-and-replace without this workflow.
 

@@ -527,7 +527,7 @@ struct GenerateMDMIntent: AppIntent {
         // Navigate to compose screen with the narrative
         await NavigationManager.shared.navigateToCompose(narrative: narrative)
 
-        return .result(dialog: "Opening MDM Generator with your narrative...")
+        return .result(dialog: "Opening aiMDM with your narrative...")
     }
 }
 ```

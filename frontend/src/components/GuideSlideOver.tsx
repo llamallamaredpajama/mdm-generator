@@ -62,7 +62,14 @@ export default function GuideSlideOver({ isOpen, onClose }: GuideSlideOverProps)
           <h2 id="guide-title" className="guide-slideover__title">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <circle cx="12" cy="12" r="10.8" fill="currentColor" opacity="0.15" />
-              <circle cx="12" cy="12" r="10.8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+              <circle
+                cx="12"
+                cy="12"
+                r="10.8"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              />
               <circle cx="12" cy="7.2" r="1.44" />
               <rect x="10.56" y="10.2" width="2.88" height="7.2" rx="1.2" />
             </svg>
@@ -86,9 +93,9 @@ export default function GuideSlideOver({ isOpen, onClose }: GuideSlideOverProps)
           {/* Introduction */}
           <section className="guide-section">
             <p className="guide-intro">
-              The MDM Generator uses <strong>EM-specific training</strong> to document the
-              "hidden" clinical logic physicians instinctively use but rarely type out.
-              Choose your input mode based on case complexity and your documentation needs.
+              aiMDM uses <strong>EM-specific training</strong> to document the "hidden" clinical
+              logic physicians instinctively use but rarely type out. Choose your input mode based
+              on case complexity and your documentation needs.
             </p>
           </section>
 
@@ -109,8 +116,8 @@ export default function GuideSlideOver({ isOpen, onClose }: GuideSlideOverProps)
                 <li>Supports worst-first differential approach</li>
               </ul>
               <div className="guide-mode__tip">
-                <strong>Best for:</strong> Chest pain, AMS, polytrauma, sepsis workups,
-                diagnostic dilemmas, high-risk dispositions
+                <strong>Best for:</strong> Chest pain, AMS, polytrauma, sepsis workups, diagnostic
+                dilemmas, high-risk dispositions
               </div>
             </div>
           </section>
@@ -122,8 +129,8 @@ export default function GuideSlideOver({ isOpen, onClose }: GuideSlideOverProps)
                 <span className="guide-mode__badge guide-mode__badge--simple">OFF</span>
               </div>
               <p className="guide-mode__description">
-                Best for <strong>fast, low-acuity cases</strong> or when you can confidently
-                report the encounter in a free-flow style capturing most important details.
+                Best for <strong>fast, low-acuity cases</strong> or when you can confidently report
+                the encounter in a free-flow style capturing most important details.
               </p>
               <ul className="guide-mode__list">
                 <li>Tell the story naturally using your narrative style</li>
@@ -132,8 +139,8 @@ export default function GuideSlideOver({ isOpen, onClose }: GuideSlideOverProps)
                 <li>Ideal for straightforward presentations</li>
               </ul>
               <div className="guide-mode__tip">
-                <strong>Best for:</strong> Simple lacerations, minor injuries, stable chronic conditions,
-                clear-cut presentations
+                <strong>Best for:</strong> Simple lacerations, minor injuries, stable chronic
+                conditions, clear-cut presentations
               </div>
             </div>
           </section>
@@ -149,9 +156,9 @@ export default function GuideSlideOver({ isOpen, onClose }: GuideSlideOverProps)
               Worst-First Mentality
             </h3>
             <p className="guide-section__text">
-              Emergency Medicine documentation prioritizes life-threatening conditions first.
-              The AI is trained to generate broad but accurate differential diagnoses with
-              this "worst-first" approach, rather than "most likely" lists.
+              Emergency Medicine documentation prioritizes life-threatening conditions first. The AI
+              is trained to generate broad but accurate differential diagnoses with this
+              "worst-first" approach, rather than "most likely" lists.
             </p>
           </section>
 
@@ -164,10 +171,20 @@ export default function GuideSlideOver({ isOpen, onClose }: GuideSlideOverProps)
               MDM Complexity Drivers
             </h3>
             <ul className="guide-section__list">
-              <li><strong>Number of diagnoses</strong> — emergent and non-emergent conditions considered</li>
-              <li><strong>Data reviewed</strong> — labs, imaging, EKG, external records</li>
-              <li><strong>Risk stratification</strong> — clinical decision rules applied</li>
-              <li><strong>Management complexity</strong> — treatment decisions and disposition planning</li>
+              <li>
+                <strong>Number of diagnoses</strong> — emergent and non-emergent conditions
+                considered
+              </li>
+              <li>
+                <strong>Data reviewed</strong> — labs, imaging, EKG, external records
+              </li>
+              <li>
+                <strong>Risk stratification</strong> — clinical decision rules applied
+              </li>
+              <li>
+                <strong>Management complexity</strong> — treatment decisions and disposition
+                planning
+              </li>
             </ul>
           </section>
         </div>

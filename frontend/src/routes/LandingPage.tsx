@@ -222,6 +222,15 @@ export default function LandingPage() {
     return () => observer.disconnect()
   }, [hasScrolled])
 
+  // ── Kick-start first slide after initial paint settles ──
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      slideRefs.current[0]?.classList.add('active')
+      setCurrentIndex(0)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [])
+
   // ── Keyboard navigation ──
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -339,7 +348,7 @@ export default function LandingPage() {
         {SLIDES.map((slide, i) => (
           <section
             key={i}
-            className={`cl-slide${i === 0 ? ' active' : ''}`}
+            className="cl-slide"
             data-index={i}
             id={slide.id}
             ref={(el) => {

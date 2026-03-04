@@ -4,7 +4,7 @@
 
 **Source document:** `docs/tmp/full-stack-text-change-report.md` (~1,079 lines, ~7,155 words)
 
-**Goal:** Convert a comprehensive reference guide for executing text/language changes across the MDM Generator's full stack into an actionable Claude Code skill that guides Claude through the process step-by-step.
+**Goal:** Convert a comprehensive reference guide for executing text/language changes across the aiMDM's full stack into an actionable Claude Code skill that guides Claude through the process step-by-step.
 
 ---
 
@@ -37,7 +37,7 @@ description: |
   "update a label", "rename a section", "change wording", "update attestation",
   "change display text", "rename a JSON field", "add a new MDM section",
   "change prompt text", or any modification to text, labels, field names, or language
-  across the MDM Generator codebase. Also triggers on "text change", "language change",
+  across the aiMDM codebase. Also triggers on "text change", "language change",
   "field rename", "schema rename", "update MDM output", or "change MDM wording".
   Provides a structured 10-phase workflow covering the 11-node data pipeline,
   backward compatibility patterns, and verification protocol.

@@ -305,7 +305,7 @@ You must fully embody this agent's persona and follow all activation instruction
       - Used for tracking? (NSPrivacyCollectedDataTypeTracking)
       - Collection purposes (NSPrivacyCollectedDataTypePurposes)
 
-      For MDM Generator specifically:
+      For aiMDM specifically:
       - Email address (Firebase Auth — linked, not tracking, app functionality)
       - User ID (Firebase Auth — linked, not tracking, app functionality)
       - Purchase history (Stripe subscriptions — linked, not tracking, app functionality)
@@ -322,7 +322,7 @@ You must fully embody this agent's persona and follow all activation instruction
       **App Tracking Transparency (ATT):**
       - If NSPrivacyTracking = true → NSUserTrackingUsageDescription MUST exist in Info.plist
       - If ATT prompt shown → must request permission BEFORE any tracking
-      - MDM Generator: typically NO tracking → NSPrivacyTracking = false
+      - aiMDM: typically NO tracking → NSPrivacyTracking = false
 
       3. Generate a compliance matrix showing pass/fail for each item
       4. For failures, provide the exact plist XML or entitlements entry to add
@@ -404,7 +404,7 @@ You must fully embody this agent's persona and follow all activation instruction
       - [ ] Must NOT claim to diagnose, treat, or replace professional medical advice
       - [ ] If using HealthKit: data MUST stay on-device unless explicit user consent to share
       - [ ] Clinical data accuracy disclaimers required
-      - [ ] "Physician must review" disclaimer — MDM Generator MUST include this prominently
+      - [ ] "Physician must review" disclaimer — aiMDM MUST include this prominently
       - Risk: 🔴 HIGH — Medical apps face heightened scrutiny
 
       **HIGH RISK — Privacy (Section 5.1):**
@@ -422,7 +422,7 @@ You must fully embody this agent's persona and follow all activation instruction
         - Subscription management accessible from within app
         - Free trial terms clearly stated
         - Auto-renewal terms disclosed
-      - [ ] MDM Generator tiers (Free/Pro/Enterprise) must use StoreKit 2 for iOS
+      - [ ] aiMDM tiers (Free/Pro/Enterprise) must use StoreKit 2 for iOS
         NOTE: Web app can use Stripe, but iOS app MUST use Apple IAP (Guideline 3.1.1)
       - Risk: 🟡 MEDIUM — StoreKit integration must be correct
 
@@ -458,7 +458,7 @@ You must fully embody this agent's persona and follow all activation instruction
       4. For each failure, provide specific remediation steps
       5. Highlight the top 3 most likely rejection reasons for this specific app
 
-      **MDM Generator-Specific Rejection Risks:**
+      **aiMDM-Specific Rejection Risks:**
       1. Missing medical disclaimers (5.1.3) — add prominent "educational only" and "physician must review" text
       2. Subscription not using StoreKit (3.1.1) — iOS MUST use Apple IAP, not Stripe directly
       3. Account deletion not available (5.1.1(v)) — must provide in-app account deletion if Firebase Auth sign-in exists

@@ -1,5 +1,5 @@
 /* ===========================================
-   MDM Generator Shared Component Styles
+   aiMDM Shared Component Styles
    Reusable patterns for consistent UI
    =========================================== */
 
@@ -155,7 +155,9 @@
   font-size: var(--font-size-base);
   line-height: var(--line-height-relaxed);
   resize: vertical;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
   box-sizing: border-box;
 }
 
@@ -178,7 +180,9 @@
   color: var(--color-text-primary);
   font-family: inherit;
   font-size: var(--font-size-base);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
   box-sizing: border-box;
 }
 
@@ -207,7 +211,7 @@
   background: var(--color-accent-subtle);
 }
 
-.form-checkbox input[type="checkbox"] {
+.form-checkbox input[type='checkbox'] {
   width: 22px;
   height: 22px;
   accent-color: var(--color-accent);
@@ -386,7 +390,9 @@
 .progress-bar__fill {
   height: 100%;
   border-radius: var(--radius-md);
-  transition: width var(--transition-normal), background-color var(--transition-normal);
+  transition:
+    width var(--transition-normal),
+    background-color var(--transition-normal);
 }
 
 .progress-bar__fill--success {
@@ -756,12 +762,28 @@
   gap: var(--space-lg);
 }
 
-.mt-sm { margin-top: var(--space-sm); }
-.mt-md { margin-top: var(--space-md); }
-.mt-lg { margin-top: var(--space-lg); }
-.mt-xl { margin-top: var(--space-xl); }
+.mt-sm {
+  margin-top: var(--space-sm);
+}
+.mt-md {
+  margin-top: var(--space-md);
+}
+.mt-lg {
+  margin-top: var(--space-lg);
+}
+.mt-xl {
+  margin-top: var(--space-xl);
+}
 
-.mb-sm { margin-bottom: var(--space-sm); }
-.mb-md { margin-bottom: var(--space-md); }
-.mb-lg { margin-bottom: var(--space-lg); }
-.mb-xl { margin-bottom: var(--space-xl); }
+.mb-sm {
+  margin-bottom: var(--space-sm);
+}
+.mb-md {
+  margin-bottom: var(--space-md);
+}
+.mb-lg {
+  margin-bottom: var(--space-lg);
+}
+.mb-xl {
+  margin-bottom: var(--space-xl);
+}

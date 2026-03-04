@@ -1,16 +1,16 @@
 ---
 name: deploy-mdm
 description: |
-  Deploy MDM Generator to production (Firebase Hosting + Cloud Run).
+  Deploy aiMDM to production (Firebase Hosting + Cloud Run).
   Runs quality gates first, then deploys frontend and backend.
   Use when the user says "deploy", "ship it", "push to prod",
   "deploy mdm", "deploy to production", or "deploy backend/frontend".
 disable-model-invocation: true
 ---
 
-# Deploy MDM Generator
+# Deploy aiMDM
 
-Deploy the MDM Generator application. This is a Firebase Hosting + Cloud Run deployment — NOT Vercel, Netlify, or any other platform.
+Deploy the aiMDM application. This is a Firebase Hosting + Cloud Run deployment — NOT Vercel, Netlify, or any other platform.
 
 ## Pre-Flight Checks (MANDATORY — do not skip)
 

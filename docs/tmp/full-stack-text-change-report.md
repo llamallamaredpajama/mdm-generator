@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This is the canonical reference for executing any text or language change across the MDM Generator's full stack. It covers:
+This is the canonical reference for executing any text or language change across the aiMDM's full stack. It covers:
 
 - **All three MDM systems:** Legacy one-shot pipeline, Build Mode (3-section progressive workflow with Firestore persistence), and Quick Mode
 - **The complete 11-node data pipeline** from constants through LLM output to frontend rendering

@@ -65,6 +65,11 @@
   color: var(--color-accent);
 }
 
+.layout-brand-ai {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-normal, 400);
+}
+
 /* ─────────────────────────────────────────
    Navigation Links
    ───────────────────────────────────────── */

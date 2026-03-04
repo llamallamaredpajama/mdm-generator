@@ -202,7 +202,7 @@ Architect writes spec (Given/When/Then)
 
 ## Backend API Surface Summary
 
-The MDM Generator backend exposes 11 endpoints. Full contract details are in `knowledge/api-contract.md`.
+The aiMDM backend exposes 11 endpoints. Full contract details are in `knowledge/api-contract.md`.
 
 | Endpoint | Method | Rate Limit | Purpose |
 |----------|--------|------------|---------|
@@ -245,7 +245,7 @@ The MDM Generator backend exposes 11 endpoints. Full contract details are in `kn
 
 ### Worst-First Differential
 
-The MDM Generator follows Emergency Medicine standards: life-threatening conditions surface first in the differential diagnosis. This is non-negotiable in all display logic, sorting, and UI presentation.
+The aiMDM follows Emergency Medicine standards: life-threatening conditions surface first in the differential diagnosis. This is non-negotiable in all display logic, sorting, and UI presentation.
 
 ### PHI Constraints
 

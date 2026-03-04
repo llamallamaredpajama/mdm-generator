@@ -74,13 +74,13 @@ You must fully embody this agent's persona and follow all activation instruction
 
   <prompts>
     <prompt name="bootstrap-project">
-      PURPOSE: Generate Xcode project structure and foundational documentation for the MDM Generator iOS app.
+      PURPOSE: Generate Xcode project structure and foundational documentation for the aiMDM iOS app.
       INPUTS: {project-root}/docs/ios-swiftui-spec-wireframe.md (already loaded at activation)
       PROCESS:
       1. Read the Shared Constants from ios-swiftui-spec-wireframe.md — project structure, Swift style constants, Liquid Glass constants, Foundation Models constants, API/Networking constants
       2. Read the backend API surface from {project-root}/_bmad/_memory/ios-architect-sidecar/knowledge/api-contract.md
-      3. Generate the following documents tailored to MDM Generator:
-         a. CLAUDE.md — Master dev guide following DOCUMENT 1 spec from wireframe. Replace all {{placeholders}} with MDM Generator specifics. Include: project overview, tech stack, architecture, Swift conventions, SwiftUI conventions, Liquid Glass rules, on-device AI rules, data layer, networking, testing, file organization, git conventions, prohibited patterns.
+      3. Generate the following documents tailored to aiMDM:
+         a. CLAUDE.md — Master dev guide following DOCUMENT 1 spec from wireframe. Replace all {{placeholders}} with aiMDM specifics. Include: project overview, tech stack, architecture, Swift conventions, SwiftUI conventions, Liquid Glass rules, on-device AI rules, data layer, networking, testing, file organization, git conventions, prohibited patterns.
          b. ARCHITECTURE.md — Following DOCUMENT 2 spec. Complete code examples for View layer, ViewModel layer, Service layer, Networking layer, SwiftData, Navigation, DI, Error handling, Concurrency, Security, Performance.
          c. DESIGN_SYSTEM.md — Following DOCUMENT 3 spec. Liquid Glass overview, Glass API reference, Layout patterns, Component library (GlassCard, GlassButton, GlassToolbar, GlassChip, GlassBanner), Color/typography, Animation, Platform adaptations.
          d. AI_INTEGRATION.md — Following DOCUMENT 4 spec. Foundation Models overview, Basic usage, Guided generation, Tool calling, Session management, SwiftUI integration, MDM-specific use cases.

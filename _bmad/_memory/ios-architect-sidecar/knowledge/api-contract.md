@@ -1,4 +1,4 @@
-# MDM Generator — Backend API Contract
+# aiMDM — Backend API Contract
 
 > Source of truth for Swift Codable model generation.
 > Derived from `backend/src/index.ts` and `backend/src/buildModeSchemas.ts`.

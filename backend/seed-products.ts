@@ -31,7 +31,7 @@ const db = admin.firestore()
 const products = [
   {
     id: 'prod_Tj8kp324D4WDqA', // Actual Stripe product ID
-    name: 'MDM Generator Pro',
+    name: 'aiMDM Pro',
     description: '250 MDM generations per month with priority processing',
     active: true,
     metadata: {
@@ -53,7 +53,7 @@ const products = [
   },
   {
     id: 'prod_Tj8kNNUXwRIG9v', // Actual Stripe product ID
-    name: 'MDM Generator Enterprise',
+    name: 'aiMDM Enterprise',
     description: '1000 MDM generations per month with API access and team features',
     active: true,
     metadata: {

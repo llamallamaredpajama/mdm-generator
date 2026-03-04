@@ -19,18 +19,18 @@ The Firebase Stripe Extension must be installed in the Firebase project. This ca
 In the Stripe Dashboard (test mode):
 
 #### Create Products
-1. **MDM Generator Free**
-   - Name: MDM Generator Free
+1. **aiMDM Free**
+   - Name: aiMDM Free
    - Description: 10 MDM generations per month
    - Metadata: `tier: free`
 
-2. **MDM Generator Pro** 
-   - Name: MDM Generator Pro
+2. **aiMDM Pro** 
+   - Name: aiMDM Pro
    - Description: 250 MDM generations per month
    - Metadata: `tier: pro`
 
-3. **MDM Generator Enterprise**
-   - Name: MDM Generator Enterprise
+3. **aiMDM Enterprise**
+   - Name: aiMDM Enterprise
    - Description: 1000 MDM generations per month
    - Metadata: `tier: enterprise`
 
@@ -169,7 +169,7 @@ customers/
 products/
   {productId}/
     - active: true
-    - name: "MDM Generator Pro"
+    - name: "aiMDM Pro"
     - metadata: { tier: "pro" }
     
     prices/

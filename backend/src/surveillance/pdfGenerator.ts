@@ -394,7 +394,7 @@ export async function generateTrendReport(
       bufferPages: true,
       info: {
         Title: 'Regional ED Surveillance Trend Report',
-        Author: 'MDM Generator — Surveillance Module',
+        Author: 'aiMDM — Surveillance Module',
         Subject: `Analysis ${analysis.analysisId}`,
       },
     })

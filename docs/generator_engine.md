@@ -1,8 +1,8 @@
-# MDM Generator Engine - Comprehensive Technical Report
+# aiMDM Engine - Comprehensive Technical Report
 
 ## Executive Summary
 
-This document provides a comprehensive analysis of the MDM Generator's AI engine - the complete pipeline from user input to generated Medical Decision Making documentation. The system transforms physician narratives into compliant, high-complexity MDM drafts using an EM-specific "worst-first" approach powered by Google's Vertex AI (Gemini 3.1 Pro).
+This document provides a comprehensive analysis of the aiMDM's AI engine - the complete pipeline from user input to generated Medical Decision Making documentation. The system transforms physician narratives into compliant, high-complexity MDM drafts using an EM-specific "worst-first" approach powered by Google's Vertex AI (Gemini 3.1 Pro).
 
 ---
 
@@ -908,7 +908,7 @@ This reduces friction when transitioning from free-form dictation to structured 
 
 ## Summary
 
-The MDM Generator employs a multi-mode pipeline that:
+The aiMDM employs a multi-mode pipeline that:
 
 1. **Collects** physician narratives through three modes: Build Mode (progressive 3-section), Quick Mode (one-shot), and legacy Compose
 2. **Validates** authentication, quotas (per-encounter, not per-request), and input constraints
