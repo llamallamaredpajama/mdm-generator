@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { EncounterStatus } from '../../types/encounter'
-import '../ConfirmationModal.css'
 import './FinalizeModal.css'
 
 interface FinalizeModalProps {
@@ -61,7 +60,11 @@ export default function FinalizeModal({
     <div className="modal-overlay">
       <div className="modal-content finalize-modal">
         <h2>
-          {isExpired ? 'Encounter Expired' : isExpiringSoon ? 'Time Running Out' : 'Finalize Encounter'}
+          {isExpired
+            ? 'Encounter Expired'
+            : isExpiringSoon
+              ? 'Time Running Out'
+              : 'Finalize Encounter'}
         </h2>
 
         {/* Expiry Warning */}
@@ -98,7 +101,9 @@ export default function FinalizeModal({
                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p>Some sections are incomplete. Finalizing now will generate MDM with available data.</p>
+            <p>
+              Some sections are incomplete. Finalizing now will generate MDM with available data.
+            </p>
           </div>
         )}
 
@@ -134,7 +139,9 @@ export default function FinalizeModal({
               onChange={(e) => setConfirmed(e.target.checked)}
               disabled={isProcessing}
             />
-            <span>I understand that finalizing will lock this encounter and generate the final MDM</span>
+            <span>
+              I understand that finalizing will lock this encounter and generate the final MDM
+            </span>
           </label>
         </div>
 

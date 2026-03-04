@@ -39,7 +39,6 @@ import {
 } from '../../lib/api'
 import { useTestLibrary } from '../../hooks/useTestLibrary'
 import { useCdrLibrary } from '../../hooks/useCdrLibrary'
-import ConfirmationModal from '../ConfirmationModal'
 import TrendAnalysisToggle from '../TrendAnalysisToggle'
 import TrendReportModal from '../TrendReportModal'
 import { useTrendAnalysis } from '../../hooks/useTrendAnalysis'
@@ -705,10 +704,6 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     }
   }, [encounter])
 
-  // PHI confirmation modal state
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [pendingSection, setPendingSection] = useState<SectionNumber | null>(null)
-
   // Section state helpers
   const section1State = useSectionState(encounter, 1)
   const section2State = useSectionState(encounter, 2)
@@ -836,66 +831,56 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   }, [])
 
   /**
-   * Handle section submit click — show PHI confirmation first
+   * Handle section submit click — submit directly (PHI attested at login)
    */
-  const handleSubmitClick = useCallback((section: SectionNumber) => {
-    setPendingSection(section)
-    setShowConfirmModal(true)
-  }, [])
+  const handleSubmitClick = useCallback(
+    async (section: SectionNumber) => {
+      // Clear previous error for this section
+      setSectionErrors((prev) => ({ ...prev, [section]: null }))
 
-  /**
-   * Handle confirmed section submission after PHI acknowledgment
-   */
-  const handleConfirmedSubmit = useCallback(async () => {
-    if (pendingSection === null) return
-    const section = pendingSection
-    setShowConfirmModal(false)
-    setPendingSection(null)
-
-    // Clear previous error for this section
-    setSectionErrors((prev) => ({ ...prev, [section]: null }))
-
-    try {
-      // For section 2, pass the effective working diagnosis string
-      if (section === 2) {
-        const effectiveDx = workingDiagnosis?.selected ?? workingDiagnosis?.custom ?? undefined
-        await submitSection(section, effectiveDx || undefined)
-      } else {
-        await submitSection(section)
-      }
-    } catch (err) {
-      console.error('Submission failed:', err)
-
-      // Parse error and set appropriate state
-      if (err instanceof ApiError) {
-        setSectionErrors((prev) => ({
-          ...prev,
-          [section]: {
-            message: err.message,
-            isRetryable: err.isRetryable,
-            errorType: err.errorType,
-          },
-        }))
-
-        // Show quota exceeded modal if quota error
-        if (err.errorType === 'quota') {
-          setShowQuotaExceeded(true)
+      try {
+        // For section 2, pass the effective working diagnosis string
+        if (section === 2) {
+          const effectiveDx = workingDiagnosis?.selected ?? workingDiagnosis?.custom ?? undefined
+          await submitSection(section, effectiveDx || undefined)
+        } else {
+          await submitSection(section)
         }
-      } else {
-        // Generic error handling
-        const message =
-          err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.'
-        setSectionErrors((prev) => ({
-          ...prev,
-          [section]: {
-            message,
-            isRetryable: true,
-            errorType: 'unknown',
-          },
-        }))
+      } catch (err) {
+        console.error('Submission failed:', err)
+
+        // Parse error and set appropriate state
+        if (err instanceof ApiError) {
+          setSectionErrors((prev) => ({
+            ...prev,
+            [section]: {
+              message: err.message,
+              isRetryable: err.isRetryable,
+              errorType: err.errorType,
+            },
+          }))
+
+          // Show quota exceeded modal if quota error
+          if (err.errorType === 'quota') {
+            setShowQuotaExceeded(true)
+          }
+        } else {
+          // Generic error handling
+          const message =
+            err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.'
+          setSectionErrors((prev) => ({
+            ...prev,
+            [section]: {
+              message,
+              isRetryable: true,
+              errorType: 'unknown',
+            },
+          }))
+        }
       }
-    }
-  }, [pendingSection, submitSection, workingDiagnosis])
+    },
+    [submitSection, workingDiagnosis],
+  )
 
   // E1/A5: Build CDR color map for correlation indicators (single source of truth)
   // Must be above early returns to satisfy rules-of-hooks
@@ -1438,16 +1423,6 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         initialParsedResults={dictationParsedResults}
         initialUnmatchedText={dictationUnmatchedText}
         title="Dictation Results"
-      />
-
-      {/* PHI Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showConfirmModal}
-        onClose={() => {
-          setShowConfirmModal(false)
-          setPendingSection(null)
-        }}
-        onConfirm={handleConfirmedSubmit}
       />
     </div>
   )

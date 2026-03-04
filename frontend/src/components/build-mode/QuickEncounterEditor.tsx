@@ -13,7 +13,6 @@ import { useState, useCallback } from 'react'
 import { useQuickEncounter } from '../../hooks/useQuickEncounter'
 import { formatRoomDisplay, formatPatientIdentifier } from '../../types/encounter'
 import DictationGuide from '../DictationGuide'
-import ConfirmationModal from '../ConfirmationModal'
 import { useToast } from '../../contexts/ToastContext'
 import TrendAnalysisToggle from '../TrendAnalysisToggle'
 import TrendResultsPanel from '../TrendResultsPanel'
@@ -48,25 +47,16 @@ export default function QuickEncounterEditor({ encounterId, onBack }: QuickEncou
   const { analysis, isAnalyzing, analyze, downloadPdf } = useTrendAnalysis()
   const [showGuide, setShowGuide] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showTrendReport, setShowTrendReport] = useState(false)
 
   /**
-   * Handle Generate button click — show PHI confirmation first
+   * Handle Generate button click — submit narrative directly
    */
-  const handleGenerateClick = useCallback(() => {
+  const handleGenerateClick = useCallback(async () => {
     if (!narrative.trim()) {
       showError('Please enter a narrative before generating')
       return
     }
-    setShowConfirmModal(true)
-  }, [narrative, showError])
-
-  /**
-   * Handle MDM generation after PHI confirmation
-   */
-  const handleConfirmedGenerate = useCallback(async () => {
-    setShowConfirmModal(false)
 
     const result = await submitNarrative()
     if (result?.ok) {
@@ -86,7 +76,7 @@ export default function QuickEncounterEditor({ encounterId, onBack }: QuickEncou
         }
       }
     }
-  }, [submitNarrative, showSuccess, analyze])
+  }, [narrative, showError, submitNarrative, showSuccess, analyze])
 
   /**
    * Copy MDM text to clipboard
@@ -371,13 +361,6 @@ Example: 45-year-old male presents with chest pain x 2 hours. Pain is substernal
           onClose={() => setShowTrendReport(false)}
         />
       )}
-
-      {/* PHI Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-        onConfirm={handleConfirmedGenerate}
-      />
     </div>
   )
 }

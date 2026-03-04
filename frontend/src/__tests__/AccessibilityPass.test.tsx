@@ -12,7 +12,6 @@ import ProgressIndicator from '../components/build-mode/shared/ProgressIndicator
 import DifferentialList from '../components/build-mode/shared/DifferentialList'
 import ResultEntry from '../components/build-mode/shared/ResultEntry'
 import CdrCard from '../components/build-mode/shared/CdrCard'
-import ConfirmationModal from '../components/ConfirmationModal'
 import type { DifferentialItem } from '../types/encounter'
 import type { TestDefinition } from '../types/libraries'
 import type { IdentifiedCdr } from '../components/build-mode/shared/getIdentifiedCdrs'
@@ -354,93 +353,5 @@ describe('ResultEntry - Accessibility', () => {
 
     const warning = container.querySelector('.result-entry__cdr-warning')
     expect(warning).toBeNull()
-  })
-})
-
-// ─────────────────────────────────────────────────
-// ConfirmationModal
-// ─────────────────────────────────────────────────
-
-describe('ConfirmationModal - Accessibility', () => {
-  it('has role="dialog" and aria-modal', () => {
-    const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />,
-    )
-
-    const dialog = container.querySelector('[role="dialog"]')
-    expect(dialog).not.toBeNull()
-    expect(dialog?.getAttribute('aria-modal')).toBe('true')
-  })
-
-  it('has aria-labelledby pointing to title', () => {
-    const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />,
-    )
-
-    const dialog = container.querySelector('[role="dialog"]')
-    expect(dialog?.getAttribute('aria-labelledby')).toBe('confirmation-modal-title')
-
-    const title = container.querySelector('#confirmation-modal-title')
-    expect(title).not.toBeNull()
-    expect(title?.textContent).toBe('Confirm Submission')
-  })
-
-  it('closes on Escape key', () => {
-    const onClose = vi.fn()
-    const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={onClose} onConfirm={vi.fn()} />,
-    )
-
-    const dialog = container.querySelector('[role="dialog"]')
-    fireEvent.keyDown(dialog!, { key: 'Escape' })
-    expect(onClose).toHaveBeenCalledTimes(1)
-  })
-
-  it('has warning with role="alert"', () => {
-    const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />,
-    )
-
-    const alert = container.querySelector('.modal-warning[role="alert"]')
-    expect(alert).not.toBeNull()
-  })
-
-  it('hides warning SVG from screen readers', () => {
-    const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} />,
-    )
-
-    const svg = container.querySelector('.warning-icon')
-    expect(svg?.getAttribute('aria-hidden')).toBe('true')
-  })
-
-  it('returns null when not open', () => {
-    const { container } = render(
-      <ConfirmationModal isOpen={false} onClose={vi.fn()} onConfirm={vi.fn()} />,
-    )
-
-    expect(container.innerHTML).toBe('')
-  })
-
-  it('closes on overlay click', () => {
-    const onClose = vi.fn()
-    const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={onClose} onConfirm={vi.fn()} />,
-    )
-
-    const overlay = container.querySelector('.modal-overlay')
-    fireEvent.click(overlay!)
-    expect(onClose).toHaveBeenCalledTimes(1)
-  })
-
-  it('does not close when clicking inside modal content', () => {
-    const onClose = vi.fn()
-    const { container } = render(
-      <ConfirmationModal isOpen={true} onClose={onClose} onConfirm={vi.fn()} />,
-    )
-
-    const content = container.querySelector('.modal-content')
-    fireEvent.click(content!)
-    expect(onClose).not.toHaveBeenCalled()
   })
 })

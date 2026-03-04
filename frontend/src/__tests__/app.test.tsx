@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import App from '../App'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 
 // Mock Firebase to avoid auth errors in test environment
 vi.mock('../lib/firebase', () => ({
@@ -13,14 +13,23 @@ vi.mock('../lib/firebase', () => ({
   db: {},
 }))
 
-// Mock window.alert for jsdom
-vi.stubGlobal('alert', vi.fn())
+// Mock IntersectionObserver for LandingPage slide activation
+beforeAll(() => {
+  if (!globalThis.IntersectionObserver) {
+    globalThis.IntersectionObserver = vi.fn().mockImplementation(() => ({
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn(),
+    })) as unknown as typeof IntersectionObserver
+  }
+  // Mock canvas getContext for film grain
+  HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue(null) as never
+})
 
 describe('App', () => {
-  it('renders MDM Generator app', () => {
+  it('renders MDM landing page', () => {
     render(<App />)
-    const elements = screen.getAllByText(/MDM Generator/)
+    const elements = screen.getAllByText(/MDM/)
     expect(elements.length).toBeGreaterThan(0)
   })
 })
-

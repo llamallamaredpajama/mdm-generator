@@ -2,12 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './lib/firebase'
 import { ToastProvider } from './contexts/ToastContext'
 import Layout from './routes/Layout'
-import Start from './routes/Start'
+import LandingPage from './routes/LandingPage'
 import Compose from './routes/Compose'
 import Preflight from './routes/Preflight'
 import Output from './routes/Output'
 import Settings from './routes/Settings'
-import BuildMode from './routes/BuildMode'
 import './App.css'
 
 function App() {
@@ -15,17 +14,17 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Start />} />
-            <Route path="compose" element={<Compose />} />
-            <Route path="preflight" element={<Preflight />} />
-            <Route path="output" element={<Output />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="build" element={<BuildMode />} />
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route element={<Layout />}>
+              <Route path="compose" element={<Compose />} />
+              <Route path="preflight" element={<Preflight />} />
+              <Route path="output" element={<Output />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="build" element={<Navigate to="/compose" replace />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
+          </Routes>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

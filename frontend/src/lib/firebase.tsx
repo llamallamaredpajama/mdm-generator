@@ -62,11 +62,6 @@ export async function signInWithGoogle() {
     ) {
       return
     }
-    if (authError.code === 'auth/popup-blocked') {
-      alert('Pop-up blocked by your browser. Please allow pop-ups for this site and try again.')
-      return
-    }
-    alert(`Sign in failed: ${authError.message}`)
     throw error
   }
 }
