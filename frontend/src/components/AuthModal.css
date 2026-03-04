@@ -8,7 +8,7 @@
 /* ── Scoped custom properties ── */
 .auth-modal__overlay {
   --am-bg: #121216;
-  --am-surface: #1a1a20;
+  --am-surface: #111114;
   --am-text: #f0f0f2;
   --am-text-muted: #5a5a6e;
   --am-red: #e00;
@@ -98,6 +98,13 @@
   letter-spacing: 0.12em;
   color: var(--am-text);
   animation: am-fade-up 0.6s var(--am-ease-expo) 0.15s both;
+}
+
+.auth-modal__brand-ai {
+  color: var(--am-red);
+  font-family: 'Inter', 'Helvetica Neue', sans-serif;
+  font-weight: 600;
+  font-size: 0.78em;
 }
 
 .auth-modal__brand-dot {

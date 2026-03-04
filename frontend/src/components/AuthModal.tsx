@@ -99,7 +99,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         </button>
 
         <div className="auth-modal__brand">
-          MDM<span className="auth-modal__brand-dot">.</span>
+          <span className="auth-modal__brand-ai">ai</span>MDM
+          <span className="auth-modal__brand-dot">.</span>
         </div>
         <div className="auth-modal__accent-bar" />
         <p className="auth-modal__subtitle" id="auth-modal-title">
