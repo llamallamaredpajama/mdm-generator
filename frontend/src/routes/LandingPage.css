@@ -57,7 +57,7 @@
     rgba(0, 0, 0, 0.025) 1px,
     rgba(0, 0, 0, 0.025) 2px
   );
-  z-index: 9998;
+  z-index: var(--z-landing-grain);
   pointer-events: none;
 }
 
@@ -71,7 +71,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100000;
+  z-index: var(--z-landing-preloader);
   transition:
     opacity 1.2s var(--cl-ease-cine),
     visibility 1.2s;
@@ -123,7 +123,7 @@
 .cl-grain {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: var(--z-landing-grain);
   pointer-events: none;
   opacity: 0;
   transition: opacity 1s ease;
@@ -145,7 +145,7 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 10002;
+  z-index: var(--z-landing-nav);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -253,7 +253,7 @@
   background: rgba(0, 0, 0, 0.96);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  z-index: 10001;
+  z-index: var(--z-landing-menu);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -289,7 +289,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 10000;
+  z-index: var(--z-landing-menu);
   opacity: 0;
   visibility: hidden;
   transition: all 0.4s ease;
@@ -348,7 +348,7 @@
 .cl-slide__overlay {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: var(--z-base);
   background:
     linear-gradient(
       100deg,
@@ -367,7 +367,7 @@
   position: absolute;
   bottom: 13vh;
   left: 2.5rem;
-  z-index: 10;
+  z-index: var(--z-landing-content);
   max-width: clamp(300px, 40vw, 520px);
 }
 
@@ -469,7 +469,7 @@
   right: 2.5rem;
   top: 6rem;
   bottom: 6rem;
-  z-index: 10;
+  z-index: var(--z-landing-content);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -532,7 +532,7 @@
   position: absolute;
   bottom: 2.5rem;
   right: 2.5rem;
-  z-index: 10;
+  z-index: var(--z-landing-content);
   font-family: var(--cl-font-sans);
   font-size: 0.65rem;
   font-weight: 500;
@@ -573,7 +573,7 @@
   position: fixed;
   left: 2.5rem;
   bottom: 2.5rem;
-  z-index: 1000;
+  z-index: var(--z-landing-ui);
   font-family: var(--cl-font-sans);
   font-size: 0.65rem;
   letter-spacing: 0.08em;
@@ -601,7 +601,7 @@
   bottom: 2.5rem;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1000;
+  z-index: var(--z-landing-ui);
   display: flex;
   flex-direction: column;
   align-items: center;

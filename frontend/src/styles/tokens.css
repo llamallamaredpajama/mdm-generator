@@ -140,6 +140,15 @@
   --z-modal: 1000;
   --z-toast: 9999;
 
+  /* Landing Page Z-Index Tiers */
+  --z-landing-content: 10;
+  --z-landing-grain: 500;
+  --z-landing-ui: var(--z-modal); /* 1000 — counter, scroll hint */
+  --z-landing-menu: 1050; /* mobile menu + backdrop */
+  --z-landing-nav: 1100; /* always above menu */
+  --z-landing-preloader: 99999;
+  --z-landing-overlay: 100001; /* auth modal — above everything */
+
   /* ─────────────────────────────────────────
      Layout
      ───────────────────────────────────────── */
