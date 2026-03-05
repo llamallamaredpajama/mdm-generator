@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════
-   ONBOARDING WIZARD
-   Cinematic design language matching the
-   landing page. Scoped under .onboarding
+   ONBOARDING WIZARD — Brushstroke X Redesign
+   Cinematic X brushstroke backdrop with
+   paint-dissolve text transitions.
    ═══════════════════════════════════════════ */
 
 .onboarding {
@@ -28,38 +28,30 @@
   overflow-y: auto;
 }
 
-/* ── Background ── */
-.onboarding__bg {
+/* ── Photo Background (static, no Ken Burns) ── */
+.onboarding__photo-bg {
   position: fixed;
   inset: -20px;
-  background:
-    radial-gradient(ellipse at 20% 50%, rgba(238, 0, 0, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(238, 0, 0, 0.05) 0%, transparent 50%),
-    linear-gradient(180deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%);
-  filter: grayscale(100%) contrast(1.15) brightness(0.85);
-  animation: ob-ken-burns 30s var(--cl-ease-cine, ease) infinite alternate;
   z-index: 0;
 }
 
-@keyframes ob-ken-burns {
-  0% {
-    transform: scale(1) translate(0, 0);
-  }
-  100% {
-    transform: scale(1.08) translate(-10px, -5px);
-  }
+.onboarding__photo-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(100%) contrast(1.15) brightness(0.9) blur(5px);
 }
 
-.onboarding__bg-overlay {
+.onboarding__photo-overlay {
   position: fixed;
   inset: 0;
+  z-index: 1;
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.7) 0%,
-    rgba(0, 0, 0, 0.4) 50%,
-    rgba(0, 0, 0, 0.7) 100%
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 0.3) 50%,
+    rgba(0, 0, 0, 0.6) 100%
   );
-  z-index: 1;
 }
 
 .onboarding__scanlines {
@@ -85,6 +77,8 @@
   font-family: var(--cl-font-display, 'Impact', sans-serif);
   font-size: 1.6rem;
   letter-spacing: 0.12em;
+  opacity: 0;
+  animation: ob-content-arrive 1s var(--cl-ease-expo, ease) 2s forwards;
 }
 
 .onboarding__brand-ai {
@@ -98,65 +92,145 @@
   color: var(--cl-color-accent, #e00);
 }
 
-/* ── Card ── */
-.onboarding__card {
+/* ═══════════════════════════════════════════
+   BRUSHSTROKE STRIPS — Per-step paint backdrop
+   ═══════════════════════════════════════════ */
+.ob-strokes {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.ob-strokes__strip {
+  position: absolute;
+  left: -15%;
+  width: 130%;
+  object-fit: cover;
+
+  /* Mask-based left-to-right paint reveal */
+  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 40%, transparent 60%);
+  mask-image: linear-gradient(to right, #000 0%, #000 40%, transparent 60%);
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
+  -webkit-mask-position: 200% 0;
+  mask-position: 200% 0;
+  animation: ob-paint-on 1.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* After entrance, strips animate faster on step change */
+.ob-strokes__strip--instant {
+  animation-duration: 0.8s;
+}
+
+@keyframes ob-paint-on {
+  to {
+    -webkit-mask-position: 0% 0;
+    mask-position: 0% 0;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   CONTENT CONTAINER — Centered, no card
+   ═══════════════════════════════════════════ */
+.onboarding__content {
   position: relative;
   z-index: 5;
   width: min(640px, calc(100vw - 2rem));
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-left: 2px solid var(--cl-color-accent, #e00);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: clamp(1.5rem, 3vw, 2.5rem);
-  animation: ob-card-enter 0.8s var(--cl-ease-expo, ease) both;
+  overflow: visible;
 }
 
-@keyframes ob-card-enter {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.onboarding__inner {
+  position: relative;
 }
 
-/* ── Step content transitions ── */
+/* ── Step content ── */
 .onboarding__step-content {
+  position: relative;
+  z-index: 1;
   min-height: 280px;
   display: flex;
   flex-direction: column;
+  text-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  animation: ob-content-arrive 1.2s var(--cl-ease-expo, ease) 2.3s forwards;
 }
 
-.onboarding__step-content--forward {
-  animation: ob-slide-in-right 0.5s var(--cl-ease-expo, ease) both;
-}
-
-.onboarding__step-content--back {
-  animation: ob-slide-in-left 0.5s var(--cl-ease-expo, ease) both;
-}
-
-@keyframes ob-slide-in-right {
+@keyframes ob-content-arrive {
   from {
     opacity: 0;
-    transform: translateX(40px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
-@keyframes ob-slide-in-left {
+/* After entrance completes, remove delays so step transitions work normally */
+.onboarding--entered .onboarding__step-content,
+.onboarding--entered .onboarding__nav {
+  opacity: 1;
+  transform: none;
+  animation: none;
+}
+
+/* ═══════════════════════════════════════════
+   PAINT-DISSOLVE TRANSITIONS
+   Turbulence mask that erodes like paint.
+   ═══════════════════════════════════════════ */
+.ob-dissolve-in,
+.ob-dissolve-out {
+  --ob-dissolve-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='4'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='discrete' tableValues='0 1 1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23t)'/%3E%3C/svg%3E");
+  -webkit-mask-image: var(--ob-dissolve-mask);
+  mask-image: var(--ob-dissolve-mask);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* After dissolve-in completes, remove mask for full visibility */
+.ob-dissolve-done {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.ob-dissolve-in {
+  animation: ob-dissolve-in 0.7s var(--cl-ease-cine, ease) both;
+}
+
+.ob-dissolve-out {
+  animation: ob-dissolve-out 0.4s var(--cl-ease-cine, ease) both;
+}
+
+@keyframes ob-dissolve-in {
   from {
-    opacity: 0;
-    transform: translateX(-40px);
+    -webkit-mask-size: 0% 0%;
+    mask-size: 0% 0%;
   }
   to {
-    opacity: 1;
-    transform: translateX(0);
+    -webkit-mask-size: 500% 500%;
+    mask-size: 500% 500%;
+  }
+}
+
+@keyframes ob-dissolve-out {
+  from {
+    -webkit-mask-size: 500% 500%;
+    mask-size: 500% 500%;
+  }
+  to {
+    -webkit-mask-size: 0% 0%;
+    mask-size: 0% 0%;
   }
 }
 
@@ -170,12 +244,21 @@
 
 /* ── Navigation ── */
 .onboarding__nav {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  opacity: 0;
+  animation: ob-content-arrive 0.8s var(--cl-ease-expo, ease) 2.7s forwards;
+  transition: opacity 0.3s ease;
+}
+
+.onboarding--entered .onboarding__nav--faded {
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 .onboarding__btn {
@@ -216,31 +299,39 @@
 }
 
 /* ═══════════════════════════════════════════
-   STEP PROGRESS BAR
+   STEP PROGRESS — Fixed bottom, full width
    ═══════════════════════════════════════════ */
-.ob-progress {
-  margin-bottom: 2rem;
+.ob-progress-scratch {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 10;
+  opacity: 0;
+  animation: ob-content-arrive 0.6s var(--cl-ease-expo, ease) 2.5s forwards;
 }
 
-.ob-progress__bar {
-  height: 2px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-  margin-bottom: 0.75rem;
+.onboarding--entered .ob-progress-scratch {
+  opacity: 1;
+  transform: none;
+  animation: none;
 }
 
-.ob-progress__fill {
-  height: 100%;
+.ob-progress-scratch__track {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.ob-progress-scratch__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
   background: var(--cl-color-accent, #e00);
+  box-shadow: 0 0 8px rgba(238, 0, 0, 0.3);
   transition: width 0.5s var(--cl-ease-expo, ease);
-}
-
-.ob-progress__label {
-  font-family: var(--cl-font-display, 'Impact', sans-serif);
-  font-size: 0.7rem;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--cl-color-text-dim, #999);
 }
 
 /* ═══════════════════════════════════════════
@@ -725,19 +816,33 @@
   }
 }
 
-/* ── Reduced Motion ── */
+/* ═══════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
-  .onboarding__bg {
+  .ob-strokes__strip {
+    -webkit-mask-position: 0% 0;
+    mask-position: 0% 0;
     animation: none;
   }
 
-  .onboarding__card {
+  .ob-dissolve-in,
+  .ob-dissolve-out {
+    -webkit-mask-image: none;
+    mask-image: none;
     animation: none;
   }
 
-  .onboarding__step-content--forward,
-  .onboarding__step-content--back {
+  .onboarding__brand,
+  .onboarding__step-content,
+  .onboarding__nav {
+    opacity: 1;
+    transform: none;
     animation: none;
+  }
+
+  .onboarding__nav {
+    transition: none;
   }
 
   .ob-demo__narrative {
@@ -766,7 +871,9 @@
   }
 }
 
-/* ── Responsive ── */
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
 @media (max-width: 900px) {
   .ob-plans__grid {
     grid-template-columns: 1fr;
@@ -784,9 +891,8 @@
     font-size: 1.2rem;
   }
 
-  .onboarding__card {
+  .onboarding__content {
     width: calc(100vw - 1rem);
-    margin: 3.5rem 0.5rem 1rem;
     padding: 1.25rem;
   }
 
