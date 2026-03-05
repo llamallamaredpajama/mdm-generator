@@ -21,7 +21,7 @@ export interface WizardData {
 }
 
 export default function Onboarding() {
-  const { user, onboardingCompleted, refreshOnboardingStatus } = useAuth()
+  const { user, authLoading, onboardingCompleted, refreshOnboardingStatus } = useAuth()
   const { setLocation, setEnabled } = useTrendAnalysisContext()
   const navigate = useNavigate()
 
@@ -78,6 +78,11 @@ export default function Onboarding() {
       setSubmitting(false)
     }
   }, [data, user, navigate, refreshOnboardingStatus, setLocation, setEnabled])
+
+  // Wait for Firebase to restore session
+  if (authLoading) {
+    return null
+  }
 
   // Redirect if not authenticated
   if (!user) {

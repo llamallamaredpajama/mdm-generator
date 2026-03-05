@@ -8,7 +8,12 @@ import { useAuth } from '../lib/firebase'
  * - Otherwise -> render children (Outlet)
  */
 export default function OnboardingGuard() {
-  const { user, onboardingCompleted } = useAuth()
+  const { user, authLoading, onboardingCompleted } = useAuth()
+
+  // Wait for Firebase to restore session before deciding
+  if (authLoading) {
+    return null
+  }
 
   // Not authenticated
   if (!user) {

@@ -88,12 +88,14 @@ export function useAuthToken() {
 
 interface AuthContextValue {
   user: User | null
+  authLoading: boolean // true until first onAuthStateChanged fires
   onboardingCompleted: boolean | null // null = loading
   refreshOnboardingStatus: () => void
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
+  authLoading: true,
   onboardingCompleted: null,
   refreshOnboardingStatus: () => {},
 })
@@ -103,6 +105,7 @@ export const useAuth = () => useContext(AuthContext)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null)
 
   const fetchOnboardingStatus = useCallback(async (u: User) => {
@@ -119,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     return onAuthStateChanged(getAppAuth(), (u) => {
       setUser(u)
+      setAuthLoading(false)
       if (u) {
         fetchOnboardingStatus(u)
       } else {
@@ -134,8 +138,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchOnboardingStatus])
 
   const value = useMemo(
-    () => ({ user, onboardingCompleted, refreshOnboardingStatus }),
-    [user, onboardingCompleted, refreshOnboardingStatus],
+    () => ({ user, authLoading, onboardingCompleted, refreshOnboardingStatus }),
+    [user, authLoading, onboardingCompleted, refreshOnboardingStatus],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
