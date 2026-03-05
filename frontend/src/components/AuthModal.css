@@ -52,6 +52,8 @@
   padding: 64px 52px 56px;
   width: 100%;
   max-width: 440px;
+  max-height: calc(100dvh - 48px); /* overlay padding: 24px top + 24px bottom */
+  overflow-y: auto;
   border: 1px solid var(--am-border-subtle);
   box-shadow:
     12px 12px 24px var(--am-shadow-dark),
@@ -255,7 +257,7 @@
 .auth-modal__attestation span {
   color: var(--am-text-muted);
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   font-weight: 300;
   line-height: 1.5;
 }
@@ -340,6 +342,42 @@
 
   .auth-modal__footer {
     margin-top: 36px;
+  }
+}
+
+/* Short viewports — reduce vertical padding */
+@media (max-height: 680px) {
+  .auth-modal__card {
+    padding: 40px 52px 36px;
+  }
+  .auth-modal__accent-bar {
+    margin: 16px auto 24px;
+  }
+  .auth-modal__subtitle {
+    margin-bottom: 36px;
+  }
+}
+
+/* Very short viewports (e.g. landscape phone ~430px) */
+@media (max-height: 520px) {
+  .auth-modal__card {
+    padding: 24px 32px 20px;
+    border-radius: 20px;
+  }
+  .auth-modal__accent-bar {
+    margin: 12px auto 16px;
+  }
+  .auth-modal__subtitle {
+    margin-bottom: 20px;
+  }
+  .auth-modal__attestation {
+    margin-bottom: 20px;
+  }
+  .auth-modal__google-btn {
+    padding: 20px 28px;
+  }
+  .auth-modal__footer {
+    margin-top: 20px;
   }
 }
 
