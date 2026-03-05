@@ -64,7 +64,7 @@ One-shot MDM generation: single narrative → complete MDM + extracted patient i
 Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS wastewater, NNDSS notifiable diseases). **Non-blocking** — failures must never prevent MDM generation. Surveillance context is stored on the encounter doc during Section 1 and reused at finalize. PDF trend reports require Pro+ plan.
 
 ## Deployment
-- **Frontend**: Firebase Hosting → https://mdm-generator.web.app
+- **Frontend**: Firebase Hosting → https://aimdm.app (custom domain), https://mdm-generator.web.app (default)
   - `firebase deploy --only hosting --project mdm-generator` (from project root, after building frontend)
 - **Backend**: Cloud Run → `mdm-backend` (us-central1)
   - Build: `gcloud builds submit --config /dev/stdin --project mdm-generator . <<'CLOUDBUILD'`
@@ -80,6 +80,60 @@ Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS
 - **`signInWithPopup` only** -- no redirect fallback (cross-origin cookie issues)
 - **`redirect_uri_mismatch` errors**: Check OAuth redirect URIs in [GCP Console](https://console.cloud.google.com/apis/credentials?project=mdm-generator) first -- do NOT add COOP headers or workarounds (5-min propagation delay on URI changes)
 - **Auth domain**: `mdm-generator.web.app` (set in `frontend/.env.production`)
+- **Authorized domains**: `localhost`, `127.0.0.1`, `mdm-generator.firebaseapp.com`, `mdm-generator.web.app`, `aimdm.app` — manageable via Identity Toolkit API (see GCP / Firebase Programmatic Admin)
+
+## GCP / Firebase Programmatic Admin
+
+**Claude has full access to Firebase MCP tools, `gcloud`/`firebase` CLIs, and GCP REST APIs.** Default stance: execute programmatically first. Never tell the user to do something in the console without first verifying no API/CLI/MCP tool exists.
+
+### Tool Priority Chain
+1. **Firebase MCP tools** — cleanest for data/config operations (no auth token management needed)
+2. **CLI** (`firebase`, `gcloud`) — for deployments and infrastructure MCP doesn't cover
+3. **GCP REST APIs** (via `gcloud auth print-access-token` + `curl`) — for gaps where neither MCP nor CLI has a command
+4. **GCP Console** (browser) — absolute last resort, only when no programmatic API exists
+
+### Firebase MCP Plugin — Available Tools
+| Domain | Tools | Use For |
+|--------|-------|---------|
+| Firestore | `firestore_get/add/update/delete_document`, `list_documents`, `list_collections` | All Firestore CRUD — prefer over REST |
+| Auth Users | `auth_get_users`, `auth_update_user` | User lookup, custom claims, disable/enable |
+| Security Rules | `firebase_get_security_rules`, `firebase_validate_security_rules` | Read and validate Firestore/Storage/RTDB rules |
+| Project/Apps | `firebase_get_project`, `firebase_list_apps`, `firebase_get_sdk_config` | Project info, app config |
+| RTDB | `realtimedatabase_get/set_data` | Realtime Database reads/writes |
+| Storage | `storage_get_object_download_url` | Get download URLs |
+| Messaging | `messaging_send_message` | Send push notifications |
+| Remote Config | `remoteconfig_get/update_template` | Read/update remote config |
+| Functions | `functions_list_functions`, `functions_get_logs` | List deployed functions, read logs |
+| Knowledge | `developerknowledge_search/get_documents` | Firebase documentation search |
+
+### CLI / REST API — For Operations MCP Doesn't Cover
+| Operation | Method |
+|-----------|--------|
+| Firebase Auth authorized domains | Identity Toolkit REST API (see pattern below) |
+| Firebase Auth config (read/update) | Identity Toolkit REST API |
+| Cloud Build (Docker images) | `gcloud builds submit` |
+| Cloud Run deploy/config | `gcloud run deploy`, `gcloud run services update` |
+| Firebase Hosting deploy | `firebase deploy --only hosting` |
+
+### REST API Auth Pattern
+```bash
+ACCESS_TOKEN=$(gcloud auth print-access-token)
+curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+     -H "x-goog-user-project: mdm-generator" \
+     "https://identitytoolkit.googleapis.com/admin/v2/projects/mdm-generator/config"
+```
+
+### Console-Only Operations (no stable API)
+- GCP OAuth 2.0 client JavaScript origins / redirect URIs — [GCP Credentials Console](https://console.cloud.google.com/apis/credentials?project=mdm-generator) only
+
+### Decision Framework
+| Confidence | Action |
+|------------|--------|
+| >90%, minor change | Do it, inform the user what you did |
+| <90% or major/destructive | Ask for approval, but state: "I can do this programmatically with your go-ahead" |
+| Console-only operation | Ask user, explain why it requires the console |
+
+**NEVER say "you need to do this manually" without first verifying no MCP tool, CLI command, or REST API exists.**
 
 ## Commands
 

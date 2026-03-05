@@ -263,7 +263,7 @@ app.use((req, res, next) => {
   const origin = req.headers.origin
   // Allow any localhost origin (Vite auto-increments ports) or listed/Firebase origins
   const isLocalhost = origin?.match(/^http:\/\/localhost:\d+$/)
-  if (origin && (isLocalhost || allowedOrigins.includes(origin) || origin.match(/^https:\/\/mdm-generator[^.]*\.web\.app$/))) {
+  if (origin && (isLocalhost || allowedOrigins.includes(origin) || origin.match(/^https:\/\/(mdm-generator[^.]*\.web\.app|aimdm\.app)$/))) {
     res.header('Access-Control-Allow-Origin', origin)
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
