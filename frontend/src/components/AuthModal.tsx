@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signInWithGoogle } from '../lib/firebase'
+import { whoAmI } from '../lib/api'
 import './AuthModal.css'
 
 interface AuthModalProps {
@@ -64,8 +65,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     try {
       const result = await signInWithGoogle()
       if (result) {
+        const token = await result.user.getIdToken()
+        const info = await whoAmI(token)
         onClose()
-        navigate('/compose')
+        navigate(info.onboardingCompleted ? '/compose' : '/onboarding')
       }
       // result is undefined when user cancelled — just reset loading
     } catch (err: unknown) {

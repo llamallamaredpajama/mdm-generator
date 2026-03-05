@@ -618,15 +618,18 @@ app.post('/v1/whoami', async (req, res) => {
       const email = decoded.email || ''
       
       // Ensure user exists
-      await userService.ensureUser(uid, email)
-      
+      const user = await userService.ensureUser(uid, email)
+
       // Get usage stats
       const stats = await userService.getUsageStats(uid)
-      
-      return res.json({ 
-        ok: true, 
+
+      return res.json({
+        ok: true,
         uid,
         email,
+        onboardingCompleted: user?.onboardingCompleted ?? true,
+        displayName: user?.displayName ?? null,
+        credentialType: user?.credentialType ?? null,
         ...stats
       })
     } catch (e) {
@@ -2584,6 +2587,55 @@ app.put('/v1/user/options', async (req, res) => {
     console.log({ userId: uid, action: 'update-options', timestamp: new Date().toISOString() })
     return res.json({ ok: true, options: parsed.data })
   } catch (error) {
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ── Onboarding ─────────────────────────────────────────────────────────
+
+const CompleteOnboardingSchema = z.object({
+  displayName: z.string().min(1).max(100),
+  credentialType: z.enum(['MD', 'DO', 'NP', 'PA']),
+  surveillanceLocation: z.object({
+    state: z.string().length(2).optional(),
+    zipCode: z.string().regex(/^\d{5}$/).optional(),
+  }).optional(),
+  acknowledgedLimitations: z.literal(true),
+})
+
+app.post('/v1/user/complete-onboarding', async (req, res) => {
+  try {
+    const uid = await authenticateRequest(req, res)
+    if (!uid) return
+
+    const parsed = CompleteOnboardingSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+    }
+
+    // Guard against re-submission
+    const user = await userService.getUser(uid)
+    if (user?.onboardingCompleted === true) {
+      return res.status(409).json({ error: 'Onboarding already completed' })
+    }
+
+    const { displayName, credentialType, surveillanceLocation } = parsed.data
+    const updateData: Record<string, unknown> = {
+      displayName,
+      credentialType,
+      onboardingCompleted: true,
+      updatedAt: admin.firestore.Timestamp.now(),
+    }
+    if (surveillanceLocation) {
+      updateData.surveillanceLocation = surveillanceLocation
+    }
+
+    await admin.firestore().collection('users').doc(uid).update(updateData)
+    console.log({ userId: uid, action: 'complete-onboarding', timestamp: new Date().toISOString() })
+
+    return res.json({ ok: true })
+  } catch (error) {
+    console.error(error)
     return res.status(500).json({ error: 'Internal error' })
   }
 })

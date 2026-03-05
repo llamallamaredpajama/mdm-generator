@@ -167,6 +167,9 @@ export async function whoAmI(userIdToken: string): Promise<{
   ok: boolean
   uid: string
   email?: string
+  onboardingCompleted: boolean
+  displayName: string | null
+  credentialType: 'MD' | 'DO' | 'NP' | 'PA' | null
   plan: 'free' | 'pro' | 'enterprise'
   used: number
   limit: number
@@ -191,6 +194,32 @@ export async function whoAmI(userIdToken: string): Promise<{
       body: JSON.stringify({ userIdToken }),
     },
     'Authentication check',
+  )
+}
+
+export interface CompleteOnboardingData {
+  displayName: string
+  credentialType: 'MD' | 'DO' | 'NP' | 'PA'
+  surveillanceLocation?: { state?: string; zipCode?: string }
+  acknowledgedLimitations: true
+}
+
+export async function completeOnboarding(
+  userIdToken: string,
+  data: CompleteOnboardingData,
+): Promise<{ ok: boolean }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/user/complete-onboarding`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${userIdToken}`,
+      },
+      body: JSON.stringify(data),
+    },
+    'Completing onboarding',
   )
 }
 

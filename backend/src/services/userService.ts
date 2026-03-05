@@ -11,18 +11,24 @@ export interface UserDocument {
   plan: SubscriptionPlan
   createdAt: FirebaseFirestore.Timestamp
   updatedAt: FirebaseFirestore.Timestamp
-  
+
   // Usage tracking
   usedThisPeriod: number
   periodKey: string // YYYY-MM format
   totalRequests: number
-  
+
   // Subscription details
   subscriptionStartDate?: FirebaseFirestore.Timestamp
   subscriptionEndDate?: FirebaseFirestore.Timestamp
   stripeCustomerId?: string
   stripeSubscriptionId?: string
-  
+
+  // Onboarding
+  onboardingCompleted?: boolean
+  displayName?: string
+  credentialType?: 'MD' | 'DO' | 'NP' | 'PA'
+  surveillanceLocation?: { state?: string; zipCode?: string }
+
   // Feature flags
   features: {
     maxRequestsPerMonth: number
@@ -95,6 +101,7 @@ export class UserService {
       usedThisPeriod: 0,
       periodKey: this.getCurrentPeriodKey(),
       totalRequests: 0,
+      onboardingCompleted: false,
       features: PLAN_FEATURES.free
     }
     

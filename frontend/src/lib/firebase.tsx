@@ -9,7 +9,8 @@ import {
   type User,
 } from 'firebase/auth'
 import { type Firestore, getFirestore } from 'firebase/firestore'
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react'
+import { whoAmI } from './api'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -85,18 +86,56 @@ export function useAuthToken() {
   return token
 }
 
-const AuthContext = createContext<{ user: User | null }>({ user: null })
+interface AuthContextValue {
+  user: User | null
+  onboardingCompleted: boolean | null // null = loading
+  refreshOnboardingStatus: () => void
+}
+
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  onboardingCompleted: null,
+  refreshOnboardingStatus: () => {},
+})
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null)
 
-  useEffect(() => {
-    return onAuthStateChanged(getAppAuth(), (u) => setUser(u))
+  const fetchOnboardingStatus = useCallback(async (u: User) => {
+    try {
+      const token = await u.getIdToken()
+      const info = await whoAmI(token)
+      setOnboardingCompleted(info.onboardingCompleted)
+    } catch {
+      // If whoAmI fails, assume onboarding is complete (backward compat)
+      setOnboardingCompleted(true)
+    }
   }, [])
 
-  const value = useMemo(() => ({ user }), [user])
+  useEffect(() => {
+    return onAuthStateChanged(getAppAuth(), (u) => {
+      setUser(u)
+      if (u) {
+        fetchOnboardingStatus(u)
+      } else {
+        setOnboardingCompleted(null)
+      }
+    })
+  }, [fetchOnboardingStatus])
+
+  const refreshOnboardingStatus = useCallback(() => {
+    if (user) {
+      fetchOnboardingStatus(user)
+    }
+  }, [user, fetchOnboardingStatus])
+
+  const value = useMemo(
+    () => ({ user, onboardingCompleted, refreshOnboardingStatus }),
+    [user, onboardingCompleted, refreshOnboardingStatus],
+  )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
