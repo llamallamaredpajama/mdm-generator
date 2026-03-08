@@ -1,9 +1,12 @@
-import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
+import { motion, AnimatePresence, useTransform } from 'framer-motion'
 import { useAuth } from '../lib/firebase'
 import { completeOnboarding } from '../lib/api'
 import { useTrendAnalysisContext } from '../contexts/TrendAnalysisContext'
 import { usePrefersReducedMotion } from '../hooks/useMediaQuery'
+import { useBrushAnimation } from '../hooks/useBrushAnimation'
+import BrushStroke from '../components/onboarding/BrushStroke'
 import StepProgress from '../components/onboarding/StepProgress'
 import StepLimitations from '../components/onboarding/StepLimitations'
 import StepCredentials from '../components/onboarding/StepCredentials'
@@ -13,14 +16,6 @@ import StepOrientation from '../components/onboarding/StepOrientation'
 import './Onboarding.css'
 
 const STEP_LABELS = ['Limitations', 'Credentials', 'Location', 'Plans', 'Get Started']
-const STEP_STROKES = [
-  '/bg/stroke-1.png',
-  '/bg/stroke-2.png',
-  '/bg/stroke-3.png',
-  '/bg/stroke-4.png',
-  '/bg/stroke-1.png',
-]
-
 export interface WizardData {
   acknowledged: boolean
   displayName: string
@@ -37,7 +32,6 @@ export default function Onboarding() {
   const [step, setStep] = useState(0)
   const [displayStep, setDisplayStep] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
-  const [dissolveComplete, setDissolveComplete] = useState(false)
   const [entered, setEntered] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -48,8 +42,18 @@ export default function Onboarding() {
     surveillanceLocation: null,
   })
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const stepContentRef = useRef<HTMLDivElement>(null)
-  const [typeSteps, setTypeSteps] = useState(40)
+  const enteredRef = useRef(false)
+
+  const { progress } = useBrushAnimation({
+    step: displayStep,
+    isEntered: entered,
+    prefersReducedMotion,
+  })
+  const textClip = useTransform(
+    progress,
+    [0, 0.15, 1],
+    ['inset(0 100% 0 0)', 'inset(0 100% 0 0)', 'inset(0 0% 0 0)'],
+  )
 
   const updateData = useCallback((updates: Partial<WizardData>) => {
     setData((prev) => ({ ...prev, ...updates }))
@@ -64,7 +68,6 @@ export default function Onboarding() {
       }
       setStep(newStep)
       setTransitioning(true)
-      setDissolveComplete(false)
       transitionTimer.current = setTimeout(() => {
         setDisplayStep(newStep)
         setTransitioning(false)
@@ -74,25 +77,14 @@ export default function Onboarding() {
   )
 
   useEffect(() => {
-    const unique = [...new Set(STEP_STROKES)]
-    unique.forEach((src) => {
-      new Image().src = src
-    })
-  }, [])
+    enteredRef.current = entered
+  }, [entered])
 
-  useLayoutEffect(() => {
-    const el = stepContentRef.current
-    if (!el) return
-    const len = el.textContent?.length ?? 0
-    setTypeSteps(Math.max(20, Math.min(80, len)))
-  }, [displayStep])
-
+  // Mark entrance animation complete so subsequent steps use faster timing
   useEffect(() => {
-    // Mark entrance animation complete so subsequent steps skip the intro delay
     const t = setTimeout(() => {
       setEntered(true)
-      setDissolveComplete(true)
-    }, 2500)
+    }, 4000)
     return () => {
       clearTimeout(t)
       if (transitionTimer.current) clearTimeout(transitionTimer.current)
@@ -134,12 +126,6 @@ export default function Onboarding() {
       setSubmitting(false)
     }
   }, [data, user, navigate, refreshOnboardingStatus, setLocation, setEnabled])
-
-  const handleDissolveEnd = useCallback((e: React.AnimationEvent) => {
-    if (e.animationName === 'ob-dissolve-in') {
-      setDissolveComplete(true)
-    }
-  }, [])
 
   // Wait for Firebase to restore session
   if (authLoading) {
@@ -191,13 +177,6 @@ export default function Onboarding() {
   }
 
   const isLastStep = step === STEP_LABELS.length - 1
-  const dissolveClass = !entered
-    ? ''
-    : transitioning
-      ? 'ob-dissolve-out'
-      : dissolveComplete
-        ? 'ob-dissolve-done'
-        : 'ob-dissolve-in'
 
   return (
     <div
@@ -223,24 +202,22 @@ export default function Onboarding() {
         <div className="onboarding__inner">
           {/* Single full-height brushstroke behind all content */}
           {displayStep !== 4 && (
-            <img
-              className={`ob-stroke ob-stroke--${displayStep}${entered ? ' ob-stroke--revealed' : ''}`}
-              src={STEP_STROKES[displayStep]}
-              alt=""
-              loading="eager"
-              aria-hidden="true"
-            />
+            <BrushStroke key={`stroke-${displayStep}`} step={displayStep} progress={progress} />
           )}
 
-          <div
-            ref={stepContentRef}
-            className={`onboarding__step-content ${dissolveClass}`}
-            key={displayStep}
-            onAnimationEnd={handleDissolveEnd}
-            style={{ animationTimingFunction: entered ? undefined : `steps(${typeSteps}, end)` }}
-          >
-            {renderStep()}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={displayStep}
+              className="onboarding__step-content"
+              style={prefersReducedMotion ? undefined : { clipPath: textClip }}
+              initial={prefersReducedMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ opacity: { duration: 0.3 } }}
+            >
+              {renderStep()}
+            </motion.div>
+          </AnimatePresence>
 
           {error && (
             <div className="onboarding__error" role="alert">
@@ -271,17 +248,15 @@ export default function Onboarding() {
               >
                 {submitting ? 'Setting up...' : 'Get Started'}
               </button>
-            ) : canContinue ? (
+            ) : (
               <button
                 className="onboarding__btn onboarding__btn--primary"
                 onClick={goNext}
-                disabled={transitioning}
+                disabled={!canContinue || transitioning}
                 type="button"
               >
                 Continue
               </button>
-            ) : (
-              <div />
             )}
           </div>
         </div>

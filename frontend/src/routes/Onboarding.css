@@ -96,50 +96,6 @@
 }
 
 /* ═══════════════════════════════════════════
-   SINGLE BRUSHSTROKE — Full-height paint backdrop
-   ═══════════════════════════════════════════ */
-.ob-stroke {
-  position: absolute;
-  top: -20rem;
-  left: 50%;
-  margin-left: -55vw;
-  width: 110vw;
-  height: calc(100% + 48rem);
-  object-fit: fill;
-  pointer-events: none;
-  z-index: 0;
-
-  /* Right-edge taper mask (always present) */
-  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 80%, transparent 100%);
-  mask-image: linear-gradient(to right, #000 0%, #000 80%, transparent 100%);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-position: 0% 0;
-  mask-position: 0% 0;
-
-  /* Reveal in sync with text — single unified entrance */
-  clip-path: inset(0 100% 0 0);
-  opacity: 0;
-  animation: ob-text-reveal 2s var(--cl-ease-expo, ease) 0.8s both;
-}
-
-/* After reveal: clear clip-path, slow drip drift */
-.ob-stroke--revealed {
-  clip-path: none;
-  opacity: 1;
-  animation: ob-drip 6s ease-in-out infinite alternate;
-}
-
-@keyframes ob-drip {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(8px);
-  }
-}
-
-/* ═══════════════════════════════════════════
    CONTENT CONTAINER — Centered, no card
    ═══════════════════════════════════════════ */
 .onboarding__content {
@@ -171,9 +127,6 @@
   text-shadow:
     0 1px 4px rgba(0, 0, 0, 0.8),
     0 0 20px rgba(0, 0, 0, 0.5);
-  clip-path: inset(0 100% 0 0);
-  opacity: 0;
-  animation: ob-text-reveal 2s var(--cl-ease-expo, ease) 0.8s both;
 }
 
 @keyframes ob-content-arrive {
@@ -201,72 +154,11 @@
   }
 }
 
-/* After entrance completes, remove delays so step transitions work normally */
-.onboarding--entered .onboarding__step-content {
-  opacity: 1;
-  transform: none;
-  clip-path: none;
-}
-
 .onboarding--entered .onboarding__nav {
   opacity: 1;
   transform: none;
   clip-path: none;
   animation: none;
-}
-
-/* ═══════════════════════════════════════════
-   PAINT-DISSOLVE TRANSITIONS
-   Turbulence mask that erodes like paint.
-   ═══════════════════════════════════════════ */
-.ob-dissolve-in,
-.ob-dissolve-out {
-  --ob-dissolve-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='4'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='discrete' tableValues='0 1 1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23t)'/%3E%3C/svg%3E");
-  -webkit-mask-image: var(--ob-dissolve-mask);
-  mask-image: var(--ob-dissolve-mask);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-}
-
-/* After dissolve-in completes, remove mask for full visibility */
-.ob-dissolve-done {
-  -webkit-mask-image: none;
-  mask-image: none;
-  animation: none;
-  opacity: 1;
-  clip-path: none;
-}
-
-.ob-dissolve-in {
-  animation: ob-dissolve-in 1.5s var(--cl-ease-cine, ease) both;
-}
-
-.ob-dissolve-out {
-  animation: ob-dissolve-out 0.4s var(--cl-ease-cine, ease) both;
-}
-
-@keyframes ob-dissolve-in {
-  from {
-    -webkit-mask-size: 0% 0%;
-    mask-size: 0% 0%;
-  }
-  to {
-    -webkit-mask-size: 500% 500%;
-    mask-size: 500% 500%;
-  }
-}
-
-@keyframes ob-dissolve-out {
-  from {
-    -webkit-mask-size: 500% 500%;
-    mask-size: 500% 500%;
-  }
-  to {
-    -webkit-mask-size: 0% 0%;
-    mask-size: 0% 0%;
-  }
 }
 
 /* ── Error ── */
@@ -288,7 +180,7 @@
   padding-top: clamp(0.75rem, 2vh, 1.5rem);
   clip-path: inset(0 100% 0 0);
   opacity: 0;
-  animation: ob-text-reveal 0.8s var(--cl-ease-expo, ease) 1.2s both;
+  animation: ob-text-reveal 1s var(--cl-ease-expo, ease) 1.8s both;
   transition: opacity 0.3s ease;
 }
 
@@ -870,7 +762,7 @@
   }
 }
 
-.onboarding__btn--primary {
+.onboarding__btn--primary:not(:disabled) {
   animation: ob-btn-fade-in 0.4s ease both;
 }
 
@@ -887,23 +779,6 @@
    REDUCED MOTION
    ═══════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
-  .ob-stroke {
-    animation: none;
-    clip-path: none;
-    opacity: 1;
-  }
-
-  .ob-stroke--revealed {
-    animation: none;
-  }
-
-  .ob-dissolve-in,
-  .ob-dissolve-out {
-    -webkit-mask-image: none;
-    mask-image: none;
-    animation: none;
-  }
-
   .onboarding__brand,
   .onboarding__step-content,
   .onboarding__nav {

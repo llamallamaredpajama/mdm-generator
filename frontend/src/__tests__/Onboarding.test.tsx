@@ -33,13 +33,12 @@ function renderOnboarding() {
 }
 
 describe('Onboarding stroke', () => {
-  it('renders stroke as an img with step-specific src for step 0', () => {
+  it('renders stroke as an SVG with step-specific class for step 0', () => {
     renderOnboarding()
     const strokeEl = document.querySelector('.ob-stroke')
     expect(strokeEl).not.toBeNull()
-    expect(strokeEl!.tagName).toBe('IMG')
-    expect(strokeEl!.className).toContain('ob-stroke--0')
-    expect((strokeEl as HTMLImageElement).src).toContain('stroke-1.png')
+    expect(strokeEl!.tagName.toLowerCase()).toBe('svg')
+    expect((strokeEl as SVGSVGElement).className.baseVal).toContain('ob-stroke--0')
   })
 })
 
@@ -52,9 +51,10 @@ describe('Onboarding step content', () => {
 })
 
 describe('Onboarding conditional button', () => {
-  it('hides Continue button when canContinue is false', () => {
+  it('disables Continue button when canContinue is false', () => {
     renderOnboarding()
-    // Step 0: acknowledged = false → canContinue = false
-    expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull()
+    // Step 0: acknowledged = false → canContinue = false → button present but disabled
+    const btn = screen.getByRole('button', { name: 'Continue' })
+    expect(btn.hasAttribute('disabled') || btn.getAttribute('aria-disabled') === 'true').toBe(true)
   })
 })

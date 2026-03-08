@@ -1,0 +1,10 @@
+/* SVG brushstroke — starts at text left edge, extends toward right viewport edge */
+.ob-stroke {
+  position: absolute;
+  top: calc(-1 * clamp(3rem, 8vh, 6rem));
+  left: -4rem;
+  width: calc(100% + 8rem);
+  height: calc(100% + clamp(4rem, 12vh, 10rem));
+  pointer-events: none;
+  z-index: 0;
+}
