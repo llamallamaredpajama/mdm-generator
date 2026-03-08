@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/firebase'
 import { completeOnboarding } from '../lib/api'
@@ -13,6 +13,13 @@ import StepOrientation from '../components/onboarding/StepOrientation'
 import './Onboarding.css'
 
 const STEP_LABELS = ['Limitations', 'Credentials', 'Location', 'Plans', 'Get Started']
+const STEP_STROKES = [
+  '/bg/stroke-1.png',
+  '/bg/stroke-2.png',
+  '/bg/stroke-3.png',
+  '/bg/stroke-4.png',
+  '/bg/stroke-1.png',
+]
 
 export interface WizardData {
   acknowledged: boolean
@@ -41,6 +48,8 @@ export default function Onboarding() {
     surveillanceLocation: null,
   })
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const stepContentRef = useRef<HTMLDivElement>(null)
+  const [typeSteps, setTypeSteps] = useState(40)
 
   const updateData = useCallback((updates: Partial<WizardData>) => {
     setData((prev) => ({ ...prev, ...updates }))
@@ -63,6 +72,20 @@ export default function Onboarding() {
     },
     [prefersReducedMotion],
   )
+
+  useEffect(() => {
+    const unique = [...new Set(STEP_STROKES)]
+    unique.forEach((src) => {
+      new Image().src = src
+    })
+  }, [])
+
+  useLayoutEffect(() => {
+    const el = stepContentRef.current
+    if (!el) return
+    const len = el.textContent?.length ?? 0
+    setTypeSteps(Math.max(20, Math.min(80, len)))
+  }, [displayStep])
 
   useEffect(() => {
     // Mark entrance animation complete so subsequent steps skip the intro delay
@@ -177,7 +200,9 @@ export default function Onboarding() {
         : 'ob-dissolve-in'
 
   return (
-    <div className={`onboarding${entered ? ' onboarding--entered' : ''}`}>
+    <div
+      className={`onboarding${entered ? ' onboarding--entered' : ''}${displayStep === 4 ? ' onboarding--final' : ''}`}
+    >
       {/* Blurred ER photo background (static) */}
       <div className="onboarding__photo-bg">
         <img src="/bg/Gemini_Generated_Image_vl9d8lvl9d8lvl9d.jpg" alt="" loading="eager" />
@@ -197,18 +222,22 @@ export default function Onboarding() {
       <div className="onboarding__content">
         <div className="onboarding__inner">
           {/* Single full-height brushstroke behind all content */}
-          <img
-            className={`ob-stroke${entered ? ' ob-stroke--revealed' : ''}`}
-            src="/bg/stroke-3.png"
-            alt=""
-            loading="eager"
-            aria-hidden="true"
-          />
+          {displayStep !== 4 && (
+            <img
+              className={`ob-stroke ob-stroke--${displayStep}${entered ? ' ob-stroke--revealed' : ''}`}
+              src={STEP_STROKES[displayStep]}
+              alt=""
+              loading="eager"
+              aria-hidden="true"
+            />
+          )}
 
           <div
+            ref={stepContentRef}
             className={`onboarding__step-content ${dissolveClass}`}
             key={displayStep}
             onAnimationEnd={handleDissolveEnd}
+            style={{ animationTimingFunction: entered ? undefined : `steps(${typeSteps}, end)` }}
           >
             {renderStep()}
           </div>
@@ -242,15 +271,17 @@ export default function Onboarding() {
               >
                 {submitting ? 'Setting up...' : 'Get Started'}
               </button>
-            ) : (
+            ) : canContinue ? (
               <button
                 className="onboarding__btn onboarding__btn--primary"
                 onClick={goNext}
-                disabled={!canContinue || transitioning}
+                disabled={transitioning}
                 type="button"
               >
                 Continue
               </button>
+            ) : (
+              <div />
             )}
           </div>
         </div>
