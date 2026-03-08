@@ -79,6 +79,8 @@ Start with the most dangerous diagnoses and work down. For each differential ite
 | Syncope | Arrhythmia → structural heart → PE → dissection → SAH |
 | Altered Mental Status | Stroke → ICH → meningitis → status epilepticus → hypoglycemia → toxic ingestion |
 
+**Co-managed Comorbidities:** When the narrative documents chronic conditions with objective evidence of exacerbation or poor control (e.g., elevated BP in a hypertensive, hyperglycemia in a diabetic), include these as separately addressed problems in the differential. Place them AFTER all emergent/life-threat conditions to preserve worst-first ordering. Classify per §2.3 (typically CLASS 3 or 4). These add to the Number and Complexity of Problems Addressed (COPA) element and reflect the physician's actual cognitive work in managing these conditions during the encounter.
+
 ### 2.3 Problem Classification Table
 
 Classify every problem by AMA-defined class:
@@ -103,6 +105,7 @@ When clinical decision rules are applicable:
 1. **Identify** all applicable CDRs based on presentation and available data
 2. **Name** the specific rule (e.g., "HEART Score", "Ottawa Ankle Rules", "PECARN")
 3. **Calculate** the score — list each criterion and whether met, not met, or data unavailable
+3a. **Maximize** — when serial values are available (e.g., repeat troponins, serial lactates), use the most abnormal value for CDR scoring. This supports the highest defensible complexity and reflects the complete clinical picture available during the encounter.
 4. **Interpret** the score and state clinical implication (e.g., "HEART Score 3 — Low risk, 1.7% MACE rate")
 5. **Document** missing data points needed for complete calculation
 6. **Apply** results to justify reasoning: use "low probability" rather than "excluded" unless a CDR explicitly supports exclusion (e.g., "PERC negative — PE excluded per validated clinical decision rule")
@@ -212,8 +215,10 @@ MEDICAL DECISION MAKING SUMMARY:
 PROBLEMS CONSIDERED:
 [Classify each problem per §2.3, then list:]
 
-[Condition]: [CLASS].
+[Condition]: CLASS [#] [class name from §2.3].
 Suspected due to: [Inclusion reasoning].
+
+Use both the numeric CLASS number and descriptive name (e.g., "CLASS 11 [Threat to life or bodily function]") for each problem. This dual format supports both human readability and automated algorithmic audit parsing.
 
 [Repeat for all problems — minimum 10 diagnoses per §2.1 rule 7, worst-first per §2.2]
 
@@ -281,6 +286,9 @@ Medications administered:
 - [Drug, dose, route, indication if mentioned; defaults per §2.6]
 - [IF parenteral controlled substances administered: "Parenteral route chosen over oral alternative because [clinical reasoning — e.g., NPO status, severity of symptoms, need for rapid onset, inability to tolerate PO]" — this is a high-risk management element]
 - [IF drug therapy requiring intensive monitoring (e.g., IV vasopressors, antiarrhythmics, sedation agents): Document what monitoring was performed (e.g., continuous telemetry, frequent vitals q5min, end-tidal CO2) and why it was clinically necessary]
+Medications considered but not prescribed:
+- [IF narrative mentions medications considered but not given, list with reasoning]
+- [ELSE apply §2.6 default: list 2 drugs of similar class/usage as actual medication prescribed, with reasoning for not selecting them — e.g., "Clopidogrel considered but deferred to cardiology for catheterization planning"]
 Procedures performed:
 - [Type, indication, outcome, "refer to procedure note"; if not specified, remove per §2.6]
 
