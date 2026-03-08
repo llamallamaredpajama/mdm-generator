@@ -28,8 +28,9 @@ import type {
   TestResult,
   DispositionOption,
 } from '../../types/encounter'
-import { SECTION_TITLES, SECTION_CHAR_LIMITS, formatRoomDisplay } from '../../types/encounter'
+import { SECTION_TITLES, SECTION_CHAR_LIMITS } from '../../types/encounter'
 import { BuildModeStatusCircles } from './shared/CardContent'
+import InlineRoomInput from '../compose/InlineRoomInput'
 import {
   ApiError,
   matchCdrs,
@@ -966,7 +967,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     <div className="encounter-editor">
       {/* Header */}
       <header className="encounter-editor__header">
-        <h1 className="encounter-editor__room">{formatRoomDisplay(encounter.roomNumber)}</h1>
+        <InlineRoomInput
+          value={encounter.roomNumber}
+          encounterId={encounterId}
+          className="encounter-editor__room"
+        />
         <span className="encounter-editor__complaint">{encounter.chiefComplaint}</span>
         <div className="encounter-editor__header-right">
           <BuildModeStatusCircles encounter={encounter} />

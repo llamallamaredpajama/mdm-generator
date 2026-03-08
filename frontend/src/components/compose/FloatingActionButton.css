@@ -1,0 +1,57 @@
+.compose-fab {
+  position: fixed;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: #fff;
+  cursor: pointer;
+  z-index: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4px 16px rgba(220, 53, 69, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s ease;
+}
+
+.compose-fab:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 6px 24px rgba(220, 53, 69, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.compose-fab:active {
+  transform: scale(0.95);
+}
+
+.compose-fab__icon {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.compose-fab--open .compose-fab__icon {
+  transform: rotate(45deg);
+}
+
+@media (min-width: 768px) {
+  .compose-fab {
+    width: 64px;
+    height: 64px;
+    bottom: 32px;
+    right: 32px;
+  }
+
+  .compose-fab__icon {
+    width: 28px;
+    height: 28px;
+  }
+}

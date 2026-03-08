@@ -32,7 +32,7 @@ export default function BuildMode() {
   const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null)
 
   // Fetch encounters from Firestore
-  const { encounters, loading, error, createEncounter, deleteEncounter, clearAllEncounters } = useEncounterList()
+  const { encounters, loading, error, deleteEncounter, clearAllEncounters } = useEncounterList()
 
   /**
    * Handle encounter selection from carousel
@@ -93,7 +93,9 @@ export default function BuildMode() {
         </header>
         <main className="build-mode__main build-mode__main--carousel">
           <div className="build-mode__error">
-            <span className="build-mode__error-icon" aria-hidden="true">⚠️</span>
+            <span className="build-mode__error-icon" aria-hidden="true">
+              ⚠️
+            </span>
             <p className="build-mode__error-message">
               {error.message || 'Failed to load encounters'}
             </p>
@@ -122,9 +124,7 @@ export default function BuildMode() {
           <h1 className="build-mode__title">Build Mode</h1>
         </div>
         <div className="build-mode__header-right">
-          <p className="build-mode__subtitle">
-            Track multiple encounters through your shift
-          </p>
+          <p className="build-mode__subtitle">Track multiple encounters through your shift</p>
         </div>
       </header>
 
@@ -133,7 +133,6 @@ export default function BuildMode() {
         <EncounterCarousel
           encounters={encounters}
           onSelectEncounter={handleSelectEncounter}
-          onCreateEncounter={createEncounter}
           onDeleteEncounter={deleteEncounter}
           onClearAllEncounters={clearAllEncounters}
         />

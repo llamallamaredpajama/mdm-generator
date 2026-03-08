@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import type { EncounterDocument, EncounterMode } from '../../../types/encounter'
+import type { EncounterDocument } from '../../../types/encounter'
 import { getEncounterMode } from '../../../types/encounter'
 import CardContent from '../shared/CardContent'
 import './FullscreenOverlay.css'
@@ -10,8 +10,6 @@ export interface FullscreenOverlayProps {
   encounter: EncounterDocument
   /** Callback when overlay should close */
   onClose: () => void
-  /** Mode context for styling */
-  mode: EncounterMode
   /** Animation phase from parent */
   animationPhase?: 'idle' | 'expanding' | 'expanded' | 'collapsing'
   /** Callback when user wants to edit this encounter */
@@ -34,7 +32,6 @@ export interface FullscreenOverlayProps {
 export default function FullscreenOverlay({
   encounter,
   onClose,
-  mode,
   animationPhase = 'expanded',
   onEdit,
   onDelete,
@@ -66,7 +63,7 @@ export default function FullscreenOverlay({
     if (event.key !== 'Tab' || !overlayRef.current) return
 
     const focusableElements = overlayRef.current.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     )
     const firstElement = focusableElements[0]
     const lastElement = focusableElements[focusableElements.length - 1]
@@ -93,7 +90,7 @@ export default function FullscreenOverlay({
         onClose()
       }
     },
-    [onClose]
+    [onClose],
   )
 
   // Handle edit action
@@ -128,7 +125,7 @@ export default function FullscreenOverlay({
       {/* Content panel */}
       <div
         ref={contentRef}
-        className={`fullscreen-overlay__content fullscreen-overlay__content--mode-${mode}`}
+        className={`fullscreen-overlay__content fullscreen-overlay__content--mode-${getEncounterMode(encounter)}`}
         tabIndex={-1}
       >
         {/* Header with close button */}

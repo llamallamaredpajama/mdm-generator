@@ -88,7 +88,11 @@ function convertEncounterDoc(docId: string, data: DocumentData): EncounterDocume
 /**
  * Parses a room number string into structured parts for sorting
  */
-function parseRoomNumber(room: string): { type: 'word' | 'compound' | 'numeric'; word: string; num: number } {
+function parseRoomNumber(room: string): {
+  type: 'word' | 'compound' | 'numeric'
+  word: string
+  num: number
+} {
   const trimmed = room.trim().toLowerCase()
   const numericMatch = trimmed.match(/^(\d+)/)
   if (numericMatch) {
@@ -107,6 +111,13 @@ function parseRoomNumber(room: string): { type: 'word' | 'compound' | 'numeric';
  * Within types: alphabetical for words, numerical for numbers
  */
 function compareRooms(a: string, b: string): number {
+  const trimA = a.trim()
+  const trimB = b.trim()
+  // Empty rooms sort last
+  if (!trimA && !trimB) return 0
+  if (!trimA) return 1
+  if (!trimB) return -1
+
   const parsedA = parseRoomNumber(a)
   const parsedB = parseRoomNumber(b)
   const typePriority = { word: 0, compound: 1, numeric: 2 }
@@ -128,8 +139,12 @@ export interface UseEncounterListReturn {
   loading: boolean
   /** Error if fetch failed */
   error: Error | null
-  /** Create a new encounter with room number and chief complaint */
-  createEncounter: (roomNumber: string, chiefComplaint: string) => Promise<string>
+  /** Create a new encounter with mode, optional room number and chief complaint */
+  createEncounter: (
+    mode: EncounterMode,
+    roomNumber?: string,
+    chiefComplaint?: string,
+  ) => Promise<string>
   /** Delete an encounter (only allowed for draft/archived status) */
   deleteEncounter: (encounterId: string) => Promise<void>
   /** Delete all encounters in the current mode (batch delete) */
@@ -147,9 +162,8 @@ export interface UseEncounterListReturn {
  * - Creates new encounters with default section structure
  * - Deletes encounters (only draft/archived allowed by rules)
  *
- * @param mode - The encounter mode to filter by ('quick' or 'build')
  */
-export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterListReturn {
+export function useEncounterList(): UseEncounterListReturn {
   const db = getAppDb()
   const { user } = useAuth()
   const [encounters, setEncounters] = useState<EncounterDocument[]>([])
@@ -198,7 +212,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
         console.error('Error listening to encounters:', err)
         setError(err instanceof Error ? err : new Error('Failed to load encounters'))
         setLoading(false)
-      }
+      },
     )
 
     return () => {
@@ -207,25 +221,20 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
   }, [user])
 
   /**
-   * Creates a new encounter with the given room number and chief complaint.
-   * Initializes based on the current mode:
+   * Creates a new encounter with the given mode, optional room number, and chief complaint.
+   * Initializes based on the specified mode:
    * - Quick mode: Sets up quickModeData with draft status
    * - Build mode: Sets up all three sections with pending state
    * Returns the new encounter's document ID.
    */
   const createEncounter = useCallback(
-    async (roomNumber: string, chiefComplaint: string): Promise<string> => {
+    async (
+      encounterMode: EncounterMode,
+      roomNumber?: string,
+      chiefComplaint?: string,
+    ): Promise<string> => {
       if (!user) {
         throw new Error('User must be authenticated to create encounters')
-      }
-
-      if (!roomNumber.trim()) {
-        throw new Error('Room number is required')
-      }
-
-      // Chief complaint required for build mode, optional for quick mode
-      if (mode === 'build' && !chiefComplaint.trim()) {
-        throw new Error('Chief complaint is required')
       }
 
       const encountersRef = collection(db, 'customers', user.uid, 'encounters')
@@ -237,24 +246,21 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
         isLocked: false,
       }
 
-      // Base encounter data common to both modes
       const baseEncounter = {
         userId: user.uid,
-        roomNumber: roomNumber.trim(),
-        chiefComplaint: chiefComplaint.trim(),
+        roomNumber: (roomNumber ?? '').trim(),
+        chiefComplaint: (chiefComplaint ?? '').trim(),
         status: 'draft' as EncounterStatus,
-        mode: mode,
+        mode: encounterMode,
         quotaCounted: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         shiftStartedAt: serverTimestamp(),
       }
 
-      // Mode-specific data
       const modeSpecificData =
-        mode === 'quick'
+        encounterMode === 'quick'
           ? {
-              // Quick mode: initialize quickModeData, sections are not used
               quickModeData: {
                 narrative: '',
                 status: 'draft' as QuickModeStatus,
@@ -265,7 +271,6 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
               section3: { ...defaultSectionData },
             }
           : {
-              // Build mode: initialize all sections
               currentSection: 1,
               section1: { ...defaultSectionData },
               section2: { ...defaultSectionData },
@@ -280,7 +285,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
       const docRef = await addDoc(encountersRef, newEncounter)
       return docRef.id
     },
-    [user, mode]
+    [user],
   )
 
   /**
@@ -296,7 +301,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
       const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
       await deleteDoc(encounterRef)
     },
-    [user]
+    [user],
   )
 
   /**

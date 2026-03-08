@@ -584,6 +584,7 @@ export const getEncounterMode = (encounter: EncounterDocument): EncounterMode =>
  */
 export const formatRoomDisplay = (roomNumber: string): string => {
   const trimmed = roomNumber.trim()
+  if (!trimmed) return 'Unassigned'
   if (/^\d+$/.test(trimmed)) {
     return `Room ${trimmed}`
   }

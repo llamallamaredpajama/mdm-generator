@@ -3,14 +3,14 @@
 /* ===== Container ===== */
 .desktop-kanban {
   display: flex;
-  flex-wrap: wrap;              /* Wrap cards to new rows */
-  justify-content: center;      /* Center cards horizontally */
-  align-content: flex-start;    /* Stack rows at top */
+  flex-wrap: wrap; /* Wrap cards to new rows */
+  justify-content: center; /* Center cards horizontally */
+  align-content: flex-start; /* Stack rows at top */
   gap: 1.5rem;
   width: 100%;
   padding: 1rem;
-  overflow-x: visible;          /* No horizontal scroll */
-  overflow-y: auto;             /* Vertical scroll if needed */
+  overflow-x: visible; /* No horizontal scroll */
+  overflow-y: auto; /* Vertical scroll if needed */
   min-height: 400px;
 }
 
@@ -50,8 +50,8 @@
 }
 
 .flippable-card__front {
-  background: #ffffff;
-  border: 1px solid var(--color-accent, #3b82f6);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   padding: var(--space-lg, 1.5rem);
@@ -59,7 +59,7 @@
 }
 
 .flippable-card__back {
-  background: var(--color-accent, #3b82f6);
+  background: rgba(255, 255, 255, 0.05);
   color: #ffffff;
   transform: rotateY(180deg);
   display: flex;
@@ -73,39 +73,34 @@
 .flippable-card:hover:not(.flippable-card--flipped) .flippable-card__front {
   transform: translateY(-8px);
   box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.15),
-    0 0 20px rgba(59, 130, 246, 0.2);
+    0 12px 24px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(255, 255, 255, 0.05);
 }
 
 .flippable-card__front {
   transition:
     transform 300ms ease-out,
     box-shadow 300ms ease-out;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* ===== Build Mode Styling ===== */
-.desktop-kanban--build-mode .flippable-card__front {
-  border-color: var(--color-build-accent, #3b82f6);
+/* ===== Per-Card Mode Borders ===== */
+.flippable-card--mode-quick .flippable-card__front {
+  border-color: rgba(220, 53, 69, 0.2);
 }
 
-.desktop-kanban--build-mode .flippable-card__back {
-  background: var(--color-build-accent, #3b82f6);
+.flippable-card--mode-quick:hover:not(.flippable-card--flipped) .flippable-card__front {
+  border-color: rgba(220, 53, 69, 0.4);
+  background: rgba(220, 53, 69, 0.03);
 }
 
-/* ===== Quick Mode Styling ===== */
-.desktop-kanban--quick-mode .flippable-card__front {
-  border-color: var(--color-quick-accent, #dc3545);
+.flippable-card--mode-build .flippable-card__front {
+  border-color: rgba(59, 130, 246, 0.2);
 }
 
-.desktop-kanban--quick-mode .flippable-card__back {
-  background: var(--color-quick-accent, #dc3545);
-}
-
-.desktop-kanban--quick-mode .flippable-card:hover:not(.flippable-card--flipped) .flippable-card__front {
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.15),
-    0 0 20px rgba(220, 53, 69, 0.3);
+.flippable-card--mode-build:hover:not(.flippable-card--flipped) .flippable-card__front {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.03);
 }
 
 /* ===== Card Content ===== */
@@ -120,13 +115,13 @@
   margin: 0;
   font-size: var(--font-size-xl, 1.25rem);
   font-weight: var(--font-weight-semibold, 600);
-  color: #1a1a1a;
+  color: #fff;
 }
 
 .flippable-card__complaint {
   margin: 0;
   font-size: var(--font-size-sm, 0.875rem);
-  color: #666666;
+  color: #ccc;
   line-height: var(--line-height-relaxed, 1.625);
   flex-grow: 1;
   display: -webkit-box;
@@ -149,7 +144,7 @@
   padding: var(--space-xs, 0.25rem);
   cursor: pointer;
   border-radius: var(--radius-sm, 4px);
-  color: #999999;
+  color: rgba(255, 255, 255, 0.3);
   transition: all 150ms ease;
   display: flex;
   align-items: center;
@@ -192,13 +187,14 @@
 .fullscreen-overlay__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.95);
   backdrop-filter: blur(4px);
 }
 
 .fullscreen-overlay__content {
   position: relative;
-  background: #ffffff;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl, 16px);
   width: 90%;
   max-width: 600px;
@@ -206,8 +202,8 @@
   overflow-y: auto;
   padding: var(--space-xl, 2rem);
   box-shadow:
-    0 25px 50px rgba(0, 0, 0, 0.25),
-    0 0 40px rgba(59, 130, 246, 0.15);
+    0 25px 50px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(255, 255, 255, 0.03);
   animation: overlay-expand 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -270,17 +266,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
+  background: rgba(255, 255, 255, 0.06);
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  color: #666666;
+  color: rgba(255, 255, 255, 0.6);
   transition: all 150ms ease;
 }
 
 .fullscreen-overlay__close:hover {
-  background: #e5e5e5;
-  color: #1a1a1a;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 .fullscreen-overlay__close:focus-visible {
@@ -306,13 +302,13 @@
   margin: 0;
   font-size: var(--font-size-2xl, 1.5rem);
   font-weight: var(--font-weight-bold, 700);
-  color: #1a1a1a;
+  color: #fff;
 }
 
 /* ===== Fullscreen Complaint ===== */
 .fullscreen-overlay__complaint {
   font-size: var(--font-size-base, 1rem);
-  color: #444444;
+  color: #ccc;
   line-height: var(--line-height-relaxed, 1.625);
   margin-bottom: var(--space-lg, 1.5rem);
 }
@@ -322,7 +318,7 @@
   display: flex;
   gap: var(--space-md, 1rem);
   padding-top: var(--space-lg, 1.5rem);
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .fullscreen-overlay__action-btn {
@@ -381,7 +377,7 @@
   align-items: center;
   justify-content: center;
   min-height: 360px;
-  color: var(--text-secondary, #666666);
+  color: #999;
 }
 
 /* ===== Reduced Motion ===== */

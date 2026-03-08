@@ -1,9 +1,7 @@
 import { useCallback, useState } from 'react'
-import type { EncounterDocument, EncounterMode } from '../../../types/encounter'
+import type { EncounterDocument } from '../../../types/encounter'
 import { getEncounterMode } from '../../../types/encounter'
 import type { UseCardExpansionReturn } from '../../../hooks/useCardExpansion'
-import type { NewEncounterFormData } from '../NewEncounterCard'
-import NewEncounterCard from '../NewEncounterCard'
 import CardContent from '../shared/CardContent'
 import FullscreenOverlay from './FullscreenOverlay'
 import './DesktopKanban.css'
@@ -13,14 +11,10 @@ export interface DesktopKanbanProps {
   encounters: EncounterDocument[]
   /** Card expansion state from useCardExpansion hook */
   expansion: UseCardExpansionReturn
-  /** Mode context (quick or build) */
-  mode: EncounterMode
   /** Callback when a card is selected for editing */
   onSelectEncounter: (id: string) => void
   /** Callback to delete an encounter */
   onDeleteEncounter: (id: string) => Promise<void>
-  /** New encounter form data and handlers */
-  newEncounterForm: NewEncounterFormData
 }
 
 /**
@@ -35,10 +29,8 @@ export interface DesktopKanbanProps {
 export default function DesktopKanban({
   encounters,
   expansion,
-  mode,
   onSelectEncounter,
   onDeleteEncounter,
-  newEncounterForm,
 }: DesktopKanbanProps) {
   // Track which card is being flipped (for flip animation before fullscreen)
   const [flippedCardId, setFlippedCardId] = useState<string | null>(null)
@@ -65,7 +57,7 @@ export default function DesktopKanban({
         }, 100)
       }, 300)
     },
-    [expansion, flippedCardId]
+    [expansion, flippedCardId],
   )
 
   /**
@@ -87,7 +79,7 @@ export default function DesktopKanban({
         onSelectEncounter(encounterId)
       }, 150)
     },
-    [expansion, onSelectEncounter]
+    [expansion, onSelectEncounter],
   )
 
   /**
@@ -101,7 +93,7 @@ export default function DesktopKanban({
         await onDeleteEncounter(encounterId)
       }, 150)
     },
-    [expansion, onDeleteEncounter]
+    [expansion, onDeleteEncounter],
   )
 
   // Find the currently expanded encounter for the overlay
@@ -111,59 +103,55 @@ export default function DesktopKanban({
 
   return (
     <div className="desktop-kanban">
-      {/* New Encounter Card - first item in the grid */}
-      <NewEncounterCard form={newEncounterForm} mode={mode} />
-
       {/* Existing encounter cards */}
       {encounters.map((encounter) => {
-          const isFlipped = flippedCardId === encounter.id
-          const isExpanded = expansion.isExpanded(encounter.id)
-          const isOtherExpanding =
-            expansion.expandedCardId !== null &&
-            expansion.expandedCardId !== encounter.id
+        const isFlipped = flippedCardId === encounter.id
+        const isExpanded = expansion.isExpanded(encounter.id)
+        const isOtherExpanding =
+          expansion.expandedCardId !== null && expansion.expandedCardId !== encounter.id
 
-          return (
-            <button
-              key={encounter.id}
-              type="button"
-              className={[
-                'flippable-card',
-                isFlipped && 'flippable-card--flipped',
-                isExpanded && 'flippable-card--expanded',
-                isOtherExpanding && 'flippable-card--dimmed',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              onClick={() => handleCardClick(encounter.id)}
-              aria-label={`View encounter ${encounter.roomNumber}`}
-              aria-expanded={isExpanded}
-            >
-              <div className="flippable-card__inner">
-                {/* Front face - card content */}
-                <div className="flippable-card__face flippable-card__face--front">
-                  <CardContent
-                    encounter={encounter}
-                    showSectionIndicators={getEncounterMode(encounter) === 'build'}
-                    compact={false}
-                  />
-                </div>
+        return (
+          <button
+            key={encounter.id}
+            type="button"
+            className={[
+              'flippable-card',
+              `flippable-card--mode-${getEncounterMode(encounter)}`,
+              isFlipped && 'flippable-card--flipped',
+              isExpanded && 'flippable-card--expanded',
+              isOtherExpanding && 'flippable-card--dimmed',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => handleCardClick(encounter.id)}
+            aria-label={`View encounter ${encounter.roomNumber}`}
+            aria-expanded={isExpanded}
+          >
+            <div className="flippable-card__inner">
+              {/* Front face - card content */}
+              <div className="flippable-card__face flippable-card__face--front">
+                <CardContent
+                  encounter={encounter}
+                  showSectionIndicators={getEncounterMode(encounter) === 'build'}
+                  compact={false}
+                />
+              </div>
 
-                {/* Back face - shown during flip */}
-                <div className="flippable-card__face flippable-card__face--back">
-                  <div className="flippable-card__loading">
-                    <span className="flippable-card__spinner" />
-                  </div>
+              {/* Back face - shown during flip */}
+              <div className="flippable-card__face flippable-card__face--back">
+                <div className="flippable-card__loading">
+                  <span className="flippable-card__spinner" />
                 </div>
               </div>
-            </button>
-          )
-        })}
+            </div>
+          </button>
+        )
+      })}
 
       {/* Fullscreen overlay portal */}
       {expandedEncounter && expansion.isFullscreen && (
         <FullscreenOverlay
           encounter={expandedEncounter}
-          mode={mode}
           animationPhase={expansion.animationPhase}
           onClose={handleOverlayClose}
           onEdit={handleEditEncounter}

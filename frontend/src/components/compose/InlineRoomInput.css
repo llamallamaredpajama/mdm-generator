@@ -1,0 +1,39 @@
+.inline-room-input {
+  font-family: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+.inline-room-input--display {
+  background: none;
+  border: none;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.inline-room-input--display:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.inline-room-input--editing {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-bottom: 2px solid #e00;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 2px 4px;
+  border-radius: 4px 4px 0 0;
+  outline: none;
+  min-width: 80px;
+  max-width: 200px;
+}

@@ -11,7 +11,8 @@
 
 import { useState, useCallback } from 'react'
 import { useQuickEncounter } from '../../hooks/useQuickEncounter'
-import { formatRoomDisplay, formatPatientIdentifier } from '../../types/encounter'
+import { formatPatientIdentifier } from '../../types/encounter'
+import InlineRoomInput from '../compose/InlineRoomInput'
 import DictationGuide from '../DictationGuide'
 import { useToast } from '../../contexts/ToastContext'
 import TrendAnalysisToggle from '../TrendAnalysisToggle'
@@ -130,7 +131,11 @@ export default function QuickEncounterEditor({ encounterId, onBack }: QuickEncou
       {/* Header */}
       <header className="quick-editor__header">
         <div className="quick-editor__header-left">
-          <h2 className="quick-editor__room">{formatRoomDisplay(encounter.roomNumber)}</h2>
+          <InlineRoomInput
+            value={encounter.roomNumber}
+            encounterId={encounterId}
+            className="quick-editor__room"
+          />
           {encounter.quickModeData?.patientIdentifier && (
             <span className="quick-editor__age-sex">
               {formatPatientIdentifier(encounter.quickModeData.patientIdentifier)}
