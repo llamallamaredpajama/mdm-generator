@@ -103,12 +103,29 @@ const AuthContext = createContext<AuthContextValue>({
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext)
 
+// Dev-mode mock user for environments where Google OAuth popups don't work
+// (e.g., cmux embedded browser). Activate with ?dev-auth=1 in the URL.
+// Only available when import.meta.env.DEV is true — stripped from production builds.
+const DEV_MOCK_USER =
+  import.meta.env.DEV && new URLSearchParams(window.location.search).has('dev-auth')
+    ? ({
+        uid: 'dev-mock-uid',
+        email: 'dev@localhost',
+        displayName: 'Dev User',
+        photoURL: null,
+        getIdToken: () => Promise.resolve('dev-mock-token'),
+      } as unknown as User)
+    : null
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
-  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null)
+  const [user, setUser] = useState<User | null>(DEV_MOCK_USER)
+  const [authLoading, setAuthLoading] = useState(!DEV_MOCK_USER)
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(
+    DEV_MOCK_USER ? false : null,
+  )
 
   const fetchOnboardingStatus = useCallback(async (u: User) => {
+    if (DEV_MOCK_USER) return // skip backend call with mock user
     try {
       const token = await u.getIdToken()
       const info = await whoAmI(token)
@@ -120,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
+    if (DEV_MOCK_USER) return // no real auth listener needed
     return onAuthStateChanged(getAppAuth(), (u) => {
       setUser(u)
       setAuthLoading(false)

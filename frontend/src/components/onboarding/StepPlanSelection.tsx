@@ -42,8 +42,8 @@ export default function StepPlanSelection() {
             <div className="ob-plan-card__name">{plan.name}</div>
             <div className="ob-plan-card__price">{plan.price}</div>
             <ul className="ob-plan-card__features">
-              {plan.features.map((feature, idx) => (
-                <li key={idx} className="ob-plan-card__feature">
+              {plan.features.map((feature, fIdx) => (
+                <li key={fIdx} className="ob-plan-card__feature">
                   {feature}
                 </li>
               ))}

@@ -78,7 +78,7 @@
   font-size: 1.6rem;
   letter-spacing: 0.12em;
   opacity: 0;
-  animation: ob-content-arrive 1s var(--cl-ease-expo, ease) 2s forwards;
+  animation: ob-content-arrive 1s var(--cl-ease-expo, ease) 0.5s forwards;
 }
 
 .onboarding__brand-ai {
@@ -93,39 +93,62 @@
 }
 
 /* ═══════════════════════════════════════════
-   BRUSHSTROKE STRIPS — Per-step paint backdrop
+   SINGLE BRUSHSTROKE — Full-height paint backdrop
    ═══════════════════════════════════════════ */
-.ob-strokes {
+.ob-stroke {
   position: absolute;
-  inset: 0;
-  z-index: 0;
+  top: -20rem;
+  left: 50%;
+  margin-left: -55vw;
+  width: 110vw;
+  height: calc(100% + 48rem);
+  object-fit: fill;
   pointer-events: none;
-  overflow: visible;
+  z-index: 0;
+
+  /* Base state: visible with right-edge taper.
+     The paint-on animation overrides mask during reveal;
+     once the animation is removed (--revealed), these base
+     values keep the stroke visible — preventing blink.
+     No opacity transitions — mask-only hiding avoids blink. */
+  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 80%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 0%, #000 80%, transparent 100%);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-position: 0% 0;
+  mask-position: 0% 0;
+
+  animation: ob-paint-on 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s both;
 }
 
-.ob-strokes__strip {
-  position: absolute;
-  left: -15%;
-  width: 130%;
-  object-fit: cover;
-
-  /* Mask-based left-to-right paint reveal */
-  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 40%, transparent 60%);
-  mask-image: linear-gradient(to right, #000 0%, #000 40%, transparent 60%);
-  -webkit-mask-size: 300% 100%;
-  mask-size: 300% 100%;
-  -webkit-mask-position: 200% 0;
-  mask-position: 200% 0;
-  animation: ob-paint-on 1.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+/* After reveal: slow drip drift, base mask stays visible */
+.ob-stroke--revealed {
+  animation: ob-drip 6s ease-in-out infinite alternate;
 }
 
-/* After entrance, strips animate faster on step change */
-.ob-strokes__strip--instant {
-  animation-duration: 0.8s;
+@keyframes ob-drip {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(8px);
+  }
 }
 
 @keyframes ob-paint-on {
+  from {
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 40%, transparent 60%);
+    mask-image: linear-gradient(to right, #000 0%, #000 40%, transparent 60%);
+    -webkit-mask-size: 300% 100%;
+    mask-size: 300% 100%;
+    -webkit-mask-position: 200% 0;
+    mask-position: 200% 0;
+  }
   to {
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 80%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 0%, #000 80%, transparent 100%);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
     -webkit-mask-position: 0% 0;
     mask-position: 0% 0;
   }
@@ -137,31 +160,35 @@
 .onboarding__content {
   position: relative;
   z-index: 5;
-  width: min(640px, calc(100vw - 2rem));
-  min-height: 100dvh;
+  width: min(640px, calc(100vw - clamp(1rem, 3vw, 2rem) * 2));
+  min-height: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: clamp(1.5rem, 3vw, 2.5rem);
+  padding: clamp(1rem, 4vw, 2.5rem);
+  padding-top: clamp(3rem, 8vh, 5rem);
+  padding-bottom: clamp(2rem, 4vh, 3rem);
   overflow: visible;
 }
 
 .onboarding__inner {
   position: relative;
+  min-height: 360px;
 }
 
 /* ── Step content ── */
 .onboarding__step-content {
   position: relative;
   z-index: 1;
-  min-height: 280px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   text-shadow:
     0 1px 4px rgba(0, 0, 0, 0.8),
     0 0 20px rgba(0, 0, 0, 0.5);
+  clip-path: inset(0 100% 0 0);
   opacity: 0;
-  animation: ob-content-arrive 1.2s var(--cl-ease-expo, ease) 2.3s forwards;
+  animation: ob-text-reveal 1.4s var(--cl-ease-expo, ease) 0.8s both;
 }
 
 @keyframes ob-content-arrive {
@@ -175,11 +202,31 @@
   }
 }
 
+@keyframes ob-text-reveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  to {
+    clip-path: inset(0 0% 0 0);
+    opacity: 1;
+  }
+}
+
 /* After entrance completes, remove delays so step transitions work normally */
-.onboarding--entered .onboarding__step-content,
+.onboarding--entered .onboarding__step-content {
+  opacity: 1;
+  transform: none;
+  clip-path: none;
+}
+
 .onboarding--entered .onboarding__nav {
   opacity: 1;
   transform: none;
+  clip-path: none;
   animation: none;
 }
 
@@ -202,6 +249,9 @@
 .ob-dissolve-done {
   -webkit-mask-image: none;
   mask-image: none;
+  animation: none;
+  opacity: 1;
+  clip-path: none;
 }
 
 .ob-dissolve-in {
@@ -249,10 +299,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
+  margin-top: clamp(1rem, 3vh, 2rem);
+  padding-top: clamp(0.75rem, 2vh, 1.5rem);
+  clip-path: inset(0 100% 0 0);
   opacity: 0;
-  animation: ob-content-arrive 0.8s var(--cl-ease-expo, ease) 2.7s forwards;
+  animation: ob-text-reveal 0.8s var(--cl-ease-expo, ease) 1.2s both;
   transition: opacity 0.3s ease;
 }
 
@@ -263,7 +314,7 @@
 
 .onboarding__btn {
   font-family: var(--cl-font-sans, 'Inter', sans-serif);
-  font-size: 0.65rem;
+  font-size: clamp(0.6rem, 0.55rem + 0.25vw, 0.75rem);
   font-weight: 500;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -309,7 +360,7 @@
   height: 3px;
   z-index: 10;
   opacity: 0;
-  animation: ob-content-arrive 0.6s var(--cl-ease-expo, ease) 2.5s forwards;
+  animation: ob-content-arrive 0.6s var(--cl-ease-expo, ease) 1s forwards;
 }
 
 .onboarding--entered .ob-progress-scratch {
@@ -343,6 +394,9 @@
   letter-spacing: 0.04em;
   margin-bottom: 1.5rem;
   line-height: 1;
+  text-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.95),
+    0 0 30px rgba(0, 0, 0, 0.7);
 }
 
 .ob-step__subtitle {
@@ -352,6 +406,9 @@
   color: rgba(255, 255, 255, 0.7);
   margin-bottom: 1.5rem;
   line-height: 1.6;
+  text-shadow:
+    0 1px 6px rgba(0, 0, 0, 0.9),
+    0 0 24px rgba(0, 0, 0, 0.6);
 }
 
 .ob-limitations__list {
@@ -367,7 +424,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  font-size: 0.9rem;
+  font-size: clamp(0.78rem, 0.7rem + 0.3vw, 0.95rem);
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.5;
 }
@@ -438,7 +495,7 @@
 
 .ob-credentials__label {
   display: block;
-  font-size: 0.7rem;
+  font-size: clamp(0.6rem, 0.55rem + 0.2vw, 0.75rem);
   font-weight: 500;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -480,11 +537,11 @@
 
 .ob-credentials__pill {
   font-family: var(--cl-font-sans, 'Inter', sans-serif);
-  font-size: 0.65rem;
+  font-size: clamp(0.55rem, 0.5rem + 0.2vw, 0.7rem);
   font-weight: 500;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  padding: 0.6rem 1.5rem;
+  padding: clamp(0.4rem, 0.5vw, 0.6rem) clamp(1rem, 2vw, 1.5rem);
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: none;
   color: var(--cl-color-text, #fff);
@@ -564,12 +621,12 @@
 .ob-plans__grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
 .ob-plan-card {
-  padding: 1.25rem;
+  padding: 1rem;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: border-color 0.3s ease;
@@ -583,13 +640,13 @@
 
 .ob-plan-card__name {
   font-family: var(--cl-font-display, 'Impact', sans-serif);
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 0.9rem + 0.3vw, 1.2rem);
   letter-spacing: 0.06em;
   margin-bottom: 0.25rem;
 }
 
 .ob-plan-card__price {
-  font-size: 0.75rem;
+  font-size: clamp(0.65rem, 0.6rem + 0.2vw, 0.75rem);
   color: var(--cl-color-text-dim, #999);
   margin-bottom: 0.75rem;
 }
@@ -605,7 +662,7 @@
 }
 
 .ob-plan-card__feature {
-  font-size: 0.75rem;
+  font-size: clamp(0.65rem, 0.6rem + 0.2vw, 0.75rem);
   color: rgba(255, 255, 255, 0.7);
   display: flex;
   align-items: center;
@@ -820,9 +877,17 @@
    REDUCED MOTION
    ═══════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
-  .ob-strokes__strip {
+  .ob-stroke {
+    animation: none;
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 80%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 0%, #000 80%, transparent 100%);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
     -webkit-mask-position: 0% 0;
     mask-position: 0% 0;
+  }
+
+  .ob-stroke--revealed {
     animation: none;
   }
 
@@ -838,6 +903,7 @@
   .onboarding__nav {
     opacity: 1;
     transform: none;
+    clip-path: none;
     animation: none;
   }
 
@@ -875,10 +941,6 @@
    RESPONSIVE
    ═══════════════════════════════════════════ */
 @media (max-width: 900px) {
-  .ob-plans__grid {
-    grid-template-columns: 1fr;
-  }
-
   .ob-orientation__cards {
     grid-template-columns: 1fr;
   }
@@ -892,12 +954,11 @@
   }
 
   .onboarding__content {
-    width: calc(100vw - 1rem);
     padding: 1.25rem;
   }
 
-  .onboarding__step-content {
-    min-height: 220px;
+  .ob-plans__grid {
+    grid-template-columns: 1fr;
   }
 
   .ob-location__fields {

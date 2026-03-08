@@ -82,6 +82,23 @@ Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS
 - **Auth domain**: `mdm-generator.web.app` (set in `frontend/.env.production`)
 - **Authorized domains**: `localhost`, `127.0.0.1`, `mdm-generator.firebaseapp.com`, `mdm-generator.web.app`, `aimdm.app` — manageable via Identity Toolkit API (see GCP / Firebase Programmatic Admin)
 
+### Dev-Mode Auth Bypass (cmux / Embedded Browsers)
+
+Google OAuth `signInWithPopup` **does not work** in the cmux embedded browser (popups are blocked). To view auth-gated routes during dev:
+
+1. Navigate to any route with `?dev-auth=1` query param: `http://localhost:5173/onboarding?dev-auth=1`
+2. A mock `User` object is injected into `AuthProvider` — route guards pass, UI renders normally
+3. `onboardingCompleted` defaults to `false` so onboarding routes are accessible
+
+**Implementation**: `frontend/src/lib/firebase.tsx` — `DEV_MOCK_USER` constant, evaluated at module load. Gated behind `import.meta.env.DEV` so it's **tree-shaken out of production builds**.
+
+**Limitations**: Backend calls that verify the ID token will fail (mock token is `'dev-mock-token'`). Use for UI development only. For full e2e testing, sign in via a real browser.
+
+**When setting up cmux browser splits**: Always append `?dev-auth=1` to localhost URLs for auth-gated routes:
+```bash
+cmux browser open-split 'http://localhost:5173/onboarding?dev-auth=1'
+```
+
 ## GCP / Firebase Programmatic Admin
 
 **Claude has full access to Firebase MCP tools, `gcloud`/`firebase` CLIs, and GCP REST APIs.** Default stance: execute programmatically first. Never tell the user to do something in the console without first verifying no API/CLI/MCP tool exists.

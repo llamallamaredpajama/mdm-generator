@@ -14,40 +14,6 @@ import './Onboarding.css'
 
 const STEP_LABELS = ['Limitations', 'Credentials', 'Location', 'Plans', 'Get Started']
 
-/** Per-step brushstroke strip configs: [image, top%, height%, flip?] */
-const STEP_STROKES: [string, number, number, boolean?][][] = [
-  // Step 0 — Limitations: title+subtitle, 4 bullets, checkbox+nav
-  [
-    ['/bg/stroke-1.png', -8, 36], // title + subtitle
-    ['/bg/stroke-2.png', 16, 50], // bullet list (overlaps strip 1)
-    ['/bg/stroke-4.png', 52, 56, true], // checkbox + nav (generous)
-  ],
-  // Step 1 — Credentials: title+subtitle, name input, pills+nav
-  [
-    ['/bg/stroke-4.png', -8, 38], // title + subtitle
-    ['/bg/stroke-1.png', 18, 38, true], // name field
-    ['/bg/stroke-2.png', 42, 66], // credential pills + nav
-  ],
-  // Step 2 — Surveillance: title+subtitle, dropdowns, helper+nav
-  [
-    ['/bg/stroke-1.png', -8, 38], // title + subtitle
-    ['/bg/stroke-3.png', 20, 40, true], // fields
-    ['/bg/stroke-4.png', 46, 62], // helper + nav
-  ],
-  // Step 3 — Plans: title+subtitle, plan cards, badges+nav
-  [
-    ['/bg/stroke-2.png', -8, 30, true], // title + subtitle
-    ['/bg/stroke-3.png', 14, 52], // plan cards
-    ['/bg/stroke-1.png', 52, 56], // badges + nav
-  ],
-  // Step 4 — Orientation: title+subtitle, mode cards, demo+nav
-  [
-    ['/bg/stroke-4.png', -8, 30], // title + subtitle
-    ['/bg/stroke-1.png', 12, 40, true], // mode cards
-    ['/bg/stroke-2.png', 40, 68], // demo + nav
-  ],
-]
-
 export interface WizardData {
   acknowledged: boolean
   displayName: string
@@ -100,7 +66,10 @@ export default function Onboarding() {
 
   useEffect(() => {
     // Mark entrance animation complete so subsequent steps skip the intro delay
-    const t = setTimeout(() => setEntered(true), 3500)
+    const t = setTimeout(() => {
+      setEntered(true)
+      setDissolveComplete(true)
+    }, 2500)
     return () => {
       clearTimeout(t)
       if (transitionTimer.current) clearTimeout(transitionTimer.current)
@@ -143,8 +112,10 @@ export default function Onboarding() {
     }
   }, [data, user, navigate, refreshOnboardingStatus, setLocation, setEnabled])
 
-  const handleDissolveEnd = useCallback(() => {
-    setDissolveComplete(true)
+  const handleDissolveEnd = useCallback((e: React.AnimationEvent) => {
+    if (e.animationName === 'ob-dissolve-in') {
+      setDissolveComplete(true)
+    }
   }, [])
 
   // Wait for Firebase to restore session
@@ -197,11 +168,13 @@ export default function Onboarding() {
   }
 
   const isLastStep = step === STEP_LABELS.length - 1
-  const dissolveClass = transitioning
-    ? 'ob-dissolve-out'
-    : dissolveComplete
-      ? 'ob-dissolve-done'
-      : 'ob-dissolve-in'
+  const dissolveClass = !entered
+    ? ''
+    : transitioning
+      ? 'ob-dissolve-out'
+      : dissolveComplete
+        ? 'ob-dissolve-done'
+        : 'ob-dissolve-in'
 
   return (
     <div className={`onboarding${entered ? ' onboarding--entered' : ''}`}>
@@ -223,24 +196,14 @@ export default function Onboarding() {
       {/* Content — centered, no card wrapper */}
       <div className="onboarding__content">
         <div className="onboarding__inner">
-          {/* Per-step brushstroke strips — positioned behind text */}
-          <div className="ob-strokes" key={`strokes-${displayStep}`} aria-hidden="true">
-            {(STEP_STROKES[displayStep] ?? []).map(([src, top, height, flip], i) => (
-              <img
-                key={`${displayStep}-${i}`}
-                className={`ob-strokes__strip${entered ? ' ob-strokes__strip--instant' : ''}`}
-                src={src}
-                alt=""
-                loading="eager"
-                style={{
-                  top: `${top}%`,
-                  height: `${height}%`,
-                  animationDelay: entered ? `${i * 0.15}s` : `${0.3 + i * 0.4}s`,
-                  transform: flip ? 'scaleX(-1)' : undefined,
-                }}
-              />
-            ))}
-          </div>
+          {/* Single full-height brushstroke behind all content */}
+          <img
+            className={`ob-stroke${entered ? ' ob-stroke--revealed' : ''}`}
+            src="/bg/stroke-3.png"
+            alt=""
+            loading="eager"
+            aria-hidden="true"
+          />
 
           <div
             className={`onboarding__step-content ${dissolveClass}`}
