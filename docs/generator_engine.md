@@ -373,7 +373,30 @@ v2 adds conditional documentation blocks for 5 special populations (§3.4): trau
 
 ### 5.12 Protective vs Dangerous Phrases (v2)
 
-v2 adds a two-column reference table (§4.2) mapping protective phrases (use) vs dangerous phrases (never use), drawn from medico-legal research. The FAILURE CONDITIONS section (§4) ensures the LLM self-checks against 10 must-have elements before output.
+v2 adds a two-column reference table (§4.2) mapping protective phrases (use) vs dangerous phrases (never use), drawn from medico-legal research. The FAILURE CONDITIONS section (§4) ensures the LLM self-checks against 12 must-have elements before output (updated from 10).
+
+### 5.13 Billing Capture Optimization (v2 update)
+
+v2 adds rules and template structures to optimize for highest supportable E/M code and algorithmic payer review resilience:
+
+**New Core Rules (§2.1):**
+- **Rule 9** — Timestamp preservation: clinical event times (medication administration, procedures, consultant contact) preserved in output when present in narrative
+- **Rule 10** — Algorithmic review resilience: each MDM element documented with sufficient specificity to survive automated payer review (no reliance on clinical inference)
+- **Rule 11** — Modifier 25 awareness: when procedures accompany E/M, MDM documentation stands independently from procedure documentation
+
+**New Template Elements:**
+- **SDOH documentation** (§2.6 defaults + §3.1 conditional block): Social determinants captured when mentioned, removed when absent
+- **Bounce-back protocol** (§2.9): Return visits trigger fresh differential, prior record review, and explicit changed/unchanged findings documentation
+- **Risk-informed decisions** (§3.1 CLINICAL REASONING): Explicit linkage between risks identified in RISK ASSESSMENT and actions taken
+- **External physician discussion** (§3.1 DATA COLLECTED): Elevated to dedicated subsection with name, time, content, recommendations, and follow-up reasoning
+- **Parenteral route justification** (§3.1 TREATMENT): IV controlled substances documented with clinical reasoning for parenteral over oral route
+- **Intensive monitoring documentation** (§3.1 TREATMENT): Drug therapy requiring monitoring documented with specific monitoring performed and clinical necessity
+- **Transfer/EMTALA** (§3.2): 6-element EMTALA documentation block for inter-facility transfers
+- **Time-bound return precautions** (§3.1 DISPOSITION): Specific timeframes tied to worst-first diagnoses replace generic "return if worse"
+
+**Updated Consent Language:** Consent boilerplate replaced with intervention-specific language including patient verbalization of understanding.
+
+**Updated Lab/Imaging Format:** Flat test lists replaced with "Test — Result — Clinical significance" interpretation format.
 
 ---
 
@@ -403,10 +426,10 @@ The complete output follows this structure:
 ```
 EMERGENCY DEPARTMENT MEDICAL DECISION MAKING PROCESS:
 MEDICAL DECISION MAKING SUMMARY:
-  [Brief statement with age/sex/chief complaint/complexity driver]
+  [Presenting-symptom-anchored opening with worst-first diagnoses and complexity level]
 
 PROBLEMS CONSIDERED:
-  [Numbered list using 13-category classification]
+  [Numbered list using 11-category classification]
 
 RISK ASSESSMENT:
   - Highest risk element: [Specific intervention/decision]
@@ -418,26 +441,31 @@ RISK ASSESSMENT:
 CLINICAL REASONING AND MANAGEMENT:
   - Evaluation approach: [...]
   - Key decision points: [...]
+  - Risk-informed decisions: [Links risks to actions taken]
+  - Social determinants: [IF mentioned in narrative]
 
 DATA COLLECTED, REVIEWED AND ANALYZED:
-  - Laboratory: [...]
-  - Imaging: [...]
+  - Laboratory: [Test — Result — Clinical significance]
+  - Imaging: [Study — Findings — Clinical significance]
   - EKG: [...]
   - External records: [...]
+  - External physician discussion: [Name, time, content, recommendations]
 
 WORKING DIAGNOSIS: [...]
 
 TREATMENT, PROCEDURES, INTERVENTIONS:
-  - Rationale: [...]
-  - Medications: [...]
+  - Rationale: [Intervention-specific consent with patient verbalization]
+  - Medications: [+ parenteral justification, + intensive monitoring]
   - Procedures: [...]
 
 DISPOSITION DECISION PROCESS:
   - Reassessments: [...]
   - Response to treatment: [...]
-  - External discussions: [...]
+  - External discussions: [+ consultant influence on disposition]
 
 DISPOSITION: [Admit/Discharge/Transfer/AMA with rationale]
+  - Transfer: [EMTALA 6-element documentation]
+  - Return precautions: [Time-bound, tied to worst-first diagnoses]
 
 ATTESTATION:
   This documentation was generated from the direct clinical input of the treating physician, based on the patient encounter as described. All content has been reviewed by the physician for accuracy and completeness.

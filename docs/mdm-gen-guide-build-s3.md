@@ -33,7 +33,7 @@ Generate a complete, copy-pastable MDM document following this structure:
 ### EMERGENCY DEPARTMENT MEDICAL DECISION MAKING PROCESS
 
 **MEDICAL DECISION MAKING SUMMARY:**
-- This [age][sex] presents with [chief complaint] requiring [complexity level] medical decision-making based on [primary complexity driver].
+- This [age][sex] presents with [chief complaint]. The presenting symptoms of [key symptoms] necessitate evaluation for potentially life-threatening conditions including [top 2-3 worst-first diagnoses], requiring [high/moderate/low] complexity medical decision-making.
 
 **PROBLEMS CONSIDERED:**
 [For each problem from the differential, classify using the Problem Classification Table below and format as:]
@@ -68,16 +68,27 @@ Evaluation approach:
 Key decision points:
 - [Critical thinking demonstrated, referencing test results and CDR scores]
 
+Risk-informed decisions:
+- [For each significant risk identified in RISK ASSESSMENT: "Given the risk of [X], [specific decision/action] was taken because [reasoning]"]
+
+[IF social factors mentioned in presentation (housing, transportation, support, insurance, language barriers):]
+Social determinants affecting management:
+- [Document specific social factors and their impact on clinical decisions]
+[ELSE remove this block]
+
 **DATA COLLECTED, REVIEWED AND ANALYZED:**
 Tests:
-- Laboratory tests: [List each test from S2 results with values and interpretation. If no labs ordered: "considered but given limited utility, not warranted at this time"]
-- Imaging studies: [List each imaging study from S2 results with findings. If none: "benefit not deemed greater than risk"]
+- Laboratory tests: [For each test from S2 results: Test — Result — Clinical significance/reasoning. If no labs ordered: "considered but given limited utility, not warranted at this time"]
+- Imaging studies: [For each imaging study from S2 results: Study — Findings — Clinical significance. If none: "benefit not deemed greater than risk"]
 - EKG/Rhythm strips: [If ECG ordered, list interpretation. If not ordered, omit this line entirely]
 
 Documents and other sources:
 - External records: [If mentioned in presentation]
 - Independent historian: [EMS/Family/Facility if mentioned]
 - PDMP review: considered but would not change management
+External physician discussion:
+- [IF consultant/specialist discussion occurred (evidenced by "discussed with", "spoke with", "called", "consulted"): "Discussed with [specialist name/role] at [time]: [Content of discussion]. [Specialist] recommended [recommendations]. [Recommendations followed/modified because: reasoning]"]
+- [ELSE remove this subsection entirely]
 
 Independent Interpretation:
 [For each test with results, provide brief clinical interpretation]
@@ -90,7 +101,7 @@ Independent Interpretation:
 
 **TREATMENT, PROCEDURES, INTERVENTIONS:**
 Rationale:
-- For all interventions chosen, pt agreed that potential benefit outweighed the potential risks and gave consent
+- Risks and benefits of [specific intervention(s)] discussed with patient. Patient verbalized understanding and consented to proceed. [IF narrative mentions specific risks discussed, include them; ELSE use this general consent language]
 
 Medications administered:
 - [From S3 treatments. Format: Drug, dose, route, indication if mentioned. If no dose/route: "see MAR for dosing". If no drugs: "see MAR"]
@@ -109,6 +120,7 @@ Response to treatment:
 External Discussions:
 - [If disposition is admit/observation/transfer: document with whom discussed]
 - [If disposition is discharge and no discussion mentioned: "discussion with referred physician considered; patient/family demonstrate clear understanding of issues and close follow-up with their physician was recommended"]
+- [IF consultant discussion documented in DATA COLLECTED: "As discussed with [specialist], [brief reference to how recommendation influenced disposition]"]
 
 Risk mitigation strategies:
 - [Specific actions taken to reduce risk based on presentation and treatment]
@@ -122,13 +134,21 @@ Risk mitigation strategies:
 - If alcohol withdrawal is the highest risk element: include alcohol withdrawal admission language
 - If substance abuse is the highest risk element: include substance abuse admission language
 
+[IF transfer THEN document all EMTALA elements:]
+1. Physician certification of medical necessity for transfer
+2. Receiving facility acceptance (physician name, facility, time)
+3. Records and imaging sent with patient
+4. Qualified transport arranged
+5. Patient informed consent for transfer
+6. Clinical reasoning why current facility cannot provide required care
+
 Discharge instructions: [If discharged]
 - Primary and all other relevant diagnoses explained
 - Incidental findings reported to the patient
 - Medications prescribed: [from S3]
 - Medications considered but not prescribed: [list 2 drugs of similar class if not mentioned]
 - Follow-up recommended: [from S3 follow-up instructions]
-- Return precautions: any worsening or new symptoms, especially severe pain or difficulty with normal bodily function
+- Return precautions: Return to ED [within timeframe based on condition, e.g., "within 24 hours" / "within 72 hours" / "immediately"] if [specific symptoms tied to worst-first diagnoses]. Any worsening or new symptoms, especially severe pain or difficulty with normal bodily function. [Additional time-bound precautions as clinically indicated]
 - Patient understanding verified
 
 ## Problem Classification Table

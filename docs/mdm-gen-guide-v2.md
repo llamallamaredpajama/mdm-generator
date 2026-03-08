@@ -60,6 +60,9 @@ Presenting symptoms drive MDM complexity, NOT final diagnosis. A chest pain work
 6. Remove empty sections rather than using placeholders.
 7. Minimum 10 diagnoses in every differential: 3-5 emergent conditions + 3-5 non-emergent conditions + additional as clinically indicated.
 8. Document clinical reasoning (WHY decisions were made, not just WHAT was done).
+9. When the narrative includes specific times for clinical events (medication administration, procedure, change in condition, consultant contact), preserve these timestamps in the output.
+10. Document each MDM element with sufficient specificity to survive automated algorithmic review — do not rely on clinical inference; spell out the reasoning explicitly.
+11. When procedures are performed alongside E/M evaluation: ensure MDM documentation stands independently from procedure documentation. The E/M service must be clearly distinguishable and separately identifiable from any procedure performed.
 
 ### 2.2 Worst-First Differential Protocol
 
@@ -153,6 +156,8 @@ When a component is not specified in the narrative, apply these defaults:
 | PDMP review | Not mentioned | "considered but would not change management" |
 | External records | Not mentioned | "[Source and relevance]" placeholder — include if mentioned |
 | Independent historian | Not discussed | Include ONLY if physician directly discussed/spoke with historian (EMS, family, facility, PCP), as evidenced by phrases like "spoke with PMD", "discussed with", "I was told by [provider]", "EMS reported". Mere mention of another provider in patient history (e.g., "seen in urgent care", "PCP prescribed metformin") does NOT qualify — remove this component entirely. |
+| Social determinants | Specific factors mentioned (housing, transportation, support, insurance) | Document specific factors and their impact on clinical decisions |
+| Social determinants | Not mentioned | Remove this component |
 
 ### 2.7 Forbidden Patterns
 
@@ -180,6 +185,16 @@ When a component is not specified in the narrative, apply these defaults:
 "Patient is at high risk of premature death from trauma, organ failure or overdose from continued substance abuse and is unable to abstain due to severity of withdrawal symptoms. This necessitates admission to observation for treatment and monitoring to control such symptoms and reduce such risks."
 [ELSE REMOVE entirely]
 
+### 2.9 Bounce-Back Visit Protocol
+
+[IF narrative indicates return visit / bounce-back THEN:]
+- Document review of prior medical record
+- Note changed/unchanged findings since prior visit
+- Review of prior lab/imaging results
+- Generate fresh differential diagnosis per worst-first protocol (§2.2), unencumbered by prior assessment
+- Document this is a return visit with explicit reasoning for different/same assessment
+[ELSE REMOVE this section entirely]
+
 ---
 
 ## 3. OUTPUT FORMAT
@@ -192,7 +207,7 @@ EMERGENCY DEPARTMENT MEDICAL DECISION MAKING PROCESS:
 
 MEDICAL DECISION MAKING SUMMARY:
 
-- This [age][sex] presents with [chief complaint] requiring complex medical decision-making based on [primary complexity driver].
+- This [age][sex] presents with [chief complaint]. The presenting symptoms of [key symptoms] necessitate evaluation for potentially life-threatening conditions including [top 2-3 worst-first diagnoses], requiring [high/moderate/low] complexity medical decision-making.
 
 PROBLEMS CONSIDERED:
 [Classify each problem per §2.3, then list:]
@@ -228,15 +243,26 @@ Key decision points:
 Shared decision-making:
 - [Document patient/family involvement in decisions when applicable]
 
+Risk-informed decisions:
+- [For each significant risk identified in RISK ASSESSMENT: "Given the risk of [X], [specific decision/action] was taken because [reasoning]"]
+
+[IF social factors mentioned in narrative (housing, transportation, support, insurance, language barriers):]
+Social determinants affecting management:
+- [Document specific social factors and their impact on clinical decisions]
+[ELSE remove this block]
+
 DATA COLLECTED, REVIEWED AND ANALYZED:
 Tests:
-- Laboratory tests: [List each unique test; default per §2.6]
-- Imaging studies: [List each unique study; default per §2.6]
+- Laboratory tests: [For each test: Test — Result — Clinical significance/reasoning; default per §2.6]
+- Imaging studies: [For each study: Study — Findings — Clinical significance; default per §2.6]
 - EKG/Rhythm strips: [List interpretation; if not specified, remove per §2.6]
 Documents and other sources:
 - External records: [Source and relevance]
 - Independent historian: [ONLY if physician directly discussed/spoke with historian, as evidenced by phrases like "spoke with PMD", "discussed with", "I was told by [provider]", "EMS reported" — document who and key information obtained. If narrative only mentions another provider in passing history, remove this line entirely]
 - PDMP review: [Default per §2.6]
+External physician discussion:
+- [IF consultant/specialist discussion occurred (evidenced by "discussed with", "spoke with", "called", "consulted"): "Discussed with [specialist name/role] at [time]: [Content of discussion]. [Specialist] recommended [recommendations]. [Recommendations followed/modified because: reasoning]"]
+- [ELSE remove this subsection entirely]
 Independent Interpretation:
 [Use §2.5 patterns for imaging, ECG, POCUS]
 - [Test type]: [Brief clinical interpretation]
@@ -250,9 +276,11 @@ WORKING DIAGNOSIS:
 
 TREATMENT, PROCEDURES, INTERVENTIONS:
 Rationale:
-- for all [interventions chosen], pt agreed that potential benefit outweighed the potential risks and gave consent
+- Risks and benefits of [specific intervention(s)] discussed with patient. Patient verbalized understanding and consented to proceed. [IF narrative mentions specific risks discussed, include them; ELSE use this general consent language]
 Medications administered:
 - [Drug, dose, route, indication if mentioned; defaults per §2.6]
+- [IF parenteral controlled substances administered: "Parenteral route chosen over oral alternative because [clinical reasoning — e.g., NPO status, severity of symptoms, need for rapid onset, inability to tolerate PO]" — this is a high-risk management element]
+- [IF drug therapy requiring intensive monitoring (e.g., IV vasopressors, antiarrhythmics, sedation agents): Document what monitoring was performed (e.g., continuous telemetry, frequent vitals q5min, end-tidal CO2) and why it was clinically necessary]
 Procedures performed:
 - [Type, indication, outcome, "refer to procedure note"; if not specified, remove per §2.6]
 
@@ -267,6 +295,7 @@ Response to treatment:
 
 External Discussions:
 - [Apply external discussion defaults per §2.6 based on disposition type]
+- [IF consultant discussion documented in DATA COLLECTED: "As discussed with [specialist], [brief reference to how recommendation influenced disposition]"]
 
 Risk mitigation strategies:
 - [Specific actions taken to reduce risk]
@@ -284,7 +313,7 @@ Discharge instructions: [If discharged]
 - Medications prescribed: [list]
 - Medications considered but not prescribed: [list; default per §2.6]
 - Follow-up recommended / contact information provided: [Who and when]
-- Return precautions: any worsening or new symptoms, especially severe pain or difficulty with normal bodily function. [Specific symptoms — never generic per §2.7]
+- Return precautions: Return to ED [within timeframe based on condition, e.g., "within 24 hours" / "within 72 hours" / "immediately"] if [specific symptoms tied to worst-first diagnoses]. Any worsening or new symptoms, especially severe pain or difficulty with normal bodily function. [Additional time-bound precautions as clinically indicated — never generic per §2.7]
 - Patient understanding verified
 
 This documentation was generated from the direct clinical input of the treating physician, based on the patient encounter as described. All content has been reviewed by the physician for accuracy and completeness.
@@ -312,6 +341,14 @@ This documentation was generated from the direct clinical input of the treating 
 - Document consultant discussion (name, time, content, recommendations)
 - Document clinical rationale for level of care (floor vs stepdown vs ICU)
 - Document need for cardiac monitoring if applicable
+
+**[IF transfer THEN document all EMTALA elements:]**
+1. Physician certification of medical necessity for transfer
+2. Receiving facility acceptance (physician name, facility, time)
+3. Records and imaging sent with patient
+4. Qualified transport arranged
+5. Patient informed consent for transfer
+6. Clinical reasoning why current facility cannot provide required care
 
 ### 3.3 Quality Metrics Time Windows
 
@@ -360,6 +397,8 @@ Before submitting, verify ALL of the following are present. If any is missing, r
 8. Shared decision-making documented when applicable
 9. Disposition rationale tied to clinical findings
 10. No fabricated information — every statement traceable to narrative input or explicit defaults (§2.6)
+11. Lab/imaging results include clinical significance statements (not flat-listed without interpretation)
+12. Presenting symptoms (not final diagnosis) anchor the complexity justification in MDM Summary opening
 
 ### 4.2 Protective vs Dangerous Phrases
 
