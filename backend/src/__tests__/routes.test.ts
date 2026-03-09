@@ -812,15 +812,13 @@ describe('POST /v1/build-mode/process-section2', () => {
   })
 
   it('returns 200 with MDM preview', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION2_RESPONSE })
-
     const res = await request(app)
       .post('/v1/build-mode/process-section2')
       .send(validBody)
 
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(true)
-    expect(res.body.mdmPreview).toBeDefined()
+    expect(res.body.isLocked).toBe(false)
     expect(res.body.submissionCount).toBe(1)
   })
 
@@ -877,8 +875,6 @@ describe('POST /v1/build-mode/process-section2', () => {
         quotaCounted: true,
       }),
     )
-    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION2_RESPONSE })
-
     const res = await request(app)
       .post('/v1/build-mode/process-section2')
       .send(validBody)
