@@ -50,50 +50,6 @@
   min-height: 500px;
 }
 
-/* ===== EMPTY STATE ===== */
-
-.compose-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 80px 24px;
-  text-align: center;
-}
-
-.compose-empty__text {
-  margin: 0;
-  font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: clamp(1.5rem, 4vw, 2.5rem);
-  font-weight: 500;
-  color: #fff;
-}
-
-.compose-empty__hint {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 14px;
-  color: #999;
-}
-
-.compose-empty__plus {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  vertical-align: middle;
-}
-
 /* ===== LOADING STATE ===== */
 
 .compose-loading {

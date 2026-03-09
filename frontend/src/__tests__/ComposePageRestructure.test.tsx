@@ -35,6 +35,16 @@ vi.mock('../components/build-mode/QuickEncounterEditor', () => ({
   default: () => <div data-testid="quick-editor">Quick Editor</div>,
 }))
 
+// Mock ComposeDiptych
+vi.mock('../components/compose/ComposeDiptych', () => ({
+  default: ({ onCreateEncounter }: { onCreateEncounter: (mode: string) => void }) => (
+    <div data-testid="compose-diptych">
+      <button onClick={() => onCreateEncounter('build')}>Build Mode</button>
+      <button onClick={() => onCreateEncounter('quick')}>Quick Mode</button>
+    </div>
+  ),
+}))
+
 describe('Compose page restructure', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -47,8 +57,6 @@ describe('Compose page restructure', () => {
       </MemoryRouter>,
     )
     expect(screen.queryByRole('tablist')).toBeNull()
-    expect(screen.queryByText('Quick Compose')).toBeNull()
-    expect(screen.queryByText('Build Mode')).toBeNull()
   })
 
   it('renders a FAB button', () => {
@@ -71,12 +79,13 @@ describe('Compose page restructure', () => {
     expect(screen.getByText('Build')).toBeTruthy()
   })
 
-  it('shows empty state message when no encounters', () => {
+  it('shows diptych mode selection when no encounters', () => {
     render(
       <MemoryRouter>
         <Compose />
       </MemoryRouter>,
     )
-    expect(screen.getByText(/Tap/i)).toBeTruthy()
+    expect(screen.getByTestId('compose-diptych')).toBeTruthy()
+    expect(screen.queryByText(/Tap/i)).toBeNull()
   })
 })

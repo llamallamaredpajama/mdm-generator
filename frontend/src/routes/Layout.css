@@ -72,6 +72,11 @@
   font-weight: var(--font-weight-normal, 400);
 }
 
+.layout-brand-dot {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-bold);
+}
+
 /* ─────────────────────────────────────────
    Navigation Links
    ───────────────────────────────────────── */
@@ -87,7 +92,7 @@
   color: var(--color-text-muted);
   text-decoration: none;
   font-weight: var(--font-weight-medium);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   padding: var(--space-sm) var(--space-md);
@@ -115,14 +120,9 @@
 
 /* Compose link - normalized to match other links */
 .layout-nav-link--compose {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 500;
   gap: var(--space-sm);
-}
-
-.layout-nav-link--compose svg {
-  width: 24px;
-  height: 24px;
 }
 
 /* Settings link - icon only */
@@ -178,15 +178,6 @@
     font-size: var(--font-size-xs);
   }
 
-  .layout-nav-link--compose {
-    font-size: 0.68rem;
-  }
-
-  .layout-nav-link--compose svg {
-    width: 20px;
-    height: 20px;
-  }
-
   .layout-main {
     padding: var(--space-md);
   }
@@ -200,10 +191,6 @@
 
   .layout-nav-link {
     padding: var(--space-xs);
-    font-size: 0.65rem;
-  }
-
-  .layout-nav-link--compose {
     font-size: 0.65rem;
   }
 

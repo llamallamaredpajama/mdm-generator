@@ -12,6 +12,7 @@ import { useEncounterList } from '../hooks/useEncounterList'
 import EncounterCarousel from '../components/build-mode/EncounterCarousel'
 import EncounterEditor from '../components/build-mode/EncounterEditor'
 import QuickEncounterEditor from '../components/build-mode/QuickEncounterEditor'
+import ComposeDiptych from '../components/compose/ComposeDiptych'
 import FloatingActionButton from '../components/compose/FloatingActionButton'
 import NewEncounterSheet from '../components/compose/NewEncounterSheet'
 import type { EncounterMode } from '../types/encounter'
@@ -150,12 +151,10 @@ export default function Compose() {
     <div className="compose-page compose-page--carousel">
       <main className="compose-main compose-main--carousel" id="compose-content">
         {encounters.length === 0 ? (
-          <div className="compose-empty">
-            <p className="compose-empty__text">No encounters yet</p>
-            <p className="compose-empty__hint">
-              Tap <span className="compose-empty__plus">+</span> to create one
-            </p>
-          </div>
+          <ComposeDiptych
+            onCreateEncounter={handleCreateFromSheet}
+            isCreating={isCreatingEncounter}
+          />
         ) : (
           <EncounterCarousel
             encounters={encounters}

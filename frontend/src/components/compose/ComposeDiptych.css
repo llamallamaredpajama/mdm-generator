@@ -1,0 +1,268 @@
+/* ============================================================================
+   ComposeDiptych — cinematic split-panel mode selection
+   ============================================================================ */
+
+/* ─── Container ─── */
+.diptych {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  position: relative;
+  min-height: 400px;
+  width: 100%;
+  transition: grid-template-columns 0.6s var(--ease-expo);
+  animation: diptych-enter 0.8s var(--ease-expo) both;
+}
+
+.diptych--active-build {
+  grid-template-columns: 1.3fr 0.7fr;
+}
+.diptych--active-quick {
+  grid-template-columns: 0.7fr 1.3fr;
+}
+.diptych--disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ─── Divider ─── */
+.diptych__divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--color-accent-red, #e00);
+  box-shadow: 0 0 12px var(--color-accent-glow);
+  z-index: 2;
+  transition: left 0.6s var(--ease-expo);
+}
+
+.diptych--active-build .diptych__divider {
+  left: 65%;
+}
+.diptych--active-quick .diptych__divider {
+  left: 35%;
+}
+
+/* ─── Panel ─── */
+.diptych__panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  cursor: pointer;
+  overflow: hidden;
+  transition: opacity 0.4s ease;
+  outline: none;
+}
+
+.diptych__panel:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--focus-ring, #e00);
+}
+
+.diptych__panel--contracted {
+  opacity: 0.5;
+}
+
+/* ─── Pattern overlays ─── */
+.diptych__pattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  transition: opacity 0.4s ease;
+}
+
+.diptych__panel--expanded .diptych__pattern {
+  opacity: 1;
+}
+.diptych__panel--contracted .diptych__pattern {
+  opacity: 0.2;
+}
+
+.diptych__pattern--hatch {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.02) 0px,
+    rgba(255, 255, 255, 0.02) 1px,
+    transparent 1px,
+    transparent 12px
+  );
+}
+
+.diptych__pattern--speed {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.02) 0px,
+    rgba(255, 255, 255, 0.02) 1px,
+    transparent 1px,
+    transparent 8px
+  );
+}
+
+/* ─── Content ─── */
+.diptych__content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.diptych__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: var(--color-text-primary);
+  margin: 0;
+  transition: transform 0.4s var(--ease-expo);
+}
+
+.diptych__panel--expanded .diptych__title {
+  transform: scale(1.05);
+}
+
+.diptych__desc {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  max-width: 280px;
+  transition: color 0.4s ease;
+}
+
+.diptych__panel--expanded .diptych__desc {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.diptych__cta {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--color-accent-red, #e00);
+  border: 1px solid var(--color-accent-red, #e00);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: 999px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s var(--ease-expo);
+}
+
+.diptych__panel--expanded .diptych__cta {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Entrance animation ─── */
+@keyframes diptych-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.diptych__panel--build {
+  animation: diptych-slide-left 0.8s var(--ease-expo) both;
+}
+
+.diptych__panel--quick {
+  animation: diptych-slide-right 0.8s var(--ease-expo) 0.15s both;
+}
+
+@keyframes diptych-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes diptych-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ─── Mobile ─── */
+@media (max-width: 767px) {
+  .diptych {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .diptych--active-build,
+  .diptych--active-quick {
+    grid-template-columns: 1fr;
+  }
+
+  .diptych__panel {
+    min-height: 200px;
+    padding: var(--space-xl);
+  }
+
+  .diptych__panel--contracted {
+    opacity: 1;
+  }
+
+  .diptych__divider {
+    top: auto;
+    left: 10% !important;
+    right: 10%;
+    width: auto;
+    height: 1px;
+    bottom: auto;
+    position: relative;
+  }
+
+  .diptych__cta {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .diptych__title {
+    font-size: clamp(2rem, 8vw, 3rem);
+  }
+}
+
+/* ─── Reduced motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  .diptych,
+  .diptych__panel--build,
+  .diptych__panel--quick {
+    animation: none;
+  }
+
+  .diptych {
+    transition: none;
+  }
+
+  .diptych__divider {
+    transition: none;
+  }
+
+  .diptych__title {
+    transition: none;
+  }
+
+  .diptych__cta {
+    transition: none;
+  }
+}
