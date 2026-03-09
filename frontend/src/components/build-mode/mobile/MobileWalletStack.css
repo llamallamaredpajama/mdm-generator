@@ -21,7 +21,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   overflow: hidden;
   transition:
-    top 500ms ease,
+    top 0.4s var(--ease-expo, cubic-bezier(0.16, 1, 0.3, 1)),
     box-shadow 350ms ease-out;
   will-change: top;
 }
@@ -121,9 +121,9 @@
 
 .mobile-card--mode-build.mobile-card--active-glow::before {
   box-shadow:
-    0 0 8px 2px rgba(59, 130, 246, 0.4),
-    0 0 20px 6px rgba(59, 130, 246, 0.2),
-    0 0 40px 12px rgba(59, 130, 246, 0.08);
+    0 0 8px 2px rgba(255, 255, 255, 0.15),
+    0 0 20px 6px rgba(255, 255, 255, 0.08),
+    0 0 40px 12px rgba(255, 255, 255, 0.03);
 }
 
 /* Per-card mode borders */
@@ -132,7 +132,7 @@
 }
 
 .mobile-card--mode-build {
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 /* NewEncounterCard collapsed peek header (legacy — kept for safety) */
@@ -187,6 +187,8 @@
 .mobile-card__room {
   font-weight: 700;
   font-size: 1rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
   color: rgba(255, 255, 255, 0.92);
   flex-shrink: 0;
 }
@@ -232,7 +234,7 @@
 }
 
 .mobile-card__header-delete:focus-visible {
-  outline: 2px solid var(--focus-ring, #3b82f6);
+  outline: 2px solid var(--focus-ring, #e00);
   outline-offset: 2px;
 }
 
@@ -285,12 +287,12 @@
 
 .mobile-card__action-btn--select {
   flex: 1;
-  background: var(--primary-bg, #3b82f6);
+  background: var(--color-accent-red, #e00);
   color: white;
 }
 
 .mobile-card__action-btn--select:active {
-  background: var(--primary-bg-active, #2563eb);
+  background: #c00;
 }
 
 /* ===== Input Snippet Preview ===== */
@@ -336,7 +338,7 @@
 }
 
 .mobile-card__copy-btn:focus-visible {
-  outline: 2px solid var(--focus-ring, #3b82f6);
+  outline: 2px solid var(--focus-ring, #e00);
   outline-offset: 2px;
 }
 
@@ -346,7 +348,7 @@
   flex: 1;
   min-height: 44px;
   padding: 0.75rem 1rem;
-  background: var(--primary-bg, #3b82f6);
+  background: var(--color-accent-red, #e00);
   color: white;
   border: none;
   border-radius: 10px;
@@ -357,11 +359,11 @@
 }
 
 .mobile-card__action:active {
-  background: var(--primary-bg-active, #2563eb);
+  background: #c00;
 }
 
 .mobile-card__action:focus-visible {
-  outline: 2px solid var(--focus-ring, #3b82f6);
+  outline: 2px solid var(--focus-ring, #e00);
   outline-offset: 2px;
 }
 
@@ -401,7 +403,7 @@
 }
 
 .mobile-card__delete-icon:focus-visible {
-  outline: 2px solid var(--focus-ring, #3b82f6);
+  outline: 2px solid var(--focus-ring, #e00);
   outline-offset: 2px;
 }
 
@@ -435,11 +437,11 @@
 
 /* ===== Focus States for Accessibility ===== */
 .mobile-card__header:focus-visible {
-  outline: 2px solid var(--focus-ring, #3b82f6);
+  outline: 2px solid var(--focus-ring, #e00);
   outline-offset: 2px;
 }
 
 .mobile-card__action-btn:focus-visible {
-  outline: 2px solid var(--focus-ring, #3b82f6);
+  outline: 2px solid var(--focus-ring, #e00);
   outline-offset: 2px;
 }

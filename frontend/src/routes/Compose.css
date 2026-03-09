@@ -12,6 +12,21 @@
   background: #000;
 }
 
+.compose-page::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    rgba(0, 0, 0, 0.025) 1px,
+    rgba(0, 0, 0, 0.025) 2px
+  );
+  pointer-events: none;
+  z-index: 500;
+}
+
 .compose-page--carousel {
   padding: var(--space-lg) var(--space-xl);
   background: radial-gradient(circle at 50% 0%, rgba(220, 53, 69, 0.06) 0%, transparent 60%), #000;
@@ -49,13 +64,18 @@
 
 .compose-empty__text {
   margin: 0;
-  font-size: 18px;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
   font-weight: 500;
   color: #fff;
 }
 
 .compose-empty__hint {
   margin: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
   font-size: 14px;
   color: #999;
 }
@@ -124,9 +144,9 @@
 }
 
 .compose-retry-button {
-  background: #e00;
-  color: #ffffff;
-  border: none;
+  background: transparent;
+  border: 1px solid #e00;
+  color: #e00;
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-lg);
   font-size: var(--font-size-sm);
@@ -136,7 +156,8 @@
 }
 
 .compose-retry-button:hover {
-  background: #c00;
+  background: #e00;
+  color: #fff;
 }
 
 /* ===== FOOTER ===== */
@@ -150,6 +171,8 @@
 
 .compose-attestation {
   margin: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
   font-size: var(--font-size-xs);
   color: #666;
 }
