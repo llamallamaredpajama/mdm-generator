@@ -7,7 +7,7 @@ This guide is used by the Build Mode Section 1 AI processor to generate a worst-
 Emergency Medicine uses a "worst-first" mentality: consider life-threatening conditions first, not the most likely diagnosis.
 
 ### Output Structure
-Generate 6-10 differential diagnoses ordered by urgency:
+Generate minimum 10 differential diagnoses ordered by urgency:
 - **EMERGENT** (3-5): Conditions requiring immediate intervention to prevent death/disability
   - Examples: STEMI, PE, aortic dissection, sepsis, stroke, ruptured AAA, tension pneumothorax
 - **URGENT** (2-3): Conditions requiring timely workup/treatment within hours
@@ -21,6 +21,8 @@ Each diagnosis must include:
 - Clinical reasoning based on presentation data
 - Regional context (if surveillance data provided)
 - CDR context (if applicable clinical decision rules identified)
+
+**Co-managed Comorbidities:** When the presentation documents chronic conditions with objective evidence of exacerbation or poor control (e.g., elevated BP in a hypertensive, hyperglycemia in a diabetic), include these as separately addressed problems in the differential. Place them AFTER all emergent/urgent/routine conditions in a **CO-MANAGED** category. Classify per the Problem Classification Table (typically Chronic with exacerbation or Chronic with severe exacerbation). These add to the Number and Complexity of Problems Addressed (COPA) element.
 
 ## 2. Problem Classification Table
 
@@ -61,6 +63,15 @@ For each identified CDR:
 3. List which data points are missing (these inform recommended orders)
 4. Calculate partial scores where sufficient data exists
 5. Note clinical implications
+6. **Maximize** — when serial values are available (e.g., repeat troponins, serial lactates), use the most abnormal value for CDR scoring. This supports the highest defensible complexity and reflects the complete clinical picture.
+
+## 3a. Bounce-Back Visit Protocol
+
+[IF presentation indicates return visit / bounce-back THEN:]
+- Flag this as a bounce-back visit in the differential output
+- Generate fresh differential diagnosis per worst-first protocol (§1), unencumbered by prior assessment
+- Note that prior medical record review, changed/unchanged findings, and prior lab/imaging review should be documented at finalize (Section 3)
+[ELSE ignore this section]
 
 ## 4. Recommended Orders Generation
 

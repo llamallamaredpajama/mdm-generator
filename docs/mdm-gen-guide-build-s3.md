@@ -38,8 +38,9 @@ Generate a complete, copy-pastable MDM document following this structure:
 **PROBLEMS CONSIDERED:**
 [For each problem from the differential, classify using the Problem Classification Table below and format as:]
 
-[Condition]: [CLASS].
+[Condition]: CLASS [#] [class name].
 Suspected due to: [Inclusion reasoning based on presentation and workup results].
+Use both the numeric CLASS number and descriptive name (e.g., "CLASS 11 [Threat to life or bodily function]") for each problem. This dual format supports both human readability and automated algorithmic audit parsing.
 
 **RISK ASSESSMENT:**
 The patient has [list symptoms and objective clinical findings of highest complexity], and due to this patient's overall presentation, I consider the patient's highest risk diagnosis to be [highest risk diagnosis from differential].
@@ -106,6 +107,8 @@ Rationale:
 Medications administered:
 - [From S3 treatments. Format: Drug, dose, route, indication if mentioned. If no dose/route: "see MAR for dosing". If no drugs: "see MAR"]
 [Include CDR-suggested treatments with CDR reference: e.g., "Aspirin 325mg — per HEART Score protocol"]
+- [IF parenteral controlled substances administered: "Parenteral route chosen over oral alternative because [clinical reasoning — e.g., NPO status, severity of symptoms, need for rapid onset, inability to tolerate PO]" — this is a high-risk management element]
+- [IF drug therapy requiring intensive monitoring (e.g., IV vasopressors, antiarrhythmics, sedation agents): Document what monitoring was performed (e.g., continuous telemetry, frequent vitals q5min, end-tidal CO2) and why it was clinically necessary]
 
 Procedures performed:
 - [From S3 treatments. If no procedures mentioned, omit this section entirely including the header]
@@ -146,25 +149,28 @@ Discharge instructions: [If discharged]
 - Primary and all other relevant diagnoses explained
 - Incidental findings reported to the patient
 - Medications prescribed: [from S3]
-- Medications considered but not prescribed: [list 2 drugs of similar class if not mentioned]
+Medications considered but not prescribed:
+- [IF S3 narrative mentions medications considered but not given, list with reasoning]
+- [ELSE list 2 drugs of similar class/usage as actual medication prescribed, with reasoning for not selecting them — e.g., "Clopidogrel considered but deferred to cardiology for catheterization planning"]
 - Follow-up recommended: [from S3 follow-up instructions]
 - Return precautions: Return to ED [within timeframe based on condition, e.g., "within 24 hours" / "within 72 hours" / "immediately"] if [specific symptoms tied to worst-first diagnoses]. Any worsening or new symptoms, especially severe pain or difficulty with normal bodily function. [Additional time-bound precautions as clinically indicated]
 - Patient understanding verified
 
 ## Problem Classification Table
 
-| Class | Definition |
-|-------|-----------|
-| Self-limited/minor | Runs a definite course, transient, not likely to permanently alter health |
-| Acute uncomplicated illness/injury | New short-term problem, low morbidity risk, full recovery expected |
-| Acute uncomplicated requiring hospital care | Low morbidity risk but requires inpatient/observation care |
-| Chronic stable illness | Expected duration >1 year, at treatment goal |
-| Chronic with exacerbation | Acutely worsening, poorly controlled, requiring additional care |
-| Chronic with severe exacerbation | Significant morbidity risk, may require escalation of care |
-| Undiagnosed new problem, uncertain prognosis | Likely high morbidity risk without treatment |
-| Acute illness with systemic symptoms | High morbidity risk, systemic involvement |
-| Acute complicated injury | Requires evaluation of non-injured systems, extensive treatment |
-| Threat to life or bodily function | Immediate threat without treatment |
+| # | Class | Definition |
+|---|-------|-----------|
+| 1 | Self-limited/minor | Runs a definite course, transient, not likely to permanently alter health |
+| 2 | Chronic stable | Duration ≥1yr; at treatment goal |
+| 3 | Chronic with exacerbation | Acutely worsening, poorly controlled, requiring additional care |
+| 4 | Chronic with severe exacerbation | Significant morbidity risk, may require escalation of care |
+| 5 | Undiagnosed new, uncertain prognosis | Likely high morbidity risk without treatment |
+| 6 | Acute stable | Treatment initiated, improving, not fully resolved |
+| 7 | Acute uncomplicated | New short-term problem, low morbidity risk, full recovery expected |
+| 8 | Acute uncomplicated, inpatient/obs | Low morbidity but requires hospital-level setting |
+| 9 | Acute with systemic symptoms | High morbidity risk, systemic involvement |
+| 10 | Acute complicated injury | Requires multi-system eval, extensive treatment |
+| 11 | Threat to life or bodily function | Immediate threat without treatment |
 
 ## MDM Complexity Determination
 
@@ -182,6 +188,14 @@ Discharge instructions: [If discharged]
 6. Cross-reference S2 test results with S1 differential to show differential narrowing
 7. Do NOT fabricate any information — use ONLY what was provided in the structured data
 8. If a section is empty or missing, handle gracefully (e.g., "no workup performed" or omit the section)
+
+## Bounce-Back Visit Documentation
+[IF Section 1 flagged this as a bounce-back visit THEN include in MDM:]
+- Document review of prior medical record
+- Note changed/unchanged findings since prior visit
+- Review of prior lab/imaging results
+- Document this is a return visit with explicit reasoning for different/same assessment
+[ELSE omit this section]
 
 ## Critical Rules
 
