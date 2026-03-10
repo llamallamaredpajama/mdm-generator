@@ -12,6 +12,7 @@ import OnboardingGuard from './components/OnboardingGuard'
 import { AuthProvider } from './lib/firebase'
 import { ToastProvider } from './contexts/ToastContext'
 import { TrendAnalysisProvider } from './contexts/TrendAnalysisContext'
+import Analytics from './routes/Analytics'
 
 const Onboarding = lazy(() => import('./routes/Onboarding'))
 
@@ -35,6 +36,7 @@ const router = createBrowserRouter([
           { path: 'preflight', element: <Preflight /> },
           { path: 'output', element: <Output /> },
           { path: 'settings', element: <Settings /> },
+          { path: 'analytics', element: <Analytics /> },
           { path: 'build', element: <Navigate to="/compose" replace /> },
         ],
       },
