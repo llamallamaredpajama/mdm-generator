@@ -2,9 +2,9 @@ import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
-import Layout from './routes/Layout'
+import SidebarLayout from './routes/SidebarLayout'
 import LandingPage from './routes/LandingPage'
-import Compose from './routes/Compose'
+import EncounterBoard from './components/board/EncounterBoard'
 import Preflight from './routes/Preflight'
 import Output from './routes/Output'
 import Settings from './routes/Settings'
@@ -29,9 +29,9 @@ const router = createBrowserRouter([
     element: <OnboardingGuard />,
     children: [
       {
-        element: <Layout />,
+        element: <SidebarLayout />,
         children: [
-          { path: 'compose', element: <Compose /> },
+          { path: 'compose', element: <EncounterBoard /> },
           { path: 'preflight', element: <Preflight /> },
           { path: 'output', element: <Output /> },
           { path: 'settings', element: <Settings /> },

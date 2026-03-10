@@ -76,7 +76,11 @@ export default function SidebarLayout() {
 
   const handleNavClick = useCallback(
     (item: NavItem) => {
-      navigate(item.path)
+      if (item.id === 'archive') {
+        navigate('/compose', { state: { viewArchive: true } })
+      } else {
+        navigate(item.path)
+      }
     },
     [navigate],
   )
@@ -99,7 +103,7 @@ export default function SidebarLayout() {
           <button
             type="button"
             className={`sidebar-layout__mobile-btn${activeId === 'archive' ? ' sidebar-layout__mobile-btn--active' : ''}`}
-            onClick={() => navigate('/archive')}
+            onClick={() => navigate('/compose', { state: { viewArchive: true } })}
             aria-label="Archive"
           >
             <span className="sidebar-layout__mobile-icon">{'\u2630'}</span>

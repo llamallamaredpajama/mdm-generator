@@ -264,3 +264,32 @@
 .detail-panel__intel-placeholder {
   margin-top: 24px;
 }
+
+.detail-panel__intel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.detail-panel__intel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 767px) {
+  .detail-panel__intel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}

@@ -161,10 +161,35 @@
   font-family: var(--font-mono, monospace);
 }
 
-/* Mobile: columns stack vertically with horizontal overflow */
-.encounter-board--mobile .encounter-board__columns {
+/* ─── Mobile Layout ─── */
+.encounter-board--mobile {
   flex-direction: column;
-  overflow-x: hidden;
   overflow-y: auto;
-  gap: 20px;
+  overflow-x: hidden;
+  padding: 16px 10px;
+  gap: 24px;
+}
+
+.encounter-board--mobile .status-column {
+  min-width: unset;
+  flex: none;
+}
+
+.encounter-board--mobile .status-column__cards {
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 8px;
+  gap: 12px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.encounter-board--mobile .status-column__cards > * {
+  flex: 0 0 260px;
+  scroll-snap-align: start;
+}
+
+.encounter-board--mobile .status-column__empty {
+  flex: 0 0 260px;
 }

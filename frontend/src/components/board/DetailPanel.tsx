@@ -7,6 +7,9 @@ import { getEncounterMode, formatRoomDisplay } from '../../types/encounter'
 import { getEncounterPhoto } from '../../lib/photoMapper'
 import type { EncounterDocument, SectionNumber } from '../../types/encounter'
 import NarrativeToolbar from './NarrativeToolbar'
+import RulesPanel from './RulesPanel'
+import GuidesPanel from './GuidesPanel'
+import SurveillancePanel from './SurveillancePanel'
 import './DetailPanel.css'
 
 interface DetailPanelProps {
@@ -200,8 +203,16 @@ function BuildDetailContent({
         </div>
       )}
 
-      {/* Wave 2 Agent 6 panels go here */}
-      <div className="detail-panel__intel-placeholder" />
+      {/* Intelligence panels */}
+      {hasOutput && (
+        <div className="detail-panel__intel-section">
+          <RulesPanel cdrTracking={currentEncounter.cdrTracking} delay={0.1} />
+          <div className="detail-panel__intel-grid">
+            <GuidesPanel delay={0.2} />
+            <SurveillancePanel delay={0.3} />
+          </div>
+        </div>
+      )}
     </DetailPanelShell>
   )
 }
@@ -293,8 +304,16 @@ function QuickDetailContent({
 
       {isComplete && !mdmOutput && <span className="detail-panel__complete-badge">✓ COMPLETE</span>}
 
-      {/* Wave 2 Agent 6 panels go here */}
-      <div className="detail-panel__intel-placeholder" />
+      {/* Intelligence panels */}
+      {mdmOutput && (
+        <div className="detail-panel__intel-section">
+          <RulesPanel cdrTracking={initialEncounter.cdrTracking} delay={0.1} />
+          <div className="detail-panel__intel-grid">
+            <GuidesPanel delay={0.2} />
+            <SurveillancePanel delay={0.3} />
+          </div>
+        </div>
+      )}
     </DetailPanelShell>
   )
 }
