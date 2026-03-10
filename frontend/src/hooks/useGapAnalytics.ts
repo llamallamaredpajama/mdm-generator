@@ -62,16 +62,9 @@ export function useGapAnalytics(): GapAnalytics {
       (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.data()
-          const analytics = data.gapAnalytics
-          if (analytics) {
-            setTotalTallies(analytics.totalTallies ?? {})
-            setPeriodTallies(analytics.periodTallies ?? {})
-            setMeta(analytics.meta ?? {})
-          } else {
-            setTotalTallies({})
-            setPeriodTallies({})
-            setMeta({})
-          }
+          setTotalTallies(data.gapTallies?.identified ?? {})
+          setPeriodTallies(data.gapTallies?.identifiedByPeriod ?? {})
+          setMeta(data.gapMeta ?? {})
         }
         setLoading(false)
         setError(null)

@@ -2707,9 +2707,14 @@ app.post('/v1/analytics/insights', llmLimiter, async (req, res) => {
       return res.status(403).json({ error: 'Pro plan or higher required' })
     }
 
+    // 3b. FETCH gap data from customers collection (gap tallies live here, not in users)
+    const customerDoc = await getDb().collection('customers').doc(uid).get()
+    const customerData = customerDoc.exists ? customerDoc.data()! : null
+
     // 4. RATE-LIMIT — max once per hour per user
-    if (user.lastInsightsGeneratedAt) {
-      const lastGenMs = user.lastInsightsGeneratedAt.toMillis()
+    const lastInsightsTs = customerData?.lastInsightsGeneratedAt
+    if (lastInsightsTs) {
+      const lastGenMs = lastInsightsTs.toMillis()
       const oneHourMs = 60 * 60 * 1000
       const elapsed = Date.now() - lastGenMs
       if (elapsed < oneHourMs) {
@@ -2721,8 +2726,8 @@ app.post('/v1/analytics/insights', llmLimiter, async (req, res) => {
     }
 
     // 5. EXECUTE — build prompt from gap data and call Gemini
-    const tallies = user.gapTallies?.identified ?? {}
-    const meta = user.gapMeta ?? {}
+    const tallies = customerData?.gapTallies?.identified ?? {}
+    const meta = customerData?.gapMeta ?? {}
 
     if (Object.keys(tallies).length === 0) {
       return res.json({ ok: true, insights: 'No documentation gap data available yet. Complete a few encounters to start seeing insights.' })
@@ -2732,9 +2737,10 @@ app.post('/v1/analytics/insights', llmLimiter, async (req, res) => {
     const result = await callGemini(prompt)
 
     // 6. UPDATE — record generation timestamp
-    await getDb().collection('users').doc(uid).update({
-      lastInsightsGeneratedAt: admin.firestore.Timestamp.now(),
-    })
+    await getDb().collection('customers').doc(uid).set(
+      { lastInsightsGeneratedAt: admin.firestore.Timestamp.now() },
+      { merge: true },
+    )
 
     // 7. AUDIT — log action (no PHI)
     console.log({
