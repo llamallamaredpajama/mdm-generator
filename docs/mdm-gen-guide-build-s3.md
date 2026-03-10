@@ -197,6 +197,22 @@ Medications considered but not prescribed:
 - Document this is a return visit with explicit reasoning for different/same assessment
 [ELSE omit this section]
 
+## Documentation Gap Analysis
+
+After generating the final MDM from all three sections, analyze documentation gaps using the same protocol as the core guide §2.10.
+
+**Additional Build Mode context:** You have ALL three sections of physician input available:
+- Section 1: Initial presentation and chief complaint
+- Section 2: Workup results, test data, CDR scores
+- Section 3: Treatment, disposition, follow-up
+
+Use this richer context to produce more precise gap analysis. For example:
+- If S2 shows CDR scores were calculated, do NOT flag `cdr_not_considered`
+- If S1 mentions EMS report, do NOT flag `independent_historian`
+- If S3 includes specific return precautions, do NOT flag `specific_return_precautions`
+
+Produce 3-8 gap items. Use canonical IDs from the reference list when applicable; use descriptive snake_case IDs for case-specific gaps.
+
 ## Critical Rules
 
 1. Output must be copy-pastable directly into an EHR — no explanatory text, no markdown formatting markers

@@ -198,6 +198,59 @@ When a component is not specified in the narrative, apply these defaults:
 - Document this is a return visit with explicit reasoning for different/same assessment
 [ELSE REMOVE this section entirely]
 
+### 2.10 Documentation Gap Analysis
+
+After generating the MDM, analyze the gap between the provided narrative and optimal EM documentation. Produce a `gaps` array identifying clinically relevant documentation opportunities the physician could address.
+
+**Rules:**
+1. Only flag items that are **clinically relevant to this specific case** AND **plausibly obtainable** by the treating physician
+2. Do NOT flag items already handled by §2.6 defaults — those are already applied silently
+3. Do NOT flag items the physician already documented — only flag genuine gaps
+4. Produce 3-8 gap items maximum, prioritizing highest-impact items
+5. Each gap must include actionable yes/no toggle questions the physician can answer quickly
+
+**Canonical Gap ID Reference:**
+
+Use these canonical IDs when applicable. If no canonical ID fits, use a descriptive snake_case ID — it will be categorized as "other" for tracking.
+
+| ID | Category | Method | Typical Trigger |
+|----|----------|--------|-----------------|
+| `independent_historian` | billing | history | No mention of speaking with EMS, family, facility staff, or PCP |
+| `external_physician_discussion` | medicolegal | history | Admit/consult without documenting who was contacted |
+| `shared_decision_making` | medicolegal | clinical_action | Treatment decisions without patient/family input documented |
+| `risk_benefit_discussion` | medicolegal | clinical_action | Procedure/medication without risk-benefit documentation |
+| `independent_imaging_interpretation` | billing | data_collection | Imaging reviewed but no independent interpretation documented |
+| `independent_ecg_interpretation` | billing | data_collection | ECG reviewed but no independent interpretation documented |
+| `reassessment_documentation` | billing | clinical_action | No reassessment after treatment documented |
+| `cdr_not_considered` | care | data_collection | Applicable CDR not calculated (HEART, Wells, PERC, etc.) |
+| `specific_return_precautions` | care | clinical_action | Generic return instructions without diagnosis-specific precautions |
+| `medication_rationale` | billing | clinical_action | Medication prescribed without documented clinical rationale |
+| `test_result_interpretation` | billing | data_collection | Lab/test results mentioned without clinical interpretation |
+| `social_determinants` | care | history | No social factors assessed despite discharge with complex follow-up |
+| `parenteral_controlled_substance_monitoring` | medicolegal | clinical_action | IV/IM controlled substance without monitoring documentation |
+| `time_sensitive_metrics` | billing | clinical_action | STEMI/stroke/sepsis without time metrics documented |
+| `wound_care_documentation` | billing | clinical_action | Laceration/wound treated without repair details |
+| `procedural_sedation_documentation` | medicolegal | clinical_action | Sedation performed without required documentation elements |
+| `pain_reassessment` | care | clinical_action | Pain treated without reassessment documented |
+| `discharge_condition` | billing | clinical_action | Discharge without patient condition at time of discharge |
+| `follow_up_coordination` | care | clinical_action | Referral without specific follow-up timeframe/provider |
+| `pertinent_negatives` | billing | history | Key pertinent negatives for differential not documented |
+
+**Benefit Categories:**
+- `billing`: Items that increase MDM complexity level, improve billing capture, or strengthen audit defense
+- `medicolegal`: Items that reduce liability exposure if documented
+- `care`: Items that improve continuity of care or may represent forgotten documentation
+
+**Acquisition Methods:**
+- `history`: Information obtained by asking the patient, family, or other providers
+- `data_collection`: Information obtained by ordering, reviewing, or interpreting data
+- `clinical_action`: Actions performed or decisions documented by the physician
+
+**Toggle Item Design:**
+- Each gap has 1-3 toggle items phrased as yes/no questions
+- Questions must be answerable without additional clinical context
+- Phrase positively: "Did you..." rather than "You didn't..."
+
 ---
 
 ## 3. OUTPUT FORMAT

@@ -127,6 +127,8 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
                 appliedDispoFlow: data.section3?.appliedDispoFlow ?? null,
               },
               cdrTracking: data.cdrTracking ?? {},
+              enhancementDismissed: data.enhancementDismissed ?? false,
+              enhancementReprocessed: data.enhancementReprocessed ?? false,
               quotaCounted: data.quotaCounted,
               quotaCountedAt: data.quotaCountedAt,
               createdAt: data.createdAt,

@@ -9,6 +9,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { PHYSICIAN_ATTESTATION } from './constants.js'
+import { safeParseGaps, type GapItem } from './buildModeSchemas.js'
 
 /**
  * Patient identifier extracted from narrative
@@ -29,6 +30,8 @@ export interface QuickModeGenerationResult {
   json: Record<string, unknown>
   /** Extracted patient identifier for card display */
   patientIdentifier: PatientIdentifier
+  /** Enhancement advisor gaps */
+  gaps: GapItem[]
 }
 
 /**
@@ -121,7 +124,17 @@ Return ONLY valid JSON in this exact structure (no markdown, no code fences):
       "disposition": "Discharge plan or admission",
       "complexityLevel": "straightforward|low|moderate|high"
     }
-  }
+  },
+  "gaps": [
+    {
+      "id": "canonical_gap_id or descriptive_snake_case",
+      "category": "billing | medicolegal | care",
+      "method": "history | data_collection | clinical_action",
+      "title": "Short label",
+      "description": "Why this matters (1-2 sentences)",
+      "toggleItems": [{ "id": "toggle_id", "label": "Yes/No question for physician", "defaultValue": false }]
+    }
+  ]
 }
 
 ## Important Notes
@@ -130,6 +143,7 @@ Return ONLY valid JSON in this exact structure (no markdown, no code fences):
 - The "text" field should be copy-paste ready for an EHR
 - Always use worst-first approach for differential diagnosis
 - Include the physician attestation statement at the end of the output text
+- The "gaps" array identifies 3-8 documentation opportunities per §2.10. Use canonical IDs when applicable.
 - This is educational use only - no real patient data`
 
   const userPrompt = `## Narrative Input
@@ -177,6 +191,7 @@ export function parseQuickModeResponse(rawResponse: string): QuickModeGeneration
         sex: parsed.patientIdentifier?.sex || undefined,
         chiefComplaint: parsed.patientIdentifier?.chiefComplaint || undefined,
       },
+      gaps: safeParseGaps(parsed.gaps),
     }
   } catch (parseError) {
     // Try to extract JSON from the response
@@ -195,6 +210,7 @@ export function parseQuickModeResponse(rawResponse: string): QuickModeGeneration
           sex: parsed.patientIdentifier?.sex || undefined,
           chiefComplaint: parsed.patientIdentifier?.chiefComplaint || undefined,
         },
+        gaps: safeParseGaps(parsed.gaps),
       }
     }
 
@@ -218,5 +234,6 @@ export function getQuickModeFallback(): QuickModeGenerationResult {
       complexityLevel: 'moderate',
     },
     patientIdentifier: {},
+    gaps: [],
   }
 }

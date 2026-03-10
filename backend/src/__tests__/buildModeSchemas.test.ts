@@ -11,6 +11,12 @@ import {
   SECTION1_MAX_CHARS,
   SECTION2_MAX_CHARS,
   SECTION3_MAX_CHARS,
+  GapItemSchema,
+  GapToggleItemSchema,
+  GapsListSchema,
+  BuildModeReprocessRequestSchema,
+  QuickModeReprocessRequestSchema,
+  safeParseGaps,
 } from '../buildModeSchemas'
 
 // ============================================================================
@@ -354,5 +360,147 @@ describe('EncounterStatusSchema', () => {
   it('rejects invalid encounter status', () => {
     expect(() => EncounterStatusSchema.parse('deleted')).toThrow()
     expect(() => EncounterStatusSchema.parse('')).toThrow()
+  })
+})
+
+// ============================================================================
+// Gap Schemas
+// ============================================================================
+describe('GapToggleItemSchema', () => {
+  it('accepts valid toggle item', () => {
+    const result = GapToggleItemSchema.parse({
+      id: 'spoke_with_historian',
+      label: 'Did you speak with an independent historian (EMS, family, facility staff)?',
+      defaultValue: false,
+    })
+    expect(result.id).toBe('spoke_with_historian')
+    expect(result.defaultValue).toBe(false)
+  })
+
+  it('defaults defaultValue to false when omitted', () => {
+    const result = GapToggleItemSchema.parse({
+      id: 'toggle_1',
+      label: 'Some question?',
+    })
+    expect(result.defaultValue).toBe(false)
+  })
+
+  it('rejects missing id', () => {
+    expect(() => GapToggleItemSchema.parse({ label: 'test' })).toThrow()
+  })
+})
+
+describe('GapItemSchema', () => {
+  const validGap = {
+    id: 'independent_historian',
+    category: 'billing',
+    method: 'history',
+    title: 'Independent Historian',
+    description: 'Documenting independent historian contact supports higher complexity.',
+    toggleItems: [
+      { id: 'spoke_with_historian', label: 'Did you speak with an independent historian?', defaultValue: false },
+    ],
+  }
+
+  it('accepts valid gap item', () => {
+    const result = GapItemSchema.parse(validGap)
+    expect(result.id).toBe('independent_historian')
+    expect(result.category).toBe('billing')
+    expect(result.method).toBe('history')
+    expect(result.toggleItems).toHaveLength(1)
+  })
+
+  it('rejects invalid category', () => {
+    expect(() => GapItemSchema.parse({ ...validGap, category: 'invalid' })).toThrow()
+  })
+
+  it('rejects invalid method', () => {
+    expect(() => GapItemSchema.parse({ ...validGap, method: 'invalid' })).toThrow()
+  })
+
+  it('rejects empty toggleItems array', () => {
+    expect(() => GapItemSchema.parse({ ...validGap, toggleItems: [] })).toThrow()
+  })
+})
+
+describe('GapsListSchema', () => {
+  it('accepts empty array (no gaps found)', () => {
+    const result = GapsListSchema.parse([])
+    expect(result).toEqual([])
+  })
+})
+
+describe('safeParseGaps', () => {
+  it('returns empty array for non-array input', () => {
+    expect(safeParseGaps(null)).toEqual([])
+    expect(safeParseGaps(undefined)).toEqual([])
+    expect(safeParseGaps('string')).toEqual([])
+  })
+
+  it('filters out malformed gaps', () => {
+    const result = safeParseGaps([
+      { id: 'valid', category: 'billing', method: 'history', title: 'Valid', description: 'Desc', toggleItems: [{ id: 't', label: 'Q?', defaultValue: false }] },
+      { id: 'bad', category: 'INVALID' },
+    ])
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('valid')
+  })
+
+  it('returns all valid gaps', () => {
+    const gaps = [
+      { id: 'gap1', category: 'billing', method: 'history', title: 'G1', description: 'D1', toggleItems: [{ id: 't1', label: 'Q1?' }] },
+      { id: 'gap2', category: 'care', method: 'clinical_action', title: 'G2', description: 'D2', toggleItems: [{ id: 't2', label: 'Q2?' }] },
+    ]
+    expect(safeParseGaps(gaps)).toHaveLength(2)
+  })
+})
+
+// ============================================================================
+// Reprocess Request Schemas
+// ============================================================================
+describe('BuildModeReprocessRequestSchema', () => {
+  const validToken = 'abcdefghij'
+  const validRequest = {
+    encounterId: 'enc-001',
+    userIdToken: validToken,
+    gapResponses: {
+      independent_historian: { spoke_with_historian: true },
+    },
+  }
+
+  it('accepts valid reprocess request', () => {
+    const result = BuildModeReprocessRequestSchema.parse(validRequest)
+    expect(result.encounterId).toBe('enc-001')
+    expect(result.gapResponses.independent_historian.spoke_with_historian).toBe(true)
+  })
+
+  it('rejects missing encounterId', () => {
+    expect(() => BuildModeReprocessRequestSchema.parse({
+      ...validRequest, encounterId: undefined,
+    })).toThrow()
+  })
+
+  it('rejects short userIdToken', () => {
+    expect(() => BuildModeReprocessRequestSchema.parse({
+      ...validRequest, userIdToken: 'short',
+    })).toThrow()
+  })
+
+  it('accepts empty gapResponses', () => {
+    const result = BuildModeReprocessRequestSchema.parse({
+      ...validRequest, gapResponses: {},
+    })
+    expect(result.gapResponses).toEqual({})
+  })
+})
+
+describe('QuickModeReprocessRequestSchema', () => {
+  it('accepts valid request', () => {
+    const result = QuickModeReprocessRequestSchema.parse({
+      encounterId: 'enc-q1',
+      userIdToken: 'abcdefghij',
+      gapResponses: { gap1: { toggle1: true } },
+    })
+    expect(result.encounterId).toBe('enc-q1')
   })
 })

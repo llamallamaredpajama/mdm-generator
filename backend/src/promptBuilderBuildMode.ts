@@ -484,6 +484,7 @@ export function buildFinalizePrompt(
     '6. Add appropriate discharge instructions if applicable',
     '7. NEVER fabricate information - use only what was provided',
     '8. Include the physician attestation at the end of the MDM text: "This documentation was generated from the direct clinical input of the treating physician, based on the patient encounter as described. All content has been reviewed by the physician for accuracy and completeness."',
+    '9. After generating the MDM, produce a "gaps" array identifying 3-8 documentation opportunities per the Documentation Gap Analysis protocol. Use canonical gap IDs when applicable.',
     ...(surveillanceContext ? [
       '9. Include regional surveillance data sources in the Data Reviewed section (e.g., "Regional Surveillance Data: CDC Respiratory, NWSS Wastewater")',
       '10. Note any regional epidemiologic context that influenced the differential or clinical reasoning',
@@ -514,11 +515,22 @@ export function buildFinalizePrompt(
     '    "complexityLevel": "low" | "moderate" | "high",',
     '    "regionalSurveillance": "Regional surveillance data sources and key findings, if available",',
     '    "clinicalDecisionRules": "CDR scores and results, if applicable"',
-    '  }',
+    '  },',
+    '  "gaps": [',
+    '    {',
+    '      "id": "canonical_gap_id or descriptive_snake_case",',
+    '      "category": "billing" | "medicolegal" | "care",',
+    '      "method": "history" | "data_collection" | "clinical_action",',
+    '      "title": "Short label",',
+    '      "description": "Why this matters (1-2 sentences)",',
+    '      "toggleItems": [{ "id": "toggle_id", "label": "Yes/No question for physician", "defaultValue": false }]',
+    '    }',
+    '  ]',
     '}',
     '',
     'Generate the complete final MDM document.',
     'The "text" field must be ready for direct copy-paste into an EHR.',
+    'The "gaps" array identifies 3-8 documentation opportunities per §2.10. Use canonical IDs when applicable.',
   ].join('\n')
 
   return { system, user }

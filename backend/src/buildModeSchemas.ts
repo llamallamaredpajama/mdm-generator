@@ -232,6 +232,67 @@ export const FinalizeResponseSchema = z.object({
 export type FinalizeResponse = z.infer<typeof FinalizeResponseSchema>
 
 // ============================================================================
+// Enhancement Advisor Schemas
+// ============================================================================
+
+export const GapBenefitCategorySchema = z.enum(['billing', 'medicolegal', 'care'])
+export type GapBenefitCategory = z.infer<typeof GapBenefitCategorySchema>
+
+export const GapAcquisitionMethodSchema = z.enum(['history', 'data_collection', 'clinical_action'])
+export type GapAcquisitionMethod = z.infer<typeof GapAcquisitionMethodSchema>
+
+export const GapToggleItemSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  defaultValue: z.boolean().default(false),
+})
+export type GapToggleItem = z.infer<typeof GapToggleItemSchema>
+
+export const GapItemSchema = z.object({
+  id: z.string().min(1),
+  category: GapBenefitCategorySchema,
+  method: GapAcquisitionMethodSchema,
+  title: z.string().min(1),
+  description: z.string().min(1),
+  toggleItems: z.array(GapToggleItemSchema).min(1),
+})
+export type GapItem = z.infer<typeof GapItemSchema>
+
+export const GapsListSchema = z.array(GapItemSchema)
+export type GapsList = z.infer<typeof GapsListSchema>
+
+/**
+ * Safely parse a raw gaps array, filtering out individual malformed items.
+ * Never fails — returns [] if nothing is valid.
+ */
+export function safeParseGaps(raw: unknown): GapItem[] {
+  if (!Array.isArray(raw)) return []
+  return raw.reduce<GapItem[]>((acc, item) => {
+    const parsed = GapItemSchema.safeParse(item)
+    if (parsed.success) acc.push(parsed.data)
+    return acc
+  }, [])
+}
+
+// ============================================================================
+// Reprocess Request Schemas
+// ============================================================================
+
+export const BuildModeReprocessRequestSchema = z.object({
+  encounterId: z.string().min(1),
+  userIdToken: z.string().min(10),
+  gapResponses: z.record(z.string(), z.record(z.string(), z.boolean())),
+})
+export type BuildModeReprocessRequest = z.infer<typeof BuildModeReprocessRequestSchema>
+
+export const QuickModeReprocessRequestSchema = z.object({
+  encounterId: z.string().min(1),
+  userIdToken: z.string().min(10),
+  gapResponses: z.record(z.string(), z.record(z.string(), z.boolean())),
+})
+export type QuickModeReprocessRequest = z.infer<typeof QuickModeReprocessRequestSchema>
+
+// ============================================================================
 // Structured Data Schemas (Build Mode v2 Extensions)
 // ============================================================================
 

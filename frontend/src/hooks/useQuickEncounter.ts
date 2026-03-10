@@ -9,13 +9,7 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import {
-  doc,
-  onSnapshot,
-  updateDoc,
-  serverTimestamp,
-  type DocumentData,
-} from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc, serverTimestamp, type DocumentData } from 'firebase/firestore'
 import { getAppDb, useAuth } from '../lib/firebase'
 import { useAuthToken } from '../lib/firebase'
 import { generateQuickMode, type QuickModeResponse } from '../lib/api'
@@ -61,7 +55,14 @@ function convertEncounterDoc(docId: string, data: DocumentData): EncounterDocume
     status: data.status as EncounterStatus,
     currentSection: data.currentSection || 1,
     mode: data.mode || 'build',
-    quickModeData: data.quickModeData,
+    quickModeData: data.quickModeData
+      ? {
+          ...data.quickModeData,
+          gaps: data.quickModeData.gaps ?? [],
+          enhancementDismissed: data.quickModeData.enhancementDismissed ?? false,
+          enhancementReprocessed: data.quickModeData.enhancementReprocessed ?? false,
+        }
+      : undefined,
     section1: {
       status: (data.section1?.status as SectionStatus) || 'pending',
       content: data.section1?.content || '',
@@ -113,7 +114,11 @@ export function useQuickEncounter(encounterId: string | null): UseQuickEncounter
   const db = getAppDb()
   const { user } = useAuth()
   const idToken = useAuthToken()
-  const { isEnabled: trendEnabled, location: trendLocation, isLocationValid: trendLocationValid } = useTrendAnalysisContext()
+  const {
+    isEnabled: trendEnabled,
+    location: trendLocation,
+    isLocationValid: trendLocationValid,
+  } = useTrendAnalysisContext()
 
   const [encounter, setEncounter] = useState<EncounterDocument | null>(null)
   const [loading, setLoading] = useState(true)
@@ -158,7 +163,7 @@ export function useQuickEncounter(encounterId: string | null): UseQuickEncounter
         console.error('Error listening to encounter:', err)
         setError(err instanceof Error ? err : new Error('Failed to load encounter'))
         setLoading(false)
-      }
+      },
     )
 
     return () => {
@@ -168,7 +173,7 @@ export function useQuickEncounter(encounterId: string | null): UseQuickEncounter
         clearTimeout(saveTimerRef.current)
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: only initialize narrative on first load, not on every change
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: only initialize narrative on first load, not on every change
   }, [user, encounterId])
 
   /**
@@ -203,7 +208,7 @@ export function useQuickEncounter(encounterId: string | null): UseQuickEncounter
         }
       }, 500)
     },
-    [user, encounterId, encounter?.quickModeData?.status]
+    [user, encounterId, encounter?.quickModeData?.status],
   )
 
   /**
@@ -228,7 +233,8 @@ export function useQuickEncounter(encounterId: string | null): UseQuickEncounter
         clearTimeout(saveTimerRef.current)
       }
 
-      const location = trendEnabled && trendLocationValid && trendLocation ? trendLocation : undefined
+      const location =
+        trendEnabled && trendLocationValid && trendLocation ? trendLocation : undefined
       const response = await generateQuickMode(encounterId, narrative, idToken, location)
       return response
     } catch (err) {
@@ -251,7 +257,16 @@ export function useQuickEncounter(encounterId: string | null): UseQuickEncounter
     } finally {
       setIsSubmitting(false)
     }
-  }, [user, encounterId, idToken, narrative, encounter?.quickModeData?.status, trendEnabled, trendLocationValid, trendLocation])
+  }, [
+    user,
+    encounterId,
+    idToken,
+    narrative,
+    encounter?.quickModeData?.status,
+    trendEnabled,
+    trendLocationValid,
+    trendLocation,
+  ])
 
   return {
     encounter,

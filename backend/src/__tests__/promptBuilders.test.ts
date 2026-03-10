@@ -10,6 +10,11 @@ import {
   getQuickModeFallback,
   type QuickModeGenerationResult,
 } from '../promptBuilderQuickMode'
+import { buildFinalizePrompt } from '../promptBuilderBuildMode'
+import {
+  buildBuildModeReprocessPrompt,
+  buildQuickModeReprocessPrompt,
+} from '../promptBuilderReprocess'
 
 // ============================================================================
 // buildParsePrompt (parsePromptBuilder.ts)
@@ -270,5 +275,143 @@ describe('getQuickModeFallback', () => {
     const b = getQuickModeFallback()
     expect(a).not.toBe(b)
     expect(a.json).not.toBe(b.json)
+  })
+
+  it('includes empty gaps array', () => {
+    const fallback = getQuickModeFallback()
+    expect(fallback.gaps).toEqual([])
+  })
+})
+
+// ============================================================================
+// buildFinalizePrompt — gaps output format (promptBuilderBuildMode.ts)
+// ============================================================================
+describe('buildFinalizePrompt — gaps', () => {
+  const s1 = { content: 'Chest pain', response: { differential: [{ diagnosis: 'ACS', urgency: 'emergent' as const, reasoning: 'chest pain' }] } }
+  const s2 = { content: 'Labs normal' }
+  const s3Content = 'Discharge home'
+
+  it('includes gaps array in output format specification', () => {
+    const result = buildFinalizePrompt(s1, s2, s3Content)
+    expect(result.user).toContain('"gaps"')
+    expect(result.user).toContain('"toggleItems"')
+  })
+
+  it('includes gap analysis instructions in system prompt', () => {
+    const result = buildFinalizePrompt(s1, s2, s3Content)
+    expect(result.system).toContain('gaps')
+    expect(result.system).toContain('documentation opportunities')
+  })
+})
+
+// ============================================================================
+// parseQuickModeResponse — gaps extraction (promptBuilderQuickMode.ts)
+// ============================================================================
+describe('parseQuickModeResponse — gaps extraction', () => {
+  it('extracts gaps from valid response', () => {
+    const response = JSON.stringify({
+      patientIdentifier: { age: '45', sex: 'male', chiefComplaint: 'chest pain' },
+      mdm: { text: 'MDM text', json: { problems: [], differential: [], dataReviewed: [], reasoning: '', risk: [], disposition: '' } },
+      gaps: [{
+        id: 'independent_historian',
+        category: 'billing',
+        method: 'history',
+        title: 'Independent Historian',
+        description: 'Contact supports higher complexity.',
+        toggleItems: [{ id: 'spoke', label: 'Did you speak with historian?', defaultValue: false }],
+      }],
+    })
+    const result = parseQuickModeResponse(response)
+    expect(result.gaps).toHaveLength(1)
+    expect(result.gaps[0].id).toBe('independent_historian')
+  })
+
+  it('returns empty gaps array when gaps missing', () => {
+    const response = JSON.stringify({
+      patientIdentifier: { age: '45', sex: 'male', chiefComplaint: 'chest pain' },
+      mdm: { text: 'MDM text', json: { problems: [], differential: [], dataReviewed: [], reasoning: '', risk: [], disposition: '' } },
+    })
+    const result = parseQuickModeResponse(response)
+    expect(result.gaps).toEqual([])
+  })
+
+  it('filters malformed individual gaps', () => {
+    const response = JSON.stringify({
+      patientIdentifier: { age: '45', sex: 'male', chiefComplaint: 'chest pain' },
+      mdm: { text: 'MDM text', json: { problems: [], differential: [], dataReviewed: [], reasoning: '', risk: [], disposition: '' } },
+      gaps: [
+        { id: 'valid_gap', category: 'billing', method: 'history', title: 'Valid', description: 'Desc', toggleItems: [{ id: 't', label: 'Q?', defaultValue: false }] },
+        { id: 'bad_gap', category: 'INVALID' },
+      ],
+    })
+    const result = parseQuickModeResponse(response)
+    expect(result.gaps).toHaveLength(1)
+    expect(result.gaps[0].id).toBe('valid_gap')
+  })
+})
+
+// ============================================================================
+// buildBuildModeReprocessPrompt (promptBuilderReprocess.ts)
+// ============================================================================
+describe('buildBuildModeReprocessPrompt', () => {
+  it('returns system and user prompt parts', () => {
+    const result = buildBuildModeReprocessPrompt({
+      section1Content: 'Chest pain presentation',
+      section2Content: 'Labs and imaging normal',
+      section3Content: 'Discharge home',
+      originalMdmText: 'Original MDM text...',
+      gapResponses: { independent_historian: { spoke_with_historian: true } },
+    })
+    expect(result).toHaveProperty('system')
+    expect(result).toHaveProperty('user')
+  })
+
+  it('includes original MDM in user prompt', () => {
+    const result = buildBuildModeReprocessPrompt({
+      section1Content: 'Chest pain',
+      section2Content: 'Labs normal',
+      section3Content: 'Discharge',
+      originalMdmText: 'UNIQUE_MDM_TEXT_12345',
+      gapResponses: {},
+    })
+    expect(result.user).toContain('UNIQUE_MDM_TEXT_12345')
+  })
+
+  it('includes confirmed gap responses', () => {
+    const result = buildBuildModeReprocessPrompt({
+      section1Content: 'Chest pain',
+      section2Content: 'Labs normal',
+      section3Content: 'Discharge',
+      originalMdmText: 'MDM text',
+      gapResponses: { independent_historian: { spoke_with_historian: true, family_present: false } },
+    })
+    expect(result.user).toContain('independent_historian')
+    expect(result.user).toContain('spoke_with_historian: YES')
+    expect(result.user).toContain('family_present: NO')
+  })
+})
+
+// ============================================================================
+// buildQuickModeReprocessPrompt (promptBuilderReprocess.ts)
+// ============================================================================
+describe('buildQuickModeReprocessPrompt', () => {
+  it('returns system and user prompt parts', () => {
+    const result = buildQuickModeReprocessPrompt({
+      narrative: 'Patient narrative...',
+      originalMdmText: 'Original MDM text...',
+      gapResponses: {},
+    })
+    expect(result).toHaveProperty('system')
+    expect(result).toHaveProperty('user')
+  })
+
+  it('includes narrative and original MDM', () => {
+    const result = buildQuickModeReprocessPrompt({
+      narrative: 'UNIQUE_NARRATIVE_99',
+      originalMdmText: 'UNIQUE_MDM_88',
+      gapResponses: {},
+    })
+    expect(result.user).toContain('UNIQUE_NARRATIVE_99')
+    expect(result.user).toContain('UNIQUE_MDM_88')
   })
 })

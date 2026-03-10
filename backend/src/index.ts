@@ -29,9 +29,11 @@ import {
   type WorkupRecommendation,
   type MdmPreview,
   type FinalMdm,
+  safeParseGaps,
   type CdrTracking,
   type TestResult,
   type ParsedResultItem,
+  type GapItem,
 } from './buildModeSchemas'
 import {
   buildSection1Prompt,
@@ -1378,6 +1380,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx, structuredData, s3GuideText)
 
     let finalMdm: FinalMdm
+    let gaps: GapItem[] = []
     try {
       const result = await callGemini(prompt, 90_000)
 
@@ -1466,6 +1469,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
         }
 
         const candidate = extractFinalMdm(rawParsed)
+        gaps = safeParseGaps(rawParsed.gaps)
         // Validate with Zod schema
         const validated = FinalMdmSchema.safeParse(candidate)
         if (validated.success) {
@@ -1490,6 +1494,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
               ...extractFinalMdm(jsonObj),
               text: jsonObj.text || renderMdmText(jsonObj),
             }
+            gaps = safeParseGaps(jsonObj.gaps)
             const validated = FinalMdmSchema.safeParse(candidate)
             finalMdm = validated.success ? validated.data : fallbackMdm
           } catch {
@@ -1526,6 +1531,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       'section3.content': content,
       'section3.llmResponse': {
         finalMdm,
+        gaps,
         processedAt: admin.firestore.Timestamp.now(),
       },
       'section3.submissionCount': newSubmissionCount,
@@ -1535,19 +1541,30 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now(),
     })
 
-    // 9. Log action (no PHI)
+    // 9. Increment gap tallies on user profile
+    if (gaps.length > 0) {
+      const tallyUpdates: Record<string, FirebaseFirestore.FieldValue> = {}
+      for (const gap of gaps) {
+        tallyUpdates[`gapTallies.identified.${gap.id}`] = admin.firestore.FieldValue.increment(1)
+      }
+      await getDb().collection('customers').doc(uid).update(tallyUpdates)
+    }
+
+    // 10. Log action (no PHI)
     console.log({
       action: 'finalize',
       uid,
       encounterId,
       submissionCount: newSubmissionCount,
+      gapCount: gaps.length,
       timestamp: new Date().toISOString(),
     })
 
-    // 10. Return response
+    // 11. Return response
     return res.json({
       ok: true,
       finalMdm,
+      gaps,
       quotaRemaining: stats.remaining,
     })
   } catch (e: unknown) {
@@ -2130,6 +2147,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
         text: result.text,
         json: result.json,
       },
+      'quickModeData.gaps': result.gaps,
       'quickModeData.processedAt': admin.firestore.Timestamp.now(),
       // Update chief complaint with extracted identifier for card display
       chiefComplaint: [
@@ -2141,15 +2159,25 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now(),
     })
 
-    // 11. Log action (no PHI)
+    // 12. Increment gap tallies on user profile
+    if (result.gaps.length > 0) {
+      const tallyUpdates: Record<string, FirebaseFirestore.FieldValue> = {}
+      for (const gap of result.gaps) {
+        tallyUpdates[`gapTallies.identified.${gap.id}`] = admin.firestore.FieldValue.increment(1)
+      }
+      await getDb().collection('customers').doc(uid).update(tallyUpdates)
+    }
+
+    // 13. Log action (no PHI)
     console.log({
       action: 'quick-mode-generate',
       uid,
       encounterId,
+      gapCount: result.gaps.length,
       timestamp: new Date().toISOString(),
     })
 
-    // 12. Return response
+    // 14. Return response
     return res.json({
       ok: true,
       mdm: {
@@ -2157,6 +2185,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
         json: result.json,
       },
       patientIdentifier: result.patientIdentifier,
+      gaps: result.gaps,
       quotaRemaining,
     })
   } catch (e: unknown) {

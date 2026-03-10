@@ -6,6 +6,7 @@ import type {
   ReportTemplate,
   CustomizableOptions,
 } from '../types/userProfile'
+import type { EnhancementGap } from '../types/encounter'
 
 /**
  * Custom API error class with user-friendly messages and error classification
@@ -350,6 +351,7 @@ export interface Section2Response {
 
 export interface FinalizeResponse {
   finalMdm: FinalMdm
+  gaps: EnhancementGap[]
   quotaRemaining: number
 }
 
@@ -464,6 +466,7 @@ export interface QuickModeResponse {
     json: Record<string, unknown>
   }
   patientIdentifier: PatientIdentifier
+  gaps: EnhancementGap[]
   quotaRemaining: number
 }
 
@@ -486,6 +489,53 @@ export async function generateQuickMode(
     },
     'Quick mode MDM generation',
     60_000,
+  )
+}
+
+// =============================================================================
+// Enhancement Advisor API Functions
+// =============================================================================
+
+/**
+ * Reprocess an encounter's MDM with confirmed gap responses
+ */
+export async function reprocessWithGaps(
+  encounterId: string,
+  gapResponses: Record<string, Record<string, boolean>>,
+  userIdToken: string,
+  mode: 'build' | 'quick',
+): Promise<{ ok: boolean; finalMdm: FinalMdm }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  const endpoint = mode === 'build' ? '/v1/build-mode/reprocess' : '/v1/quick-mode/reprocess'
+  return apiFetch(
+    `${apiBaseUrl}${endpoint}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encounterId, userIdToken, gapResponses }),
+    },
+    `Reprocess ${mode} mode`,
+    90_000,
+  )
+}
+
+/**
+ * Dismiss the enhancement advisor for an encounter
+ */
+export async function dismissAdvisor(
+  encounterId: string,
+  mode: 'build' | 'quick',
+  userIdToken: string,
+): Promise<{ ok: boolean }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/enhancement-advisor/dismiss`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encounterId, mode, userIdToken }),
+    },
+    'Dismiss advisor',
   )
 }
 

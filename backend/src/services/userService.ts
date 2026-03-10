@@ -29,6 +29,14 @@ export interface UserDocument {
   credentialType?: 'MD' | 'DO' | 'NP' | 'PA'
   surveillanceLocation?: { state?: string; zipCode?: string }
 
+  // Enhancement advisor gap tallies
+  gapTallies?: {
+    /** How often each gap ID was identified across all encounters */
+    identified: Record<string, number>
+    /** How often each gap ID was confirmed by the user (reprocessed) */
+    confirmed: Record<string, number>
+  }
+
   // Feature flags
   features: {
     maxRequestsPerMonth: number

@@ -48,6 +48,28 @@ export interface PatientIdentifier {
   chiefComplaint?: string
 }
 
+// ============================================================================
+// Enhancement Advisor Types
+// ============================================================================
+
+export type GapBenefitCategory = 'billing' | 'medicolegal' | 'care'
+export type GapAcquisitionMethod = 'history' | 'data_collection' | 'clinical_action'
+
+export interface GapToggleItem {
+  id: string
+  label: string
+  defaultValue: boolean
+}
+
+export interface EnhancementGap {
+  id: string
+  category: GapBenefitCategory
+  method: GapAcquisitionMethod
+  title: string
+  description: string
+  toggleItems: GapToggleItem[]
+}
+
 /** Quick mode specific data stored in encounter */
 export interface QuickModeData {
   /** User's narrative input */
@@ -67,6 +89,17 @@ export interface QuickModeData {
   errorMessage?: string
   /** When the AI processed this encounter */
   processedAt?: import('firebase/firestore').Timestamp
+  /** Enhancement advisor gaps (populated after processing) */
+  gaps?: EnhancementGap[]
+  /** Whether user dismissed the enhancement advisor */
+  enhancementDismissed?: boolean
+  /** Whether user has reprocessed with gap responses */
+  enhancementReprocessed?: boolean
+  /** Reprocessed MDM output (if reprocessed) */
+  reprocessedMdmOutput?: {
+    text: string
+    json: Record<string, unknown>
+  }
 }
 
 // ============================================================================
@@ -351,6 +384,12 @@ export interface Section3Data {
     finalMdm: FinalMdm
     /** When the LLM processed this section */
     processedAt: Timestamp
+    /** Enhancement advisor gaps */
+    gaps?: EnhancementGap[]
+    /** Reprocessed MDM (if user reprocessed with gap responses) */
+    reprocessedMdm?: FinalMdm
+    /** When reprocessing occurred */
+    reprocessedAt?: Timestamp
   }
 }
 
@@ -414,6 +453,10 @@ export interface EncounterDocument {
   shiftStartedAt: Timestamp
   /** When the encounter was archived (if applicable) */
   archivedAt?: Timestamp
+  /** Whether user dismissed the enhancement advisor (build mode) */
+  enhancementDismissed?: boolean
+  /** Whether user has reprocessed with gap responses (build mode) */
+  enhancementReprocessed?: boolean
 }
 
 // ============================================================================
