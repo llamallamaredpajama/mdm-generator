@@ -1,0 +1,91 @@
+/* ===========================================
+   SummaryCards Styles
+   4 metric cards in a responsive grid
+   =========================================== */
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md, 1rem);
+}
+
+.summary-cards__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs, 0.25rem);
+  padding: var(--space-lg, 1.5rem);
+  background: var(--color-bg-elevated, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-md, 0.5rem);
+  transition: border-color var(--transition-fast, 0.15s ease);
+}
+
+.summary-cards__card:hover {
+  border-color: var(--color-border-primary, rgba(220, 53, 69, 0.3));
+}
+
+.summary-cards__label {
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summary-cards__value {
+  font-size: var(--font-size-2xl, 1.5rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text-primary, #f1f5f9);
+  line-height: var(--line-height-tight, 1.25);
+}
+
+.summary-cards__value--small {
+  font-size: var(--font-size-base, 1rem);
+  font-weight: var(--font-weight-semibold, 600);
+  word-break: break-word;
+}
+
+.summary-cards__detail {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-dim, #666);
+}
+
+/* ─────────────────────────────────────────
+   Progress Bar
+   ───────────────────────────────────────── */
+
+.summary-cards__progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--color-bg-tertiary, #1a1a1a);
+  border-radius: var(--radius-sm, 4px);
+  overflow: hidden;
+  margin-top: var(--space-xs, 0.25rem);
+}
+
+.summary-cards__progress-fill {
+  height: 100%;
+  background: var(--color-accent, #dc3545);
+  border-radius: var(--radius-sm, 4px);
+  transition: width var(--transition-normal, 0.3s ease);
+}
+
+/* ─────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-cards__card {
+    padding: var(--space-md, 1rem);
+  }
+}

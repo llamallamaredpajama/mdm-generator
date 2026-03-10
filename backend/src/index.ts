@@ -11,7 +11,7 @@ import { buildPrompt } from './promptBuilder'
 import { buildParsePrompt, getEmptyParsedNarrative, type ParsedNarrative } from './parsePromptBuilder'
 import { MdmSchema, renderMdmText } from './outputSchema'
 import { callGemini } from './vertex'
-import { userService } from './services/userService'
+import { userService, getCurrentPeriodKey } from './services/userService'
 import {
   Section1RequestSchema,
   Section2RequestSchema,
@@ -54,6 +54,7 @@ import {
   getQuickModeFallback,
   type QuickModeGenerationResult,
 } from './promptBuilderQuickMode'
+import { buildAnalyticsInsightsPrompt } from './promptBuilderAnalytics'
 import surveillanceRouter from './surveillance/routes'
 import { mapToSyndromes } from './surveillance/syndromeMapper'
 import { RegionResolver } from './surveillance/regionResolver'
@@ -1543,9 +1544,12 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
 
     // 9. Increment gap tallies on user profile
     if (gaps.length > 0) {
-      const tallyUpdates: Record<string, FirebaseFirestore.FieldValue> = {}
+      const period = getCurrentPeriodKey()
+      const tallyUpdates: Record<string, FirebaseFirestore.FieldValue | { category: string; method: string }> = {}
       for (const gap of gaps) {
         tallyUpdates[`gapTallies.identified.${gap.id}`] = admin.firestore.FieldValue.increment(1)
+        tallyUpdates[`gapTallies.identifiedByPeriod.${period}.${gap.id}`] = admin.firestore.FieldValue.increment(1)
+        tallyUpdates[`gapMeta.${gap.id}`] = { category: gap.category, method: gap.method }
       }
       await getDb().collection('customers').doc(uid).update(tallyUpdates)
     }
@@ -2161,9 +2165,12 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
 
     // 12. Increment gap tallies on user profile
     if (result.gaps.length > 0) {
-      const tallyUpdates: Record<string, FirebaseFirestore.FieldValue> = {}
+      const period = getCurrentPeriodKey()
+      const tallyUpdates: Record<string, FirebaseFirestore.FieldValue | { category: string; method: string }> = {}
       for (const gap of result.gaps) {
         tallyUpdates[`gapTallies.identified.${gap.id}`] = admin.firestore.FieldValue.increment(1)
+        tallyUpdates[`gapTallies.identifiedByPeriod.${period}.${gap.id}`] = admin.firestore.FieldValue.increment(1)
+        tallyUpdates[`gapMeta.${gap.id}`] = { category: gap.category, method: gap.method }
       }
       await getDb().collection('customers').doc(uid).update(tallyUpdates)
     }
@@ -2665,6 +2672,82 @@ app.post('/v1/user/complete-onboarding', async (req, res) => {
     return res.json({ ok: true })
   } catch (error) {
     console.error(error)
+    return res.status(500).json({ error: 'Internal error' })
+  }
+})
+
+// ── Analytics Insights ─────────────────────────────────────────────────
+
+/**
+ * POST /v1/analytics/insights
+ * Generate LLM-powered documentation gap insights for the Analytics Dashboard.
+ * Requires Pro, Enterprise, or Admin plan. Rate-limited to once per hour per user.
+ */
+app.post('/v1/analytics/insights', llmLimiter, async (req, res) => {
+  try {
+    // 1. AUTHENTICATE
+    const idToken = req.headers.authorization?.split('Bearer ')[1]
+    if (!idToken) return res.status(401).json({ error: 'Unauthorized' })
+    let uid: string
+    try {
+      const decoded = await admin.auth().verifyIdToken(idToken)
+      uid = decoded.uid
+    } catch {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    // 2. VALIDATE — no request body needed
+
+    // 3. AUTHORIZE — require Pro, Enterprise, or Admin plan
+    const user = await userService.getUser(uid)
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    const allowedPlans = ['pro', 'enterprise', 'admin']
+    if (!allowedPlans.includes(user.plan)) {
+      return res.status(403).json({ error: 'Pro plan or higher required' })
+    }
+
+    // 4. RATE-LIMIT — max once per hour per user
+    if (user.lastInsightsGeneratedAt) {
+      const lastGenMs = user.lastInsightsGeneratedAt.toMillis()
+      const oneHourMs = 60 * 60 * 1000
+      const elapsed = Date.now() - lastGenMs
+      if (elapsed < oneHourMs) {
+        return res.status(429).json({
+          error: 'Insights can only be generated once per hour',
+          retryAfterMs: oneHourMs - elapsed,
+        })
+      }
+    }
+
+    // 5. EXECUTE — build prompt from gap data and call Gemini
+    const tallies = user.gapTallies?.identified ?? {}
+    const meta = user.gapMeta ?? {}
+
+    if (Object.keys(tallies).length === 0) {
+      return res.json({ ok: true, insights: 'No documentation gap data available yet. Complete a few encounters to start seeing insights.' })
+    }
+
+    const prompt = buildAnalyticsInsightsPrompt(tallies, meta)
+    const result = await callGemini(prompt)
+
+    // 6. UPDATE — record generation timestamp
+    await getDb().collection('users').doc(uid).update({
+      lastInsightsGeneratedAt: admin.firestore.Timestamp.now(),
+    })
+
+    // 7. AUDIT — log action (no PHI)
+    console.log({
+      action: 'analytics-insights',
+      uid,
+      gapCount: Object.keys(tallies).length,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 8. RESPOND
+    return res.json({ ok: true, insights: result.text })
+  } catch (error) {
+    console.error('analytics/insights error:', error instanceof Error ? error.message : 'unknown error')
     return res.status(500).json({ error: 'Internal error' })
   }
 })

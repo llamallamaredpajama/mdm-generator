@@ -3,6 +3,12 @@ import admin from 'firebase-admin'
 // Defer Firestore initialization to avoid initialization order issues
 const getDb = () => admin.firestore()
 
+/** Returns current month key in YYYY-MM format (UTC) */
+export function getCurrentPeriodKey(): string {
+  const now = new Date()
+  return `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}`
+}
+
 export type SubscriptionPlan = 'free' | 'pro' | 'enterprise' | 'admin'
 
 export interface UserDocument {
@@ -35,7 +41,15 @@ export interface UserDocument {
     identified: Record<string, number>
     /** How often each gap ID was confirmed by the user (reprocessed) */
     confirmed: Record<string, number>
+    /** Per-period (YYYY-MM) identified counts */
+    identifiedByPeriod?: Record<string, Record<string, number>>
+    /** Per-period (YYYY-MM) confirmed counts */
+    confirmedByPeriod?: Record<string, Record<string, number>>
   }
+  /** Gap metadata: category + acquisition method per gap ID */
+  gapMeta?: Record<string, { category: string; method: string }>
+  /** Timestamp of last LLM insights generation (rate-limit gate) */
+  lastInsightsGeneratedAt?: FirebaseFirestore.Timestamp
 
   // Feature flags
   features: {
@@ -338,8 +352,7 @@ export class UserService {
    * Helper to get current period key (YYYY-MM)
    */
   private getCurrentPeriodKey(): string {
-    const now = new Date()
-    return `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}`
+    return getCurrentPeriodKey()
   }
 
   /**

@@ -994,6 +994,28 @@ export async function matchCdrs(
 }
 
 // =============================================================================
+// Analytics Insights API Functions
+// =============================================================================
+
+export async function fetchAnalyticsInsights(
+  userIdToken: string,
+): Promise<{ ok: boolean; insights: string; retryAfterMs?: number }> {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return apiFetch(
+    `${apiBaseUrl}/v1/analytics/insights`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${userIdToken}`,
+      },
+      body: JSON.stringify({}),
+    },
+    'Fetching analytics insights',
+  )
+}
+
+// =============================================================================
 // Surveillance Trend Analysis API Functions
 // =============================================================================
 

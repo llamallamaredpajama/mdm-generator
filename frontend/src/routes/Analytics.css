@@ -1,0 +1,178 @@
+/* ===========================================
+   Analytics Page Styles
+   =========================================== */
+
+.analytics-page {
+  max-width: var(--max-width-wide, 1200px);
+  margin: 0 auto;
+  padding: var(--space-lg, 1.5rem) 0;
+}
+
+/* ─────────────────────────────────────────
+   Header
+   ───────────────────────────────────────── */
+
+.analytics-page__header {
+  margin-bottom: var(--space-xl, 2rem);
+}
+
+.analytics-page__title {
+  font-size: var(--font-size-2xl, 1.75rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text-primary, #f1f5f9);
+  margin: 0 0 var(--space-xs, 0.25rem) 0;
+}
+
+.analytics-page__subtitle {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-muted, #94a3b8);
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────
+   Period Filter Toggle
+   ───────────────────────────────────────── */
+
+.analytics-page__period-filter {
+  display: flex;
+  gap: var(--space-xs, 0.25rem);
+  margin: var(--space-lg, 1.5rem) 0;
+  padding: 3px;
+  background: var(--color-bg-elevated, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--color-border-muted, rgba(255, 255, 255, 0.05));
+  border-radius: var(--radius-md, 0.5rem);
+  width: fit-content;
+}
+
+.analytics-page__filter-btn {
+  padding: var(--space-xs, 0.25rem) var(--space-md, 1rem);
+  background: transparent;
+  color: var(--color-text-muted, #94a3b8);
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast, 0.15s ease),
+    color var(--transition-fast, 0.15s ease);
+}
+
+.analytics-page__filter-btn:hover {
+  color: var(--color-text-primary, #f1f5f9);
+}
+
+.analytics-page__filter-btn--active {
+  background: var(--color-accent-subtle, rgba(220, 53, 69, 0.1));
+  color: var(--color-accent, #dc3545);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+/* ─────────────────────────────────────────
+   Charts Grid
+   ───────────────────────────────────────── */
+
+.analytics-page__charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg, 1.5rem);
+}
+
+/* Trend chart spans full width */
+.analytics-page__charts-grid > :first-child {
+  grid-column: 1 / -1;
+}
+
+.analytics-page__charts-grid--mobile {
+  grid-template-columns: 1fr;
+}
+
+.analytics-page__charts-grid--mobile > :first-child {
+  grid-column: 1;
+}
+
+/* ─────────────────────────────────────────
+   Loading State
+   ───────────────────────────────────────── */
+
+.analytics-page__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xl, 3rem);
+  color: var(--color-text-muted, #94a3b8);
+  font-size: var(--font-size-base, 1rem);
+}
+
+/* ─────────────────────────────────────────
+   Empty State
+   ───────────────────────────────────────── */
+
+.analytics-page__empty {
+  text-align: center;
+  padding: var(--space-3xl, 3rem);
+  color: var(--color-text-muted, #94a3b8);
+}
+
+.analytics-page__empty-title {
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-secondary, #cbd5e1);
+  margin: 0 0 var(--space-sm, 0.5rem) 0;
+}
+
+.analytics-page__empty-text {
+  font-size: var(--font-size-sm, 0.875rem);
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────
+   Error State
+   ───────────────────────────────────────── */
+
+.analytics-page__error {
+  padding: var(--space-lg, 1.5rem);
+  background: var(--color-bg-error, rgba(220, 38, 38, 0.1));
+  border: 1px solid var(--color-border-error, rgba(220, 38, 38, 0.3));
+  border-radius: var(--radius-md, 0.5rem);
+  color: var(--color-text-error, #fca5a5);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+/* ─────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .analytics-page {
+    padding: var(--space-md, 1rem) 0;
+  }
+
+  .analytics-page__title {
+    font-size: var(--font-size-xl, 1.5rem);
+  }
+
+  .analytics-page__period-filter {
+    width: 100%;
+  }
+
+  .analytics-page__filter-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .analytics-page__charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-page__charts-grid > :first-child {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .analytics-page__filter-btn {
+    font-size: var(--font-size-xs, 0.75rem);
+    padding: var(--space-xs, 0.25rem) var(--space-sm, 0.5rem);
+  }
+}

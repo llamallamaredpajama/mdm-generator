@@ -1,0 +1,193 @@
+/* ===========================================
+   TopGapsList Styles
+   Horizontal bar chart for top documentation gaps
+   =========================================== */
+
+.top-gaps-list {
+  margin-top: var(--space-lg, 1.5rem);
+}
+
+.top-gaps-list__title {
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary, #f1f5f9);
+  margin: 0 0 var(--space-md, 1rem) 0;
+}
+
+.top-gaps-list__empty {
+  text-align: center;
+  padding: var(--space-xl, 2rem);
+  color: var(--color-text-muted, #94a3b8);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.top-gaps-list__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs, 0.25rem);
+}
+
+/* ─────────────────────────────────────────
+   Item
+   ───────────────────────────────────────── */
+
+.top-gaps-list__item-wrapper {
+  border-radius: var(--radius-md, 0.5rem);
+  overflow: hidden;
+}
+
+.top-gaps-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs, 0.25rem);
+  width: 100%;
+  padding: var(--space-sm, 0.5rem) var(--space-md, 1rem);
+  background: var(--color-bg-elevated, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--color-border-muted, rgba(255, 255, 255, 0.05));
+  border-radius: var(--radius-md, 0.5rem);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast, 0.15s ease),
+    border-color var(--transition-fast, 0.15s ease);
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.top-gaps-list__item:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.05));
+  border-color: var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+.top-gaps-list__item--expanded {
+  border-color: var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* ─────────────────────────────────────────
+   Bar Row
+   ───────────────────────────────────────── */
+
+.top-gaps-list__bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 0.5rem);
+}
+
+.top-gaps-list__bar-container {
+  flex: 1;
+  height: 8px;
+  background: var(--color-bg-tertiary, #1a1a1a);
+  border-radius: var(--radius-sm, 4px);
+  overflow: hidden;
+}
+
+.top-gaps-list__bar {
+  height: 100%;
+  border-radius: var(--radius-sm, 4px);
+  transition: width var(--transition-normal, 0.3s ease);
+  min-width: 4px;
+}
+
+.top-gaps-list__count {
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text-secondary, #ccc);
+  min-width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────────────────
+   Info Row
+   ───────────────────────────────────────── */
+
+.top-gaps-list__info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm, 0.5rem);
+}
+
+.top-gaps-list__label {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-primary, #f1f5f9);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-gaps-list__badges {
+  display: flex;
+  gap: var(--space-xs, 0.25rem);
+  flex-shrink: 0;
+}
+
+.top-gaps-list__badge {
+  font-size: 0.65rem;
+  font-weight: var(--font-weight-semibold, 600);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+/* ─────────────────────────────────────────
+   Expandable Tip
+   ───────────────────────────────────────── */
+
+.top-gaps-list__tip {
+  padding: var(--space-sm, 0.5rem) var(--space-md, 1rem) var(--space-md, 1rem);
+  background: var(--color-bg-elevated, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+  border-top: none;
+  border-bottom-left-radius: var(--radius-md, 0.5rem);
+  border-bottom-right-radius: var(--radius-md, 0.5rem);
+  animation: top-gaps-tip-enter 0.2s ease;
+}
+
+.top-gaps-list__tip-text {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, #ccc);
+  line-height: var(--line-height-relaxed, 1.75);
+  margin: 0;
+}
+
+@keyframes top-gaps-tip-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .top-gaps-list__info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs, 0.25rem);
+  }
+
+  .top-gaps-list__label {
+    white-space: normal;
+    overflow: visible;
+  }
+
+  .top-gaps-list__badge {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+  }
+}
