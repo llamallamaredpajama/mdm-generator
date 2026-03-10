@@ -1,0 +1,336 @@
+/* ===========================================
+   SidebarLayout — Brutalist Sidebar + Main
+   BEM naming: .sidebar-layout__*
+   All colors use CSS variables with fallbacks
+   =========================================== */
+
+/* ── Root wrapper ── */
+.sidebar-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-bg-primary, #0c0c0c);
+  color: var(--color-text-primary, #ffffff);
+  font-family: var(--font-family, 'Inter', -apple-system, sans-serif);
+}
+
+/* ── Sidebar ── */
+.sidebar-layout__sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-width-expanded, 180px);
+  background: var(--color-bg-secondary, #000000);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+  border-right: 1px solid var(--color-border-primary, #222222);
+  z-index: 50;
+  transition: width 0.2s ease;
+  overflow: hidden;
+}
+
+.sidebar-layout__sidebar--collapsed {
+  width: var(--sidebar-width-collapsed, 60px);
+}
+
+/* ── Header (logo + collapse button) ── */
+.sidebar-layout__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 24px;
+  min-height: 24px;
+}
+
+.sidebar-layout__sidebar--collapsed .sidebar-layout__header {
+  justify-content: center;
+  padding: 0 0 24px;
+}
+
+.sidebar-layout__logo {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--color-text-primary, #ffffff);
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.sidebar-layout__collapse-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted, #555555);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 0;
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-layout__collapse-btn:hover {
+  color: var(--color-text-primary, #ffffff);
+}
+
+/* ── New Encounter Button ── */
+.sidebar-layout__new-wrap {
+  padding: 0 16px 16px;
+}
+
+.sidebar-layout__sidebar--collapsed .sidebar-layout__new-wrap {
+  padding: 0 10px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-layout__new-btn {
+  width: 100%;
+  padding: 9px 0;
+  border: 1px dashed var(--color-text-dim, #333333);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-muted, #555555);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-family, 'Inter', -apple-system, sans-serif);
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-layout__new-btn:hover {
+  border-color: var(--color-text-secondary, #999999);
+  color: var(--color-text-secondary, #999999);
+}
+
+.sidebar-layout__new-btn--collapsed {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: var(--color-accent, #e53e3e);
+  color: var(--color-text-primary, #ffffff);
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.15s ease;
+}
+
+.sidebar-layout__new-btn--collapsed:hover {
+  background: var(--color-accent-dark, #c53030);
+  border-color: transparent;
+  color: var(--color-text-primary, #ffffff);
+}
+
+/* ── Navigation ── */
+.sidebar-layout__nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Nav Item (shared for main + bottom) ── */
+.sidebar-layout__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  border-right: 2px solid transparent;
+  color: var(--color-text-secondary, #999999);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-family, 'Inter', -apple-system, sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  width: 100%;
+  transition:
+    color 0.1s ease,
+    background 0.1s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-layout__sidebar--collapsed .sidebar-layout__nav-item {
+  justify-content: center;
+  padding: 10px 0;
+  gap: 0;
+}
+
+.sidebar-layout__nav-item:hover {
+  color: var(--color-text-primary, #ffffff);
+}
+
+.sidebar-layout__nav-item--active {
+  color: var(--color-text-primary, #ffffff);
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  border-right-color: var(--color-text-primary, #ffffff);
+}
+
+.sidebar-layout__nav-item--bottom {
+  color: var(--color-text-muted, #555555);
+}
+
+.sidebar-layout__nav-item--bottom:hover {
+  color: var(--color-text-secondary, #999999);
+}
+
+.sidebar-layout__nav-item--bottom.sidebar-layout__nav-item--active {
+  color: var(--color-text-primary, #ffffff);
+  background: rgba(255, 255, 255, 0.06);
+  border-right-color: var(--color-text-primary, #ffffff);
+}
+
+.sidebar-layout__nav-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  flex-shrink: 0;
+}
+
+.sidebar-layout__nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Bottom section ── */
+.sidebar-layout__bottom {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+}
+
+/* ── User section ── */
+.sidebar-layout__user {
+  margin: 16px 16px 0;
+  padding: 12px;
+  border-top: 1px solid var(--color-border-primary, #222222);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.sidebar-layout__sidebar--collapsed .sidebar-layout__user {
+  margin: 16px 6px 0;
+  padding: 12px 0;
+  justify-content: center;
+  gap: 0;
+}
+
+.sidebar-layout__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.sidebar-layout__avatar--initials {
+  background: var(--color-text-dim, #333333);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--color-text-secondary, #999999);
+  font-weight: 700;
+}
+
+.sidebar-layout__user-name {
+  font-size: 12px;
+  color: var(--color-text-secondary, #999999);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Main content area ── */
+.sidebar-layout__main {
+  margin-left: var(--sidebar-width-expanded, 180px);
+  flex: 1;
+  overflow: auto;
+  min-height: 100vh;
+  transition: margin-left 0.2s ease;
+}
+
+.sidebar-layout__main--expanded {
+  margin-left: var(--sidebar-width-collapsed, 60px);
+}
+
+.sidebar-layout__main--mobile {
+  margin-left: 0;
+  padding-bottom: 56px;
+}
+
+/* ── Mobile Bottom Bar ── */
+.sidebar-layout__mobile-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: var(--color-bg-secondary, #000000);
+  border-top: 1px solid var(--color-border-primary, #222222);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 100;
+}
+
+.sidebar-layout__mobile-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted, #555555);
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 0;
+  transition: color 0.15s ease;
+}
+
+.sidebar-layout__mobile-btn--active {
+  color: var(--color-text-primary, #ffffff);
+}
+
+.sidebar-layout__mobile-icon {
+  font-size: 22px;
+}
+
+.sidebar-layout__mobile-new {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 0;
+  background: var(--color-accent, #e53e3e);
+  color: var(--color-text-primary, #ffffff);
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.15s ease;
+}
+
+.sidebar-layout__mobile-new:hover {
+  background: var(--color-accent-dark, #c53030);
+}

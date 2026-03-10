@@ -7,6 +7,7 @@ import Compose from './routes/Compose'
 import Preflight from './routes/Preflight'
 import Output from './routes/Output'
 import Settings from './routes/Settings'
+import Wireframe from './routes/Wireframe'
 import './App.css'
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
               <Route path="preflight" element={<Preflight />} />
               <Route path="output" element={<Output />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="wireframe" element={<Wireframe />} />
               <Route path="build" element={<Navigate to="/compose" replace />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

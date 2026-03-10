@@ -165,3 +165,43 @@
   --color-surveillance-accent: #17a2b8;
   --color-surveillance-glow: rgba(23, 162, 184, 0.3);
 }
+
+/* ─────────────────────────────────────────
+   Brutalist Theme Overrides
+   Applied via .brutalist class on SidebarLayout wrapper
+   ───────────────────────────────────────── */
+
+.brutalist {
+  --color-bg-primary: #0c0c0c;
+  --color-bg-secondary: #000000;
+  --color-bg-tertiary: #111111;
+  --color-bg-elevated: rgba(255, 255, 255, 0.03);
+  --color-bg-hover: rgba(255, 255, 255, 0.06);
+
+  --color-border-primary: #222222;
+  --color-border-secondary: #1a1a1a;
+  --color-border-subtle: #222222;
+  --color-border-muted: #1a1a1a;
+
+  --color-text-secondary: #999999;
+  --color-text-muted: #555555;
+  --color-text-dim: #333333;
+
+  --color-accent: #e53e3e;
+  --color-accent-dark: #c53030;
+  --color-accent-glow: rgba(229, 62, 62, 0.25);
+  --color-accent-subtle: rgba(229, 62, 62, 0.1);
+
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-display: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', SFMono-Regular, monospace;
+
+  --sidebar-width-expanded: 180px;
+  --sidebar-width-collapsed: 60px;
+}
