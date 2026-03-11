@@ -32,14 +32,14 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'board', icon: '\u25A6', label: 'Board', path: '/compose' },
-  { id: 'archive', icon: '\u2630', label: 'Archive', path: '/archive' },
-  { id: 'analytics', icon: '\u2197', label: 'Analytics', path: '/analytics' },
+  { id: 'board', icon: '/icons/board.png', label: 'Board', path: '/compose' },
+  { id: 'archive', icon: '/icons/archive.png', label: 'Archive', path: '/archive' },
+  { id: 'analytics', icon: '/icons/analytics.png', label: 'Analytics', path: '/analytics' },
 ]
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { id: 'help', icon: '?', label: 'Help', path: '/help' },
-  { id: 'settings', icon: '\u2699', label: 'Settings', path: '/settings' },
+  { id: 'help', icon: '/icons/help.png', label: 'Help', path: '/help' },
+  { id: 'settings', icon: '/icons/settings.png', label: 'Settings', path: '/settings' },
 ]
 
 export default function SidebarLayout() {
@@ -106,7 +106,7 @@ export default function SidebarLayout() {
             onClick={() => navigate('/compose', { state: { viewArchive: true } })}
             aria-label="Archive"
           >
-            <span className="sidebar-layout__mobile-icon">{'\u2630'}</span>
+            <img className="sidebar-layout__mobile-icon-img" src="/icons/archive.png" alt="" />
           </button>
 
           <button
@@ -124,7 +124,7 @@ export default function SidebarLayout() {
             onClick={() => navigate('/settings')}
             aria-label="Settings"
           >
-            <span className="sidebar-layout__mobile-icon">{'\u2699'}</span>
+            <img className="sidebar-layout__mobile-icon-img" src="/icons/settings.png" alt="" />
           </button>
         </div>
       </div>
@@ -178,7 +178,7 @@ export default function SidebarLayout() {
               onClick={() => handleNavClick(item)}
               title={collapsed ? item.label : undefined}
             >
-              <span className="sidebar-layout__nav-icon">{item.icon}</span>
+              <img className="sidebar-layout__nav-icon-img" src={item.icon} alt="" />
               {!collapsed && <span className="sidebar-layout__nav-label">{item.label}</span>}
             </button>
           ))}
@@ -194,7 +194,7 @@ export default function SidebarLayout() {
               onClick={() => handleNavClick(item)}
               title={collapsed ? item.label : undefined}
             >
-              <span className="sidebar-layout__nav-icon">{item.icon}</span>
+              <img className="sidebar-layout__nav-icon-img" src={item.icon} alt="" />
               {!collapsed && <span className="sidebar-layout__nav-label">{item.label}</span>}
             </button>
           ))}
