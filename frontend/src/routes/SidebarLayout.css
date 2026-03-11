@@ -91,10 +91,10 @@
 .sidebar-layout__new-btn {
   width: 100%;
   padding: 9px 0;
-  border: 1px dashed var(--color-text-dim, #333333);
+  border: 1px solid var(--color-accent, #e53e3e);
   border-radius: 0;
   background: transparent;
-  color: var(--color-text-muted, #555555);
+  color: var(--color-accent, #e53e3e);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -108,8 +108,8 @@
 }
 
 .sidebar-layout__new-btn:hover {
-  border-color: var(--color-text-secondary, #999999);
-  color: var(--color-text-secondary, #999999);
+  border-color: var(--color-accent-dark, #c53030);
+  color: var(--color-accent-dark, #c53030);
 }
 
 .sidebar-layout__new-btn--collapsed {
@@ -120,7 +120,7 @@
   border-radius: 0;
   background: var(--color-accent, #e53e3e);
   color: var(--color-text-primary, #ffffff);
-  font-size: 24px;
+  font-size: 32px;
   font-weight: 700;
   display: flex;
   align-items: center;
