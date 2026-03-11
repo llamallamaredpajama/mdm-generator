@@ -32,9 +32,9 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'board', icon: '\u25A6', label: 'Board', path: '/compose' },
-  { id: 'archive', icon: '\u2630', label: 'Archive', path: '/archive' },
-  { id: 'analytics', icon: '\u2197', label: 'Analytics', path: '/analytics' },
+  { id: 'board', icon: '/icons/board_icon_1773194309729.png', label: 'Board', path: '/compose' },
+  { id: 'archive', icon: '/icons/archive_icon_1773194284720.png', label: 'Archive', path: '/archive' },
+  { id: 'analytics', icon: '/icons/analytics_icon_1773194321954.png', label: 'Analytics', path: '/analytics' },
 ]
 
 const BOTTOM_ITEMS: NavItem[] = [
@@ -106,7 +106,9 @@ export default function SidebarLayout() {
             onClick={() => navigate('/compose', { state: { viewArchive: true } })}
             aria-label="Archive"
           >
-            <span className="sidebar-layout__mobile-icon">{'\u2630'}</span>
+            <span className="sidebar-layout__mobile-icon">
+              <img src="/icons/archive_icon_1773194284720.png" alt="" style={{ width: 24, height: 24, objectFit: 'contain', borderRadius: 4 }} />
+            </span>
           </button>
 
           <button
@@ -115,7 +117,9 @@ export default function SidebarLayout() {
             onClick={handleNewEncounter}
             aria-label="New Encounter"
           >
-            <span>+</span>
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/icons/new_patient_icon_1773194296163.png" alt="" style={{ width: 24, height: 24, objectFit: 'contain', borderRadius: 4 }} />
+            </span>
           </button>
 
           <button
@@ -150,7 +154,6 @@ export default function SidebarLayout() {
           </button>
         </div>
 
-        {/* New Encounter Button */}
         <div className="sidebar-layout__new-wrap">
           {collapsed ? (
             <button
@@ -159,11 +162,12 @@ export default function SidebarLayout() {
               onClick={handleNewEncounter}
               aria-label="New Encounter"
             >
-              +
+              <img src="/icons/new_patient_icon_1773194296163.png" alt="" style={{ width: 24, height: 24, objectFit: 'contain', borderRadius: 4 }} />
             </button>
           ) : (
-            <button type="button" className="sidebar-layout__new-btn" onClick={handleNewEncounter}>
-              + New Encounter
+            <button type="button" className="sidebar-layout__new-btn" onClick={handleNewEncounter} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <img src="/icons/new_patient_icon_1773194296163.png" alt="" style={{ width: 24, height: 24, objectFit: 'contain', borderRadius: 4 }} />
+              New Encounter
             </button>
           )}
         </div>
@@ -178,7 +182,13 @@ export default function SidebarLayout() {
               onClick={() => handleNavClick(item)}
               title={collapsed ? item.label : undefined}
             >
-              <span className="sidebar-layout__nav-icon">{item.icon}</span>
+              <span className="sidebar-layout__nav-icon">
+                {item.icon.startsWith('/') ? (
+                  <img src={item.icon} alt="" style={{ width: 24, height: 24, objectFit: 'contain', borderRadius: 4 }} />
+                ) : (
+                  item.icon
+                )}
+              </span>
               {!collapsed && <span className="sidebar-layout__nav-label">{item.label}</span>}
             </button>
           ))}
@@ -194,7 +204,13 @@ export default function SidebarLayout() {
               onClick={() => handleNavClick(item)}
               title={collapsed ? item.label : undefined}
             >
-              <span className="sidebar-layout__nav-icon">{item.icon}</span>
+              <span className="sidebar-layout__nav-icon">
+                {item.icon.startsWith('/') ? (
+                  <img src={item.icon} alt="" style={{ width: 24, height: 24, objectFit: 'contain', borderRadius: 4 }} />
+                ) : (
+                  item.icon
+                )}
+              </span>
               {!collapsed && <span className="sidebar-layout__nav-label">{item.label}</span>}
             </button>
           ))}
