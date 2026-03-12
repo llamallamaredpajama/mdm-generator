@@ -1,4 +1,15 @@
 import { useEffect, useState } from 'react'
+import {
+  User as UserIcon,
+  SignOut as SignOutIcon,
+  CreditCard as CreditCardIcon,
+  Check as CheckIcon,
+  Warning as WarningIcon,
+  Lightning as LightningIcon,
+  ClipboardText as ClipboardTextIcon,
+  Trash as TrashIcon,
+  Info as InfoIcon,
+} from '@phosphor-icons/react'
 import { useAuthToken, useAuth, signOutUser } from '../lib/firebase'
 import { whoAmI } from '../lib/api'
 import { useSubscription } from '../hooks/useSubscription'
@@ -191,16 +202,7 @@ export default function Settings() {
       {/* Account Section */}
       <section className="settings-section">
         <h2 className="settings-section-title">
-          <svg
-            className="settings-section-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
+          <UserIcon className="settings-section-icon" weight="bold" size={24} />
           Account
         </h2>
 
@@ -221,27 +223,14 @@ export default function Settings() {
             </div>
             <div className="settings-actions">
               <button className="settings-btn settings-btn--danger" onClick={() => signOutUser()}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
+                <SignOutIcon weight="bold" size={18} />
                 Sign Out
               </button>
             </div>
           </div>
         ) : (
           <div className="settings-signin">
-            <svg
-              className="settings-signin-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+            <UserIcon className="settings-signin-icon" weight="bold" size={48} />
             <p className="settings-signin-text">
               Please sign in on the Start page to manage your account.
             </p>
@@ -253,16 +242,7 @@ export default function Settings() {
       {user && (
         <section className="settings-section">
           <h2 className="settings-section-title">
-            <svg
-              className="settings-section-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-              <line x1="1" y1="10" x2="23" y2="10" />
-            </svg>
+            <CreditCardIcon className="settings-section-icon" weight="bold" size={24} />
             Subscription
           </h2>
 
@@ -288,16 +268,7 @@ export default function Settings() {
                 {subscription && subscription.status === 'active' ? (
                   <>
                     <p className="settings-status settings-status--active">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
+                      <CheckIcon weight="bold" size={16} />
                       Active Subscription
                     </p>
                     <div className="settings-info-row">
@@ -309,18 +280,7 @@ export default function Settings() {
                     </div>
                     {subscription.cancelAtPeriodEnd && (
                       <p className="settings-status settings-status--warning">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                          <line x1="12" y1="9" x2="12" y2="13" />
-                          <line x1="12" y1="17" x2="12.01" y2="17" />
-                        </svg>
+                        <WarningIcon weight="bold" size={16} />
                         Subscription will cancel at period end
                       </p>
                     )}
@@ -328,16 +288,7 @@ export default function Settings() {
                 ) : subscription && subscription.status === 'trialing' ? (
                   <>
                     <p className="settings-status settings-status--active">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
+                      <CheckIcon weight="bold" size={16} />
                       Trial Active
                     </p>
                     <div className="settings-info-row">
@@ -359,15 +310,7 @@ export default function Settings() {
                   <ul className="settings-features-list">
                     {getPlanFeatures(tier).map((feature, idx) => (
                       <li key={idx} className="settings-features-item">
-                        <svg
-                          className="settings-features-check"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
+                        <CheckIcon className="settings-features-check" weight="bold" size={16} />
                         {feature}
                       </li>
                     ))}
@@ -415,14 +358,7 @@ export default function Settings() {
                         </>
                       ) : (
                         <>
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                          </svg>
+                          <LightningIcon weight="bold" size={18} />
                           Upgrade to Pro
                         </>
                       )}
@@ -443,15 +379,7 @@ export default function Settings() {
                         </>
                       ) : (
                         <>
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                            <line x1="1" y1="10" x2="23" y2="10" />
-                          </svg>
+                          <CreditCardIcon weight="bold" size={18} />
                           Manage Billing
                         </>
                       )}
@@ -471,16 +399,7 @@ export default function Settings() {
       {user && (
         <section className="settings-section">
           <h2 className="settings-section-title">
-            <svg
-              className="settings-section-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-              <rect x="9" y="3" width="6" height="4" rx="1" />
-            </svg>
+            <ClipboardTextIcon className="settings-section-icon" weight="bold" size={24} />
             Order Sets
           </h2>
 
@@ -508,17 +427,7 @@ export default function Settings() {
                       type="button"
                       title="Delete order set"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        width="16"
-                        height="16"
-                      >
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      </svg>
+                      <TrashIcon weight="bold" size={16} />
                     </button>
                   </div>
                 ))}
@@ -531,17 +440,7 @@ export default function Settings() {
       {/* System Information */}
       <section className="settings-section">
         <h2 className="settings-section-title">
-          <svg
-            className="settings-section-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="16" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
-          </svg>
+          <InfoIcon className="settings-section-icon" weight="bold" size={24} />
           System
         </h2>
         <div className="settings-card settings-card--static">

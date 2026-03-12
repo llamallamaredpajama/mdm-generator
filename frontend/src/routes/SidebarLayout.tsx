@@ -1,5 +1,16 @@
 import { useState, useCallback } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import {
+  Kanban as KanbanIcon,
+  Archive as ArchiveIcon,
+  ChartLineUp as ChartLineUpIcon,
+  Question as QuestionIcon,
+  GearSix as GearSixIcon,
+  CaretRight as CaretRightIcon,
+  CaretLeft as CaretLeftIcon,
+  Plus as PlusIcon,
+} from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
 import { useAuth } from '../lib/firebase'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import ErrorBoundary from '../components/ErrorBoundary'
@@ -26,20 +37,20 @@ function getUserInitials(displayName: string | null | undefined): string {
 
 interface NavItem {
   id: string
-  icon: string
+  icon: Icon
   label: string
   path: string
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'board', icon: '/icons/board.png', label: 'Board', path: '/compose' },
-  { id: 'archive', icon: '/icons/archive.png', label: 'Archive', path: '/archive' },
-  { id: 'analytics', icon: '/icons/analytics.png', label: 'Analytics', path: '/analytics' },
+  { id: 'board', icon: KanbanIcon, label: 'Board', path: '/compose' },
+  { id: 'archive', icon: ArchiveIcon, label: 'Archive', path: '/archive' },
+  { id: 'analytics', icon: ChartLineUpIcon, label: 'Analytics', path: '/analytics' },
 ]
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { id: 'help', icon: '/icons/help.png', label: 'Help', path: '/help' },
-  { id: 'settings', icon: '/icons/settings.png', label: 'Settings', path: '/settings' },
+  { id: 'help', icon: QuestionIcon, label: 'Help', path: '/help' },
+  { id: 'settings', icon: GearSixIcon, label: 'Settings', path: '/settings' },
 ]
 
 export default function SidebarLayout() {
@@ -106,7 +117,7 @@ export default function SidebarLayout() {
             onClick={() => navigate('/compose', { state: { viewArchive: true } })}
             aria-label="Archive"
           >
-            <img className="sidebar-layout__mobile-icon-img" src="/icons/archive.png" alt="" />
+            <ArchiveIcon className="sidebar-layout__mobile-icon" weight="bold" size={22} />
           </button>
 
           <button
@@ -115,7 +126,7 @@ export default function SidebarLayout() {
             onClick={handleNewEncounter}
             aria-label="New Encounter"
           >
-            <span>+</span>
+            <PlusIcon weight="bold" size={24} />
           </button>
 
           <button
@@ -124,7 +135,7 @@ export default function SidebarLayout() {
             onClick={() => navigate('/settings')}
             aria-label="Settings"
           >
-            <img className="sidebar-layout__mobile-icon-img" src="/icons/settings.png" alt="" />
+            <GearSixIcon className="sidebar-layout__mobile-icon" weight="bold" size={22} />
           </button>
         </div>
       </div>
@@ -146,7 +157,11 @@ export default function SidebarLayout() {
             onClick={toggleCollapsed}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {collapsed ? '\u203A' : '\u2039'}
+            {collapsed ? (
+              <CaretRightIcon weight="bold" size={18} />
+            ) : (
+              <CaretLeftIcon weight="bold" size={18} />
+            )}
           </button>
         </div>
 
@@ -159,11 +174,11 @@ export default function SidebarLayout() {
               onClick={handleNewEncounter}
               aria-label="New Encounter"
             >
-              +
+              <PlusIcon weight="bold" size={24} />
             </button>
           ) : (
             <button type="button" className="sidebar-layout__new-btn" onClick={handleNewEncounter}>
-              + New Encounter
+              <PlusIcon weight="bold" size={20} /> New Encounter
             </button>
           )}
         </div>
@@ -178,7 +193,7 @@ export default function SidebarLayout() {
               onClick={() => handleNavClick(item)}
               title={collapsed ? item.label : undefined}
             >
-              <img className="sidebar-layout__nav-icon-img" src={item.icon} alt="" />
+              <item.icon className="sidebar-layout__nav-icon" weight="bold" size={28} />
               {!collapsed && <span className="sidebar-layout__nav-label">{item.label}</span>}
             </button>
           ))}
@@ -194,7 +209,7 @@ export default function SidebarLayout() {
               onClick={() => handleNavClick(item)}
               title={collapsed ? item.label : undefined}
             >
-              <img className="sidebar-layout__nav-icon-img" src={item.icon} alt="" />
+              <item.icon className="sidebar-layout__nav-icon" weight="bold" size={28} />
               {!collapsed && <span className="sidebar-layout__nav-label">{item.label}</span>}
             </button>
           ))}
