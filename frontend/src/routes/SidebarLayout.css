@@ -94,7 +94,7 @@
   border: 1px solid var(--color-accent, #e53e3e);
   border-radius: 0;
   background: transparent;
-  color: var(--color-accent, #e53e3e);
+  color: #ffffff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -105,34 +105,43 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .sidebar-layout__new-btn:hover {
   border-color: var(--color-accent-dark, #c53030);
-  color: var(--color-accent-dark, #c53030);
+  color: #ffffff;
 }
 
 .sidebar-layout__new-btn--collapsed {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   border: none;
-  border-radius: 0;
-  background: var(--color-accent, #e53e3e);
-  color: var(--color-text-primary, #ffffff);
+  border-radius: 50%;
+  background: #dc2626;
+  color: #ffffff;
   font-size: 32px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  transition: background 0.15s ease;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 .sidebar-layout__new-btn--collapsed:hover {
-  background: var(--color-accent-dark, #c53030);
-  border-color: transparent;
-  color: var(--color-text-primary, #ffffff);
+  background: #b91c1c;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5);
+  transform: scale(1.06);
 }
 
 /* ── Navigation ── */
@@ -316,12 +325,12 @@
 }
 
 .sidebar-layout__mobile-new {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border: none;
-  border-radius: 0;
-  background: var(--color-accent, #e53e3e);
-  color: var(--color-text-primary, #ffffff);
+  border-radius: 50%;
+  background: #dc2626;
+  color: #ffffff;
   font-size: 24px;
   font-weight: 700;
   cursor: pointer;
@@ -329,9 +338,15 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
-  transition: background 0.15s ease;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 .sidebar-layout__mobile-new:hover {
-  background: var(--color-accent-dark, #c53030);
+  background: #b91c1c;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5);
+  transform: scale(1.06);
 }

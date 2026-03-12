@@ -8,7 +8,6 @@ import {
   GearSix as GearSixIcon,
   CaretRight as CaretRightIcon,
   CaretLeft as CaretLeftIcon,
-  Plus as PlusIcon,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { useAuth } from '../lib/firebase'
@@ -126,7 +125,10 @@ export default function SidebarLayout() {
             onClick={handleNewEncounter}
             aria-label="New Encounter"
           >
-            <PlusIcon weight="bold" size={24} />
+            <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
+              <path d="M13 6h6v20h-6z" fill="#fff" />
+              <path d="M6 13h20v6H6z" fill="#fff" />
+            </svg>
           </button>
 
           <button
@@ -174,11 +176,25 @@ export default function SidebarLayout() {
               onClick={handleNewEncounter}
               aria-label="New Encounter"
             >
-              <PlusIcon weight="bold" size={24} />
+              <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
+                <path d="M13 6h6v20h-6z" fill="#fff" />
+                <path d="M6 13h20v6H6z" fill="#fff" />
+              </svg>
             </button>
           ) : (
             <button type="button" className="sidebar-layout__new-btn" onClick={handleNewEncounter}>
-              <PlusIcon weight="bold" size={20} /> New Encounter
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 32 32"
+                fill="none"
+                className="sidebar-layout__new-btn-icon"
+              >
+                <circle cx="16" cy="16" r="16" fill="#dc2626" />
+                <path d="M13 6h6v20h-6z" fill="#fff" />
+                <path d="M6 13h20v6H6z" fill="#fff" />
+              </svg>
+              New Encounter
             </button>
           )}
         </div>
