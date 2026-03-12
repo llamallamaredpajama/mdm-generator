@@ -253,3 +253,116 @@ For development in embedded browsers (cmux) where popups are blocked:
 | `frontend/.env.production` | Frontend Firebase/Stripe config |
 | `backend/.env.example` | Backend env var template |
 | `backend/Dockerfile` | Production container config |
+
+---
+
+## Security Audit
+
+### Findings by Severity
+
+#### CRITICAL
+
+**1. Token Revocation Checks Missing on All `verifyIdToken()` Calls**
+
+All ~15 occurrences of `verifyIdToken()` across `backend/src/index.ts` and `backend/src/surveillance/routes.ts` omit the `checkRevoked` parameter:
+
+```typescript
+// Current (UNSAFE)
+await admin.auth().verifyIdToken(idToken)
+
+// Required (SAFE)
+await admin.auth().verifyIdToken(idToken, true)  // true = checkRevoked
+```
+
+Impact: If a user account is disabled or session revoked (e.g., compromised account), their existing JWT remains valid until natural expiry (~1 hour). For a medical application, this means a revoked user could continue generating MDM documents for up to an hour after revocation.
+
+Files: `backend/src/index.ts` (~12 occurrences), `backend/src/surveillance/routes.ts` (~2 occurrences). Project uses `firebase-admin@12.6.0` which supports this parameter.
+
+**2. CORS Regex Pattern Overly Permissive**
+
+Location: `backend/src/index.ts` CORS middleware
+
+```typescript
+origin.match(/^https:\/\/(mdm-generator[^.]*\.web\.app|aimdm\.app)$/)
+```
+
+The `[^.]*` wildcard matches any prefix, e.g. `https://evil-mdm-generator.web.app` would be accepted. Combined with `Access-Control-Allow-Credentials: true`, this could enable cross-origin token theft if an attacker registers a matching Firebase Hosting subdomain.
+
+Fix: Replace with explicit allowlist or anchor the pattern:
+```typescript
+origin.match(/^https:\/\/(mdm-generator\.web\.app|aimdm\.app)$/)
+```
+
+#### HIGH
+
+**3. Admin Endpoint Uses Body Token Instead of Bearer Header**
+
+`/v1/admin/set-plan` passes `adminToken` in the POST body instead of the `Authorization` header. Tokens in request bodies are more likely to be captured by proxy logs, WAF logging, and error reporting. OWASP recommends credentials in `Authorization` headers. The endpoint correctly checks Firebase custom claims (`decoded.admin`), but the transport pattern is suboptimal.
+
+**4. Zod Validation Errors Leaked to Clients**
+
+Some endpoints return raw Zod error details:
+```typescript
+return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
+```
+
+This exposes internal schema structure (field names, types, constraints) to attackers. Should return only `{ error: 'Invalid request' }`.
+
+#### MEDIUM
+
+**5. No CSP Header on Frontend (Firebase Hosting)**
+
+`firebase.json` sets `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy` — but no `Content-Security-Policy`. Helmet provides CSP for backend API responses, but the frontend SPA served by Firebase Hosting has no CSP, leaving it more vulnerable to XSS.
+
+**6. Docker Container Does Not Explicitly Set Non-Root User**
+
+`backend/Dockerfile` uses `node:20-slim` but doesn't include a `USER node` directive. While Cloud Run containers typically run as non-root, an explicit `USER` instruction is defense-in-depth.
+
+**7. `FRONTEND_URL` Likely Unset in Production**
+
+```typescript
+const allowedOrigins = [
+  process.env.FRONTEND_URL,  // Possibly undefined in Cloud Run
+].filter(Boolean) as string[]
+```
+
+If unset, CORS falls through entirely to the regex pattern (Finding #2), making origin matching implicit rather than explicit.
+
+**8. Inconsistent Token Transport (Body vs Header)**
+
+The dual pattern (Bearer header for user profile CRUD, body token for Build Mode/Quick Mode/surveillance) is mitigated by HTTPS + CORS + no token logging, but creates cognitive overhead and risk of future developers accidentally logging request bodies containing tokens.
+
+### Confirmed Secure
+
+| Area | Assessment |
+|------|-----------|
+| Dev-mode auth bypass (`DEV_MOCK_USER`) | Compile-time gated by `import.meta.env.DEV`, tree-shaken from production builds. Backend rejects mock token. Safe. |
+| Frontend token storage | React state only (`useState`), never `localStorage`/`sessionStorage`. Listener cleanup via `unsubscribe`. Best practice. |
+| `.env.production` in git | Contains only public Firebase config and Stripe publishable key. No secrets. Safe. |
+| Firestore security rules | Owner-scoped reads/writes, finalized encounters locked, usage tracking server-write-only. Sound design. |
+| Rate limiting | Global 60/min, LLM 10/min, parse 5/min per IP. Trust proxy enabled. Appropriate. |
+| Helmet on backend | Enabled (`app.use(helmet())`). Provides HSTS, X-Frame-Options, CSP for API responses. |
+| Error handling (frontend) | `ApiError` class returns user-friendly messages, no token/stack trace leakage. |
+| Firebase Auth (Google OAuth) | `signInWithPopup` only, no redirect fallback. Firebase-managed, no custom OAuth. |
+
+### Summary Matrix
+
+| # | Finding | Severity | Status |
+|---|---------|----------|--------|
+| 1 | Missing `checkRevoked: true` on `verifyIdToken()` | **CRITICAL** | Needs fix |
+| 2 | CORS regex accepts unintended origins | **CRITICAL** | Needs fix |
+| 3 | Admin token in body instead of header | HIGH | Design issue |
+| 4 | Zod validation errors leaked | HIGH | Needs fix |
+| 5 | No CSP on frontend hosting | MEDIUM | Needs fix |
+| 6 | Docker no explicit `USER node` | MEDIUM | Hardening |
+| 7 | `FRONTEND_URL` likely unset in prod | MEDIUM | Verify |
+| 8 | Inconsistent token transport | MEDIUM | Design issue |
+
+### Documentation Gaps
+
+This document should additionally cover:
+
+1. **Token revocation policy** — whether/when `checkRevoked` is used and incident response for immediate account disablement
+2. **CORS origin allowlist** — explicit list of allowed origins rather than describing a regex
+3. **Token expiry lifecycle** — Firebase JWTs expire after ~1 hour and are auto-refreshed by the SDK
+4. **HSTS policy** — Helmet provides HSTS on backend; frontend relies on Firebase Hosting defaults
