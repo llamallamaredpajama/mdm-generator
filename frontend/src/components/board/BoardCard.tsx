@@ -12,7 +12,7 @@ interface BoardCardProps {
 
 export default function BoardCard({ encounter, isActive, onClick }: BoardCardProps) {
   const mode = getEncounterMode(encounter)
-  const photo = getEncounterPhoto(encounter.chiefComplaint)
+  const photo = getEncounterPhoto(encounter.chiefComplaint, encounter.encounterPhoto)
   const roomDisplay = formatRoomDisplay(encounter.roomNumber)
 
   // Build the meta line and complaint based on mode

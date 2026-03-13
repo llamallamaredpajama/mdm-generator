@@ -135,6 +135,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               updatedAt: data.updatedAt,
               shiftStartedAt: data.shiftStartedAt,
               archivedAt: data.archivedAt,
+              encounterPhoto: data.encounterPhoto ?? undefined,
             }
 
             setEncounter(encounterData)

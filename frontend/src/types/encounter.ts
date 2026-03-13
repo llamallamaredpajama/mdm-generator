@@ -453,6 +453,8 @@ export interface EncounterDocument {
   shiftStartedAt: Timestamp
   /** When the encounter was archived (if applicable) */
   archivedAt?: Timestamp
+  /** LLM-assigned encounter photo (category/subcategory) */
+  encounterPhoto?: { category: string; subcategory: string }
   /** Whether user dismissed the enhancement advisor (build mode) */
   enhancementDismissed?: boolean
   /** Whether user has reprocessed with gap responses (build mode) */

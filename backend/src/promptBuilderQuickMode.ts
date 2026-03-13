@@ -32,6 +32,8 @@ export interface QuickModeGenerationResult {
   patientIdentifier: PatientIdentifier
   /** Enhancement advisor gaps */
   gaps: GapItem[]
+  /** LLM-assigned encounter photo */
+  encounterPhoto?: { category: string; subcategory: string }
 }
 
 /**
@@ -70,7 +72,8 @@ export interface PromptParts {
 export async function buildQuickModePrompt(
   narrative: string,
   surveillanceContext?: string,
-  cdrContext?: string
+  cdrContext?: string,
+  photoCatalog?: string
 ): Promise<PromptParts> {
   const mdmGuide = await loadMdmGuide()
 
@@ -134,7 +137,8 @@ Return ONLY valid JSON in this exact structure (no markdown, no code fences):
       "description": "Why this matters (1-2 sentences)",
       "toggleItems": [{ "id": "toggle_id", "label": "Yes/No question for physician", "defaultValue": false }]
     }
-  ]
+  ],
+  "encounterPhoto": { "category": "...", "subcategory": "..." }
 }
 
 ## Important Notes
@@ -162,6 +166,10 @@ Generate the complete JSON response now:`
   // Append CDR context with one-shot integration instructions
   if (cdrContext) {
     systemPrompt += `\n\n---\n\n# Clinical Decision Rules Context\n\n${cdrContext}\n\n## CDR Quick Mode Instructions\n\n1. Identify all applicable clinical decision rules from the reference above based on the narrative\n2. Calculate scores where sufficient data exists — note missing data points for incomplete calculations\n3. Include CDR results in the "dataReviewed" array (e.g., "HEART Score: 4 (moderate risk) — Age >45 (+1), HTN (+1), troponin normal (0), EKG non-specific (+1), moderate clinical suspicion (+1)")\n4. Reference CDR results in differential reasoning to support probability assessments\n5. Use CDR scores to inform risk assessment and disposition recommendations\n6. In the MDM "text" field, include CDR calculations in the Data Reviewed and Risk Assessment sections`
+  }
+
+  if (photoCatalog) {
+    systemPrompt += `\n\n---\n\n# Encounter Photo Selection\n\n${photoCatalog}\n\nSelect the SINGLE best photo for this encounter based on the chief complaint and clinical presentation. For ambiguous presentations, prefer the primary symptom.`
   }
 
   return {
@@ -192,6 +200,7 @@ export function parseQuickModeResponse(rawResponse: string): QuickModeGeneration
         chiefComplaint: parsed.patientIdentifier?.chiefComplaint || undefined,
       },
       gaps: safeParseGaps(parsed.gaps),
+      encounterPhoto: parsed.encounterPhoto || undefined,
     }
   } catch (parseError) {
     // Try to extract JSON from the response
@@ -211,6 +220,7 @@ export function parseQuickModeResponse(rawResponse: string): QuickModeGeneration
           chiefComplaint: parsed.patientIdentifier?.chiefComplaint || undefined,
         },
         gaps: safeParseGaps(parsed.gaps),
+        encounterPhoto: parsed.encounterPhoto || undefined,
       }
     }
 
@@ -235,5 +245,6 @@ export function getQuickModeFallback(): QuickModeGenerationResult {
     },
     patientIdentifier: {},
     gaps: [],
+    encounterPhoto: undefined,
   }
 }

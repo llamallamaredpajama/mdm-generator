@@ -339,7 +339,7 @@ function DetailPanelShell({
   statusLabel,
   children,
 }: PanelShellProps) {
-  const photo = getEncounterPhoto(encounter.chiefComplaint)
+  const photo = getEncounterPhoto(encounter.chiefComplaint, encounter.encounterPhoto)
   const roomDisplay = formatRoomDisplay(encounter.roomNumber)
 
   const panelWidth = isMobile ? '100%' : 600

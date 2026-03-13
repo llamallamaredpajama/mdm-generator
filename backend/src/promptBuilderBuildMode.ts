@@ -39,7 +39,8 @@ export function buildSection1Prompt(
   systemPrompt: string,
   surveillanceContext?: string,
   cdrContext?: string,
-  testCatalog?: string
+  testCatalog?: string,
+  photoCatalog?: string
 ): { system: string; user: string } {
   let system = [
     systemPrompt,
@@ -153,7 +154,10 @@ export function buildSection1Prompt(
     '      "source": "baseline" | "differential" | "cdr" | "surveillance",',
     '      "priority": "stat" | "routine"',
     '    }',
-    '  ]',
+    photoCatalog ? '  ],' : '  ]',
+    ...(photoCatalog ? [
+      '  "encounterPhoto": { "category": "...", "subcategory": "..." }',
+    ] : []),
     '}',
     '',
     'Generate ALL three sections:',
@@ -169,6 +173,11 @@ export function buildSection1Prompt(
     '   - "cdr": Tests needed to complete CDR calculations (e.g., troponin for HEART score).',
     '   - "surveillance": Tests driven by regional epidemiologic data.' + surveillanceWorkupHint,
     '   - Mark "stat" priority for time-sensitive tests, "routine" otherwise.',
+    ...(photoCatalog ? [
+      '',
+      photoCatalog,
+      'Select the SINGLE best photo for this encounter based on the chief complaint and clinical presentation. For ambiguous presentations, prefer the primary symptom.',
+    ] : []),
   ].join('\n')
 
   return { system, user }
@@ -356,7 +365,8 @@ export function buildFinalizePrompt(
   surveillanceContext?: string,
   cdrContext?: string,
   structuredData?: FinalizeStructuredData,
-  s3GuideText?: string
+  s3GuideText?: string,
+  photoCatalog?: string
 ): { system: string; user: string } {
   const differentialSummary = section1.response.differential
     .map((d: DifferentialItem) => `- ${d.diagnosis} (${d.urgency})`)
@@ -525,12 +535,20 @@ export function buildFinalizePrompt(
     '      "description": "Why this matters (1-2 sentences)",',
     '      "toggleItems": [{ "id": "toggle_id", "label": "Yes/No question for physician", "defaultValue": false }]',
     '    }',
-    '  ]',
+    photoCatalog ? '  ],' : '  ]',
+    ...(photoCatalog ? [
+      '  "encounterPhoto": { "category": "...", "subcategory": "..." }',
+    ] : []),
     '}',
     '',
     'Generate the complete final MDM document.',
     'The "text" field must be ready for direct copy-paste into an EHR.',
     'The "gaps" array identifies 3-8 documentation opportunities per §2.10. Use canonical IDs when applicable.',
+    ...(photoCatalog ? [
+      '',
+      photoCatalog,
+      'Select or refine the encounter photo based on the working diagnosis and final clinical picture. If the working diagnosis maps clearly to a specific subcategory, prefer it.',
+    ] : []),
   ].join('\n')
 
   return { system, user }

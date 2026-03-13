@@ -55,6 +55,7 @@ import {
   type QuickModeGenerationResult,
 } from './promptBuilderQuickMode'
 import { buildAnalyticsInsightsPrompt } from './promptBuilderAnalytics'
+import { buildPhotoCatalogPrompt, validatePhoto } from './photoCatalog.js'
 import surveillanceRouter from './surveillance/routes'
 import { mapToSyndromes } from './surveillance/syndromeMapper'
 import { RegionResolver } from './surveillance/regionResolver'
@@ -1017,11 +1018,13 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       }
     }
 
-    const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx, section1CdrCtx, testCatalogStr)
+    const photoCatalog = buildPhotoCatalogPrompt()
+    const prompt = buildSection1Prompt(content, systemPrompt, section1SurveillanceCtx, section1CdrCtx, testCatalogStr, photoCatalog)
 
     let differential: DifferentialItem[] = []
     let cdrAnalysis: CdrAnalysisItem[] = []
     let workupRecommendations: WorkupRecommendation[] = []
+    let encounterPhoto: { category: string; subcategory: string } | undefined
     try {
       const result = await callGemini(prompt, { timeoutMs: 90_000 })
 
@@ -1068,6 +1071,8 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
               console.warn('Section 1 workupRecommendations validation failed (non-blocking)')
             }
           }
+
+          encounterPhoto = validatePhoto(rawParsed.encounterPhoto)
         }
 
         // Fallback: if no differential was parsed, try extracting JSON object from text
@@ -1137,6 +1142,7 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
       ...(section1SurveillanceCtx && { surveillanceContext: section1SurveillanceCtx }),
       // Persist CDR context so Section 2 and Section 3 can access it
       ...(section1CdrCtx && { cdrContext: section1CdrCtx }),
+      ...(encounterPhoto && { encounterPhoto }),
       status: 'section1_done',
       updatedAt: admin.firestore.Timestamp.now(),
     })
@@ -1378,10 +1384,12 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       s3GuideText = undefined
     }
 
-    const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx, structuredData, s3GuideText)
+    const photoCatalog = buildPhotoCatalogPrompt()
+    const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx, structuredData, s3GuideText, photoCatalog)
 
     let finalMdm: FinalMdm
     let gaps: GapItem[] = []
+    let encounterPhoto: { category: string; subcategory: string } | undefined
     try {
       const result = await callGemini(prompt, 90_000)
 
@@ -1471,6 +1479,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
 
         const candidate = extractFinalMdm(rawParsed)
         gaps = safeParseGaps(rawParsed.gaps)
+        encounterPhoto = validatePhoto(rawParsed.encounterPhoto)
         // Validate with Zod schema
         const validated = FinalMdmSchema.safeParse(candidate)
         if (validated.success) {
@@ -1496,6 +1505,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
               text: jsonObj.text || renderMdmText(jsonObj),
             }
             gaps = safeParseGaps(jsonObj.gaps)
+            encounterPhoto = validatePhoto(jsonObj.encounterPhoto)
             const validated = FinalMdmSchema.safeParse(candidate)
             finalMdm = validated.success ? validated.data : fallbackMdm
           } catch {
@@ -1538,6 +1548,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
       'section3.submissionCount': newSubmissionCount,
       'section3.status': 'completed',
       'section3.lastUpdated': admin.firestore.Timestamp.now(),
+      ...(encounterPhoto && { encounterPhoto }),
       status: 'finalized',
       updatedAt: admin.firestore.Timestamp.now(),
     })
@@ -2118,10 +2129,13 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
 
     // 9. Build prompt and call Vertex AI
     let result: QuickModeGenerationResult
+    let encounterPhoto: { category: string; subcategory: string } | undefined
     try {
-      const prompt = await buildQuickModePrompt(narrative, surveillanceContext, quickCdrContext)
+      const photoCatalog = buildPhotoCatalogPrompt()
+      const prompt = await buildQuickModePrompt(narrative, surveillanceContext, quickCdrContext, photoCatalog)
       const modelResponse = await callGemini(prompt)
       result = parseQuickModeResponse(modelResponse.text)
+      encounterPhoto = validatePhoto(result.encounterPhoto)
     } catch (modelError) {
       console.error('Quick mode model error:', modelError)
       result = getQuickModeFallback()
@@ -2159,6 +2173,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
         result.patientIdentifier.sex?.charAt(0).toUpperCase(),
         result.patientIdentifier.chiefComplaint,
       ].filter(Boolean).join(' ').trim() || encounter.chiefComplaint,
+      ...(encounterPhoto && { encounterPhoto }),
       status: 'finalized',
       updatedAt: admin.firestore.Timestamp.now(),
     })

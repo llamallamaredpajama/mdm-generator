@@ -498,6 +498,7 @@ export const EncounterDocumentSchema = z.object({
   section2: SectionDataSchema.default({}),
   section3: SectionDataSchema.default({}),
   cdrTracking: CdrTrackingSchema.optional().default({}),
+  encounterPhoto: z.object({ category: z.string(), subcategory: z.string() }).optional(),
   createdAt: z.any(), // Firestore Timestamp
   updatedAt: z.any(), // Firestore Timestamp
   shiftStartedAt: z.any(), // Firestore Timestamp

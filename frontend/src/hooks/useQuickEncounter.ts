@@ -102,6 +102,7 @@ function convertEncounterDoc(docId: string, data: DocumentData): EncounterDocume
     updatedAt: data.updatedAt,
     shiftStartedAt: data.shiftStartedAt,
     archivedAt: data.archivedAt,
+    encounterPhoto: data.encounterPhoto ?? undefined,
   }
 }
 
