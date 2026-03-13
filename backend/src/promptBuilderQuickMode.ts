@@ -101,7 +101,7 @@ You are processing a single narrative input to generate a complete Medical Decis
 
 ## Response Format
 
-Return ONLY valid JSON in this exact structure (no markdown, no code fences):
+Respond with this exact JSON structure:
 
 {
   "patientIdentifier": {

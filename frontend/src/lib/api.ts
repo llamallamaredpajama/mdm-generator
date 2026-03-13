@@ -350,6 +350,7 @@ export interface Section2Response {
 }
 
 export interface FinalizeResponse {
+  generationFailed?: boolean
   finalMdm: FinalMdm
   gaps: EnhancementGap[]
   quotaRemaining: number
@@ -461,6 +462,7 @@ export interface PatientIdentifier {
 
 export interface QuickModeResponse {
   ok: boolean
+  generationFailed?: boolean
   mdm: {
     text: string
     json: Record<string, unknown>

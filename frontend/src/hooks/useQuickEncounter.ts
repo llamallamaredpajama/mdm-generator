@@ -237,6 +237,9 @@ export function useQuickEncounter(encounterId: string | null): UseQuickEncounter
       const location =
         trendEnabled && trendLocationValid && trendLocation ? trendLocation : undefined
       const response = await generateQuickMode(encounterId, narrative, idToken, location)
+      if (response.generationFailed) {
+        setError(new Error('MDM generation failed — model returned unusable output'))
+      }
       return response
     } catch (err) {
       console.error('Failed to generate MDM:', err)

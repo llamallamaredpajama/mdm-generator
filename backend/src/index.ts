@@ -1387,11 +1387,12 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     const photoCatalog = buildPhotoCatalogPrompt()
     const prompt = buildFinalizePrompt(section1Data, section2Data, content, storedSurveillanceCtx, storedCdrCtx, structuredData, s3GuideText, photoCatalog)
 
+    let generationFailed = false
     let finalMdm: FinalMdm
     let gaps: GapItem[] = []
     let encounterPhoto: { category: string; subcategory: string } | undefined
     try {
-      const result = await callGemini(prompt, 90_000)
+      const result = await callGemini(prompt, { jsonMode: true, timeoutMs: 90_000 })
 
       // Parse response - expect text and json sections
       let cleanedText = result.text
@@ -1485,11 +1486,19 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
         if (validated.success) {
           finalMdm = validated.data
         } else {
-          console.warn('Finalize Zod validation failed:', validated.error.message)
+          console.warn('Finalize Zod validation failed:', {
+            zodError: validated.error.message,
+            candidateKeys: Object.keys(candidate),
+          })
           finalMdm = fallbackMdm
+          generationFailed = true
         }
       } catch (parseError) {
-        console.error('Finalize JSON parse error:', parseError)
+        console.error('Finalize JSON parse error:', {
+          error: parseError instanceof Error ? parseError.message : String(parseError),
+          responseLength: cleanedText.length,
+          responsePreview: cleanedText.substring(0, 200),
+        })
         // Try to extract JSON
         const jsonStart = cleanedText.indexOf('{')
         const jsonEnd = cleanedText.lastIndexOf('}')
@@ -1508,11 +1517,14 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
             encounterPhoto = validatePhoto(jsonObj.encounterPhoto)
             const validated = FinalMdmSchema.safeParse(candidate)
             finalMdm = validated.success ? validated.data : fallbackMdm
+            if (!validated.success) generationFailed = true
           } catch {
             finalMdm = fallbackMdm
+            generationFailed = true
           }
         } else {
           finalMdm = fallbackMdm
+          generationFailed = true
         }
       }
     } catch (modelError) {
@@ -1546,10 +1558,10 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
         processedAt: admin.firestore.Timestamp.now(),
       },
       'section3.submissionCount': newSubmissionCount,
-      'section3.status': 'completed',
+      'section3.status': generationFailed ? 'error' : 'completed',
       'section3.lastUpdated': admin.firestore.Timestamp.now(),
       ...(encounterPhoto && { encounterPhoto }),
-      status: 'finalized',
+      status: generationFailed ? 'section3_error' : 'finalized',
       updatedAt: admin.firestore.Timestamp.now(),
     })
 
@@ -1578,6 +1590,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     // 11. Return response
     return res.json({
       ok: true,
+      generationFailed,
       finalMdm,
       gaps,
       quotaRemaining: stats.remaining,
@@ -2128,17 +2141,22 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
     }
 
     // 9. Build prompt and call Vertex AI
+    let generationFailed = false
     let result: QuickModeGenerationResult
     let encounterPhoto: { category: string; subcategory: string } | undefined
     try {
       const photoCatalog = buildPhotoCatalogPrompt()
       const prompt = await buildQuickModePrompt(narrative, surveillanceContext, quickCdrContext, photoCatalog)
-      const modelResponse = await callGemini(prompt)
+      const modelResponse = await callGemini(prompt, { jsonMode: true, timeoutMs: 90_000 })
       result = parseQuickModeResponse(modelResponse.text)
       encounterPhoto = validatePhoto(result.encounterPhoto)
     } catch (modelError) {
-      console.error('Quick mode model error:', modelError)
+      console.error('Quick mode generation failed:', {
+        error: modelError instanceof Error ? modelError.message : String(modelError),
+        responseLength: 0,
+      })
       result = getQuickModeFallback()
+      generationFailed = true
     }
 
     // 10. Deterministic surveillance enrichment of dataReviewed
@@ -2158,7 +2176,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
 
     // 11. Update Firestore with results
     await encounterRef.update({
-      'quickModeData.status': 'completed',
+      'quickModeData.status': generationFailed ? 'error' : 'completed',
       'quickModeData.narrative': narrative,
       'quickModeData.patientIdentifier': result.patientIdentifier,
       'quickModeData.mdmOutput': {
@@ -2167,6 +2185,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
       },
       'quickModeData.gaps': result.gaps,
       'quickModeData.processedAt': admin.firestore.Timestamp.now(),
+      ...(generationFailed && { 'quickModeData.errorMessage': 'MDM generation failed — model returned unusable output' }),
       // Update chief complaint with extracted identifier for card display
       chiefComplaint: [
         result.patientIdentifier.age,
@@ -2174,7 +2193,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
         result.patientIdentifier.chiefComplaint,
       ].filter(Boolean).join(' ').trim() || encounter.chiefComplaint,
       ...(encounterPhoto && { encounterPhoto }),
-      status: 'finalized',
+      status: generationFailed ? 'error' : 'finalized',
       updatedAt: admin.firestore.Timestamp.now(),
     })
 
@@ -2202,6 +2221,7 @@ app.post('/v1/quick-mode/generate', llmLimiter, async (req, res) => {
     // 14. Return response
     return res.json({
       ok: true,
+      generationFailed,
       mdm: {
         text: result.text,
         json: result.json,

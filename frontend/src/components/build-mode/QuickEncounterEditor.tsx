@@ -59,7 +59,7 @@ export default function QuickEncounterEditor({ encounterId, onBack }: QuickEncou
     }
 
     const result = await submitNarrative()
-    if (result?.ok) {
+    if (result?.ok && !result.generationFailed) {
       showSuccess('MDM generated successfully')
       // Trigger trend analysis if enabled
       if (result.patientIdentifier?.chiefComplaint) {
@@ -75,6 +75,8 @@ export default function QuickEncounterEditor({ encounterId, onBack }: QuickEncou
           analyze(result.patientIdentifier.chiefComplaint, dxList)
         }
       }
+    } else if (result?.generationFailed) {
+      showError('MDM generation failed. Please try again.')
     }
   }, [narrative, showError, submitNarrative, showSuccess, analyze])
 
