@@ -17,8 +17,8 @@ RUN pnpm install --frozen-lockfile || pnpm install
 COPY backend/src ./src
 COPY backend/tsconfig.json ./
 
-# Copy docs folder (needed by promptBuilder)
-COPY docs /docs
+# Copy prompt guides (needed by promptBuilder)
+COPY backend/prompts ./prompts
 
 # Build TypeScript
 RUN pnpm run build

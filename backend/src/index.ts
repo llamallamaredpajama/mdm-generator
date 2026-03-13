@@ -985,14 +985,14 @@ app.post('/v1/build-mode/process-section1', llmLimiter, async (req, res) => {
     let systemPrompt: string
     try {
       systemPrompt = await fs.readFile(
-        path.join(__dirname, '../../docs/mdm-gen-guide-build-s1.md'),
+        path.join(__dirname, '../prompts/mdm-gen-guide-build-s1.md'),
         'utf8'
       )
     } catch {
       console.warn('S1 guide not found, falling back to legacy guide')
       try {
         systemPrompt = await fs.readFile(
-          path.join(__dirname, '../../docs/mdm-gen-guide.md'),
+          path.join(__dirname, '../prompts/mdm-gen-guide-v2.md'),
           'utf8'
         )
       } catch {
@@ -1376,7 +1376,7 @@ app.post('/v1/build-mode/finalize', llmLimiter, async (req, res) => {
     let s3GuideText: string | undefined
     try {
       s3GuideText = await fs.readFile(
-        path.join(__dirname, '../../docs/mdm-gen-guide-build-s3.md'),
+        path.join(__dirname, '../prompts/mdm-gen-guide-build-s3.md'),
         'utf8'
       )
     } catch {

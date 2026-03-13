@@ -75,7 +75,7 @@ export function buildBuildModeReprocessPrompt(input: BuildModeReprocessInput): P
 
   // Load S3 guide for reference
   try {
-    const guidePath = path.join(__dirname, '..', '..', 'docs', 'mdm-gen-guide-build-s3.md')
+    const guidePath = path.join(__dirname, '..', 'prompts', 'mdm-gen-guide-build-s3.md')
     const guideText = fs.readFileSync(guidePath, 'utf-8')
     system += '\n\nMDM TEMPLATE REFERENCE:\n' + guideText
   } catch {
@@ -138,7 +138,7 @@ export function buildQuickModeReprocessPrompt(input: QuickModeReprocessInput): P
 
   // Load v2 guide for reference
   try {
-    const guidePath = path.join(__dirname, '..', '..', 'docs', 'mdm-gen-guide-v2.md')
+    const guidePath = path.join(__dirname, '..', 'prompts', 'mdm-gen-guide-v2.md')
     const guideText = fs.readFileSync(guidePath, 'utf-8')
     system += '\n\nMDM GUIDE REFERENCE:\n' + guideText
   } catch {
