@@ -11,10 +11,6 @@ import {
   type QuickModeGenerationResult,
 } from '../promptBuilderQuickMode'
 import { buildFinalizePrompt } from '../promptBuilderBuildMode'
-import {
-  buildBuildModeReprocessPrompt,
-  buildQuickModeReprocessPrompt,
-} from '../promptBuilderReprocess'
 
 // ============================================================================
 // buildParsePrompt (parsePromptBuilder.ts)
@@ -350,68 +346,3 @@ describe('parseQuickModeResponse — gaps extraction', () => {
   })
 })
 
-// ============================================================================
-// buildBuildModeReprocessPrompt (promptBuilderReprocess.ts)
-// ============================================================================
-describe('buildBuildModeReprocessPrompt', () => {
-  it('returns system and user prompt parts', () => {
-    const result = buildBuildModeReprocessPrompt({
-      section1Content: 'Chest pain presentation',
-      section2Content: 'Labs and imaging normal',
-      section3Content: 'Discharge home',
-      originalMdmText: 'Original MDM text...',
-      gapResponses: { independent_historian: { spoke_with_historian: true } },
-    })
-    expect(result).toHaveProperty('system')
-    expect(result).toHaveProperty('user')
-  })
-
-  it('includes original MDM in user prompt', () => {
-    const result = buildBuildModeReprocessPrompt({
-      section1Content: 'Chest pain',
-      section2Content: 'Labs normal',
-      section3Content: 'Discharge',
-      originalMdmText: 'UNIQUE_MDM_TEXT_12345',
-      gapResponses: {},
-    })
-    expect(result.user).toContain('UNIQUE_MDM_TEXT_12345')
-  })
-
-  it('includes confirmed gap responses', () => {
-    const result = buildBuildModeReprocessPrompt({
-      section1Content: 'Chest pain',
-      section2Content: 'Labs normal',
-      section3Content: 'Discharge',
-      originalMdmText: 'MDM text',
-      gapResponses: { independent_historian: { spoke_with_historian: true, family_present: false } },
-    })
-    expect(result.user).toContain('independent_historian')
-    expect(result.user).toContain('spoke_with_historian: YES')
-    expect(result.user).toContain('family_present: NO')
-  })
-})
-
-// ============================================================================
-// buildQuickModeReprocessPrompt (promptBuilderReprocess.ts)
-// ============================================================================
-describe('buildQuickModeReprocessPrompt', () => {
-  it('returns system and user prompt parts', () => {
-    const result = buildQuickModeReprocessPrompt({
-      narrative: 'Patient narrative...',
-      originalMdmText: 'Original MDM text...',
-      gapResponses: {},
-    })
-    expect(result).toHaveProperty('system')
-    expect(result).toHaveProperty('user')
-  })
-
-  it('includes narrative and original MDM', () => {
-    const result = buildQuickModeReprocessPrompt({
-      narrative: 'UNIQUE_NARRATIVE_99',
-      originalMdmText: 'UNIQUE_MDM_88',
-      gapResponses: {},
-    })
-    expect(result.user).toContain('UNIQUE_NARRATIVE_99')
-    expect(result.user).toContain('UNIQUE_MDM_88')
-  })
-})

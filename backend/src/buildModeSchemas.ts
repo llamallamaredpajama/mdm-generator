@@ -451,6 +451,8 @@ export const EncounterStatusSchema = z.enum([
   'section2_done',
   'finalized',
   'archived',
+  'section3_error',
+  'error',
 ])
 
 export type EncounterStatus = z.infer<typeof EncounterStatusSchema>

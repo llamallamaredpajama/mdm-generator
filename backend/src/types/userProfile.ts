@@ -60,6 +60,9 @@ export const ReportTemplateCreateSchema = z.object({
 })
 export type ReportTemplateCreate = z.infer<typeof ReportTemplateCreateSchema>
 
+export const ReportTemplateUpdateSchema = ReportTemplateCreateSchema.partial()
+export type ReportTemplateUpdate = z.infer<typeof ReportTemplateUpdateSchema>
+
 export interface ReportTemplate {
   id: string
   testId: string
