@@ -2,7 +2,17 @@
  * Photo catalog for LLM-driven encounter photo assignment.
  * Maps 16 categories to editorial photos
  * in frontend/public/encounter-photos/.
+ *
+ * At startup, initPhotoCatalog() loads the authoritative catalog
+ * from the Firestore `photoLibrary` collection.  The hardcoded
+ * PHOTO_CATALOG below serves as a synchronous fallback so that
+ * buildPhotoCatalogPrompt() and validatePhoto() never need to await.
  */
+
+import admin from 'firebase-admin'
+
+/** Module-level cache populated by initPhotoCatalog(). */
+let cachedCatalog: Record<string, string[]> | null = null
 
 export const PHOTO_CATALOG: Record<string, string[]> = {
   cardiac: ['aortic-dissection', 'arrhythmia', 'cardiac-arrest', 'chest-pain', 'hypertension', 'palpitations', 'syncope'],
@@ -26,11 +36,55 @@ export const PHOTO_CATALOG: Record<string, string[]> = {
 export const DEFAULT_PHOTO = { category: 'general', subcategory: 'unspecified' }
 
 /**
+ * Load the photo catalog from the Firestore `photoLibrary` collection
+ * into the module-level cache.  Call once at startup.
+ *
+ * On failure the hardcoded PHOTO_CATALOG is used as a fallback — this
+ * function intentionally does NOT throw.
+ */
+export async function initPhotoCatalog(db: admin.firestore.Firestore): Promise<void> {
+  try {
+    const snapshot = await db.collection('photoLibrary').get()
+    if (snapshot.empty) {
+      console.warn('photoLibrary collection is empty — using hardcoded fallback')
+      return
+    }
+
+    const catalog: Record<string, string[]> = {}
+    for (const doc of snapshot.docs) {
+      const data = doc.data()
+      const category = data.category as string | undefined
+      const subcategory = data.subcategory as string | undefined
+      if (!category || !subcategory) continue
+      if (!catalog[category]) catalog[category] = []
+      if (!catalog[category].includes(subcategory)) {
+        catalog[category].push(subcategory)
+      }
+    }
+
+    cachedCatalog = catalog
+    console.log(
+      `Photo catalog loaded: ${snapshot.size} photos in ${Object.keys(catalog).length} categories`,
+    )
+  } catch (err) {
+    console.warn(
+      'Failed to load photo catalog from Firestore — using hardcoded fallback:',
+      err instanceof Error ? err.message : 'unknown error',
+    )
+  }
+}
+
+/** Return the Firestore-backed catalog when available, otherwise the hardcoded fallback. */
+function getCatalog(): Record<string, string[]> {
+  return cachedCatalog ?? PHOTO_CATALOG
+}
+
+/**
  * Build compact photo catalog text for LLM prompt injection (~800 tokens).
  */
 export function buildPhotoCatalogPrompt(): string {
   const lines = ['ENCOUNTER PHOTO CATALOG — select ONE category/subcategory:']
-  for (const [category, subcategories] of Object.entries(PHOTO_CATALOG)) {
+  for (const [category, subcategories] of Object.entries(getCatalog())) {
     lines.push(`${category}: ${subcategories.join(', ')}`)
   }
   return lines.join('\n')
@@ -43,7 +97,8 @@ export function validatePhoto(photo: unknown): { category: string; subcategory: 
   if (!photo || typeof photo !== 'object') return DEFAULT_PHOTO
   const { category, subcategory } = photo as { category?: string; subcategory?: string }
   if (!category || !subcategory) return DEFAULT_PHOTO
-  const subs = PHOTO_CATALOG[category]
+  const catalog = getCatalog()
+  const subs = catalog[category]
   if (!subs || !subs.includes(subcategory)) return DEFAULT_PHOTO
   return { category, subcategory }
 }

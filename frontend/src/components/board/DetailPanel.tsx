@@ -5,6 +5,7 @@ import { useQuickEncounter } from '../../hooks/useQuickEncounter'
 import { useIsMobile, usePrefersReducedMotion } from '../../hooks/useMediaQuery'
 import { getEncounterMode, formatRoomDisplay } from '../../types/encounter'
 import { getEncounterPhoto } from '../../lib/photoMapper'
+import { usePhotoUrls } from '../../contexts/PhotoLibraryContext'
 import type { EncounterDocument, SectionNumber } from '../../types/encounter'
 import NarrativeToolbar from './NarrativeToolbar'
 import RulesPanel from './RulesPanel'
@@ -339,7 +340,8 @@ function DetailPanelShell({
   statusLabel,
   children,
 }: PanelShellProps) {
-  const photo = getEncounterPhoto(encounter.chiefComplaint, encounter.encounterPhoto)
+  const photoUrls = usePhotoUrls()
+  const photo = getEncounterPhoto(encounter.chiefComplaint, encounter.encounterPhoto, photoUrls)
   const roomDisplay = formatRoomDisplay(encounter.roomNumber)
 
   const panelWidth = isMobile ? '100%' : 600

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './lib/firebase'
 import { ToastProvider } from './contexts/ToastContext'
+import { PhotoLibraryProvider } from './contexts/PhotoLibraryContext'
 import SidebarLayout from './routes/SidebarLayout'
 import LandingPage from './routes/LandingPage'
 import EncounterBoard from './components/board/EncounterBoard'
@@ -14,20 +15,22 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ToastProvider>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route element={<SidebarLayout />}>
-              <Route path="compose" element={<EncounterBoard />} />
-              <Route path="preflight" element={<Preflight />} />
-              <Route path="output" element={<Output />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="analytics" element={<Analytics />} />
-              <Route path="build" element={<Navigate to="/compose" replace />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </ToastProvider>
+        <PhotoLibraryProvider>
+          <ToastProvider>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route element={<SidebarLayout />}>
+                <Route path="compose" element={<EncounterBoard />} />
+                <Route path="preflight" element={<Preflight />} />
+                <Route path="output" element={<Output />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="build" element={<Navigate to="/compose" replace />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </ToastProvider>
+        </PhotoLibraryProvider>
       </AuthProvider>
     </BrowserRouter>
   )

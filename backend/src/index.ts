@@ -55,7 +55,7 @@ import {
   type QuickModeGenerationResult,
 } from './promptBuilderQuickMode'
 import { buildAnalyticsInsightsPrompt } from './promptBuilderAnalytics'
-import { buildPhotoCatalogPrompt, validatePhoto } from './photoCatalog.js'
+import { buildPhotoCatalogPrompt, validatePhoto, initPhotoCatalog } from './photoCatalog.js'
 import surveillanceRouter from './surveillance/routes'
 import { mapToSyndromes } from './surveillance/syndromeMapper'
 import { RegionResolver } from './surveillance/regionResolver'
@@ -2778,6 +2778,7 @@ app.use(surveillanceRouter)
 // Initialize Firebase and start server
 async function main() {
   await initFirebase()
+  await initPhotoCatalog(getDb())
 
   const port = process.env.PORT || 8080
   app.listen(port, () => {

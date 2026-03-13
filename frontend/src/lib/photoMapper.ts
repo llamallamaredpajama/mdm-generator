@@ -1,8 +1,10 @@
 /**
  * Encounter photo resolver.
  * Priority: LLM-assigned photo > keyword fallback > default.
- * Photos served from /encounter-photos/{category}/{subcategory}.png
+ * Photos served from Firebase Storage URLs (if available) or /encounter-photos/{category}/{subcategory}.png
  */
+
+import type { PhotoUrlMap } from '../hooks/usePhotoLibrary'
 
 const KEYWORD_MAP: Record<string, { category: string; subcategory: string }> = {
   // Cardiac
@@ -136,14 +138,24 @@ const DEFAULT_PHOTO = '/encounter-photos/general/unspecified.png'
 /**
  * Returns the editorial photo path for an encounter card.
  * Priority: LLM-assigned photo > keyword fallback > default.
+ * When a photoUrlMap is provided, Firebase Storage URLs are preferred over local paths.
  */
 export function getEncounterPhoto(
   chiefComplaint: string,
   encounterPhoto?: { category: string; subcategory: string },
+  photoUrlMap?: PhotoUrlMap,
 ): string {
+  function resolveUrl(category: string, subcategory: string): string {
+    const key = `${category}/${subcategory}`
+    if (photoUrlMap?.has(key)) {
+      return photoUrlMap.get(key)!
+    }
+    return `/encounter-photos/${category}/${subcategory}.png`
+  }
+
   // 1. LLM-assigned photo (highest priority)
   if (encounterPhoto) {
-    return `/encounter-photos/${encounterPhoto.category}/${encounterPhoto.subcategory}.png`
+    return resolveUrl(encounterPhoto.category, encounterPhoto.subcategory)
   }
 
   // 2. Keyword fallback
@@ -151,7 +163,7 @@ export function getEncounterPhoto(
     const lower = chiefComplaint.toLowerCase()
     for (const [keyword, photo] of Object.entries(KEYWORD_MAP)) {
       if (lower.includes(keyword)) {
-        return `/encounter-photos/${photo.category}/${photo.subcategory}.png`
+        return resolveUrl(photo.category, photo.subcategory)
       }
     }
   }

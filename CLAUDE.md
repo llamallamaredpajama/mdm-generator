@@ -73,7 +73,20 @@ Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS
     `CLOUDBUILD`
   - Deploy: `gcloud run deploy mdm-backend --image gcr.io/mdm-generator/mdm-backend:latest --project mdm-generator --region us-central1`
 - **IMPORTANT**: Backend changes in `backend/src/` are NOT live until the Cloud Run container is rebuilt and deployed. `pnpm build` only compiles locally.
+- **Cloud Build context**: `.gcloudignore` excludes `frontend/`, `docs/`, `scripts/`, etc. — only `backend/` is uploaded (~5-10 MB). Prompt guides live in `backend/prompts/` (inside the Docker context).
 - **Do NOT** use Vercel, Netlify, or other hosting CLIs
+
+### Decoupled Assets
+| Asset | Location | Seeded By |
+|-------|----------|-----------|
+| Prompt guides | `backend/prompts/*.md` (copied from `docs/`) | Committed to repo, inside Docker context |
+| Encounter photos | Firebase Storage `encounter-photos/` + Firestore `photoLibrary` collection | `scripts/seed-photo-library.ts` |
+
+**Photo catalog architecture**: Backend loads `photoLibrary` Firestore collection at startup via `initPhotoCatalog()` → in-memory cache → `buildPhotoCatalogPrompt()` / `validatePhoto()` remain synchronous. Hardcoded `PHOTO_CATALOG` serves as fallback if Firestore read fails.
+
+**Frontend photo URLs**: `PhotoLibraryProvider` (in `App.tsx`) fetches `photoLibrary` docs once, builds a `Map<string, string>` of `"category/subcategory"` → `downloadUrl`. `getEncounterPhoto()` checks this map before falling back to local `/encounter-photos/` paths.
+
+**Seed script**: `cd backend && NODE_PATH=./node_modules npx tsx ../scripts/seed-photo-library.ts` — uploads PNGs from `frontend/public/encounter-photos/` to Storage, writes metadata + download URLs to `photoLibrary` collection.
 
 ## Firebase Auth (Google Sign-In)
 
@@ -170,9 +183,9 @@ cd backend && pnpm build         # TypeScript compilation (REQUIRED before commi
 ### Medical Logic (Read Before Modifying MDM Behavior)
 | File | Purpose |
 |------|---------|
-| `docs/mdm-gen-guide-v2.md` | Core prompting logic and MDM template (v2) |
-| `docs/mdm-gen-guide-build-s1.md` | Build Mode Section 1 prompt guide |
-| `docs/mdm-gen-guide-build-s3.md` | Build Mode Section 3 / finalize prompt guide |
+| `backend/prompts/mdm-gen-guide-v2.md` | Core prompting logic and MDM template (v2) |
+| `backend/prompts/mdm-gen-guide-build-s1.md` | Build Mode Section 1 prompt guide |
+| `backend/prompts/mdm-gen-guide-build-s3.md` | Build Mode Section 3 / finalize prompt guide |
 | `docs/generator_engine.md` | Generator engine documentation |
 | `docs/prd.md` | Product requirements and constraints |
 | `backend/src/promptBuilder.ts` | Legacy one-shot prompt construction |
@@ -190,6 +203,9 @@ cd backend && pnpm build         # TypeScript compilation (REQUIRED before commi
 - `frontend/src/routes/BuildMode.tsx` - Build Mode encounter management
 - `frontend/src/components/build-mode/desktop/DesktopKanban.tsx` - Desktop encounter layout
 - `frontend/src/components/build-mode/mobile/MobileWalletStack.tsx` - Mobile encounter layout
+- `frontend/src/contexts/PhotoLibraryContext.tsx` - Photo URL provider (Firestore → Storage URLs)
+- `frontend/src/hooks/usePhotoLibrary.ts` - One-time photo library fetch from Firestore
+- `frontend/src/lib/photoMapper.ts` - Encounter photo resolver (Storage URL → local fallback)
 - `frontend/src/components/TrendAnalysisToggle.tsx` - Surveillance enable/disable + location
 - `frontend/src/components/TrendResultsPanel.tsx` - Trend analysis results display
 - `frontend/src/components/TrendReportModal.tsx` - PDF report download modal
@@ -346,6 +362,7 @@ If `git diff` shows any of these, STOP and review:
 | Frontend hooks | `frontend/src/hooks/` |
 | Frontend types | `frontend/src/types/` |
 | Documentation | `docs/` |
+| Prompt guides (deploy) | `backend/prompts/` (inside Docker context) |
 | Scripts | `scripts/` |
 
 ## Common Tasks
@@ -354,7 +371,7 @@ If `git diff` shows any of these, STOP and review:
 |------|--------|
 | Add route | Create in `frontend/src/routes/`, add to `App.tsx` router |
 | Modify MDM output | Update `outputSchema.ts` → `promptBuilder.ts` → `Output.tsx` |
-| Change prompting | Edit prompt guide (`docs/mdm-gen-guide-v2.md` or section-specific `docs/mdm-gen-guide-build-s*.md`) **→ also update `docs/generator_engine.md`** |
+| Change prompting | Edit prompt guide in `backend/prompts/` (and mirror to `docs/` for reference) **→ also update `docs/generator_engine.md`** |
 | Add Build Mode section | Schema in `buildModeSchemas.ts` → prompt in `promptBuilderBuildMode.ts` → endpoint in `index.ts` → UI in `components/build-mode/` |
 | Modify surveillance | Adapter in `surveillance/adapters/` → correlation in `correlationEngine.ts` → prompt augmenter → PDF generator |
 | Add Quick Mode feature | `promptBuilderQuickMode.ts` → endpoint in `index.ts` → `useQuickEncounter.ts` hook |

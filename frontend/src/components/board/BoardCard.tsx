@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import type { EncounterDocument } from '../../types/encounter'
 import { formatRoomDisplay, formatPatientIdentifier, getEncounterMode } from '../../types/encounter'
 import { getEncounterPhoto } from '../../lib/photoMapper'
+import { usePhotoUrls } from '../../contexts/PhotoLibraryContext'
 import './BoardCard.css'
 
 interface BoardCardProps {
@@ -12,7 +13,8 @@ interface BoardCardProps {
 
 export default function BoardCard({ encounter, isActive, onClick }: BoardCardProps) {
   const mode = getEncounterMode(encounter)
-  const photo = getEncounterPhoto(encounter.chiefComplaint, encounter.encounterPhoto)
+  const photoUrls = usePhotoUrls()
+  const photo = getEncounterPhoto(encounter.chiefComplaint, encounter.encounterPhoto, photoUrls)
   const roomDisplay = formatRoomDisplay(encounter.roomNumber)
 
   // Build the meta line and complaint based on mode
