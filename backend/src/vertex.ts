@@ -35,7 +35,7 @@ export async function callGemini(
   const generationConfig: Record<string, unknown> = {
     temperature: 0.2,
     topP: 0.95,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 16384,
   }
   if (options.jsonMode) {
     generationConfig.responseMimeType = 'application/json'
@@ -66,6 +66,16 @@ export async function callGemini(
     setTimeout(() => reject(new Error('Vertex AI generation timed out')), timeoutMs)
   )
   const res = await Promise.race([resultPromise, timeoutPromise])
-  const text = res.response?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+  const parts: any[] = res.response?.candidates?.[0]?.content?.parts || []
+  // Gemini 2.5 Pro may include thinking parts — extract the actual answer
+  const answerParts = parts.filter((p: any) => !p.thought && p.text)
+  const text: string = answerParts.length > 0
+    ? answerParts[answerParts.length - 1].text
+    : (parts[parts.length - 1]?.text ?? '')
+
+  if (parts.length > 1) {
+    console.log(`[vertex] Multi-part response: ${parts.length} parts, ${answerParts.length} answer parts`)
+  }
+
   return { text }
 }
