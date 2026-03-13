@@ -29,13 +29,32 @@ aiMDM transforms Emergency Medicine physician narratives into compliant, high-co
 | Payments | Firebase Stripe Extension | Subscription management |
 | Surveillance | 3 CDC adapters, PDFKit, Chart.js | Regional trend analysis + PDF reports |
 
+### Backend Infrastructure (P0 Foundation)
+
+Centralized config, logging, errors, and middleware added in `2931353`. Infrastructure is defined but route handlers are **not yet refactored** to use middleware — that's a future phase.
+
+| Module | File | Purpose |
+|--------|------|---------|
+| Config | `backend/src/config.ts` | Zod-validated config with defaults (port, LLM params, rate limits) |
+| Logger | `backend/src/logger.ts` | Pino structured logging with **PHI redaction** (redacts `narrative`, `mdmText`, `content.*`) |
+| Errors | `backend/src/errors.ts` | Typed hierarchy: `AppError` → `AuthenticationError`, `ValidationError`, `QuotaExceededError`, `RateLimitError`, `LlmError`, `SectionLockedError` |
+| Auth MW | `backend/src/middleware/auth.ts` | Firebase token verification (Bearer header + body `userIdToken` fallback) |
+| Error MW | `backend/src/middleware/errorHandler.ts` | Centralized error → JSON response formatting |
+| Rate Limit | `backend/src/middleware/rateLimiter.ts` | Configurable rate limiter factory |
+| Request Log | `backend/src/middleware/requestLogger.ts` | Request ID + Cloud Trace correlation + child logger on `req.log` |
+| Validate | `backend/src/middleware/validate.ts` | Zod schema validation middleware |
+
+**Firebase Admin init priority**: `GOOGLE_APPLICATION_CREDENTIALS_JSON` (parsed JSON) → `GOOGLE_APPLICATION_CREDENTIALS` (file path) → default credentials (Cloud Run SA).
+
 ### Routes
 `/` Start | `/compose` Input | `/preflight` PHI check | `/output` MDM display | `/settings` User prefs | `/build` Build Mode
 
 ### API Endpoints
 | Endpoint | Method | Rate Limit | Purpose |
 |----------|--------|------------|---------|
-| `/health` | GET | global | Health check |
+| `/health` | GET | none | Legacy health check |
+| `/health/live` | GET | none | K8s/Cloud Run liveness probe |
+| `/health/ready` | GET | none | K8s/Cloud Run readiness probe (checks Firestore) |
 | `/v1/whoami` | POST | global | Auth validation + user info + usage stats |
 | `/v1/admin/set-plan` | POST | global | Admin: set user plan (requires admin claim) |
 | `/v1/parse-narrative` | POST | 5/min | Parse narrative → structured fields (UI helper, no quota) |
@@ -321,7 +340,8 @@ VITE_API_BASE_URL=http://localhost:8080
 ### Backend (`backend/.env`)
 ```env
 PORT=8080
-GOOGLE_APPLICATION_CREDENTIALS=
+GOOGLE_APPLICATION_CREDENTIALS=        # Path to service account JSON file (local dev)
+GOOGLE_APPLICATION_CREDENTIALS_JSON=   # Raw JSON string (Cloud Run — set via Secret Manager)
 PROJECT_ID=
 VERTEX_LOCATION=us-central1
 ```
@@ -355,6 +375,8 @@ If `git diff` shows any of these, STOP and review:
 |------|----------|
 | Frontend tests | `frontend/src/__tests__/` |
 | Test fixtures | `frontend/src/__fixtures__/` |
+| Backend infrastructure | `backend/src/config.ts`, `logger.ts`, `errors.ts` |
+| Backend middleware | `backend/src/middleware/` |
 | Backend services | `backend/src/services/` |
 | Surveillance module | `backend/src/surveillance/` (adapters/, cache/) |
 | Build Mode components | `frontend/src/components/build-mode/` (desktop/, mobile/, shared/) |
