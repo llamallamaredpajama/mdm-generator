@@ -111,6 +111,12 @@ service cloud.firestore {
       allow delete: if false; // No deletion allowed
     }
     
+    // Photo library - authenticated read, no client write (seeded via Admin SDK)
+    match /photoLibrary/{photoId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
     // Default deny for any unmatched documents
     match /{document=**} {
       allow read, write: if false;
