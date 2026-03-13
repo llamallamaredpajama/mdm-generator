@@ -6,6 +6,10 @@ import { z } from 'zod'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import admin from 'firebase-admin'
+import { config } from './config'
+import { logger } from './logger'
+import { requestLogger } from './middleware/requestLogger'
+import { errorHandler } from './middleware/errorHandler'
 import { PHYSICIAN_ATTESTATION } from './constants'
 import { buildPrompt } from './promptBuilder'
 import { buildParsePrompt, getEmptyParsedNarrative, type ParsedNarrative } from './parsePromptBuilder'
@@ -284,6 +288,9 @@ app.use(express.json({ limit: '1mb' }))
 // Security headers
 app.use(helmet())
 
+// Structured request logging with Cloud Trace correlation
+app.use(requestLogger)
+
 // Rate limiting — global: 60 req/min per IP
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -427,16 +434,14 @@ async function initFirebase() {
       const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
       
       if (serviceAccountJson) {
-        // Initialize with JSON content from environment variable
-        console.log('Initializing Firebase Admin with JSON credentials from environment')
+        logger.info('Initializing Firebase Admin with JSON credentials from environment')
         const serviceAccount = JSON.parse(serviceAccountJson)
         admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),
           projectId: process.env.PROJECT_ID || 'mdm-generator'
         })
       } else if (serviceAccountPath && serviceAccountPath.includes('.json')) {
-        // Initialize with service account file
-        console.log('Initializing Firebase Admin with service account file:', serviceAccountPath)
+        logger.info({ path: serviceAccountPath }, 'Initializing Firebase Admin with service account file')
         const serviceAccountContent = await fs.readFile(path.resolve(serviceAccountPath), 'utf8')
         const serviceAccount = JSON.parse(serviceAccountContent)
         admin.initializeApp({
@@ -444,14 +449,13 @@ async function initFirebase() {
           projectId: process.env.PROJECT_ID || 'mdm-generator'
         })
       } else {
-        // Initialize with default credentials
-        console.log('Initializing Firebase Admin with default credentials')
+        logger.info('Initializing Firebase Admin with default credentials')
         admin.initializeApp()
       }
-      console.log('Firebase Admin initialized successfully')
+      logger.info('Firebase Admin initialized successfully')
     }
   } catch (e) {
-    console.error('Firebase Admin initialization error:', e)
+    logger.error({ err: e }, 'Firebase Admin initialization error')
     // swallow init errors in local dev; will throw on verify if misconfigured
   }
 }
@@ -477,6 +481,20 @@ function checkTokenSize(text: string, maxTokensPerRequest: number) {
   return { exceeded: false as const }
 }
 
+// Liveness: always pass if event loop is responsive
+app.get('/health/live', (_req, res) => res.json({ status: 'ok' }))
+
+// Readiness: check dependencies
+app.get('/health/ready', async (_req, res) => {
+  try {
+    await admin.firestore().collection('_health').doc('ping').get()
+    res.json({ status: 'ok', checks: { firestore: 'ok' } })
+  } catch {
+    res.status(503).json({ status: 'unhealthy', checks: { firestore: 'failed' } })
+  }
+})
+
+// Keep original /health for backward compatibility
 app.get('/health', (_req, res) => res.json({ ok: true }))
 
 // ============================================================================
@@ -2795,16 +2813,29 @@ app.post('/v1/analytics/insights', llmLimiter, async (req, res) => {
 
 app.use(surveillanceRouter)
 
+// Error-handling middleware (must be registered after all routes)
+app.use(errorHandler)
+
 // Initialize Firebase and start server
 async function main() {
   await initFirebase()
   await initPhotoCatalog(getDb())
 
-  const port = process.env.PORT || 8080
-  app.listen(port, () => {
-    console.log(`backend listening on :${port}`)
+  const port = config.port
+  const server = app.listen(port, () => {
+    logger.info({ port }, 'backend listening')
+  })
+
+  process.on('SIGTERM', () => {
+    logger.info('SIGTERM received, shutting down gracefully')
+    server.close(() => {
+      logger.info('Server closed')
+      process.exit(0)
+    })
+    // Force exit after 95s (longer than max LLM timeout of 90s)
+    setTimeout(() => process.exit(1), 95_000)
   })
 }
 
-main().catch(console.error)
+main().catch((err) => logger.error({ err }, 'Fatal startup error'))
 
