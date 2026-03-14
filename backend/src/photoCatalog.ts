@@ -10,6 +10,7 @@
  */
 
 import admin from 'firebase-admin'
+import { logger } from './logger.js'
 
 /** Module-level cache populated by initPhotoCatalog(). */
 let cachedCatalog: Record<string, string[]> | null = null
@@ -46,7 +47,7 @@ export async function initPhotoCatalog(db: admin.firestore.Firestore): Promise<v
   try {
     const snapshot = await db.collection('photoLibrary').get()
     if (snapshot.empty) {
-      console.warn('photoLibrary collection is empty — using hardcoded fallback')
+      logger.warn('photoLibrary collection is empty — using hardcoded fallback')
       return
     }
 
@@ -63,14 +64,9 @@ export async function initPhotoCatalog(db: admin.firestore.Firestore): Promise<v
     }
 
     cachedCatalog = catalog
-    console.log(
-      `Photo catalog loaded: ${snapshot.size} photos in ${Object.keys(catalog).length} categories`,
-    )
+    logger.info({ photoCount: snapshot.size, categoryCount: Object.keys(catalog).length }, 'Photo catalog loaded')
   } catch (err) {
-    console.warn(
-      'Failed to load photo catalog from Firestore — using hardcoded fallback:',
-      err instanceof Error ? err.message : 'unknown error',
-    )
+    logger.warn({ err: err instanceof Error ? err : undefined, message: err instanceof Error ? err.message : 'unknown error' }, 'Failed to load photo catalog from Firestore — using hardcoded fallback')
   }
 }
 

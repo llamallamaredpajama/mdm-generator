@@ -1,4 +1,8 @@
+/** @deprecated Use llm/vertexProvider.ts instead */
+
 import { VertexAI } from '@google-cloud/vertexai'
+import { config } from './config.js'
+import { logger } from './logger.js'
 
 export type GenResult = { text: string }
 
@@ -10,11 +14,11 @@ export interface CallGeminiOptions {
 }
 
 // Singleton: create the VertexAI client once at module level
-const project = process.env.PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || 'mdm-generator'
-const location = process.env.VERTEX_LOCATION || process.env.GOOGLE_CLOUD_REGION || 'us-central1'
+const project = config.projectId
+const location = config.vertexLocation
 
 // Parse inline JSON credentials if available (local dev via GOOGLE_APPLICATION_CREDENTIALS_JSON)
-const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
+const credentialsJson = config.credentialsJson
 const googleAuthOptions = credentialsJson
   ? { credentials: JSON.parse(credentialsJson) }
   : undefined
@@ -74,7 +78,7 @@ export async function callGemini(
     : (parts[parts.length - 1]?.text ?? '')
 
   if (parts.length > 1) {
-    console.log(`[vertex] Multi-part response: ${parts.length} parts, ${answerParts.length} answer parts`)
+    logger.info(`[vertex] Multi-part response: ${parts.length} parts, ${answerParts.length} answer parts`)
   }
 
   return { text }

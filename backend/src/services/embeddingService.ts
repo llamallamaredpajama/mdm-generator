@@ -7,22 +7,24 @@
  */
 
 import { GoogleAuth } from 'google-auth-library'
+import { config } from '../config.js'
+import { logger } from '../logger.js'
 
-const project = process.env.PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || 'mdm-generator'
-const location = process.env.VERTEX_LOCATION || process.env.GOOGLE_CLOUD_REGION || 'us-central1'
+const project = config.projectId
+const location = config.vertexLocation
 const MODEL_ID = 'text-embedding-005'
 const EMBEDDING_DIMENSION = 768
 
 const ENDPOINT = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/google/models/${MODEL_ID}:predict`
 
 // Parse inline JSON credentials if available (local dev)
-const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
+const credentialsJson = config.credentialsJson
 let parsedCredentials: Record<string, unknown> | undefined
 if (credentialsJson) {
   try {
     parsedCredentials = JSON.parse(credentialsJson)
   } catch {
-    console.warn('Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON, falling back to default credentials')
+    logger.warn('Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON, falling back to default credentials')
   }
 }
 const auth = new GoogleAuth({

@@ -1,5 +1,6 @@
 import admin from 'firebase-admin'
 import type { GapItem } from '../buildModeSchemas.js'
+import { logger } from '../logger.js'
 
 /** Returns current month key in YYYY-MM format (UTC) */
 export function getCurrentPeriodKey(): string {
@@ -299,7 +300,7 @@ export class UserService {
     } catch (e) {
       // Don't silently swallow — a Firestore failure here causes paid users
       // to be treated as free-tier. Log prominently so on-call can detect it.
-      console.error('CRITICAL: Failed to check Stripe subscription for user. Paid user may be downgraded to free tier.', e)
+      logger.error({ err: e }, 'CRITICAL: Failed to check Stripe subscription for user. Paid user may be downgraded to free tier.')
       throw e
     }
   }

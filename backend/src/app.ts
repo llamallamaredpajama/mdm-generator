@@ -22,6 +22,7 @@ import { createRequirePlan } from './middleware/auth.js'
 import { EnrichmentPipeline } from './modules/encounter/enrichmentPipeline.js'
 import { EncounterOrchestrator } from './modules/encounter/encounterOrchestrator.js'
 import type { AppDependencies } from './dependencies.js'
+import { config } from './config.js'
 
 export function createApp(deps: AppDependencies): express.Application {
   const app = express()
@@ -33,7 +34,7 @@ export function createApp(deps: AppDependencies): express.Application {
 
   // CORS configuration
   const allowedOrigins = [
-    process.env.FRONTEND_URL, // Production frontend URL
+    config.frontendUrl, // Production frontend URL
   ].filter(Boolean) as string[]
 
   app.use((req, res, next) => {
