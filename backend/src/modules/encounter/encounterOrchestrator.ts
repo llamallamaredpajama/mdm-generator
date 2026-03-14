@@ -60,7 +60,6 @@ export interface OrchestratorDeps {
   responseParser: LlmResponseParser
   enrichmentPipeline: EnrichmentPipeline
   libraryCaches: LibraryCaches
-  db: FirebaseFirestore.Firestore
 }
 
 // ============================================================================
@@ -469,6 +468,8 @@ export class EncounterOrchestrator {
     }
     const rawS2 = encounter.section2?.llmResponse
     const hasMdmPreview = rawS2?.mdmPreview && typeof rawS2.mdmPreview === 'object'
+    const rawWd = encounter.section2?.workingDiagnosis
+    const resolvedWd = !rawWd ? undefined : typeof rawWd === 'string' ? rawWd : rawWd.custom || rawWd.selected || undefined
     const section2Data: {
       content: string
       response?: { mdmPreview: MdmPreview }
@@ -476,7 +477,7 @@ export class EncounterOrchestrator {
     } = {
       content: encounter.section2?.content || '',
       ...(hasMdmPreview && { response: { mdmPreview: rawS2.mdmPreview } }),
-      workingDiagnosis: encounter.section2?.workingDiagnosis,
+      workingDiagnosis: resolvedWd,
     }
 
     const storedSurveillanceCtx: string | undefined = encounter.surveillanceContext || undefined
@@ -729,7 +730,13 @@ export class EncounterOrchestrator {
       orderedTests.map((t: TestDefinition) => ({ id: t.id, name: t.name, unit: t.unit, normalRange: t.normalRange })),
     )
 
-    const result = await this.llmClient.generate(prompt)
+    let result
+    try {
+      result = await this.llmClient.generate(prompt)
+    } catch (modelError) {
+      log.error({ action: 'parse-results-model-error', uid, encounterId, error: String(modelError) })
+      throw new LlmError('Failed to parse results')
+    }
 
     const validTestIds = new Set(orderedTestIds as string[])
     const parsed = this.responseParser.parseResults(result.text, validTestIds)

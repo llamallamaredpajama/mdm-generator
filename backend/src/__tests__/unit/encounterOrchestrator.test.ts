@@ -17,7 +17,6 @@ import {
   createMockUserService,
   createMockLlmClient,
   createMockLibraryCaches,
-  createMockDb,
 } from '../helpers/mockDependencies.js'
 
 // ============================================================================
@@ -86,7 +85,6 @@ function createOrchestrator(overrides: Record<string, any> = {}) {
   const llmClient = createMockLlmClient()
   const libraryCaches = createMockLibraryCaches()
   const enrichmentPipeline = new EnrichmentPipeline(libraryCaches as any)
-  const db = createMockDb()
 
   const deps = {
     encounterRepo: encounterRepo as any,
@@ -95,11 +93,10 @@ function createOrchestrator(overrides: Record<string, any> = {}) {
     responseParser: new LlmResponseParser(),
     enrichmentPipeline,
     libraryCaches: libraryCaches as any,
-    db,
     ...overrides,
   }
 
-  return { orchestrator: new EncounterOrchestrator(deps), encounterRepo, userService, llmClient, libraryCaches, db }
+  return { orchestrator: new EncounterOrchestrator(deps), encounterRepo, userService, llmClient, libraryCaches }
 }
 
 /** Builds a minimal encounter doc that passes S1 preconditions. */
@@ -480,6 +477,25 @@ describe('EncounterOrchestrator', () => {
       expect(result.draftJson).toBeDefined()
       expect(result.remaining).toBe(9)
       expect(result.uid).toBe('uid1')
+    })
+  })
+
+  // --------------------------------------------------------------------------
+  // parseResults
+  // --------------------------------------------------------------------------
+
+  describe('parseResults', () => {
+    it('throws LlmError when LLM call fails', async () => {
+      const { orchestrator, encounterRepo, llmClient, libraryCaches } = createOrchestrator()
+      encounterRepo.get.mockResolvedValue(makeEncounter({ quotaCounted: true }))
+      libraryCaches.getTests.mockResolvedValue([
+        { id: 'troponin', name: 'Troponin', unit: 'ng/mL', normalRange: '<0.04' },
+      ])
+      llmClient.generate.mockRejectedValue(new Error('LLM timeout'))
+
+      await expect(
+        orchestrator.parseResults('uid1', 'enc1', 'Troponin: 0.02 ng/mL', ['troponin']),
+      ).rejects.toThrow(LlmError)
     })
   })
 })

@@ -27,6 +27,9 @@ vi.mock('../../services/testCatalogFormatter.js', () => ({
 vi.mock('../../photoCatalog.js', () => ({
   buildPhotoCatalogPrompt: vi.fn().mockReturnValue('photo catalog prompt'),
 }))
+vi.mock('../../logger.js', () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
+}))
 
 // Import after mocking so references point to the mocked versions
 const { runSurveillanceEnrichment, runCdrEnrichment } = await import('../../shared/surveillanceEnrichment.js')
@@ -90,6 +93,16 @@ describe('EnrichmentPipeline', () => {
       await pipeline.enrichForSection1({ field: 'value' } as any)
 
       expect(runCdrEnrichment).toHaveBeenCalledWith(JSON.stringify({ field: 'value' }))
+    })
+
+    it('resolves with undefined surveillance when surveillance rejects (non-blocking)', async () => {
+      vi.mocked(runSurveillanceEnrichment).mockRejectedValue(new Error('CDC API timeout'))
+      vi.mocked(runCdrEnrichment).mockResolvedValue('cdr context' as any)
+
+      const result = await pipeline.enrichForSection1('narrative text', { zipCode: '10001' })
+
+      expect(result.surveillanceContext).toBeUndefined()
+      expect(result.cdrContext).toBe('cdr context')
     })
 
     it('returns both undefined when both enrichments return undefined', async () => {

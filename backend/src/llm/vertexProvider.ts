@@ -79,11 +79,17 @@ export class VertexLlmClient implements ILlmClient {
     ] as any
 
     const resultPromise = model.generateContent({ contents })
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Vertex AI generation timed out')), timeoutMs)
-    )
+    let timer: NodeJS.Timeout
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Vertex AI generation timed out')), timeoutMs)
+    })
 
-    const res = await Promise.race([resultPromise, timeoutPromise])
+    let res: Awaited<typeof resultPromise>
+    try {
+      res = await Promise.race([resultPromise, timeoutPromise])
+    } finally {
+      clearTimeout(timer!)
+    }
     const latencyMs = Date.now() - startMs
 
     const parts: any[] = res.response?.candidates?.[0]?.content?.parts || []

@@ -215,7 +215,7 @@ export function createSurveillanceRoutes(deps: SurveillanceDeps): Router {
   // POST /v1/surveillance/report
   // ---------------------------------------------------------------------------
 
-  router.post('/v1/surveillance/report', authenticate, validate(TrendReportBodySchema),
+  router.post('/v1/surveillance/report', authenticate, requirePlan('pro'), validate(TrendReportBodySchema),
     asyncHandler(async (req, res) => {
       const uid = req.user!.uid
       const data = req.body

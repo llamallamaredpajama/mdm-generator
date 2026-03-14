@@ -473,7 +473,7 @@ describe('POST /v1/surveillance/report', () => {
       .send(VALID_BODY)
 
     expect(res.status).toBe(403)
-    expect(res.body.error).toBe('PDF export requires a Pro or Enterprise plan')
+    expect(res.body.error).toBe('This feature requires a pro plan')
   })
 
   it('returns 404 when analysis not found', async () => {

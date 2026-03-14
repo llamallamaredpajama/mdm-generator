@@ -66,12 +66,12 @@ export function createQuickModeController(deps: QuickModeDeps) {
       }
 
       // Mark as processing
-      await encounterRepo.updateQuickModeStatus(uid, encounterId, 'processing', narrative)
+      await encounterRepo.updateQuickModeStatus(uid, encounterId, 'processing')
 
       // Surveillance + CDR enrichment (supplementary — failures must not block MDM)
       const [surveillanceContext, quickCdrContext] = await Promise.all([
-        location ? runSurveillanceEnrichment(narrative, location) : undefined,
-        runCdrEnrichment(narrative),
+        location ? runSurveillanceEnrichment(narrative, location, deps.db) : undefined,
+        runCdrEnrichment(narrative, deps.db),
       ])
 
       // Build prompt and call LLM

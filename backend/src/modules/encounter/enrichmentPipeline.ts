@@ -21,6 +21,8 @@ export interface EnrichmentResult {
 }
 
 export class EnrichmentPipeline {
+  private cachedPhotoCatalog: string | undefined
+
   constructor(private libraryCaches: LibraryCaches) {}
 
   /** Run surveillance + CDR enrichment in parallel. Non-blocking — failures return undefined. */
@@ -30,7 +32,12 @@ export class EnrichmentPipeline {
   ): Promise<EnrichmentResult> {
     const narrativeText = typeof content === 'string' ? content : JSON.stringify(content)
     const [surveillanceContext, cdrContext] = await Promise.all([
-      location ? runSurveillanceEnrichment(narrativeText, location) : undefined,
+      location
+        ? runSurveillanceEnrichment(narrativeText, location).catch((err) => {
+            logger.warn({ action: 'surveillance-enrichment-failed', error: String(err) })
+            return undefined
+          })
+        : undefined,
       runCdrEnrichment(narrativeText),
     ])
     return { surveillanceContext, cdrContext }
@@ -54,8 +61,11 @@ export class EnrichmentPipeline {
     }
   }
 
-  /** Build photo catalog prompt string. */
+  /** Build photo catalog prompt string (cached after first call). */
   buildPhotoCatalog(): string {
-    return buildPhotoCatalogPrompt()
+    if (!this.cachedPhotoCatalog) {
+      this.cachedPhotoCatalog = buildPhotoCatalogPrompt()
+    }
+    return this.cachedPhotoCatalog
   }
 }

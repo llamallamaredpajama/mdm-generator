@@ -5,7 +5,6 @@
  * supplementary context enrichment.
  */
 
-import admin from 'firebase-admin'
 import { logger } from '../logger.js'
 import { mapToSyndromes } from '../surveillance/syndromeMapper.js'
 import { RegionResolver } from '../surveillance/regionResolver.js'
@@ -15,8 +14,6 @@ import { buildSurveillanceContext, appendSurveillanceToMdmText } from '../survei
 import { searchCdrCatalog } from '../services/cdrCatalogSearch.js'
 import { formatCdrContext } from '../services/cdrCatalogFormatter.js'
 import { getDb } from './db.js'
-import { getCurrentPeriodKey } from '../services/userService.js'
-import type { GapItem } from '../buildModeSchemas.js'
 
 /**
  * Run surveillance enrichment for a narrative + location.
@@ -115,22 +112,4 @@ export function injectSurveillanceIntoMdm(
     }
   }
   return { dataReviewed, text: mdmText }
-}
-
-/**
- * Increment gap tallies on a user's customer profile.
- * @deprecated Use UserService.incrementGapTallies() instead.
- */
-export async function incrementGapTallies(uid: string, gaps: GapItem[], db?: FirebaseFirestore.Firestore): Promise<void> {
-  if (gaps.length === 0) return
-
-  const firestore = db ?? getDb()
-  const period = getCurrentPeriodKey()
-  const tallyUpdates: Record<string, FirebaseFirestore.FieldValue | { category: string; method: string }> = {}
-  for (const gap of gaps) {
-    tallyUpdates[`gapTallies.identified.${gap.id}`] = admin.firestore.FieldValue.increment(1)
-    tallyUpdates[`gapTallies.identifiedByPeriod.${period}.${gap.id}`] = admin.firestore.FieldValue.increment(1)
-    tallyUpdates[`gapMeta.${gap.id}`] = { category: gap.category, method: gap.method }
-  }
-  await firestore.collection('customers').doc(uid).update(tallyUpdates)
 }

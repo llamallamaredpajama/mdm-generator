@@ -60,7 +60,7 @@ Centralized config, logging, errors, and middleware added in `2931353`. Infrastr
 | `/v1/parse-narrative` | POST | 5/min | Parse narrative → structured fields (UI helper, no quota) |
 | `/v1/generate` | POST | 10/min | Legacy one-shot MDM generation |
 | `/v1/build-mode/process-section1` | POST | 10/min | Initial eval → worst-first differential |
-| `/v1/build-mode/process-section2` | POST | 10/min | Workup & results → MDM preview |
+| `/v1/build-mode/process-section2` | POST | 10/min | Workup & results → persist structured data (no LLM) |
 | `/v1/build-mode/finalize` | POST | 10/min | Treatment & disposition → final MDM |
 | `/v1/quick-mode/generate` | POST | 10/min | One-shot MDM + patient identifier extraction |
 | `/v1/surveillance/analyze` | POST | global | Regional trend analysis |
@@ -71,7 +71,7 @@ Centralized config, logging, errors, and middleware added in `2931353`. Infrastr
 ### Build Mode (`/build`)
 3-section progressive workflow with Firestore persistence:
 1. **Section 1** (Initial Eval) → generates worst-first differential
-2. **Section 2** (Workup & Results) → generates MDM preview
+2. **Section 2** (Workup & Results) → stores structured test/diagnosis data
 3. **Section 3** (Treatment & Disposition) → generates final MDM
 
 Rules: max 2 submissions per section (then locks), quota counted once per encounter (not per section), section progression enforced server-side.

@@ -233,11 +233,10 @@ export class LlmResponseParser {
       logger.error({ error: parseError instanceof Error ? parseError.message : String(parseError), responseLength: cleanedText.length }, 'Finalize JSON parse error')
 
       // Fallback: try to extract JSON
-      const jsonStart = cleanedText.indexOf('{')
-      const jsonEnd = cleanedText.lastIndexOf('}')
-      if (jsonStart >= 0 && jsonEnd > jsonStart) {
+      const extracted = extractJsonFromText(cleanedText)
+      if (extracted) {
         try {
-          let jsonObj = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+          let jsonObj = JSON.parse(extracted)
           if (jsonObj.finalMdm && typeof jsonObj.finalMdm === 'object') {
             jsonObj = jsonObj.finalMdm
           }
@@ -304,12 +303,10 @@ export class LlmResponseParser {
       }
     } catch {
       // Try brace extraction
-      const jsonStart = cleanedText.indexOf('{')
-      const jsonEnd = cleanedText.lastIndexOf('}')
-
-      if (jsonStart >= 0 && jsonEnd > jsonStart) {
+      const extracted = extractJsonFromText(cleanedText)
+      if (extracted) {
         try {
-          const parsed = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1))
+          const parsed = JSON.parse(extracted)
           return {
             success: true,
             data: {
@@ -366,11 +363,10 @@ export class LlmResponseParser {
       return { success: true, data: parsed, fallback: false }
     } catch {
       // Fallback: brace extraction
-      const jsonStart = cleanedText.indexOf('{')
-      const jsonEnd = cleanedText.lastIndexOf('}')
-      if (jsonStart >= 0 && jsonEnd > jsonStart) {
+      const extracted = extractJsonFromText(cleanedText)
+      if (extracted) {
         try {
-          const parsed = JSON.parse(cleanedText.slice(jsonStart, jsonEnd + 1)) as ParsedNarrative
+          const parsed = JSON.parse(extracted) as ParsedNarrative
           if (typeof parsed.confidence !== 'number') parsed.confidence = 0.5
           if (!Array.isArray(parsed.warnings)) parsed.warnings = []
           return {
@@ -491,5 +487,3 @@ export class LlmResponseParser {
   }
 }
 
-/** Singleton instance for convenience */
-export const responseParser = new LlmResponseParser()

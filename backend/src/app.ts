@@ -97,7 +97,6 @@ export function createApp(deps: AppDependencies): express.Application {
     responseParser: deps.responseParser,
     enrichmentPipeline,
     libraryCaches: deps.libraryCaches,
-    db: deps.db,
   })
 
   app.use(createAdminRoutes(deps))
