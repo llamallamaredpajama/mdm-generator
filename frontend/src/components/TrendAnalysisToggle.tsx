@@ -6,6 +6,7 @@
 
 import { useState, useCallback } from 'react'
 import { useTrendAnalysisContext } from '../contexts/TrendAnalysisContext'
+import { useSubscriptionFeature } from '../hooks/useSubscription'
 import './TrendAnalysisToggle.css'
 
 interface TrendAnalysisToggleProps {
@@ -14,12 +15,15 @@ interface TrendAnalysisToggleProps {
 }
 
 export default function TrendAnalysisToggle({ compact = false }: TrendAnalysisToggleProps) {
-  const { isEnabled, setEnabled, location, setLocation, isLocationValid } = useTrendAnalysisContext()
+  const { isEnabled, setEnabled, location, setLocation, isLocationValid } =
+    useTrendAnalysisContext()
+  const hasSurveillance = useSubscriptionFeature('surveillance')
   const [zipInput, setZipInput] = useState(location?.zipCode || '')
 
   const handleToggle = useCallback(() => {
+    if (!hasSurveillance) return
     setEnabled(!isEnabled)
-  }, [isEnabled, setEnabled])
+  }, [isEnabled, setEnabled, hasSurveillance])
 
   const handleZipChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,11 +35,13 @@ export default function TrendAnalysisToggle({ compact = false }: TrendAnalysisTo
         setLocation(null)
       }
     },
-    [setLocation]
+    [setLocation],
   )
 
   return (
-    <div className={`trend-toggle ${compact ? 'trend-toggle--compact' : ''}`}>
+    <div
+      className={`trend-toggle ${compact ? 'trend-toggle--compact' : ''} ${!hasSurveillance ? 'trend-toggle--disabled' : ''}`}
+    >
       <div className="trend-toggle__row">
         <label className="trend-toggle__label" htmlFor="trend-analysis-toggle">
           <svg
@@ -56,16 +62,21 @@ export default function TrendAnalysisToggle({ compact = false }: TrendAnalysisTo
           id="trend-analysis-toggle"
           type="button"
           role="switch"
-          aria-checked={isEnabled}
-          className={`trend-toggle__switch ${isEnabled ? 'trend-toggle__switch--on' : ''}`}
+          aria-checked={hasSurveillance ? isEnabled : false}
+          aria-disabled={!hasSurveillance}
+          className={`trend-toggle__switch ${hasSurveillance && isEnabled ? 'trend-toggle__switch--on' : ''}`}
           onClick={handleToggle}
         >
           <span className="trend-toggle__switch-thumb" />
         </button>
       </div>
 
+      {!hasSurveillance && (
+        <p className="trend-toggle__upgrade-hint">Upgrade to Pro for regional trend analysis</p>
+      )}
+
       {/* Collapsible zip code input */}
-      {isEnabled && (
+      {hasSurveillance && isEnabled && (
         <div className="trend-toggle__zip-panel">
           <label htmlFor="trend-zip-input" className="trend-toggle__zip-label">
             ZIP Code
@@ -88,7 +99,9 @@ export default function TrendAnalysisToggle({ compact = false }: TrendAnalysisTo
             }`}
           />
           {isLocationValid && (
-            <span className="trend-toggle__zip-check" aria-label="Valid">✓</span>
+            <span className="trend-toggle__zip-check" aria-label="Valid">
+              ✓
+            </span>
           )}
         </div>
       )}

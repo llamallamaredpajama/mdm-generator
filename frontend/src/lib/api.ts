@@ -6,20 +6,47 @@ import type {
   ReportTemplate,
   CustomizableOptions,
 } from '../types/userProfile'
-import type { EnhancementGap } from '../types/encounter'
+import type {
+  EnhancementGap,
+  DifferentialItem,
+  MdmPreview,
+  FinalMdm,
+  CdrAnalysisItem,
+  WorkupRecommendation,
+  Section1Response,
+  Section2Response,
+  FinalizeResponse,
+  PatientIdentifier,
+} from '../types/encounter'
+
+export type {
+  DifferentialItem,
+  MdmPreview,
+  FinalMdm,
+  CdrAnalysisItem,
+  WorkupRecommendation,
+  Section1Response,
+  Section2Response,
+  FinalizeResponse,
+  EnhancementGap,
+}
 
 /**
  * Custom API error class with user-friendly messages and error classification
  */
 export class ApiError extends Error {
   statusCode: number
-  errorType: 'network' | 'auth' | 'validation' | 'quota' | 'server' | 'unknown'
+  errorType: 'network' | 'auth' | 'validation' | 'quota' | 'rate_limit' | 'server' | 'unknown'
   isRetryable: boolean
+  code?: string
+  details?: unknown[]
+  quotaInfo?: { remaining: number; plan: string; limit: number; used: number }
+  retryAfterMs?: number
 
   constructor(
     message: string,
     statusCode: number,
-    errorType: 'network' | 'auth' | 'validation' | 'quota' | 'server' | 'unknown',
+    errorType: 'network' | 'auth' | 'validation' | 'quota' | 'rate_limit' | 'server' | 'unknown',
     isRetryable: boolean = false,
   ) {
     super(message)
@@ -54,12 +81,19 @@ export class ApiError extends Error {
           'validation',
           false,
         )
-      case 429:
+      case 402:
         return new ApiError(
           `${prefix}You've reached your usage limit. Please upgrade your plan or wait until your quota resets.`,
-          429,
+          402,
           'quota',
           false,
+        )
+      case 429:
+        return new ApiError(
+          `${prefix}Too many requests. Please wait a moment and try again.`,
+          429,
+          'rate_limit',
+          true,
         )
       case 500:
       case 502:
@@ -122,6 +156,10 @@ async function apiFetch<T>(
           if (!errorData.error.includes('Error:') && errorData.error.length < 200) {
             error.message = errorData.error
           }
+          error.code = errorData.code
+          error.details = errorData.details
+          error.quotaInfo = errorData.quotaInfo
+          error.retryAfterMs = errorData.retryAfterMs
           throw error
         }
       } catch (parseError) {
@@ -151,9 +189,13 @@ async function apiFetch<T>(
   }
 }
 
+/** Standard auth headers for authenticated API calls */
+function authHeaders(token: string) {
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+}
+
 export type GenerateRequest = {
   narrative: string
-  userIdToken?: string
 }
 
 export type GenerateResponse = {
@@ -191,8 +233,8 @@ export async function whoAmI(userIdToken: string): Promise<{
     `${apiBaseUrl}/v1/whoami`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userIdToken }),
+      headers: authHeaders(userIdToken),
+      body: JSON.stringify({}),
     },
     'Authentication check',
   )
@@ -214,23 +256,23 @@ export async function completeOnboarding(
     `${apiBaseUrl}/v1/user/complete-onboarding`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify(data),
     },
     'Completing onboarding',
   )
 }
 
-export async function generateMDM(body: GenerateRequest): Promise<GenerateResponse> {
+export async function generateMDM(
+  body: GenerateRequest,
+  userIdToken: string,
+): Promise<GenerateResponse> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
     `${apiBaseUrl}/v1/generate`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify(body),
     },
     'MDM generation',
@@ -285,8 +327,8 @@ export async function parseNarrative(
     `${apiBaseUrl}/v1/parse-narrative`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ narrative, userIdToken }),
+      headers: authHeaders(userIdToken),
+      body: JSON.stringify({ narrative }),
     },
     'Narrative parsing',
     60_000,
@@ -297,64 +339,7 @@ export async function parseNarrative(
 // Build Mode API Types & Functions
 // =============================================================================
 
-export interface DifferentialItem {
-  diagnosis: string
-  urgency: 'emergent' | 'urgent' | 'routine'
-  reasoning: string
-}
-
-export interface MdmPreview {
-  problems: string | string[] | Record<string, unknown>[]
-  differential: string | string[] | Record<string, unknown>[]
-  dataReviewed: string | string[] | Record<string, unknown>[]
-  reasoning: string
-}
-
-export interface FinalMdm {
-  text: string
-  json: Record<string, unknown>
-}
-
-export interface CdrAnalysisItem {
-  name: string
-  cdrId?: string
-  applicable: boolean
-  score?: number | null
-  interpretation?: string | null
-  missingData?: string[]
-  availableData?: string[]
-  reasoning?: string
-}
-
-export interface WorkupRecommendation {
-  testName: string
-  testId?: string
-  reason: string
-  source: 'baseline' | 'differential' | 'cdr' | 'surveillance'
-  priority?: 'stat' | 'routine'
-}
-
-export interface Section1Response {
-  differential: DifferentialItem[]
-  cdrAnalysis?: CdrAnalysisItem[]
-  workupRecommendations?: WorkupRecommendation[]
-  submissionCount: number
-  isLocked: boolean
-  quotaRemaining: number
-}
-
-export interface Section2Response {
-  mdmPreview?: MdmPreview
-  submissionCount: number
-  isLocked: boolean
-}
-
-export interface FinalizeResponse {
-  generationFailed?: boolean
-  finalMdm: FinalMdm
-  gaps: EnhancementGap[]
-  quotaRemaining: number
-}
+// Build Mode types imported from types/encounter.ts (see top of file)
 
 /**
  * Process Section 1 (Initial Evaluation) - generates differential diagnosis
@@ -370,8 +355,8 @@ export async function processSection1(
     `${apiBaseUrl}/v1/build-mode/process-section1`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, content, userIdToken, ...(location && { location }) }),
+      headers: authHeaders(userIdToken),
+      body: JSON.stringify({ encounterId, content, ...(location && { location }) }),
     },
     'Section 1 processing',
     60_000,
@@ -405,11 +390,10 @@ export async function processSection2(
     `${apiBaseUrl}/v1/build-mode/process-section2`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify({
         encounterId,
         content,
-        userIdToken,
         workingDiagnosis,
         ...(structuredData?.selectedTests && { selectedTests: structuredData.selectedTests }),
         ...(structuredData?.testResults && { testResults: structuredData.testResults }),
@@ -437,11 +421,10 @@ export async function finalizeEncounter(
     `${apiBaseUrl}/v1/build-mode/finalize`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify({
         encounterId,
         content,
-        userIdToken,
         ...(workingDiagnosis && { workingDiagnosis }),
       }),
     },
@@ -453,12 +436,6 @@ export async function finalizeEncounter(
 // =============================================================================
 // Quick Mode API Types & Functions
 // =============================================================================
-
-export interface PatientIdentifier {
-  age?: string
-  sex?: string
-  chiefComplaint?: string
-}
 
 export interface QuickModeResponse {
   ok: boolean
@@ -486,58 +463,11 @@ export async function generateQuickMode(
     `${apiBaseUrl}/v1/quick-mode/generate`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, narrative, userIdToken, ...(location && { location }) }),
+      headers: authHeaders(userIdToken),
+      body: JSON.stringify({ encounterId, narrative, ...(location && { location }) }),
     },
     'Quick mode MDM generation',
     60_000,
-  )
-}
-
-// =============================================================================
-// Enhancement Advisor API Functions
-// =============================================================================
-
-/**
- * Reprocess an encounter's MDM with confirmed gap responses
- */
-export async function reprocessWithGaps(
-  encounterId: string,
-  gapResponses: Record<string, Record<string, boolean>>,
-  userIdToken: string,
-  mode: 'build' | 'quick',
-): Promise<{ ok: boolean; finalMdm: FinalMdm }> {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-  const endpoint = mode === 'build' ? '/v1/build-mode/reprocess' : '/v1/quick-mode/reprocess'
-  return apiFetch(
-    `${apiBaseUrl}${endpoint}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, userIdToken, gapResponses }),
-    },
-    `Reprocess ${mode} mode`,
-    90_000,
-  )
-}
-
-/**
- * Dismiss the enhancement advisor for an encounter
- */
-export async function dismissAdvisor(
-  encounterId: string,
-  mode: 'build' | 'quick',
-  userIdToken: string,
-): Promise<{ ok: boolean }> {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-  return apiFetch(
-    `${apiBaseUrl}/v1/enhancement-advisor/dismiss`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, mode, userIdToken }),
-    },
-    'Dismiss advisor',
   )
 }
 
@@ -555,10 +485,7 @@ export async function getOrderSets(
     `${apiBaseUrl}/v1/user/order-sets`,
     {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Fetching order sets',
   )
@@ -573,10 +500,7 @@ export async function createOrderSet(
     `${apiBaseUrl}/v1/user/order-sets`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify(data),
     },
     'Creating order set',
@@ -593,10 +517,7 @@ export async function updateOrderSet(
     `${apiBaseUrl}/v1/user/order-sets/${id}`,
     {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify(data),
     },
     'Updating order set',
@@ -612,10 +533,7 @@ export async function deleteOrderSet(
     `${apiBaseUrl}/v1/user/order-sets/${id}`,
     {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Deleting order set',
   )
@@ -630,10 +548,7 @@ export async function useOrderSet(
     `${apiBaseUrl}/v1/user/order-sets/${id}/use`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Recording order set usage',
   )
@@ -649,10 +564,7 @@ export async function getDispoFlows(
     `${apiBaseUrl}/v1/user/dispo-flows`,
     {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Fetching disposition flows',
   )
@@ -667,10 +579,7 @@ export async function createDispoFlow(
     `${apiBaseUrl}/v1/user/dispo-flows`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify(data),
     },
     'Creating disposition flow',
@@ -687,10 +596,7 @@ export async function updateDispoFlow(
     `${apiBaseUrl}/v1/user/dispo-flows/${id}`,
     {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify(data),
     },
     'Updating disposition flow',
@@ -706,10 +612,7 @@ export async function deleteDispoFlow(
     `${apiBaseUrl}/v1/user/dispo-flows/${id}`,
     {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Deleting disposition flow',
   )
@@ -724,10 +627,7 @@ export async function useDispoFlow(
     `${apiBaseUrl}/v1/user/dispo-flows/${id}/use`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Recording disposition flow usage',
   )
@@ -743,10 +643,7 @@ export async function getReportTemplates(
     `${apiBaseUrl}/v1/user/report-templates`,
     {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Fetching report templates',
   )
@@ -761,10 +658,7 @@ export async function createReportTemplate(
     `${apiBaseUrl}/v1/user/report-templates`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify(data),
     },
     'Creating report template',
@@ -781,10 +675,7 @@ export async function updateReportTemplate(
     `${apiBaseUrl}/v1/user/report-templates/${id}`,
     {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify(data),
     },
     'Updating report template',
@@ -800,10 +691,7 @@ export async function deleteReportTemplate(
     `${apiBaseUrl}/v1/user/report-templates/${id}`,
     {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Deleting report template',
   )
@@ -818,10 +706,7 @@ export async function useReportTemplate(
     `${apiBaseUrl}/v1/user/report-templates/${id}/use`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Recording report template usage',
   )
@@ -837,10 +722,7 @@ export async function getCustomizableOptions(
     `${apiBaseUrl}/v1/user/options`,
     {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Fetching customizable options',
   )
@@ -855,10 +737,7 @@ export async function updateCustomizableOptions(
     `${apiBaseUrl}/v1/user/options`,
     {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify(data),
     },
     'Updating customizable options',
@@ -880,10 +759,7 @@ export async function fetchTestLibrary(
     `${apiBaseUrl}/v1/libraries/tests`,
     {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Fetching test library',
   )
@@ -904,10 +780,7 @@ export async function fetchCdrLibrary(
     `${apiBaseUrl}/v1/libraries/cdrs`,
     {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
     },
     'Fetching CDR library',
   )
@@ -926,8 +799,8 @@ export async function suggestDiagnosis(
     `${apiBaseUrl}/v1/build-mode/suggest-diagnosis`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, userIdToken }),
+      headers: authHeaders(userIdToken),
+      body: JSON.stringify({ encounterId }),
     },
     'Diagnosis suggestion',
     15_000,
@@ -962,8 +835,8 @@ export async function parseResults(
     `${apiBaseUrl}/v1/build-mode/parse-results`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, pastedText, orderedTestIds, userIdToken }),
+      headers: authHeaders(userIdToken),
+      body: JSON.stringify({ encounterId, pastedText, orderedTestIds }),
     },
     'Lab results parsing',
     20_000,
@@ -987,8 +860,8 @@ export async function matchCdrs(
     `${apiBaseUrl}/v1/build-mode/match-cdrs`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encounterId, userIdToken }),
+      headers: authHeaders(userIdToken),
+      body: JSON.stringify({ encounterId }),
     },
     'CDR matching',
     60_000,
@@ -1007,10 +880,7 @@ export async function fetchAnalyticsInsights(
     `${apiBaseUrl}/v1/analytics/insights`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userIdToken}`,
-      },
+      headers: authHeaders(userIdToken),
       body: JSON.stringify({}),
     },
     'Fetching analytics insights',
@@ -1037,8 +907,8 @@ export async function analyzeSurveillance(
     `${apiBaseUrl}/v1/surveillance/analyze`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chiefComplaint, differential, location, userIdToken, encounterId }),
+      headers: authHeaders(userIdToken),
+      body: JSON.stringify({ chiefComplaint, differential, location, encounterId }),
     },
     'Surveillance analysis',
     30_000,
@@ -1056,8 +926,8 @@ export async function downloadSurveillanceReport(
   try {
     const res = await fetch(`${apiBaseUrl}/v1/surveillance/report`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ analysisId, userIdToken }),
+      headers: authHeaders(userIdToken),
+      body: JSON.stringify({ analysisId }),
       signal: controller.signal,
     })
 

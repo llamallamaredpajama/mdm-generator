@@ -48,7 +48,9 @@
   border: 1px solid var(--color-border-subtle);
   background: var(--color-bg-tertiary);
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
   padding: 0;
 }
 
@@ -128,4 +130,16 @@
 .trend-toggle__zip-check {
   color: var(--color-success);
   font-size: var(--font-size-sm);
+}
+
+/* Disabled state for free-tier users */
+.trend-toggle--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.trend-toggle__upgrade-hint {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--color-text-muted, #666);
+  margin: var(--space-xs, 4px) 0 0;
 }

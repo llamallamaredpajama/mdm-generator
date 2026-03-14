@@ -6,6 +6,7 @@
 
 import type { TrendAnalysisResult, TrendFinding, SurveillanceAlert } from '../types/surveillance'
 import type { TrendAnalysisError } from '../hooks/useTrendAnalysis'
+import { useSubscriptionFeature } from '../hooks/useSubscription'
 import './TrendResultsPanel.css'
 
 interface TrendResultsPanelProps {
@@ -78,6 +79,8 @@ export default function TrendResultsPanel({
   onDownloadPdf,
   onRetry,
 }: TrendResultsPanelProps) {
+  const hasSurveillance = useSubscriptionFeature('surveillance')
+
   if (isLoading) {
     return (
       <div className="trend-results trend-results--loading">
@@ -112,11 +115,7 @@ export default function TrendResultsPanel({
             <>
               <p className="trend-results__error-message">{error.message}</p>
               {error.isRetryable && onRetry && (
-                <button
-                  type="button"
-                  className="trend-results__retry-btn"
-                  onClick={onRetry}
-                >
+                <button type="button" className="trend-results__retry-btn" onClick={onRetry}>
                   Try Again
                 </button>
               )}
@@ -139,11 +138,13 @@ export default function TrendResultsPanel({
           <span className="trend-results__region">{analysis.regionLabel}</span>
         </div>
         <p className="trend-results__empty-message">
-          {analysis.summary || 'No significant regional surveillance signals detected for this presentation.'}
+          {analysis.summary ||
+            'No significant regional surveillance signals detected for this presentation.'}
         </p>
         <footer className="trend-results__footer">
           <p className="trend-results__attribution">
-            Data: {analysis.dataSourcesQueried.join(', ')} | {new Date(analysis.analyzedAt).toLocaleDateString()}
+            Data: {analysis.dataSourcesQueried.join(', ')} |{' '}
+            {new Date(analysis.analyzedAt).toLocaleDateString()}
           </p>
         </footer>
       </div>
@@ -155,14 +156,21 @@ export default function TrendResultsPanel({
       <div className="trend-results__header">
         <h4 className="trend-results__title">Regional Trend Analysis</h4>
         <span className="trend-results__region">{analysis.regionLabel}</span>
-        {showPdfDownload && onDownloadPdf && (
+        {showPdfDownload && hasSurveillance && onDownloadPdf && (
           <button
             type="button"
             className="trend-results__pdf-btn"
             onClick={onDownloadPdf}
             aria-label="Download PDF report"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              width={16}
+              height={16}
+            >
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
@@ -198,7 +206,8 @@ export default function TrendResultsPanel({
       {/* Data attribution footer */}
       <footer className="trend-results__footer">
         <p className="trend-results__attribution">
-          Data: {analysis.dataSourcesQueried.join(', ')} | {new Date(analysis.analyzedAt).toLocaleDateString()}
+          Data: {analysis.dataSourcesQueried.join(', ')} |{' '}
+          {new Date(analysis.analyzedAt).toLocaleDateString()}
         </p>
         <p className="trend-results__disclaimer">
           Surveillance data is supplementary. Clinical judgment must guide all decisions.

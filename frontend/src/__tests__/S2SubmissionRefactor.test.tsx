@@ -13,15 +13,20 @@ import { processSection2, type Section2StructuredPayload } from '../lib/api'
 // Track fetch calls
 const mockFetch = vi.fn()
 
-// Store the last request body for assertions
+// Store the last request body and headers for assertions
 let lastRequestBody: Record<string, unknown> = {}
+let lastRequestHeaders: Record<string, string> = {}
 
 beforeEach(() => {
   lastRequestBody = {}
+  lastRequestHeaders = {}
   mockFetch.mockReset()
   mockFetch.mockImplementation(async (_url: string, options: RequestInit) => {
     if (options.body) {
       lastRequestBody = JSON.parse(options.body as string)
+    }
+    if (options.headers) {
+      lastRequestHeaders = options.headers as Record<string, string>
     }
     return {
       ok: true,
@@ -48,7 +53,8 @@ describe('processSection2 - structured data', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(lastRequestBody.encounterId).toBe('enc123')
     expect(lastRequestBody.content).toBe('Troponin normal')
-    expect(lastRequestBody.userIdToken).toBe('token123')
+    expect(lastRequestHeaders.Authorization).toBe('Bearer token123')
+    expect(lastRequestBody.userIdToken).toBeUndefined()
     expect(lastRequestBody.workingDiagnosis).toBe('ACS')
     // No structured fields when not provided
     expect(lastRequestBody.selectedTests).toBeUndefined()
@@ -70,7 +76,9 @@ describe('processSection2 - structured data', () => {
     expect(lastRequestBody.selectedTests).toEqual(['troponin', 'ecg', 'cbc'])
     expect(lastRequestBody.testResults).toBeDefined()
     expect((lastRequestBody.testResults as Record<string, unknown>)['troponin']).toBeDefined()
-    expect((lastRequestBody.testResults as Record<string, { status: string }>)['ecg'].status).toBe('abnormal')
+    expect((lastRequestBody.testResults as Record<string, { status: string }>)['ecg'].status).toBe(
+      'abnormal',
+    )
   })
 
   it('sends structured diagnosis when provided', async () => {

@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
 import { useEncounterList } from '../../hooks/useEncounterList'
 import { useIsMobile } from '../../hooks/useMediaQuery'
+import { useSubscription, GENERATION_LIMITS } from '../../hooks/useSubscription'
 import { getDisplayColumn, type DisplayColumn } from '../../lib/statusMapper'
 import type { EncounterDocument, EncounterMode } from '../../types/encounter'
 import StatusColumn from './StatusColumn'
@@ -22,6 +23,8 @@ export default function EncounterBoard() {
   const [newMode, setNewMode] = useState<EncounterMode>('build')
 
   const { encounters, loading, createEncounter } = useEncounterList(newMode)
+  const { tier, remainingGenerations, canGenerate } = useSubscription()
+  const limit = GENERATION_LIMITS[tier]
 
   // Auto-show form if navigated from sidebar "New" button
   useEffect(() => {
@@ -74,6 +77,24 @@ export default function EncounterBoard() {
       {/* Top bar */}
       <div className="encounter-board__top-bar">
         <h1 className="encounter-board__title">BOARD</h1>
+        {remainingGenerations !== null && (
+          <span
+            className={`encounter-board__quota${
+              remainingGenerations === 0
+                ? ' encounter-board__quota--exhausted'
+                : remainingGenerations < limit * 0.2
+                  ? ' encounter-board__quota--low'
+                  : ''
+            }`}
+          >
+            {remainingGenerations} / {limit} generations
+            {!canGenerate && tier === 'free' && (
+              <a href="/settings" className="encounter-board__quota-upgrade">
+                Upgrade
+              </a>
+            )}
+          </span>
+        )}
         <span className="encounter-board__count">{encounters.length} TOTAL</span>
       </div>
 

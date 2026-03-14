@@ -30,5 +30,6 @@ export function getDisplayColumn(encounter: EncounterDocument): DisplayColumn {
   if (encounter.status === 'section1_done' || encounter.status === 'section2_done')
     return 'BUILDING'
   if (encounter.status === 'finalized') return 'COMPLETE'
+  if (encounter.status === 'section3_error' || encounter.status === 'error') return 'BUILDING'
   return 'COMPOSING'
 }

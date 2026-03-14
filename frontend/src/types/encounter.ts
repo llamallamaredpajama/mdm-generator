@@ -110,7 +110,14 @@ export interface QuickModeData {
 export type SectionStatus = 'pending' | 'in_progress' | 'completed'
 
 /** Overall status of an encounter document */
-export type EncounterStatus = 'draft' | 'section1_done' | 'section2_done' | 'finalized' | 'archived'
+export type EncounterStatus =
+  | 'draft'
+  | 'section1_done'
+  | 'section2_done'
+  | 'finalized'
+  | 'archived'
+  | 'section3_error'
+  | 'error'
 
 /** Urgency classification for differential diagnosis items */
 export type UrgencyLevel = 'emergent' | 'urgent' | 'routine'
@@ -195,6 +202,26 @@ export interface MdmPreview {
   dataReviewed: string | string[] | Record<string, unknown>[]
   /** Clinical reasoning and decision-making rationale */
   reasoning: string
+  /** Regional surveillance summary (passed through from backend via .passthrough()) */
+  regionalSurveillance?: string
+  /** CDR results summary (passed through from backend via .passthrough()) */
+  cdrResults?: string
+}
+
+/**
+ * Typed structure for the JSON portion of the final MDM.
+ * Mirrors the backend LLM output schema.
+ */
+export interface FinalMdmJson {
+  problems: string | string[]
+  differential: string | string[]
+  dataReviewed: string | string[]
+  reasoning: string
+  risk: string | string[]
+  disposition: string
+  complexityLevel?: 'low' | 'moderate' | 'high'
+  regionalSurveillance?: string
+  clinicalDecisionRules?: string
 }
 
 /**
@@ -205,7 +232,7 @@ export interface FinalMdm {
   /** Formatted text version for direct EHR paste */
   text: string
   /** Structured JSON version for programmatic use */
-  json: Record<string, unknown>
+  json: FinalMdmJson
 }
 
 // ============================================================================
@@ -503,6 +530,10 @@ export interface FinalizeResponse {
   finalMdm: FinalMdm
   /** Remaining encounters in user's quota */
   quotaRemaining: number
+  /** True if the LLM generation failed (backend still returns partial data) */
+  generationFailed?: boolean
+  /** Enhancement advisor gaps (optional — not all finalize calls produce gaps) */
+  gaps?: EnhancementGap[]
 }
 
 // ============================================================================

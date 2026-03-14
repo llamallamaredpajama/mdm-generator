@@ -12,13 +12,13 @@
  */
 
 import { useState, useMemo, useEffect, useRef } from 'react'
-import type {
-  DifferentialItem,
-  CdrAnalysisItem,
-  WorkupRecommendation,
-  EncounterDocument,
-} from '../../../types/encounter'
+import type { EncounterDocument } from '../../../types/encounter'
 import type { TrendAnalysisResult } from '../../../types/surveillance'
+import {
+  getDifferential,
+  getCdrAnalysis,
+  getWorkupRecommendations,
+} from '../../../lib/encounterUtils'
 import DifferentialList from './DifferentialList'
 import OrdersCard from './OrdersCard'
 import OrdersetManager from './OrdersetManager'
@@ -55,42 +55,6 @@ interface DashboardOutputProps {
   onOpenTrendReport?: () => void
   /** Whether Firestore data has been loaded into selectedTests (guards auto-populate) */
   firestoreInitialized?: boolean
-}
-
-/**
- * Extract differential array from S1 llmResponse,
- * handling both flat and wrapped shapes for backward compatibility.
- */
-function getDifferential(llmResponse: unknown): DifferentialItem[] {
-  if (Array.isArray(llmResponse)) return llmResponse as DifferentialItem[]
-  if (llmResponse && typeof llmResponse === 'object' && 'differential' in llmResponse) {
-    const wrapped = llmResponse as { differential?: unknown }
-    if (Array.isArray(wrapped.differential)) return wrapped.differential as DifferentialItem[]
-  }
-  return []
-}
-
-/**
- * Extract CDR analysis from S1 llmResponse (optional, new field).
- */
-function getCdrAnalysis(llmResponse: unknown): CdrAnalysisItem[] {
-  if (llmResponse && typeof llmResponse === 'object' && 'cdrAnalysis' in llmResponse) {
-    const wrapped = llmResponse as { cdrAnalysis?: unknown }
-    if (Array.isArray(wrapped.cdrAnalysis)) return wrapped.cdrAnalysis as CdrAnalysisItem[]
-  }
-  return []
-}
-
-/**
- * Extract workup recommendations from S1 llmResponse (optional, new field).
- */
-function getWorkupRecommendations(llmResponse: unknown): WorkupRecommendation[] {
-  if (llmResponse && typeof llmResponse === 'object' && 'workupRecommendations' in llmResponse) {
-    const wrapped = llmResponse as { workupRecommendations?: unknown }
-    if (Array.isArray(wrapped.workupRecommendations))
-      return wrapped.workupRecommendations as WorkupRecommendation[]
-  }
-  return []
 }
 
 function StubCard({ title, description }: { title: string; description: string }) {

@@ -28,6 +28,37 @@
   font-family: var(--font-mono, monospace);
 }
 
+.encounter-board__quota {
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
+  color: var(--color-text-secondary, #999);
+  background: var(--color-surface-secondary, #1a1a1a);
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-primary, #222);
+}
+
+.encounter-board__quota--low {
+  color: #d97706;
+  border-color: rgba(217, 119, 6, 0.3);
+}
+
+.encounter-board__quota--exhausted {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.encounter-board__quota-upgrade {
+  margin-left: 8px;
+  color: var(--color-accent, #3b82f6);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.encounter-board__quota-upgrade:hover {
+  text-decoration: underline;
+}
+
 .encounter-board__columns {
   display: flex;
   flex: 1;

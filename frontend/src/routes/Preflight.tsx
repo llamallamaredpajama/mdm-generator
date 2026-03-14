@@ -32,7 +32,7 @@ export default function Preflight() {
     setError(null)
 
     try {
-      const resp = await generateMDM({ narrative: text, userIdToken: idToken })
+      const resp = await generateMDM({ narrative: text }, idToken)
       navigate('/output', { state: { text, draft: resp.draft } })
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string }
@@ -50,7 +50,13 @@ export default function Preflight() {
       {!loading && !error && !skipConfirmation && (
         <div className="preflight-warning-card">
           <div className="preflight-warning-header">
-            <svg className="preflight-warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="preflight-warning-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -71,7 +77,8 @@ export default function Preflight() {
               onChange={(e) => setAckPHI(e.target.checked)}
             />
             <span className="preflight-checkbox-text">
-              I confirm that NO protected health information (PHI) or real patient data is being submitted
+              I confirm that NO protected health information (PHI) or real patient data is being
+              submitted
             </span>
           </label>
         </div>
@@ -82,9 +89,7 @@ export default function Preflight() {
         <div className="preflight-loading">
           <div className="preflight-spinner" />
           <h2 className="preflight-loading-title">Generating MDM</h2>
-          <p className="preflight-loading-subtitle">
-            Analyzing your encounter narrative...
-          </p>
+          <p className="preflight-loading-subtitle">Analyzing your encounter narrative...</p>
           <div className="preflight-loading-progress">
             <span className="preflight-loading-dot" />
             <span className="preflight-loading-dot" />
@@ -97,7 +102,13 @@ export default function Preflight() {
       {error && (
         <div className="preflight-error">
           <div className="preflight-error-header">
-            <svg className="preflight-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="preflight-error-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <circle cx="12" cy="12" r="10" />
               <line x1="15" y1="9" x2="9" y2="15" />
               <line x1="9" y1="9" x2="15" y2="15" />

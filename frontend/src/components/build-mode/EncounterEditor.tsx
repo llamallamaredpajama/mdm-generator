@@ -22,7 +22,6 @@ import type {
   SectionNumber,
   EncounterDocument,
   SectionStatus,
-  FinalMdm,
   CdrTracking,
   CdrTrackingEntry,
   TestResult,
@@ -57,6 +56,7 @@ import {
   getTestIdsFromWorkupRecommendations,
 } from './shared/getRecommendedTestIds'
 import { buildCdrColorMap } from './shared/cdrColorPalette'
+import { getDifferential, getWorkupRecommendations, getFinalMdm } from '../../lib/encounterUtils'
 import type { WorkingDiagnosis } from '../../types/encounter'
 import './EncounterEditor.css'
 
@@ -277,25 +277,16 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   const [dictationParsing, setDictationParsing] = useState(false)
 
   // Compute recommended test IDs for OrdersetManager "AI" badges
-  const s1Differential = useMemo(() => {
-    const llm = encounter?.section1?.llmResponse
-    if (Array.isArray(llm)) return llm
-    if (llm && typeof llm === 'object' && 'differential' in llm) {
-      const wrapped = llm as { differential?: unknown }
-      if (Array.isArray(wrapped.differential)) return wrapped.differential
-    }
-    return []
-  }, [encounter?.section1?.llmResponse])
+  const s1Differential = useMemo(
+    () => getDifferential(encounter?.section1?.llmResponse),
+    [encounter?.section1?.llmResponse],
+  )
 
   // Extract workup recommendations from S1 response
-  const s1WorkupRecommendations = useMemo(() => {
-    const llm = encounter?.section1?.llmResponse
-    if (llm && typeof llm === 'object' && 'workupRecommendations' in llm) {
-      const wrapped = llm as { workupRecommendations?: unknown }
-      if (Array.isArray(wrapped.workupRecommendations)) return wrapped.workupRecommendations
-    }
-    return []
-  }, [encounter?.section1?.llmResponse])
+  const s1WorkupRecommendations = useMemo(
+    () => getWorkupRecommendations(encounter?.section1?.llmResponse),
+    [encounter?.section1?.llmResponse],
+  )
 
   // Bug 4 fix: Combine client-side matching AND LLM workup recommendations
   const recommendedTestIds = useMemo(() => {
@@ -435,19 +426,11 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
       encounter.chiefComplaint &&
       analyzedForRef.current !== encounter.id
     ) {
-      const llmResponse = encounter.section1.llmResponse
-      // Handle both flat DifferentialItem[] and wrapped { differential: [...] } shapes
-      const differential = Array.isArray(llmResponse) ? llmResponse : llmResponse?.differential
-      if (Array.isArray(differential)) {
-        const dxList = differential
-          .map((d: string | { diagnosis?: string }) =>
-            typeof d === 'string' ? d : d.diagnosis || '',
-          )
-          .filter(Boolean)
-        if (dxList.length > 0) {
-          analyzedForRef.current = encounter.id
-          analyze(encounter.chiefComplaint, dxList)
-        }
+      const differential = getDifferential(encounter.section1.llmResponse)
+      const dxList = differential.map((d) => d.diagnosis || '').filter(Boolean)
+      if (dxList.length > 0) {
+        analyzedForRef.current = encounter.id
+        analyze(encounter.chiefComplaint, dxList)
       }
     }
   }, [
@@ -953,14 +936,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
   const abnormalCount = progressStatuses.filter((s) => s === 'abnormal').length
   const hasPendingTests = progressStatuses.includes('pending')
 
-  // Defensive: handle both nested { finalMdm } and flat FinalMdm shapes (backward compat)
-  const finalMdmData = (() => {
-    const s3 = encounter?.section3?.llmResponse
-    if (!s3) return null
-    if (s3.finalMdm) return s3.finalMdm
-    if ((s3 as unknown as FinalMdm).text) return s3 as unknown as FinalMdm
-    return null
-  })()
+  const finalMdmData = getFinalMdm(encounter?.section3?.llmResponse)
 
   return (
     <div className="encounter-editor">

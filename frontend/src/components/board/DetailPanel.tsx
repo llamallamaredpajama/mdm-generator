@@ -5,6 +5,7 @@ import { useQuickEncounter } from '../../hooks/useQuickEncounter'
 import { useIsMobile, usePrefersReducedMotion } from '../../hooks/useMediaQuery'
 import { getEncounterMode, formatRoomDisplay } from '../../types/encounter'
 import { getEncounterPhoto } from '../../lib/photoMapper'
+import { getDifferential, getMdmPreview, getFinalMdm } from '../../lib/encounterUtils'
 import { usePhotoUrls } from '../../contexts/PhotoLibraryContext'
 import type { EncounterDocument, SectionNumber } from '../../types/encounter'
 import NarrativeToolbar from './NarrativeToolbar'
@@ -153,14 +154,16 @@ function BuildDetailContent({
       </div>
 
       {/* Section output */}
-      {hasOutput && currentSection === 1 && sectionData.llmResponse && (
-        <div className="detail-panel__output">
-          <div className="detail-panel__output-label">Differential Diagnosis</div>
-          <div className="detail-panel__differential">
-            {'differential' in sectionData.llmResponse &&
-              Array.isArray(sectionData.llmResponse.differential) &&
-              sectionData.llmResponse.differential.map(
-                (item: { diagnosis: string; urgency: string; reasoning: string }, idx: number) => (
+      {hasOutput &&
+        currentSection === 1 &&
+        sectionData.llmResponse &&
+        (() => {
+          const differential = getDifferential(sectionData.llmResponse)
+          return differential.length > 0 ? (
+            <div className="detail-panel__output">
+              <div className="detail-panel__output-label">Differential Diagnosis</div>
+              <div className="detail-panel__differential">
+                {differential.map((item, idx) => (
                   <div key={idx} className="detail-panel__diff-item">
                     <div className="detail-panel__diff-diagnosis">
                       <span
@@ -172,37 +175,37 @@ function BuildDetailContent({
                     </div>
                     <div className="detail-panel__diff-reasoning">{item.reasoning}</div>
                   </div>
-                ),
-              )}
-          </div>
-        </div>
-      )}
+                ))}
+              </div>
+            </div>
+          ) : null
+        })()}
 
-      {hasOutput && currentSection === 2 && sectionData.llmResponse && (
-        <div className="detail-panel__output">
-          <div className="detail-panel__output-label">MDM Preview</div>
-          <div className="detail-panel__mdm-output">
-            {'mdmPreview' in sectionData.llmResponse &&
-              sectionData.llmResponse.mdmPreview &&
-              typeof sectionData.llmResponse.mdmPreview === 'object' &&
-              'reasoning' in sectionData.llmResponse.mdmPreview &&
-              String(sectionData.llmResponse.mdmPreview.reasoning)}
-          </div>
-        </div>
-      )}
+      {hasOutput &&
+        currentSection === 2 &&
+        sectionData.llmResponse &&
+        (() => {
+          const preview = getMdmPreview(sectionData.llmResponse)
+          return preview ? (
+            <div className="detail-panel__output">
+              <div className="detail-panel__output-label">MDM Preview</div>
+              <div className="detail-panel__mdm-output">{String(preview.reasoning)}</div>
+            </div>
+          ) : null
+        })()}
 
-      {hasOutput && currentSection === 3 && sectionData.llmResponse && (
-        <div className="detail-panel__output">
-          <div className="detail-panel__output-label">Final MDM</div>
-          <div className="detail-panel__mdm-output">
-            {'finalMdm' in sectionData.llmResponse &&
-              sectionData.llmResponse.finalMdm &&
-              typeof sectionData.llmResponse.finalMdm === 'object' &&
-              'text' in sectionData.llmResponse.finalMdm &&
-              String(sectionData.llmResponse.finalMdm.text)}
-          </div>
-        </div>
-      )}
+      {hasOutput &&
+        currentSection === 3 &&
+        sectionData.llmResponse &&
+        (() => {
+          const finalMdm = getFinalMdm(sectionData.llmResponse)
+          return finalMdm ? (
+            <div className="detail-panel__output">
+              <div className="detail-panel__output-label">Final MDM</div>
+              <div className="detail-panel__mdm-output">{String(finalMdm.text)}</div>
+            </div>
+          ) : null
+        })()}
 
       {/* Intelligence panels */}
       {hasOutput && (
