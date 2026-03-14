@@ -19,4 +19,4 @@ firestore.indexes.json
 storage.rules
 CLAUDE.md
 README.md
-package.json
+/package.json
