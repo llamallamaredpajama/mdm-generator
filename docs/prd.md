@@ -4,7 +4,7 @@
 **Owner**: Jeremy
 **Last updated**: 2026-03-14
 
-> Technical implementation details live in the [Backend Technical Reference Document](new-backend-trd.md). This PRD describes the product — what it does, who it serves, and why.
+> Technical implementation details live in the [Backend Technical Reference Document](backend-trd.md). This PRD describes the product — what it does, who it serves, and why.
 
 ---
 
@@ -138,7 +138,7 @@ Three-section progressive workflow with Firestore persistence, designed for thor
 - **Firestore library**: CDR definitions stored in Firestore, seeded from 30 batch configuration files
 - **Accuracy requirement**: 100% accuracy or exclusion — CDRs that cannot be verified against original published sources are quarantined
 
-[→ TRD §3](new-backend-trd.md#3-domain-module-design) for CDR matching and catalog service implementation.
+[→ TRD §3](backend-trd.md#3-domain-module-design) for CDR matching and catalog service implementation.
 
 ### 5.4 Test Catalog & Order Sets
 
@@ -303,7 +303,7 @@ Subscription management via Firebase Stripe Extension:
 
 ## 8. System Architecture (High-Level)
 
-> For complete technical details, see the [Backend Technical Reference Document](new-backend-trd.md).
+> For complete technical details, see the [Backend Technical Reference Document](backend-trd.md).
 
 ### 8.1 Stack Overview
 
@@ -321,11 +321,11 @@ Subscription management via Firebase Stripe Extension:
 ### 8.2 Key Architectural Patterns
 
 - **Two-mode workflow**: Quick Mode (one-shot) and Build Mode (3-section progressive) with separate prompt builders
-- **Domain modules**: 7 backend modules (admin, analytics, encounter, library, narrative, quick-mode, user) with controller/routes/schemas pattern [→ TRD §3](new-backend-trd.md#3-domain-module-design)
+- **Domain modules**: 7 backend modules (admin, analytics, encounter, library, narrative, quick-mode, user) with controller/routes/schemas pattern [→ TRD §3](backend-trd.md#3-domain-module-design)
 - **Non-blocking enrichment**: Surveillance, CDR matching, test suggestions, and photo assignment run as an enrichment pipeline that never blocks MDM generation
-- **PHI-safe logging**: Pino with field-level redaction; metadata-only audit trail [→ TRD §2](new-backend-trd.md#2-infrastructure-patterns)
-- **5 prompt builders**: Build Mode (S1/finalize), Quick Mode, narrative parsing, and gap analytics — each with dedicated prompt construction logic [→ TRD §5](new-backend-trd.md#5-llm-integration-layer)
-- **Repository pattern**: Firestore access through typed repository interfaces with dependency injection [→ TRD §4](new-backend-trd.md#4-data-access-layer)
+- **PHI-safe logging**: Pino with field-level redaction; metadata-only audit trail [→ TRD §2](backend-trd.md#2-infrastructure-patterns)
+- **5 prompt builders**: Build Mode (S1/finalize), Quick Mode, narrative parsing, and gap analytics — each with dedicated prompt construction logic [→ TRD §5](backend-trd.md#5-llm-integration-layer)
+- **Repository pattern**: Firestore access through typed repository interfaces with dependency injection [→ TRD §4](backend-trd.md#4-data-access-layer)
 
 ### 8.3 Security Posture Summary
 
@@ -334,7 +334,7 @@ Subscription management via Firebase Stripe Extension:
 - Zod schema validation on all request bodies
 - Rate limiting (5–10 req/min on LLM endpoints)
 - Error responses never expose stack traces, database queries, medical content, or internal paths
-- Admin operations require Firebase custom claims [→ TRD §6](new-backend-trd.md#6-auth--security-architecture)
+- Admin operations require Firebase custom claims [→ TRD §6](backend-trd.md#6-auth--security-architecture)
 
 ---
 
