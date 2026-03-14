@@ -46,8 +46,24 @@ Centralized config, logging, errors, and middleware added in `2931353`. All rout
 
 **Firebase Admin init priority**: `GOOGLE_APPLICATION_CREDENTIALS_JSON` (parsed JSON) → `GOOGLE_APPLICATION_CREDENTIALS` (file path) → default credentials (Cloud Run SA).
 
-### Routes
-`/` Start | `/compose` Input | `/preflight` PHI check | `/output` MDM display | `/settings` User prefs | `/build` Build Mode
+### Backend Modular Architecture
+
+Post-refactoring, route handlers live in domain modules under `backend/src/modules/`:
+
+| Module | Path | Purpose |
+|--------|------|---------|
+| `admin/` | `/v1/admin/*` | Plan management (requires admin claim) |
+| `analytics/` | `/v1/analytics/*` | Gap analytics insights (LLM-powered) |
+| `encounter/` | `/v1/build-mode/*` | Build Mode S1/S2/finalize orchestration |
+| `library/` | `/v1/library/*` | CDR + test catalog endpoints |
+| `narrative/` | `/v1/parse-narrative` | Narrative → structured fields parsing |
+| `quick-mode/` | `/v1/quick-mode/*` | One-shot MDM generation |
+| `user/` | `/v1/whoami`, `/v1/user/*` | Auth validation, profile CRUD |
+
+Each module has `controller.ts` (handlers), `routes.ts` (Express router), and optionally `schemas.ts` (Zod validation). App assembly in `app.ts`, entry point in `index.ts`, DI in `dependencies.ts`.
+
+### Frontend Routes
+`/` Landing | `/compose` EncounterBoard | `/preflight` PHI check | `/output` MDM display | `/settings` User prefs | `/analytics` Gap analytics | `/build` → redirects to `/compose`
 
 ### API Endpoints
 | Endpoint | Method | Rate Limit | Purpose |
@@ -68,7 +84,7 @@ Centralized config, logging, errors, and middleware added in `2931353`. All rout
 
 ## Two-Mode Architecture
 
-### Build Mode (`/build`)
+### Build Mode (via EncounterBoard at `/compose`)
 3-section progressive workflow with Firestore persistence:
 1. **Section 1** (Initial Eval) → generates worst-first differential
 2. **Section 2** (Workup & Results) → stores structured test/diagnosis data
@@ -211,15 +227,21 @@ cd backend && pnpm build         # TypeScript compilation (REQUIRED before commi
 | `backend/src/parsePromptBuilder.ts` | Narrative → structured fields parsing prompt |
 | `backend/src/outputSchema.ts` | Legacy MDM structure validation |
 | `backend/src/buildModeSchemas.ts` | Build Mode Zod schemas (requests, responses, Firestore) |
+| `backend/src/promptBuilderAnalytics.ts` | Gap analytics insights prompt construction |
 | `backend/src/llm/vertexProvider.ts` | LLM interface (model config, temperature, safety) |
 
 ### Key Components
+- `frontend/src/components/board/EncounterBoard.tsx` - Main compose view (kanban board + detail panel)
+- `frontend/src/components/board/BoardCard.tsx` - Encounter card in status columns
+- `frontend/src/components/board/DetailPanel.tsx` - Encounter detail/editing panel
+- `frontend/src/components/board/StatusColumn.tsx` - Kanban column (draft/in-progress/finalized)
 - `frontend/src/components/DictationGuide.tsx` - Inline physician guidance
 - `frontend/src/components/Checklist.tsx` - Pre-submission PHI verification
 - `frontend/src/routes/Output.tsx` - MDM display with copy functionality
-- `frontend/src/routes/BuildMode.tsx` - Build Mode encounter management
-- `frontend/src/components/build-mode/desktop/DesktopKanban.tsx` - Desktop encounter layout
-- `frontend/src/components/build-mode/mobile/MobileWalletStack.tsx` - Mobile encounter layout
+- `frontend/src/routes/Analytics.tsx` - Gap analytics dashboard
+- `frontend/src/components/build-mode/SectionPanel.tsx` - Build Mode section editor
+- `frontend/src/components/build-mode/EncounterEditor.tsx` - Full encounter editing view
+- `frontend/src/components/build-mode/shared/DashboardOutput.tsx` - Differential + results display
 - `frontend/src/contexts/PhotoLibraryContext.tsx` - Photo URL provider (Firestore → Storage URLs)
 - `frontend/src/hooks/usePhotoLibrary.ts` - One-time photo library fetch from Firestore
 - `frontend/src/lib/photoMapper.ts` - Encounter photo resolver (Storage URL → local fallback)
@@ -233,35 +255,19 @@ cd backend && pnpm build         # TypeScript compilation (REQUIRED before commi
 |------|---------|
 | `backend/src/services/cdrMatcher.ts` | Maps clinical scenarios to applicable CDRs |
 | `backend/src/services/cdrCatalogFormatter.ts` | CDR catalog formatting for prompt injection |
+| `backend/src/services/cdrCatalogSearch.ts` | Embedding-based CDR similarity search |
 | `backend/src/services/cdrTrackingBuilder.ts` | Builds CDR tracking context for prompts |
 | `backend/src/services/testCatalogFormatter.ts` | Test catalog formatting for prompt injection |
+| `backend/src/services/testCatalogSearch.ts` | Embedding-based test similarity search |
+| `backend/src/services/embeddingService.ts` | Vertex AI text embedding generation |
+| `backend/src/services/userService.ts` | User profile + quota management |
 
 ## Security Patterns
 
-### API Route Template (6-Step Pattern)
-Every backend route MUST follow:
-```typescript
-router.post('/v1/endpoint', async (req, res) => {
-  try {
-    // 1. AUTHENTICATE
-    const idToken = req.headers.authorization?.split('Bearer ')[1];
-    if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
-    const decoded = await admin.auth().verifyIdToken(idToken);
+### API Route Pattern (6-Step)
+Every route handler follows: **1. Authenticate** → **2. Validate** (Zod middleware) → **3. Authorize** (subscription check) → **4. Execute** → **5. Audit** (metadata only, NEVER medical content) → **6. Respond**
 
-    // 2. VALIDATE request body
-    // 3. AUTHORIZE (check subscription/permissions)
-    // 4. EXECUTE core operation
-    // 5. AUDIT - log metadata only (NEVER log medical content)
-    console.log({ userId, timestamp, action }); // OK
-    // console.log({ narrative, mdmText }); // NEVER
-
-    // 6. RESPOND
-    return res.json(result);
-  } catch (error) {
-    return res.status(500).json({ error: 'Internal error' });
-  }
-});
-```
+Post-refactoring, steps 1-2 are handled by shared middleware in the module's `routes.ts`. Controllers focus on steps 3-6.
 
 ### Error Messages
 Never include: stack traces, database queries, medical/PHI content, internal paths
@@ -305,7 +311,7 @@ PostToolUse hooks in `.claude/hooks/` surface reminders to run these agents when
 - **BEM naming**: `.component-name`, `.component-name__element`, `.component-name--modifier`
 - **CSS variables always have fallbacks**: `var(--color-surface, #f8fafc)` -- theme may not be loaded
 - **Urgency colors are hardcoded** (clinical meaning): `#dc2626` emergent, `#d97706` urgent, `#16a34a` routine
-- **Responsive**: `useIsMobile()` hook (767px breakpoint), conditional CSS class not inline styles
+- **Responsive**: `useIsMobile()` hook in `useMediaQuery.ts` (767px breakpoint), conditional CSS class not inline styles
 
 ### Data Shape Backward Compatibility
 - **S1 `llmResponse` has dual shape**: Old = flat `DifferentialItem[]`, new = `{ differential, processedAt }`. Use `getDifferential()` extraction helper.
@@ -373,11 +379,16 @@ If `git diff` shows any of these, STOP and review:
 |------|----------|
 | Frontend tests | `frontend/src/__tests__/` |
 | Test fixtures | `frontend/src/__fixtures__/` |
-| Backend infrastructure | `backend/src/config.ts`, `logger.ts`, `errors.ts` |
+| Backend infrastructure | `backend/src/config.ts`, `logger.ts`, `errors.ts`, `app.ts`, `dependencies.ts` |
+| Backend modules | `backend/src/modules/` (admin/, analytics/, encounter/, library/, narrative/, quick-mode/, user/) |
 | Backend middleware | `backend/src/middleware/` |
 | Backend services | `backend/src/services/` |
+| Backend data layer | `backend/src/data/` (cache.ts, repositories/) |
 | Surveillance module | `backend/src/surveillance/` (adapters/, cache/) |
-| Build Mode components | `frontend/src/components/build-mode/` (desktop/, mobile/, shared/) |
+| Encounter board | `frontend/src/components/board/` (EncounterBoard, BoardCard, DetailPanel, StatusColumn) |
+| Build Mode components | `frontend/src/components/build-mode/` (shared/) |
+| Onboarding flow | `frontend/src/components/onboarding/` |
+| Analytics components | `frontend/src/components/analytics/` |
 | Frontend contexts | `frontend/src/contexts/` |
 | Frontend hooks | `frontend/src/hooks/` |
 | Frontend types | `frontend/src/types/` |
@@ -392,9 +403,10 @@ If `git diff` shows any of these, STOP and review:
 | Add route | Create in `frontend/src/routes/`, add to `App.tsx` router |
 | Modify MDM output | Update `outputSchema.ts` → `promptBuilder.ts` → `Output.tsx` |
 | Change prompting | Edit prompt guide in `backend/prompts/` (and mirror to `docs/` for reference) **→ also update `docs/generator_engine.md`** |
-| Add Build Mode section | Schema in `buildModeSchemas.ts` → prompt in `promptBuilderBuildMode.ts` → endpoint in `index.ts` → UI in `components/build-mode/` |
+| Add Build Mode section | Schema in `buildModeSchemas.ts` → prompt in `promptBuilderBuildMode.ts` → controller in `modules/encounter/` → UI in `components/build-mode/` |
+| Add backend endpoint | Create/update module in `modules/{domain}/` (controller + routes + schemas) → register in `app.ts` |
 | Modify surveillance | Adapter in `surveillance/adapters/` → correlation in `correlationEngine.ts` → prompt augmenter → PDF generator |
-| Add Quick Mode feature | `promptBuilderQuickMode.ts` → endpoint in `index.ts` → `useQuickEncounter.ts` hook |
+| Add Quick Mode feature | `promptBuilderQuickMode.ts` → controller in `modules/quick-mode/` → `useQuickEncounter.ts` hook |
 
 ## Worktree Awareness
 
