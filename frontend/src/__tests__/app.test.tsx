@@ -7,6 +7,7 @@ vi.mock('../lib/firebase', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
   useAuth: () => ({ user: null, loading: false }),
   useAuthToken: () => null,
+  getAppDb: vi.fn(() => ({})),
   signInWithGoogle: vi.fn(),
   signOutUser: vi.fn(),
   checkRedirectResult: vi.fn(),
