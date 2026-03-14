@@ -3,19 +3,12 @@ import admin from 'firebase-admin'
 import { buildAnalyticsInsightsPrompt } from '../../promptBuilderAnalytics.js'
 import type { AnalyticsDeps } from '../../dependencies.js'
 
-export function createAnalyticsController({ userService, db, llmClient }: AnalyticsDeps) {
+export function createAnalyticsController({ db, llmClient }: AnalyticsDeps) {
   return {
     getInsights: async (req: Request, res: Response) => {
       const uid = req.user!.uid
 
-      // AUTHORIZE — require Pro, Enterprise, or Admin plan
-      const user = await userService.getUser(uid)
-      if (!user) return res.status(404).json({ error: 'User not found' })
-
-      const allowedPlans = ['pro', 'enterprise', 'admin']
-      if (!allowedPlans.includes(user.plan)) {
-        return res.status(403).json({ error: 'Pro plan or higher required' })
-      }
+      // Plan authorization handled by requirePlan('pro') middleware
 
       // FETCH gap data from customers collection
       const customerDoc = await db.collection('customers').doc(uid).get()

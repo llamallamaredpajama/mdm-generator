@@ -4,13 +4,12 @@
  * POST /v1/surveillance/analyze  - Run regional trend analysis
  * POST /v1/surveillance/report   - Generate PDF trend report
  *
- * Middleware chain: authenticate → validate → asyncHandler(controller)
+ * Middleware chain: authenticate → requirePlan/validate → asyncHandler(controller)
  */
 
 import { Router } from 'express'
 import crypto from 'node:crypto'
 import admin from 'firebase-admin'
-import { userService } from '../services/userService.js'
 import { authenticate } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import { asyncHandler } from '../shared/asyncHandler.js'
@@ -20,9 +19,8 @@ import { RegionResolver } from './regionResolver.js'
 import { AdapterRegistry } from './adapters/adapterRegistry.js'
 import { computeCorrelations, detectAlerts } from './correlationEngine.js'
 import { generateTrendReport } from './pdfGenerator.js'
+import type { SurveillanceDeps } from '../dependencies.js'
 import type { TrendAnalysisResult, ClinicalCorrelation, TrendAlert, SurveillanceDataPoint, DataSourceSummary, DataSourceError } from './types.js'
-
-const router = Router()
 
 /** Known CDC data source keys and their human-readable labels */
 const KNOWN_SOURCES: { key: string; label: string }[] = [
@@ -122,148 +120,145 @@ function buildSummary(
 }
 
 // ---------------------------------------------------------------------------
-// POST /v1/surveillance/analyze
+// Factory
 // ---------------------------------------------------------------------------
 
-router.post('/v1/surveillance/analyze', authenticate, validate(TrendAnalysisBodySchema),
-  asyncHandler(async (req, res) => {
-    const uid = req.user!.uid
-    const data = req.body
+export function createSurveillanceRoutes(deps: SurveillanceDeps): Router {
+  const router = Router()
+  const { userService, db, requirePlan } = deps
 
-    // AUTHORIZE — surveillance requires Pro or Enterprise plan
-    const stats = await userService.getUsageStats(uid)
-    if (stats.plan === 'free') {
-      return res.status(403).json({
-        error: 'Surveillance trend analysis requires a Pro or Enterprise plan',
-        upgradeRequired: true,
-        requiredPlan: 'pro',
+  // ---------------------------------------------------------------------------
+  // POST /v1/surveillance/analyze
+  // ---------------------------------------------------------------------------
+
+  router.post('/v1/surveillance/analyze', authenticate, requirePlan('pro'), validate(TrendAnalysisBodySchema),
+    asyncHandler(async (req, res) => {
+      const uid = req.user!.uid
+      const data = req.body
+
+      // EXECUTE
+      const syndromes = mapToSyndromes(data.chiefComplaint, data.differential)
+
+      const resolver = new RegionResolver()
+      const region = await resolver.resolve(data.location)
+      if (!region) {
+        return res.status(400).json({ error: 'Could not resolve location' })
+      }
+
+      const regionLabel = region.county
+        ? `${region.county}, ${region.stateAbbrev} area — HHS Region ${region.hhsRegion}`
+        : `${region.state} — HHS Region ${region.hhsRegion}`
+
+      const registry = new AdapterRegistry()
+      const { dataPoints, errors, queriedSources } = await registry.fetchAll(region, syndromes)
+
+      const correlations = computeCorrelations({
+        chiefComplaint: data.chiefComplaint,
+        differential: data.differential,
+        dataPoints,
       })
-    }
+      const alerts = detectAlerts(dataPoints, correlations)
 
-    // EXECUTE
-    const syndromes = mapToSyndromes(data.chiefComplaint, data.differential)
+      const analysisId = crypto.randomUUID()
 
-    const resolver = new RegionResolver()
-    const region = await resolver.resolve(data.location)
-    if (!region) {
-      return res.status(400).json({ error: 'Could not resolve location' })
-    }
+      const allSourceNames = ['CDC Respiratory', 'NWSS Wastewater', 'CDC NNDSS']
+      const allSourceKeys = ['cdc_respiratory', 'cdc_wastewater', 'cdc_nndss']
+      const failedSources = new Set(errors.map((e) => e.source))
+      const dataSourcesQueried = allSourceNames.filter(
+        (_, i) => !failedSources.has(allSourceKeys[i]),
+      )
 
-    const regionLabel = region.county
-      ? `${region.county}, ${region.stateAbbrev} area — HHS Region ${region.hhsRegion}`
-      : `${region.state} — HHS Region ${region.hhsRegion}`
+      const queriedSourceKeys = new Set(queriedSources || allSourceKeys.filter((_, i) => !failedSources.has(allSourceKeys[i])))
+      const dataSourceSummaries = buildDataSourceSummaries(dataPoints, errors, queriedSourceKeys)
 
-    const registry = new AdapterRegistry()
-    const { dataPoints, errors, queriedSources } = await registry.fetchAll(region, syndromes)
+      const analysis: TrendAnalysisResult = {
+        analysisId,
+        region,
+        regionLabel,
+        rankedFindings: correlations,
+        alerts,
+        summary: buildSummary(correlations, alerts, regionLabel),
+        dataSourcesQueried,
+        dataSourceErrors: errors,
+        dataSourceSummaries,
+        analyzedAt: new Date().toISOString(),
+      }
 
-    const correlations = computeCorrelations({
-      chiefComplaint: data.chiefComplaint,
-      differential: data.differential,
-      dataPoints,
-    })
-    const alerts = detectAlerts(dataPoints, correlations)
+      // Store analysis in Firestore for later PDF generation.
+      const cleanAnalysis = JSON.parse(JSON.stringify(analysis))
+      await db
+        .collection('surveillance_analyses')
+        .doc(analysisId)
+        .set({
+          ...cleanAnalysis,
+          uid,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        })
 
-    const analysisId = crypto.randomUUID()
-
-    const allSourceNames = ['CDC Respiratory', 'NWSS Wastewater', 'CDC NNDSS']
-    const allSourceKeys = ['cdc_respiratory', 'cdc_wastewater', 'cdc_nndss']
-    const failedSources = new Set(errors.map((e) => e.source))
-    const dataSourcesQueried = allSourceNames.filter(
-      (_, i) => !failedSources.has(allSourceKeys[i]),
-    )
-
-    const queriedSourceKeys = new Set(queriedSources || allSourceKeys.filter((_, i) => !failedSources.has(allSourceKeys[i])))
-    const dataSourceSummaries = buildDataSourceSummaries(dataPoints, errors, queriedSourceKeys)
-
-    const analysis: TrendAnalysisResult = {
-      analysisId,
-      region,
-      regionLabel,
-      rankedFindings: correlations,
-      alerts,
-      summary: buildSummary(correlations, alerts, regionLabel),
-      dataSourcesQueried,
-      dataSourceErrors: errors,
-      dataSourceSummaries,
-      analyzedAt: new Date().toISOString(),
-    }
-
-    // Store analysis in Firestore for later PDF generation.
-    const cleanAnalysis = JSON.parse(JSON.stringify(analysis))
-    const db = admin.firestore()
-    await db
-      .collection('surveillance_analyses')
-      .doc(analysisId)
-      .set({
-        ...cleanAnalysis,
+      req.log!.info({
+        action: 'surveillance-analyze',
         uid,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        analysisId,
+        findingsCount: correlations.length,
+        alertsCount: alerts.length,
       })
 
-    req.log!.info({
-      action: 'surveillance-analyze',
-      uid,
-      analysisId,
-      findingsCount: correlations.length,
-      alertsCount: alerts.length,
-    })
-
-    return res.json({
-      ok: true,
-      analysis,
-      warnings: errors.length > 0 ? errors.map((e) => e.error) : undefined,
-    })
-  })
-)
-
-// ---------------------------------------------------------------------------
-// POST /v1/surveillance/report
-// ---------------------------------------------------------------------------
-
-router.post('/v1/surveillance/report', authenticate, validate(TrendReportBodySchema),
-  asyncHandler(async (req, res) => {
-    const uid = req.user!.uid
-    const data = req.body
-
-    // AUTHORIZE — must have PDF export access
-    const stats = await userService.getUsageStats(uid)
-    if (!stats.features.exportFormats.includes('pdf')) {
-      return res.status(403).json({
-        error: 'PDF export requires a Pro or Enterprise plan',
+      return res.json({
+        ok: true,
+        analysis,
+        warnings: errors.length > 0 ? errors.map((e) => e.error) : undefined,
       })
-    }
-
-    // EXECUTE
-    const db = admin.firestore()
-    const analysisDoc = await db
-      .collection('surveillance_analyses')
-      .doc(data.analysisId)
-      .get()
-
-    if (!analysisDoc.exists) {
-      return res.status(404).json({ error: 'Analysis not found' })
-    }
-
-    const analysisData = analysisDoc.data() as TrendAnalysisResult & { uid: string }
-    if (analysisData.uid !== uid) {
-      return res.status(403).json({ error: 'Unauthorized' })
-    }
-
-    const pdfBuffer = await generateTrendReport(analysisData)
-
-    req.log!.info({
-      action: 'surveillance-report',
-      uid,
-      analysisId: data.analysisId,
     })
+  )
 
-    res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="surveillance-report-${data.analysisId}.pdf"`,
-    )
-    return res.send(pdfBuffer)
-  })
-)
+  // ---------------------------------------------------------------------------
+  // POST /v1/surveillance/report
+  // ---------------------------------------------------------------------------
 
-export default router
+  router.post('/v1/surveillance/report', authenticate, validate(TrendReportBodySchema),
+    asyncHandler(async (req, res) => {
+      const uid = req.user!.uid
+      const data = req.body
+
+      // AUTHORIZE — must have PDF export access (granular feature check)
+      const stats = await userService.getUsageStats(uid)
+      if (!stats.features.exportFormats.includes('pdf')) {
+        return res.status(403).json({
+          error: 'PDF export requires a Pro or Enterprise plan',
+        })
+      }
+
+      // EXECUTE
+      const analysisDoc = await db
+        .collection('surveillance_analyses')
+        .doc(data.analysisId)
+        .get()
+
+      if (!analysisDoc.exists) {
+        return res.status(404).json({ error: 'Analysis not found' })
+      }
+
+      const analysisData = analysisDoc.data() as TrendAnalysisResult & { uid: string }
+      if (analysisData.uid !== uid) {
+        return res.status(403).json({ error: 'Unauthorized' })
+      }
+
+      const pdfBuffer = await generateTrendReport(analysisData)
+
+      req.log!.info({
+        action: 'surveillance-report',
+        uid,
+        analysisId: data.analysisId,
+      })
+
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="surveillance-report-${data.analysisId}.pdf"`,
+      )
+      return res.send(pdfBuffer)
+    })
+  )
+
+  return router
+}

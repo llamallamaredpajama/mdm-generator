@@ -8,8 +8,9 @@ import type { AnalyticsDeps } from '../../dependencies.js'
 export function createAnalyticsRoutes(deps: AnalyticsDeps): Router {
   const router = Router()
   const { getInsights } = createAnalyticsController(deps)
+  const { requirePlan } = deps
 
-  router.post('/v1/analytics/insights', llmLimiter, authenticate, asyncHandler(getInsights))
+  router.post('/v1/analytics/insights', llmLimiter, authenticate, requirePlan('pro'), asyncHandler(getInsights))
 
   return router
 }

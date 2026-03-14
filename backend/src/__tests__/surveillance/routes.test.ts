@@ -2,7 +2,8 @@
  * Integration tests for surveillance API routes.
  *
  * Strategy:
- *   - vi.mock() for firebase-admin, userService, and all surveillance modules.
+ *   - vi.mock() for firebase-admin and all surveillance modules.
+ *   - Mock deps (userService, db, requirePlan) injected via createSurveillanceRoutes factory.
  *   - supertest drives HTTP requests against an Express app using the surveillance router.
  *
  * IMPORTANT: All medical content here is fictional / educational only. No PHI.
@@ -49,12 +50,6 @@ vi.mock('firebase-admin', () => {
 })
 
 const mockGetUsageStats = vi.fn()
-
-vi.mock('../../services/userService', () => ({
-  userService: {
-    getUsageStats: (...args: unknown[]) => mockGetUsageStats(...args),
-  },
-}))
 
 const mockMapToSyndromes = vi.fn()
 vi.mock('../../surveillance/syndromeMapper', () => ({
@@ -174,15 +169,67 @@ const MOCK_CORRELATION = {
 }
 
 // ---------------------------------------------------------------------------
+// Mock deps & Firestore for factory
+// ---------------------------------------------------------------------------
+
+const mockDbCollection = vi.fn().mockReturnValue({
+  doc: vi.fn().mockReturnValue({
+    set: mockFirestoreDocSet,
+    get: mockFirestoreDocGet,
+  }),
+})
+const mockDb = { collection: mockDbCollection } as unknown as FirebaseFirestore.Firestore
+
+const mockUserService = {
+  getUsageStats: (...args: unknown[]) => mockGetUsageStats(...args),
+} as any // eslint-disable-line @typescript-eslint/no-explicit-any
+
+// A simple requirePlan that delegates to mockGetUsageStats
+function createMockRequirePlan() {
+  const PLAN_TIERS: Record<string, number> = { free: 0, pro: 1, enterprise: 2, admin: 3 }
+  return function requirePlan(minPlan: 'pro' | 'enterprise') {
+    return async (req: any, _res: any, next: any) => {
+      try {
+        const uid = req.user?.uid
+        if (!uid) return next(new Error('Unauthorized'))
+        if (req.user?.admin) return next()
+
+        const stats = await mockGetUsageStats(uid)
+        const userTier = PLAN_TIERS[stats.plan] ?? 0
+        const requiredTier = PLAN_TIERS[minPlan] ?? 1
+
+        if (userTier < requiredTier) {
+          return _res.status(403).json({
+            error: `This feature requires a ${minPlan} plan`,
+            code: 'FORBIDDEN',
+            details: { code: 'PLAN_REQUIRED', upgradeRequired: true, requiredPlan: minPlan },
+          })
+        }
+        next()
+      } catch (err) {
+        next(err)
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // App setup
 // ---------------------------------------------------------------------------
 
 let app: Express
 
 beforeAll(async () => {
-  const { default: router } = await import('../../surveillance/routes.js')
+  const { createSurveillanceRoutes } = await import('../../surveillance/routes.js')
   const { requestLogger } = await import('../../middleware/requestLogger.js')
   const { errorHandler } = await import('../../middleware/errorHandler.js')
+
+  const router = createSurveillanceRoutes({
+    userService: mockUserService,
+    db: mockDb,
+    requirePlan: createMockRequirePlan(),
+  })
+
   app = express()
   app.use(express.json())
   app.use(requestLogger)
@@ -275,14 +322,6 @@ describe('POST /v1/surveillance/analyze', () => {
     expect(res.body.error).toBe('Unauthorized')
   })
 
-  it('returns 400 when location has neither zip nor state', async () => {
-    const res = await request(app)
-      .post('/v1/surveillance/analyze')
-      .send({ ...VALID_BODY, location: {} })
-
-    expect(res.status).toBe(400)
-  })
-
   it('returns 401 on invalid token', async () => {
     const res = await request(app)
       .post('/v1/surveillance/analyze')
@@ -301,10 +340,18 @@ describe('POST /v1/surveillance/analyze', () => {
 
     expect(res.status).toBe(403)
     expect(res.body.error).toBe(
-      'Surveillance trend analysis requires a Pro or Enterprise plan',
+      'This feature requires a pro plan',
     )
-    expect(res.body.upgradeRequired).toBe(true)
-    expect(res.body.requiredPlan).toBe('pro')
+    expect(res.body.details.upgradeRequired).toBe(true)
+    expect(res.body.details.requiredPlan).toBe('pro')
+  })
+
+  it('returns 400 when location has neither zip nor state', async () => {
+    const res = await request(app)
+      .post('/v1/surveillance/analyze')
+      .send({ ...VALID_BODY, location: {} })
+
+    expect(res.status).toBe(400)
   })
 
   it('returns 400 when region cannot be resolved', async () => {
