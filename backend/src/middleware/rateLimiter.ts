@@ -7,6 +7,7 @@ export function createRateLimiter(opts: { windowMs?: number; max: number }) {
     max: opts.max,
     standardHeaders: true,
     legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later' },
   })
 }
 

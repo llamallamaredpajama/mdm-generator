@@ -39,6 +39,7 @@ export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
   next()
 }
 
+// TODO: Implement plan enforcement — currently a no-op stub
 export function requirePlan(minPlan: 'pro' | 'enterprise') {
   return (_req: Request, _res: Response, next: NextFunction) => next()
 }

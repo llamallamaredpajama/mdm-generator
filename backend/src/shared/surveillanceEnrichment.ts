@@ -6,6 +6,7 @@
  */
 
 import admin from 'firebase-admin'
+import { logger } from '../logger'
 import { mapToSyndromes } from '../surveillance/syndromeMapper'
 import { RegionResolver } from '../surveillance/regionResolver'
 import { AdapterRegistry } from '../surveillance/adapters/adapterRegistry'
@@ -62,7 +63,7 @@ export async function runSurveillanceEnrichment(
       analyzedAt: new Date().toISOString(),
     }) || undefined
   } catch (survError) {
-    console.warn('Surveillance enrichment failed (non-blocking):', survError)
+    logger.warn({ action: 'surveillance-enrichment-failed', error: String(survError) }, 'Surveillance enrichment failed (non-blocking)')
     return undefined
   }
 }
@@ -80,7 +81,7 @@ export async function runCdrEnrichment(narrative: string): Promise<string | unde
     }
     return undefined
   } catch (cdrError) {
-    console.warn('CDR enrichment failed (non-blocking):', cdrError)
+    logger.warn({ action: 'cdr-enrichment-failed', error: String(cdrError) }, 'CDR enrichment failed (non-blocking)')
     return undefined
   }
 }

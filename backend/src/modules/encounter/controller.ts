@@ -413,9 +413,7 @@ export async function processSection1(req: Request, res: Response) {
       ]
     }
   } catch (modelError) {
-    const errMsg = modelError instanceof Error ? modelError.message : String(modelError)
-    const errStack = modelError instanceof Error ? modelError.stack : undefined
-    req.log!.error({ action: 'section1-model-error', error: errMsg, stack: errStack })
+    req.log!.error({ action: 'section1-model-error', error: String(modelError) })
     return res.status(500).json({ error: 'Failed to process section 1' })
   }
 
@@ -656,7 +654,6 @@ export async function finalize(req: Request, res: Response) {
         action: 'finalize-json-parse-error',
         error: parseError instanceof Error ? parseError.message : String(parseError),
         responseLength: cleanedText.length,
-        responsePreview: cleanedText.substring(0, 200),
       })
       const jsonStart = cleanedText.indexOf('{')
       const jsonEnd = cleanedText.lastIndexOf('}')
@@ -895,27 +892,23 @@ export async function suggestDiagnosis(req: Request, res: Response) {
   // Build prompt and call Gemini Flash
   const chiefComplaint = encounter.chiefComplaint || 'Unknown'
   const prompt = buildSuggestDiagnosisPrompt(differential, chiefComplaint, testResultsSummary)
-  const result = await callGemini(prompt)
 
-  // Parse response as JSON array of strings
-  const cleanedText = cleanLlmJsonResponse(result.text)
-
-  let suggestions: string[]
+  const fallback = differential.slice(0, 3).map((d) => d.diagnosis)
+  let suggestions: string[] = fallback
   try {
+    const result = await callGemini(prompt)
+    const cleanedText = cleanLlmJsonResponse(result.text)
     const parsed = JSON.parse(cleanedText)
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      throw new Error('Expected non-empty array')
+    if (Array.isArray(parsed)) {
+      const filtered = parsed
+        .filter((s: unknown) => typeof s === 'string' && s.trim().length > 0)
+        .slice(0, 7)
+      if (filtered.length > 0) {
+        suggestions = filtered
+      }
     }
-    suggestions = parsed
-      .filter((s: unknown) => typeof s === 'string' && s.trim().length > 0)
-      .slice(0, 7)
-  } catch {
-    // Fallback: use top 3 differential diagnoses as suggestions
-    suggestions = differential.slice(0, 3).map((d) => d.diagnosis)
-  }
-
-  if (suggestions.length === 0) {
-    suggestions = differential.slice(0, 3).map((d) => d.diagnosis)
+  } catch (modelError) {
+    req.log!.error({ action: 'suggest-diagnosis-model-error', error: String(modelError) })
   }
 
   req.log!.info({

@@ -6,6 +6,7 @@
  */
 
 import { getDb } from './db'
+import { logger } from '../logger'
 import type { TestDefinition, TestCategory, TestLibraryResponse, CdrDefinition } from '../types/libraries'
 
 const LIBRARY_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
@@ -35,7 +36,7 @@ export async function getCachedCdrLibrary(): Promise<CdrDefinition[]> {
     if (d.id && d.name && d.components && d.scoring) {
       cdrs.push(d as CdrDefinition)
     } else {
-      console.warn({ action: 'cdr-cache-refresh', warning: 'skipped malformed doc', docId: doc.id })
+      logger.warn({ action: 'cdr-cache-refresh', warning: 'skipped malformed doc', docId: doc.id })
     }
   }
 
@@ -69,7 +70,7 @@ export async function getCachedTestLibraryResponse(): Promise<TestLibraryRespons
     if (d.id && d.name && d.category) {
       tests.push(d as TestDefinition)
     } else {
-      console.warn({ action: 'test-cache-refresh', warning: 'skipped malformed doc', docId: doc.id })
+      logger.warn({ action: 'test-cache-refresh', warning: 'skipped malformed doc', docId: doc.id })
     }
   }
   const categories = [...new Set(tests.map(t => t.category))] as TestCategory[]

@@ -39,7 +39,7 @@ router.post('/v1/generate', llmLimiter, authenticate, validate(GenerateBodySchem
 
 // Build Mode endpoints
 router.post('/v1/build-mode/process-section1', llmLimiter, authenticate, validate(Section1BodySchema), asyncHandler(processSection1))
-router.post('/v1/build-mode/process-section2', llmLimiter, authenticate, validate(Section2BodySchema), asyncHandler(processSection2))
+router.post('/v1/build-mode/process-section2', authenticate, validate(Section2BodySchema), asyncHandler(processSection2))
 router.post('/v1/build-mode/finalize', llmLimiter, authenticate, validate(FinalizeBodySchema), asyncHandler(finalize))
 router.post('/v1/build-mode/match-cdrs', llmLimiter, authenticate, validate(MatchCdrsBodySchema), asyncHandler(matchCdrs))
 router.post('/v1/build-mode/suggest-diagnosis', llmLimiter, authenticate, validate(SuggestDiagnosisBodySchema), asyncHandler(suggestDiagnosis))

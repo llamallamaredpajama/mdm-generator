@@ -2,6 +2,7 @@ import type { Request, Response } from 'express'
 import admin from 'firebase-admin'
 import { userService } from '../../services/userService'
 import {
+  getDb,
   getUserDoc,
   getOrderSetsCollection,
   getDispoFlowsCollection,
@@ -49,13 +50,15 @@ export async function completeOnboarding(req: Request, res: Response) {
     displayName,
     credentialType,
     onboardingCompleted: true,
+    acknowledgedLimitations: true,
+    acknowledgedLimitationsAt: admin.firestore.Timestamp.now(),
     updatedAt: admin.firestore.Timestamp.now(),
   }
   if (surveillanceLocation) {
     updateData.surveillanceLocation = surveillanceLocation
   }
 
-  await admin.firestore().collection('users').doc(uid).update(updateData)
+  await getDb().collection('users').doc(uid).update(updateData)
   req.log!.info({ userId: uid, action: 'complete-onboarding' })
 
   return res.json({ ok: true })

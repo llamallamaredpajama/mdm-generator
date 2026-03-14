@@ -1,7 +1,6 @@
 import 'dotenv/config'
 import express from 'express'
 import helmet from 'helmet'
-import rateLimit from 'express-rate-limit'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import admin from 'firebase-admin'
@@ -9,6 +8,7 @@ import { config } from './config'
 import { logger } from './logger'
 import { requestLogger } from './middleware/requestLogger'
 import { errorHandler } from './middleware/errorHandler'
+import { globalLimiter } from './middleware/rateLimiter'
 import { initPhotoCatalog } from './photoCatalog.js'
 import { getDb } from './shared/db'
 
@@ -61,14 +61,7 @@ app.use(helmet())
 // Structured request logging with Cloud Trace correlation
 app.use(requestLogger)
 
-// Rate limiting — global: 60 req/min per IP
-const globalLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 60,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' },
-})
+// Rate limiting — global (configured via config.limits.globalRateLimit)
 app.use(globalLimiter)
 
 // ============================================================================

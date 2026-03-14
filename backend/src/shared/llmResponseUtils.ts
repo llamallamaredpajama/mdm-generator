@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod'
+import { logger } from '../logger'
 import {
   DifferentialItemSchema,
   FinalMdmSchema,
@@ -162,7 +163,7 @@ export function coerceAndValidateDifferential(items: unknown[]): DifferentialIte
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
     if (!item || typeof item !== 'object') {
-      console.warn(`Section 1 differential item ${i}: not an object, skipping`)
+      logger.warn({ action: 'differential-item-invalid', index: i }, 'Section 1 differential item: not an object, skipping')
       continue
     }
 
@@ -183,7 +184,7 @@ export function coerceAndValidateDifferential(items: unknown[]): DifferentialIte
     } else {
       const diagName = typeof obj.diagnosis === 'string' ? obj.diagnosis.slice(0, 40) : '(no diagnosis)'
       const paths = result.error.issues.map((iss) => `${iss.path.join('.')}: ${iss.message}`).join('; ')
-      console.warn(`Section 1 differential item ${i} ("${diagName}") failed validation: ${paths}`)
+      logger.warn({ action: 'differential-item-validation-failed', index: i }, `Section 1 differential item "${diagName}" failed validation: ${paths}`)
     }
   }
 
