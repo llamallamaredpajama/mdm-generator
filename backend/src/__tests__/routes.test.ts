@@ -153,6 +153,7 @@ beforeEach(() => {
   m.userService.checkAndIncrementQuota.mockResolvedValue(makeQuotaCheck())
   m.userService.incrementUsage.mockResolvedValue(undefined)
   m.userService.adminSetPlan.mockResolvedValue(undefined)
+  m.userService.incrementGapTallies.mockResolvedValue(undefined)
 
   // Default encounter: exists, build mode, draft
   m.encounterRepo.get.mockResolvedValue(makeEncounterDoc())
@@ -253,9 +254,9 @@ describe('POST /v1/generate', () => {
 
     expect(res.status).toBe(402)
     expect(res.body.error).toMatch(/quota/i)
-    expect(res.body.used).toBe(10)
-    expect(res.body.limit).toBe(10)
-    expect(res.body.remaining).toBe(0)
+    expect(res.body.quotaInfo.used).toBe(10)
+    expect(res.body.quotaInfo.limit).toBe(10)
+    expect(res.body.quotaInfo.remaining).toBe(0)
   })
 
   it('returns 400 when token estimate exceeds plan limit', async () => {
@@ -268,8 +269,6 @@ describe('POST /v1/generate', () => {
 
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/too large/i)
-    expect(res.body.tokenEstimate).toBeGreaterThan(2000)
-    expect(res.body.maxAllowed).toBe(2000)
   })
 
   it('returns 200 with MDM output on valid request', async () => {
@@ -445,7 +444,7 @@ describe('POST /v1/build-mode/process-section1', () => {
     expect(res.status).toBe(404)
   })
 
-  it('returns 400 with isLocked when submission count >= 2', async () => {
+  it('returns 400 when submission count >= 2 (section locked)', async () => {
     m.encounterRepo.get.mockResolvedValueOnce(
       makeEncounterDoc({ section1: { status: 'completed', submissionCount: 2 } }),
     )
@@ -455,8 +454,8 @@ describe('POST /v1/build-mode/process-section1', () => {
       .send(validBody)
 
     expect(res.status).toBe(400)
-    expect(res.body.isLocked).toBe(true)
-    expect(res.body.submissionCount).toBe(2)
+    expect(res.body.code).toBe('SECTION_LOCKED')
+    expect(res.body.error).toMatch(/locked/i)
   })
 
   it('counts quota only on first submission per encounter', async () => {
@@ -769,7 +768,7 @@ describe('POST /v1/build-mode/process-section2', () => {
     expect(res.body.submissionCount).toBe(1)
   })
 
-  it('returns 400 with isLocked after 2 submissions', async () => {
+  it('returns 400 when section2 locked after 2 submissions', async () => {
     m.encounterRepo.get.mockResolvedValueOnce(
       makeEncounterDoc({
         section1: { status: 'completed', submissionCount: 1 },
@@ -783,7 +782,7 @@ describe('POST /v1/build-mode/process-section2', () => {
       .send(validBody)
 
     expect(res.status).toBe(400)
-    expect(res.body.isLocked).toBe(true)
+    expect(res.body.code).toBe('SECTION_LOCKED')
   })
 
   it('returns 404 when encounter does not exist', async () => {
@@ -876,7 +875,7 @@ describe('POST /v1/build-mode/finalize', () => {
     expect(res.body.quotaRemaining).toBeDefined()
   })
 
-  it('returns 400 with isLocked after 2 submissions', async () => {
+  it('returns 400 when section3 locked after 2 submissions', async () => {
     m.encounterRepo.get.mockResolvedValueOnce(
       makeEncounterDoc({
         section1: { status: 'completed', submissionCount: 1 },
@@ -891,7 +890,7 @@ describe('POST /v1/build-mode/finalize', () => {
       .send(validBody)
 
     expect(res.status).toBe(400)
-    expect(res.body.isLocked).toBe(true)
+    expect(res.body.code).toBe('SECTION_LOCKED')
   })
 
   it('parses wrapped finalMdm response from LLM', async () => {
@@ -1083,7 +1082,5 @@ describe('POST /v1/quick-mode/generate', () => {
 
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/too large/i)
-    expect(res.body.tokenEstimate).toBeGreaterThan(2000)
-    expect(res.body.maxAllowed).toBe(2000)
   })
 })

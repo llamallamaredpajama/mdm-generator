@@ -19,6 +19,8 @@ import { createQuickModeRoutes } from './modules/quick-mode/routes.js'
 import { createEncounterRoutes } from './modules/encounter/routes.js'
 import { createSurveillanceRoutes } from './surveillance/routes.js'
 import { createRequirePlan } from './middleware/auth.js'
+import { EnrichmentPipeline } from './modules/encounter/enrichmentPipeline.js'
+import { EncounterOrchestrator } from './modules/encounter/encounterOrchestrator.js'
 import type { AppDependencies } from './dependencies.js'
 
 export function createApp(deps: AppDependencies): express.Application {
@@ -85,13 +87,25 @@ export function createApp(deps: AppDependencies): express.Application {
   // Module Routers
   // ============================================================================
 
+  // Construct encounter orchestrator (encapsulates all encounter business logic)
+  const enrichmentPipeline = new EnrichmentPipeline(deps.libraryCaches)
+  const encounterOrchestrator = new EncounterOrchestrator({
+    encounterRepo: deps.encounterRepo,
+    userService: deps.userService,
+    llmClient: deps.llmClient,
+    responseParser: deps.responseParser,
+    enrichmentPipeline,
+    libraryCaches: deps.libraryCaches,
+    db: deps.db,
+  })
+
   app.use(createAdminRoutes(deps))
   app.use(createLibraryRoutes(deps))
   app.use(createUserRoutes(deps))
   app.use(createAnalyticsRoutes({ ...deps, requirePlan }))
   app.use(createNarrativeRoutes(deps))
   app.use(createQuickModeRoutes(deps))
-  app.use(createEncounterRoutes(deps))
+  app.use(createEncounterRoutes({ orchestrator: encounterOrchestrator }))
   app.use(createSurveillanceRoutes({ userService: deps.userService, db: deps.db, requirePlan }))
 
   // Error-handling middleware (must be registered after all routes)

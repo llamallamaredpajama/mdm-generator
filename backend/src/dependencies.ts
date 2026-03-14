@@ -10,6 +10,7 @@ import type { UserService } from './services/userService.js'
 import type { ILlmClient } from './llm/llmClient.js'
 import type { LlmResponseParser } from './llm/responseParser.js'
 import type { IEncounterRepository } from './data/repositories/encounterRepository.js'
+import type { EncounterOrchestrator } from './modules/encounter/encounterOrchestrator.js'
 import type { CdrDefinition, TestDefinition } from './types/libraries.js'
 import type { createRequirePlan } from './middleware/auth.js'
 
@@ -58,12 +59,7 @@ export interface SurveillanceDeps {
 }
 
 export interface EncounterDeps {
-  encounterRepo: IEncounterRepository
-  userService: UserService
-  llmClient: ILlmClient
-  responseParser: LlmResponseParser
-  libraryCaches: LibraryCaches
-  db: FirebaseFirestore.Firestore
+  orchestrator: EncounterOrchestrator
 }
 
 export interface QuickModeDeps {

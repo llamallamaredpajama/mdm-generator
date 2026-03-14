@@ -10,12 +10,11 @@ import {
   runSurveillanceEnrichment,
   runCdrEnrichment,
   injectSurveillanceIntoMdm,
-  incrementGapTallies,
 } from '../../shared/surveillanceEnrichment.js'
 import type { QuickModeDeps } from '../../dependencies.js'
 
 export function createQuickModeController(deps: QuickModeDeps) {
-  const { encounterRepo, userService, llmClient, responseParser, db } = deps
+  const { encounterRepo, userService, llmClient, responseParser } = deps
 
   return {
     generate: async (req: Request, res: Response) => {
@@ -129,7 +128,7 @@ export function createQuickModeController(deps: QuickModeDeps) {
         updatedAt: admin.firestore.Timestamp.now(),
       })
 
-      await incrementGapTallies(uid, result.gaps, db)
+      await userService.incrementGapTallies(uid, result.gaps)
 
       req.log!.info({
         action: 'quick-mode-generate',

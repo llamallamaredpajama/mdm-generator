@@ -1,4 +1,5 @@
 import admin from 'firebase-admin'
+import type { GapItem } from '../buildModeSchemas.js'
 
 /** Returns current month key in YYYY-MM format (UTC) */
 export function getCurrentPeriodKey(): string {
@@ -369,7 +370,7 @@ export class UserService {
   async adminSetPlan(uid: string, plan: SubscriptionPlan): Promise<void> {
     const ref = this.collection.doc(uid)
     const snap = await ref.get()
-    
+
     if (!snap.exists) {
       throw new Error('User document does not exist')
     }
@@ -383,6 +384,22 @@ export class UserService {
       usedThisPeriod: 0,
       periodKey: this.getCurrentPeriodKey()
     })
+  }
+
+  /**
+   * Increment gap tallies on the user's customer profile.
+   * Used by Build Mode finalize and Quick Mode generate.
+   */
+  async incrementGapTallies(uid: string, gaps: GapItem[]): Promise<void> {
+    if (gaps.length === 0) return
+    const period = getCurrentPeriodKey()
+    const tallyUpdates: Record<string, FirebaseFirestore.FieldValue | { category: string; method: string }> = {}
+    for (const gap of gaps) {
+      tallyUpdates[`gapTallies.identified.${gap.id}`] = admin.firestore.FieldValue.increment(1)
+      tallyUpdates[`gapTallies.identifiedByPeriod.${period}.${gap.id}`] = admin.firestore.FieldValue.increment(1)
+      tallyUpdates[`gapMeta.${gap.id}`] = { category: gap.category, method: gap.method }
+    }
+    await this.db.collection('customers').doc(uid).update(tallyUpdates)
   }
 }
 

@@ -109,7 +109,7 @@ export function injectSurveillanceIntoMdm(
 
 /**
  * Increment gap tallies on a user's customer profile.
- * Used by both Build Mode finalize and Quick Mode generate.
+ * @deprecated Use UserService.incrementGapTallies() instead.
  */
 export async function incrementGapTallies(uid: string, gaps: GapItem[], db?: FirebaseFirestore.Firestore): Promise<void> {
   if (gaps.length === 0) return
