@@ -9,6 +9,7 @@ import type {
 import type {
   EnhancementGap,
   DifferentialItem,
+  DispositionOption,
   MdmPreview,
   FinalMdm,
   CdrAnalysisItem,
@@ -572,7 +573,7 @@ export async function getDispoFlows(
 
 export async function createDispoFlow(
   userIdToken: string,
-  data: { name: string; disposition: string; followUp?: string[] },
+  data: { name: string; disposition: DispositionOption; followUp?: string[] },
 ): Promise<{ ok: boolean; item: DispositionFlow }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(
@@ -589,7 +590,7 @@ export async function createDispoFlow(
 export async function updateDispoFlow(
   userIdToken: string,
   id: string,
-  data: { name: string; disposition: string; followUp?: string[] },
+  data: { name: string; disposition: DispositionOption; followUp?: string[] },
 ): Promise<{ ok: boolean; item: DispositionFlow }> {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   return apiFetch(

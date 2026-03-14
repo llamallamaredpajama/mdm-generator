@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { DispositionOptionSchema, type DispositionOption } from '../buildModeSchemas.js'
 
 // ── Order Set ──────────────────────────────────────────────────────────
 
@@ -29,14 +30,14 @@ export interface OrderSet {
 
 export const DispositionFlowCreateSchema = z.object({
   name: z.string().min(1).max(100),
-  disposition: z.string().min(1),
+  disposition: DispositionOptionSchema,
   followUp: z.array(z.string().min(1)).max(20).default([]),
 })
 export type DispositionFlowCreate = z.infer<typeof DispositionFlowCreateSchema>
 
 export const DispositionFlowUpdateSchema = z.object({
   name: z.string().min(1).max(100),
-  disposition: z.string().min(1),
+  disposition: DispositionOptionSchema,
   followUp: z.array(z.string().min(1)).max(20).optional(),
 })
 export type DispositionFlowUpdate = z.infer<typeof DispositionFlowUpdateSchema>
@@ -44,7 +45,7 @@ export type DispositionFlowUpdate = z.infer<typeof DispositionFlowUpdateSchema>
 export interface DispositionFlow {
   id: string
   name: string
-  disposition: string
+  disposition: DispositionOption
   followUp: string[]
   createdAt: FirebaseFirestore.Timestamp
   usageCount: number

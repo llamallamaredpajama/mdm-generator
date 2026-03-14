@@ -12,6 +12,7 @@ import type { ReportTemplate } from '../types/userProfile'
 import {
   getReportTemplates,
   createReportTemplate,
+  updateReportTemplate,
   deleteReportTemplate as apiDeleteReportTemplate,
   useReportTemplate as apiUseReportTemplate,
 } from '../lib/api'
@@ -32,6 +33,15 @@ export interface UseReportTemplatesReturn {
     name: string,
     text: string,
     defaultStatus?: 'unremarkable' | 'abnormal',
+  ) => Promise<ReportTemplate | null>
+  updateTemplate: (
+    id: string,
+    data: {
+      testId: string
+      name: string
+      text: string
+      defaultStatus: 'unremarkable' | 'abnormal'
+    },
   ) => Promise<ReportTemplate | null>
   deleteTemplate: (id: string) => Promise<void>
   incrementUsage: (id: string) => void
@@ -64,8 +74,14 @@ async function migrateFromLocalStorage(token: string): Promise<void> {
       return
     }
 
+    // Fetch existing server templates to avoid duplicates on retry
+    const existing = await getReportTemplates(token)
+    const existingSet = new Set(existing.items.map((t) => `${t.testId}|${t.name}|${t.text}`))
+
     for (const tmpl of legacy) {
       if (tmpl.testId && tmpl.name && tmpl.text) {
+        const key = `${tmpl.testId}|${tmpl.name}|${tmpl.text}`
+        if (existingSet.has(key)) continue
         await createReportTemplate(token, {
           testId: tmpl.testId,
           name: tmpl.name,
@@ -150,6 +166,28 @@ export function useReportTemplates(): UseReportTemplatesReturn {
     [token],
   )
 
+  const updateTemplateCallback = useCallback(
+    async (
+      id: string,
+      data: {
+        testId: string
+        name: string
+        text: string
+        defaultStatus: 'unremarkable' | 'abnormal'
+      },
+    ): Promise<ReportTemplate | null> => {
+      if (!token) return null
+      try {
+        const res = await updateReportTemplate(token, id, data)
+        setTemplates((prev) => prev.map((t) => (t.id === id ? res.item : t)))
+        return res.item
+      } catch {
+        return null
+      }
+    },
+    [token],
+  )
+
   const deleteTemplate = useCallback(
     async (id: string) => {
       if (!token) return
@@ -184,6 +222,7 @@ export function useReportTemplates(): UseReportTemplatesReturn {
     loading,
     getTemplatesForTest,
     saveTemplate,
+    updateTemplate: updateTemplateCallback,
     deleteTemplate,
     incrementUsage,
   }

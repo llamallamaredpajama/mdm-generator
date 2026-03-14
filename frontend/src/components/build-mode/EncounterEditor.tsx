@@ -50,6 +50,7 @@ import PasteLabModal from './shared/PasteLabModal'
 import TreatmentInput from './shared/TreatmentInput'
 import DispositionSelector from './shared/DispositionSelector'
 import { useDispoFlows } from '../../hooks/useDispoFlows'
+import type { DispositionFlow } from '../../types/userProfile'
 import { useOrderSets } from '../../hooks/useOrderSets'
 import {
   getRecommendedTestIds,
@@ -777,8 +778,8 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
    * Apply a saved disposition flow — sets disposition + follow-up in one action
    */
   const handleApplyDispoFlow = useCallback(
-    (flow: { id: string; name: string; disposition: string; followUp: string[] }) => {
-      setS3Disposition(flow.disposition as DispositionOption)
+    (flow: Pick<DispositionFlow, 'id' | 'name' | 'disposition' | 'followUp'>) => {
+      setS3Disposition(flow.disposition)
       setS3FollowUp(flow.followUp)
       if (user && encounterId) {
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)

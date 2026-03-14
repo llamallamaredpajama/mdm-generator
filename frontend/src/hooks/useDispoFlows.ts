@@ -9,6 +9,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useAuthToken } from '../lib/firebase'
 import type { DispositionFlow } from '../types/userProfile'
+import type { DispositionOption } from '../types/encounter'
 import {
   getDispoFlows,
   createDispoFlow,
@@ -30,12 +31,12 @@ export interface UseDispoFlowsReturn {
   loading: boolean
   saveFlow: (
     name: string,
-    disposition: string,
+    disposition: DispositionOption,
     followUp: string[],
   ) => Promise<DispositionFlow | null>
   updateFlow: (
     id: string,
-    data: { name?: string; disposition?: string; followUp?: string[] },
+    data: { name?: string; disposition?: DispositionOption; followUp?: string[] },
   ) => Promise<void>
   deleteFlow: (id: string) => Promise<void>
   incrementUsage: (id: string) => void
@@ -68,12 +69,12 @@ async function migrateFromLocalStorage(token: string): Promise<void> {
     }
 
     for (const flow of legacy) {
-      const disposition =
+      const raw =
         typeof flow.disposition === 'string' ? flow.disposition : (flow.disposition?.value ?? '')
-      if (disposition) {
+      if (raw) {
         await createDispoFlow(token, {
           name: flow.name,
-          disposition,
+          disposition: raw as DispositionOption,
           followUp: flow.followUp,
         })
       }
@@ -126,7 +127,7 @@ export function useDispoFlows(): UseDispoFlowsReturn {
   const saveFlow = useCallback(
     async (
       name: string,
-      disposition: string,
+      disposition: DispositionOption,
       followUp: string[],
     ): Promise<DispositionFlow | null> => {
       if (!token) return null
@@ -146,7 +147,10 @@ export function useDispoFlows(): UseDispoFlowsReturn {
   )
 
   const updateFlow = useCallback(
-    async (id: string, data: { name?: string; disposition?: string; followUp?: string[] }) => {
+    async (
+      id: string,
+      data: { name?: string; disposition?: DispositionOption; followUp?: string[] },
+    ) => {
       if (!token) return
       const existing = flows.find((f) => f.id === id)
       if (!existing) return

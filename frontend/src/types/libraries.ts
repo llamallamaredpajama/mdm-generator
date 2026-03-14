@@ -5,6 +5,8 @@
  * These types are consumed by the order selection UI and result entry components.
  */
 
+import type { CdrComponentSource } from './encounter'
+
 /** Category for test library items */
 export type TestCategory = 'labs' | 'imaging' | 'procedures_poc'
 
@@ -54,9 +56,6 @@ export interface CdrComponentOption {
   label: string
   value: number
 }
-
-/** Where a CDR component gets its data */
-export type CdrComponentSource = 'section1' | 'section2' | 'user_input'
 
 /** Type of CDR input component */
 export type CdrComponentType = 'select' | 'boolean' | 'number_range' | 'algorithm'

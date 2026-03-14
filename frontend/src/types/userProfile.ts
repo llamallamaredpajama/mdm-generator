@@ -1,3 +1,5 @@
+import type { DispositionOption } from './encounter'
+
 /** A reusable order set for common test combinations */
 export interface OrderSet {
   /** Firestore document ID */
@@ -21,7 +23,7 @@ export interface DispositionFlow {
   /** Display name (e.g., "Standard Discharge - Chest Pain") */
   name: string
   /** Disposition type (e.g., "discharge", "admit", "transfer") */
-  disposition: string
+  disposition: DispositionOption
   /** Follow-up instructions (e.g., ["cardiology_48hr", "return_ed_prn"]) */
   followUp: string[]
   /** Server-set creation timestamp (ISO string from Firestore) */

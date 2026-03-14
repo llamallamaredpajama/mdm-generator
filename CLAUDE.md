@@ -63,7 +63,7 @@ Post-refactoring, route handlers live in domain modules under `backend/src/modul
 Each module has `controller.ts` (handlers), `routes.ts` (Express router), and optionally `schemas.ts` (Zod validation). App assembly in `app.ts`, entry point in `index.ts`, DI in `dependencies.ts`.
 
 ### Frontend Routes
-`/` Landing | `/compose` EncounterBoard | `/preflight` PHI check | `/output` MDM display | `/settings` User prefs | `/analytics` Gap analytics | `/build` → redirects to `/compose`
+`/` Landing | `/onboarding` Onboarding | `/compose` EncounterBoard | `/preflight` PHI check | `/output` MDM display | `/settings` User prefs | `/analytics` Gap analytics | `/build` → redirects to `/compose`
 
 ### API Endpoints
 | Endpoint | Method | Rate Limit | Purpose |
