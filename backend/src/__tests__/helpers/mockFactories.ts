@@ -87,6 +87,23 @@ export function makeQuotaCheck(overrides: Record<string, unknown> = {}) {
   }
 }
 
+/**
+ * Returns a plain EncounterDocument object (not a Firestore snapshot wrapper).
+ * For use with DI-based tests where mockEncounterRepo.get() returns raw documents.
+ */
+export function makeEncounterDoc(overrides: Record<string, unknown> = {}) {
+  return {
+    mode: 'build',
+    status: 'draft',
+    chiefComplaint: 'test complaint',
+    quotaCounted: false,
+    section1: { status: 'pending', submissionCount: 0 },
+    section2: { status: 'pending', submissionCount: 0 },
+    section3: { status: 'pending', submissionCount: 0 },
+    ...overrides,
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Vertex AI / callGemini stubs
 // ---------------------------------------------------------------------------

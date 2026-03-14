@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import { z } from 'zod'
 import { llmLimiter } from '../../middleware/rateLimiter'
 import { authenticate } from '../../middleware/auth'
 import { validate } from '../../middleware/validate'
@@ -12,16 +11,8 @@ import {
   SuggestDiagnosisRequestSchema,
   ParseResultsRequestSchema,
 } from '../../buildModeSchemas'
-import { GenerateSchema } from './controller'
-import {
-  generate,
-  processSection1,
-  processSection2,
-  finalize,
-  matchCdrs,
-  suggestDiagnosis,
-  parseResults,
-} from './controller'
+import { GenerateSchema, createEncounterController } from './controller'
+import type { EncounterDeps } from '../../dependencies'
 
 // Body-only schema variants (omit userIdToken — handled by auth middleware)
 const GenerateBodySchema = GenerateSchema.omit({ userIdToken: true })
@@ -32,17 +23,20 @@ const MatchCdrsBodySchema = MatchCdrsRequestSchema.omit({ userIdToken: true })
 const SuggestDiagnosisBodySchema = SuggestDiagnosisRequestSchema.omit({ userIdToken: true })
 const ParseResultsBodySchema = ParseResultsRequestSchema.omit({ userIdToken: true })
 
-const router = Router()
+export function createEncounterRoutes(deps: EncounterDeps): Router {
+  const router = Router()
+  const c = createEncounterController(deps)
 
-// Legacy one-shot generation
-router.post('/v1/generate', llmLimiter, authenticate, validate(GenerateBodySchema), asyncHandler(generate))
+  // Legacy one-shot generation
+  router.post('/v1/generate', llmLimiter, authenticate, validate(GenerateBodySchema), asyncHandler(c.generate))
 
-// Build Mode endpoints
-router.post('/v1/build-mode/process-section1', llmLimiter, authenticate, validate(Section1BodySchema), asyncHandler(processSection1))
-router.post('/v1/build-mode/process-section2', authenticate, validate(Section2BodySchema), asyncHandler(processSection2))
-router.post('/v1/build-mode/finalize', llmLimiter, authenticate, validate(FinalizeBodySchema), asyncHandler(finalize))
-router.post('/v1/build-mode/match-cdrs', llmLimiter, authenticate, validate(MatchCdrsBodySchema), asyncHandler(matchCdrs))
-router.post('/v1/build-mode/suggest-diagnosis', llmLimiter, authenticate, validate(SuggestDiagnosisBodySchema), asyncHandler(suggestDiagnosis))
-router.post('/v1/build-mode/parse-results', llmLimiter, authenticate, validate(ParseResultsBodySchema), asyncHandler(parseResults))
+  // Build Mode endpoints
+  router.post('/v1/build-mode/process-section1', llmLimiter, authenticate, validate(Section1BodySchema), asyncHandler(c.processSection1))
+  router.post('/v1/build-mode/process-section2', authenticate, validate(Section2BodySchema), asyncHandler(c.processSection2))
+  router.post('/v1/build-mode/finalize', llmLimiter, authenticate, validate(FinalizeBodySchema), asyncHandler(c.finalize))
+  router.post('/v1/build-mode/match-cdrs', llmLimiter, authenticate, validate(MatchCdrsBodySchema), asyncHandler(c.matchCdrs))
+  router.post('/v1/build-mode/suggest-diagnosis', llmLimiter, authenticate, validate(SuggestDiagnosisBodySchema), asyncHandler(c.suggestDiagnosis))
+  router.post('/v1/build-mode/parse-results', llmLimiter, authenticate, validate(ParseResultsBodySchema), asyncHandler(c.parseResults))
 
-export default router
+  return router
+}

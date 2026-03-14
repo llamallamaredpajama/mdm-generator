@@ -111,9 +111,10 @@ export function injectSurveillanceIntoMdm(
  * Increment gap tallies on a user's customer profile.
  * Used by both Build Mode finalize and Quick Mode generate.
  */
-export async function incrementGapTallies(uid: string, gaps: GapItem[]): Promise<void> {
+export async function incrementGapTallies(uid: string, gaps: GapItem[], db?: FirebaseFirestore.Firestore): Promise<void> {
   if (gaps.length === 0) return
 
+  const firestore = db ?? getDb()
   const period = getCurrentPeriodKey()
   const tallyUpdates: Record<string, FirebaseFirestore.FieldValue | { category: string; method: string }> = {}
   for (const gap of gaps) {
@@ -121,5 +122,5 @@ export async function incrementGapTallies(uid: string, gaps: GapItem[]): Promise
     tallyUpdates[`gapTallies.identifiedByPeriod.${period}.${gap.id}`] = admin.firestore.FieldValue.increment(1)
     tallyUpdates[`gapMeta.${gap.id}`] = { category: gap.category, method: gap.method }
   }
-  await getDb().collection('customers').doc(uid).update(tallyUpdates)
+  await firestore.collection('customers').doc(uid).update(tallyUpdates)
 }

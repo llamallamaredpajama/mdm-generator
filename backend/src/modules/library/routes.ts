@@ -1,11 +1,15 @@
 import { Router } from 'express'
 import { authenticate } from '../../middleware/auth'
 import { asyncHandler } from '../../shared/asyncHandler'
-import { getTests, getCdrs } from './controller'
+import { createLibraryController } from './controller'
+import type { LibraryDeps } from '../../dependencies'
 
-const router = Router()
+export function createLibraryRoutes(deps: LibraryDeps): Router {
+  const router = Router()
+  const { getTests, getCdrs } = createLibraryController(deps)
 
-router.get('/v1/libraries/tests', authenticate, asyncHandler(getTests))
-router.get('/v1/libraries/cdrs', authenticate, asyncHandler(getCdrs))
+  router.get('/v1/libraries/tests', authenticate, asyncHandler(getTests))
+  router.get('/v1/libraries/cdrs', authenticate, asyncHandler(getCdrs))
 
-export default router
+  return router
+}

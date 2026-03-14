@@ -1,107 +1,23 @@
 import 'dotenv/config'
-import express from 'express'
-import helmet from 'helmet'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import admin from 'firebase-admin'
 import { config } from './config'
 import { logger } from './logger'
-import { requestLogger } from './middleware/requestLogger'
-import { errorHandler } from './middleware/errorHandler'
-import { globalLimiter } from './middleware/rateLimiter'
 import { initPhotoCatalog } from './photoCatalog.js'
-import { getDb } from './shared/db'
-
-// Module routers
-import adminRouter from './modules/admin/routes'
-import libraryRouter from './modules/library/routes'
-import userRouter from './modules/user/routes'
-import analyticsRouter from './modules/analytics/routes'
-import narrativeRouter from './modules/narrative/routes'
-import quickModeRouter from './modules/quick-mode/routes'
-import encounterRouter from './modules/encounter/routes'
-import surveillanceRouter from './surveillance/routes'
-
-// ============================================================================
-// Express App Setup
-// ============================================================================
-
-const app = express()
-
-// Trust proxy: Cloud Run sits behind a load balancer that injects X-Forwarded-For.
-// Required for express-rate-limit to correctly identify client IPs.
-app.set('trust proxy', true)
-
-// CORS configuration
-const allowedOrigins = [
-  process.env.FRONTEND_URL, // Production frontend URL
-].filter(Boolean) as string[]
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin
-  // Allow any localhost origin (Vite auto-increments ports) or listed/Firebase origins
-  const isLocalhost = origin?.match(/^http:\/\/localhost:\d+$/)
-  if (origin && (isLocalhost || allowedOrigins.includes(origin) || origin.match(/^https:\/\/(mdm-generator[^.]*\.web\.app|aimdm\.app)$/))) {
-    res.header('Access-Control-Allow-Origin', origin)
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    res.header('Access-Control-Allow-Credentials', 'true')
-  }
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204)
-  }
-  next()
-})
-
-app.use(express.json({ limit: '1mb' }))
-
-// Security headers
-app.use(helmet())
-
-// Structured request logging with Cloud Trace correlation
-app.use(requestLogger)
-
-// Rate limiting — global (configured via config.limits.globalRateLimit)
-app.use(globalLimiter)
+import { UserService } from './services/userService'
+import { VertexLlmClient } from './llm/vertexProvider'
+import { RetryingLlmClient } from './llm/retryingLlmClient'
+import { LlmResponseParser } from './llm/responseParser'
+import { FirestoreEncounterRepository } from './data/repositories/encounterRepository'
+import { FirestoreLibraryRepository } from './data/repositories/libraryRepository'
+import { InMemoryCache } from './data/cache'
+import { createApp } from './app'
+import type { AppDependencies } from './dependencies'
+import type { CdrDefinition, TestDefinition } from './types/libraries'
 
 // ============================================================================
-// Health Checks
-// ============================================================================
-
-// Liveness: always pass if event loop is responsive
-app.get('/health/live', (_req, res) => res.json({ status: 'ok' }))
-
-// Readiness: check dependencies
-app.get('/health/ready', async (_req, res) => {
-  try {
-    await admin.firestore().collection('_health').doc('ping').get()
-    res.json({ status: 'ok', checks: { firestore: 'ok' } })
-  } catch {
-    res.status(503).json({ status: 'unhealthy', checks: { firestore: 'failed' } })
-  }
-})
-
-// Keep original /health for backward compatibility
-app.get('/health', (_req, res) => res.json({ ok: true }))
-
-// ============================================================================
-// Module Routers
-// ============================================================================
-
-app.use(adminRouter)
-app.use(libraryRouter)
-app.use(userRouter)
-app.use(analyticsRouter)
-app.use(narrativeRouter)
-app.use(quickModeRouter)
-app.use(encounterRouter)
-app.use(surveillanceRouter)
-
-// Error-handling middleware (must be registered after all routes)
-app.use(errorHandler)
-
-// ============================================================================
-// Firebase Init + Server Bootstrap
+// Firebase Init
 // ============================================================================
 
 async function initFirebase() {
@@ -133,14 +49,42 @@ async function initFirebase() {
     }
   } catch (e) {
     logger.error({ err: e }, 'Firebase Admin initialization error')
-    // swallow init errors in local dev; will throw on verify if misconfigured
   }
 }
 
+// ============================================================================
+// Composition Root
+// ============================================================================
+
 async function main() {
   await initFirebase()
-  await initPhotoCatalog(getDb())
+  const db = admin.firestore()
+  await initPhotoCatalog(db)
 
+  // Construct all dependencies
+  const userService = new UserService(db)
+  const vertexClient = new VertexLlmClient()
+  const llmClient = new RetryingLlmClient(vertexClient, undefined, logger)
+  const responseParser = new LlmResponseParser()
+  const encounterRepo = new FirestoreEncounterRepository(db)
+  const libraryRepo = new FirestoreLibraryRepository(db)
+
+  const cdrCache = new InMemoryCache<CdrDefinition[]>(config.limits.cacheTtlMs)
+  const testCache = new InMemoryCache<TestDefinition[]>(config.limits.cacheTtlMs)
+
+  const deps: AppDependencies = {
+    userService,
+    db,
+    llmClient,
+    responseParser,
+    encounterRepo,
+    libraryCaches: {
+      getCdrs: () => cdrCache.getOrFetch('all', () => libraryRepo.getAllCdrs()),
+      getTests: () => testCache.getOrFetch('all', () => libraryRepo.getAllTests()),
+    },
+  }
+
+  const app = createApp(deps)
   const port = config.port
   const server = app.listen(port, () => {
     logger.info({ port }, 'backend listening')

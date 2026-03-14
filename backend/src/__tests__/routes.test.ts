@@ -2,25 +2,26 @@
  * Integration tests for backend API routes.
  *
  * Strategy:
- *   - vi.mock() for firebase-admin (auth + Firestore encounters), vertex,
- *     services/userService, node:fs/promises, and dotenv/config.
- *   - supertest drives HTTP requests against the captured Express app.
- *   - Express app captured by wrapping express() to intercept app.listen().
+ *   - DI-based: createApp(mockDeps) with injected mock dependencies.
+ *   - Module-level vi.mock() only for singletons the DI doesn't reach:
+ *     firebase-admin (auth middleware), helmet, rate-limit, fs/promises,
+ *     surveillanceEnrichment, testCatalogSearch.
+ *   - supertest drives HTTP requests against the Express app.
  *
  * IMPORTANT: All medical content is fictional / educational. No PHI.
  */
 
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
-import type { Express } from 'express'
+import type { Application } from 'express'
 import request from 'supertest'
+import { createApp } from '../app'
 import {
   VALID_TOKEN,
   ADMIN_TOKEN,
   SHORT_TOKEN,
   INVALID_TOKEN,
   makeDecodedToken,
-  makeDocSnap,
-  makeEncounterSnap,
+  makeEncounterDoc,
   makeUsageStats,
   makeQuotaCheck,
   VALID_MDM_MODEL_RESPONSE,
@@ -31,7 +32,6 @@ import {
   FENCED_SECTION1_RESPONSE,
   NONSTANDARD_URGENCY_SECTION1_RESPONSE,
   TRAILING_COMMA_SECTION1_RESPONSE,
-  VALID_SECTION2_RESPONSE,
   VALID_FINALIZE_RESPONSE,
   WRAPPED_FINALIZE_RESPONSE,
   VALID_QUICK_MODE_RESPONSE,
@@ -40,12 +40,16 @@ import {
   EXTRA_FIELDS_SECTION1_RESPONSE,
   SAMPLE_NARRATIVE,
 } from './helpers/mockFactories'
+import {
+  createMockDependencies,
+  type MockLlmClient,
+  type MockEncounterRepo,
+  type MockUserService,
+} from './helpers/mockDependencies'
 
 // ============================================================================
 // Module-level mocks (hoisted by vitest)
 // ============================================================================
-
-vi.mock('dotenv/config', () => ({}))
 
 // Bypass security middleware in tests
 vi.mock('helmet', () => ({
@@ -56,90 +60,32 @@ vi.mock('express-rate-limit', () => ({
   default: () => (_req: unknown, _res: unknown, next: () => void) => next(),
 }))
 
-
 // ---------------------------------------------------------------------------
-// firebase-admin mock — auth + Firestore (encounter docs only)
+// firebase-admin mock — auth only (DI handles Firestore data operations)
 // ---------------------------------------------------------------------------
 
 const mockVerifyIdToken = vi.fn()
-
-// Encounter document operations (customers/{uid}/encounters/{id})
-const mockEncounterDocRef = {
-  get: vi.fn(),
-  update: vi.fn().mockResolvedValue(undefined),
-  set: vi.fn().mockResolvedValue(undefined),
-}
-
-// Build a stable chain that always terminates at mockEncounterDocRef.
-// Every .doc() call returns an object whose .collection() returns { doc: -> encounterDocRef }
-const makeChainableDoc = () => ({
-  get: mockEncounterDocRef.get,
-  update: mockEncounterDocRef.update,
-  set: mockEncounterDocRef.set,
-  collection: vi.fn().mockReturnValue({
-    doc: vi.fn().mockReturnValue(mockEncounterDocRef),
-    where: vi.fn().mockReturnValue({
-      limit: vi.fn().mockReturnValue({
-        get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
-      }),
-    }),
-  }),
-})
 
 vi.mock('firebase-admin', () => {
   const Timestamp = { now: () => ({ seconds: 1700000000, nanoseconds: 0 }) }
   const FieldValue = { increment: (n: number) => `FieldValue.increment(${n})` }
 
-  const adminMock = {
-    apps: [{}], // non-empty so initFirebase() skips initialization
-    initializeApp: vi.fn(),
-    credential: { cert: vi.fn() },
-    auth: () => ({ verifyIdToken: mockVerifyIdToken }),
-    firestore: Object.assign(
-      () => ({
-        collection: vi.fn().mockReturnValue({
-          doc: vi.fn().mockReturnValue(makeChainableDoc()),
-        }),
-      }),
-      { Timestamp, FieldValue },
-    ),
+  return {
+    default: {
+      apps: [{}], // non-empty so initFirebase() skips initialization
+      initializeApp: vi.fn(),
+      credential: { cert: vi.fn() },
+      auth: () => ({ verifyIdToken: mockVerifyIdToken }),
+      firestore: Object.assign(
+        () => ({}), // callable stub (static properties only needed in tests)
+        { Timestamp, FieldValue },
+      ),
+    },
   }
-  return { default: adminMock }
 })
 
 // ---------------------------------------------------------------------------
-// userService mock — direct module mock avoids complex Firestore chaining
-// ---------------------------------------------------------------------------
-
-const mockEnsureUser = vi.fn()
-const mockGetUsageStats = vi.fn()
-const mockCheckQuota = vi.fn()
-const mockCheckAndIncrementQuota = vi.fn()
-const mockIncrementUsage = vi.fn()
-const mockAdminSetPlan = vi.fn()
-
-vi.mock('../services/userService', () => ({
-  userService: {
-    ensureUser: (...args: unknown[]) => mockEnsureUser(...args),
-    getUsageStats: (...args: unknown[]) => mockGetUsageStats(...args),
-    checkQuota: (...args: unknown[]) => mockCheckQuota(...args),
-    checkAndIncrementQuota: (...args: unknown[]) => mockCheckAndIncrementQuota(...args),
-    incrementUsage: (...args: unknown[]) => mockIncrementUsage(...args),
-    adminSetPlan: (...args: unknown[]) => mockAdminSetPlan(...args),
-  },
-}))
-
-// ---------------------------------------------------------------------------
-// vertex mock
-// ---------------------------------------------------------------------------
-
-const mockCallGemini = vi.fn()
-vi.mock('../vertex', () => ({
-  callGemini: (...args: unknown[]) => mockCallGemini(...args),
-}))
-
-// ---------------------------------------------------------------------------
-// fs/promises mock — buildPrompt and buildQuickModePrompt read guide file
+// fs/promises mock — prompt guide file reads in controllers
 // ---------------------------------------------------------------------------
 
 vi.mock('node:fs/promises', () => ({
@@ -149,32 +95,40 @@ vi.mock('node:fs/promises', () => ({
   readFile: vi.fn().mockResolvedValue('# MDM Guide stub for testing'),
 }))
 
+// ---------------------------------------------------------------------------
+// Side-effect-heavy modules — mock to prevent real network calls
+// ---------------------------------------------------------------------------
+
+vi.mock('../shared/surveillanceEnrichment', () => ({
+  runSurveillanceEnrichment: vi.fn().mockResolvedValue(undefined),
+  runCdrEnrichment: vi.fn().mockResolvedValue(undefined),
+  injectSurveillanceIntoMdm: vi.fn().mockReturnValue({ dataReviewed: [], text: '' }),
+  incrementGapTallies: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../services/testCatalogSearch', () => ({
+  getRelevantTests: vi.fn().mockResolvedValue([]),
+}))
+
 // ============================================================================
-// Capture the Express app via express mock
+// App setup via DI — no Express capture hack, no module-level business mocks
 // ============================================================================
 
-let capturedApp: Express | null = null
+let app: Application
+let m: {
+  llmClient: MockLlmClient
+  encounterRepo: MockEncounterRepo
+  userService: MockUserService
+}
 
-vi.mock('express', async () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const actual = await vi.importActual('express') as any
-  const originalDefault = actual.default as (...args: any[]) => Express
-  const wrappedExpress = (...args: Parameters<typeof originalDefault>) => {
-    const expressApp = originalDefault(...args)
-    expressApp.listen = vi.fn().mockReturnValue({ close: vi.fn() })
-    capturedApp = expressApp
-    return expressApp
+beforeAll(() => {
+  const kit = createMockDependencies()
+  app = createApp(kit.deps)
+  m = {
+    llmClient: kit.llmClient,
+    encounterRepo: kit.encounterRepo,
+    userService: kit.userService,
   }
-  Object.assign(wrappedExpress, originalDefault)
-  return { ...actual, default: wrappedExpress }
-})
-
-let app: Express
-
-beforeAll(async () => {
-  await import('../index')
-  app = capturedApp!
-  expect(app).toBeDefined()
 })
 
 // ============================================================================
@@ -192,19 +146,19 @@ beforeEach(() => {
   })
 
   // userService defaults
-  mockEnsureUser.mockResolvedValue({ uid: 'test-user-123', email: 'doc@example.com', plan: 'free' })
-  mockGetUsageStats.mockResolvedValue(makeUsageStats())
-  mockCheckQuota.mockResolvedValue(makeQuotaCheck())
-  mockCheckAndIncrementQuota.mockResolvedValue(makeQuotaCheck())
-  mockIncrementUsage.mockResolvedValue(undefined)
-  mockAdminSetPlan.mockResolvedValue(undefined)
+  m.userService.ensureUser.mockResolvedValue({ uid: 'test-user-123', email: 'doc@example.com', plan: 'free' })
+  m.userService.getUser.mockResolvedValue(null)
+  m.userService.getUsageStats.mockResolvedValue(makeUsageStats())
+  m.userService.checkQuota.mockResolvedValue(makeQuotaCheck())
+  m.userService.checkAndIncrementQuota.mockResolvedValue(makeQuotaCheck())
+  m.userService.incrementUsage.mockResolvedValue(undefined)
+  m.userService.adminSetPlan.mockResolvedValue(undefined)
 
   // Default encounter: exists, build mode, draft
-  mockEncounterDocRef.get.mockResolvedValue(makeEncounterSnap())
-  mockEncounterDocRef.update.mockResolvedValue(undefined)
+  m.encounterRepo.get.mockResolvedValue(makeEncounterDoc())
 
-  // Default Gemini response
-  mockCallGemini.mockResolvedValue({ text: VALID_MDM_MODEL_RESPONSE })
+  // Default LLM response
+  m.llmClient.generate.mockResolvedValue({ text: VALID_MDM_MODEL_RESPONSE, latencyMs: 100 })
 })
 
 // ============================================================================
@@ -279,7 +233,7 @@ describe('POST /v1/whoami', () => {
       .post('/v1/whoami')
       .send({ userIdToken: VALID_TOKEN })
 
-    expect(mockEnsureUser).toHaveBeenCalledWith('test-user-123', 'doc@example.com')
+    expect(m.userService.ensureUser).toHaveBeenCalledWith('test-user-123', 'doc@example.com')
   })
 })
 
@@ -289,7 +243,7 @@ describe('POST /v1/whoami', () => {
 
 describe('POST /v1/generate', () => {
   it('returns 402 when monthly quota is exceeded', async () => {
-    mockCheckAndIncrementQuota.mockResolvedValueOnce(makeQuotaCheck({
+    m.userService.checkAndIncrementQuota.mockResolvedValueOnce(makeQuotaCheck({
       allowed: false, used: 10, limit: 10, remaining: 0,
     }))
 
@@ -333,7 +287,7 @@ describe('POST /v1/generate', () => {
   })
 
   it('returns fallback stub (not 500) when model returns malformed JSON', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: MALFORMED_MODEL_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: MALFORMED_MODEL_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/generate')
@@ -351,7 +305,7 @@ describe('POST /v1/generate', () => {
       .send({ narrative: SAMPLE_NARRATIVE, userIdToken: VALID_TOKEN })
 
     // Usage is now incremented atomically by checkAndIncrementQuota
-    expect(mockCheckAndIncrementQuota).toHaveBeenCalledWith('test-user-123')
+    expect(m.userService.checkAndIncrementQuota).toHaveBeenCalledWith('test-user-123')
   })
 })
 
@@ -361,7 +315,7 @@ describe('POST /v1/generate', () => {
 
 describe('POST /v1/parse-narrative', () => {
   it('returns 200 with parsed structure on valid request', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: VALID_PARSE_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: VALID_PARSE_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/parse-narrative')
@@ -374,17 +328,17 @@ describe('POST /v1/parse-narrative', () => {
   })
 
   it('does NOT increment usage counter', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: VALID_PARSE_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: VALID_PARSE_RESPONSE, latencyMs: 100 })
 
     await request(app)
       .post('/v1/parse-narrative')
       .send({ narrative: SAMPLE_NARRATIVE, userIdToken: VALID_TOKEN })
 
-    expect(mockIncrementUsage).not.toHaveBeenCalled()
+    expect(m.userService.incrementUsage).not.toHaveBeenCalled()
   })
 
   it('returns empty structure when model fails', async () => {
-    mockCallGemini.mockRejectedValueOnce(new Error('Model unavailable'))
+    m.llmClient.generate.mockRejectedValueOnce(new Error('Model unavailable'))
 
     const res = await request(app)
       .post('/v1/parse-narrative')
@@ -439,7 +393,7 @@ describe('POST /v1/admin/set-plan', () => {
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(true)
     expect(res.body.message).toMatch(/pro/)
-    expect(mockAdminSetPlan).toHaveBeenCalledWith('user-1', 'pro')
+    expect(m.userService.adminSetPlan).toHaveBeenCalledWith('user-1', 'pro')
   })
 
   /**
@@ -449,7 +403,7 @@ describe('POST /v1/admin/set-plan', () => {
    * Unhandled errors return generic { error: 'Internal error', code: 'INTERNAL_ERROR' }.
    */
   it('does not leak internal error details in 500 response', async () => {
-    mockAdminSetPlan.mockRejectedValueOnce(
+    m.userService.adminSetPlan.mockRejectedValueOnce(
       new Error('Firestore PERMISSION_DENIED: Missing permissions for users/user-1'),
     )
 
@@ -483,7 +437,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('returns 404 when encounter does not exist (wrong uid ownership)', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(makeDocSnap(null))
+    m.encounterRepo.get.mockResolvedValueOnce(null)
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -492,8 +446,8 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('returns 400 with isLocked when submission count >= 2', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(
-      makeEncounterSnap({ section1: { status: 'completed', submissionCount: 2 } }),
+    m.encounterRepo.get.mockResolvedValueOnce(
+      makeEncounterDoc({ section1: { status: 'completed', submissionCount: 2 } }),
     )
 
     const res = await request(app)
@@ -506,10 +460,10 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('counts quota only on first submission per encounter', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(
-      makeEncounterSnap({ quotaCounted: false }),
+    m.encounterRepo.get.mockResolvedValueOnce(
+      makeEncounterDoc({ quotaCounted: false }),
     )
-    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -517,21 +471,19 @@ describe('POST /v1/build-mode/process-section1', () => {
 
     expect(res.status).toBe(200)
     // quota should have been atomically checked and incremented
-    expect(mockCheckAndIncrementQuota).toHaveBeenCalledWith('test-user-123')
-    // encounterRef.update should be called with quotaCounted: true
-    const updateCalls = mockEncounterDocRef.update.mock.calls
-    const quotaUpdate = updateCalls.find((c: any[]) => c[0]?.quotaCounted === true)
-    expect(quotaUpdate).toBeDefined()
+    expect(m.userService.checkAndIncrementQuota).toHaveBeenCalledWith('test-user-123')
+    // encounterRepo.markQuotaCounted should have been called
+    expect(m.encounterRepo.markQuotaCounted).toHaveBeenCalledWith('test-user-123', 'enc-001')
   })
 
   it('does not re-count quota on subsequent submissions', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(
-      makeEncounterSnap({
+    m.encounterRepo.get.mockResolvedValueOnce(
+      makeEncounterDoc({
         quotaCounted: true,
         section1: { status: 'completed', submissionCount: 1 },
       }),
     )
-    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -539,14 +491,14 @@ describe('POST /v1/build-mode/process-section1', () => {
 
     expect(res.status).toBe(200)
     // quota check and increment should NOT be called (already counted)
-    expect(mockCheckAndIncrementQuota).not.toHaveBeenCalled()
+    expect(m.userService.checkAndIncrementQuota).not.toHaveBeenCalled()
   })
 
   it('returns 402 when quota exceeded on first submission', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(
-      makeEncounterSnap({ quotaCounted: false }),
+    m.encounterRepo.get.mockResolvedValueOnce(
+      makeEncounterDoc({ quotaCounted: false }),
     )
-    mockCheckAndIncrementQuota.mockResolvedValueOnce(makeQuotaCheck({
+    m.userService.checkAndIncrementQuota.mockResolvedValueOnce(makeQuotaCheck({
       allowed: false, used: 10, limit: 10, remaining: 0,
     }))
 
@@ -559,7 +511,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('returns 200 with differential on valid request', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -595,7 +547,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('handles legacy flat-array response format', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: LEGACY_SECTION1_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: LEGACY_SECTION1_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -609,7 +561,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('handles response with code fences and preamble text', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: FENCED_SECTION1_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: FENCED_SECTION1_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -622,7 +574,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('coerces non-standard urgency values from LLM output', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: NONSTANDARD_URGENCY_SECTION1_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: NONSTANDARD_URGENCY_SECTION1_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -639,7 +591,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('handles response with trailing commas (common LLM artifact)', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: TRAILING_COMMA_SECTION1_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: TRAILING_COMMA_SECTION1_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -652,7 +604,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('returns fallback differential when model returns garbage text', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: 'This is not JSON at all, just random thoughts about medicine.' })
+    m.llmClient.generate.mockResolvedValueOnce({ text: 'This is not JSON at all, just random thoughts about medicine.', latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -666,7 +618,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('extracts cdrAnalysis and workupRecommendations from new format', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: VALID_SECTION1_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -684,7 +636,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('preserves valid items when some differential items fail validation (partial failure)', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: PARTIAL_VALID_SECTION1_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: PARTIAL_VALID_SECTION1_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -704,7 +656,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('defaults unmapped urgency to urgent instead of rejecting the item', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: ALL_UNMAPPED_URGENCY_SECTION1_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: ALL_UNMAPPED_URGENCY_SECTION1_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -720,7 +672,7 @@ describe('POST /v1/build-mode/process-section1', () => {
   })
 
   it('strips extra LLM fields without rejecting the item', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: EXTRA_FIELDS_SECTION1_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: EXTRA_FIELDS_SECTION1_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/process-section1')
@@ -743,8 +695,8 @@ describe('POST /v1/build-mode/process-section1', () => {
 
 describe('Build Mode section ordering', () => {
   it('returns 400 when submitting section2 before section1 is completed', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(
-      makeEncounterSnap({ section1: { status: 'pending', submissionCount: 0 } }),
+    m.encounterRepo.get.mockResolvedValueOnce(
+      makeEncounterDoc({ section1: { status: 'pending', submissionCount: 0 } }),
     )
 
     const res = await request(app)
@@ -760,8 +712,8 @@ describe('Build Mode section ordering', () => {
   })
 
   it('returns 400 when submitting finalize before section2 is completed', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(
-      makeEncounterSnap({
+    m.encounterRepo.get.mockResolvedValueOnce(
+      makeEncounterDoc({
         section1: { status: 'completed', submissionCount: 1 },
         section2: { status: 'pending', submissionCount: 0 },
       }),
@@ -792,11 +744,8 @@ describe('POST /v1/build-mode/process-section2', () => {
   }
 
   beforeEach(() => {
-    // NOTE: buildSection2Prompt expects section1Response as { differential: DifferentialItem[] }
-    // but the section1 route stores llmResponse as a raw DifferentialItem[] array.
-    // Using the wrapped format here so the prompt builder works. See BUG test below.
-    mockEncounterDocRef.get.mockResolvedValue(
-      makeEncounterSnap({
+    m.encounterRepo.get.mockResolvedValue(
+      makeEncounterDoc({
         section1: {
           status: 'completed',
           submissionCount: 1,
@@ -809,7 +758,7 @@ describe('POST /v1/build-mode/process-section2', () => {
     )
   })
 
-  it('returns 200 with MDM preview', async () => {
+  it('returns 200 with data persistence confirmation', async () => {
     const res = await request(app)
       .post('/v1/build-mode/process-section2')
       .send(validBody)
@@ -821,8 +770,8 @@ describe('POST /v1/build-mode/process-section2', () => {
   })
 
   it('returns 400 with isLocked after 2 submissions', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(
-      makeEncounterSnap({
+    m.encounterRepo.get.mockResolvedValueOnce(
+      makeEncounterDoc({
         section1: { status: 'completed', submissionCount: 1 },
         section2: { status: 'completed', submissionCount: 2 },
         quotaCounted: true,
@@ -838,7 +787,7 @@ describe('POST /v1/build-mode/process-section2', () => {
   })
 
   it('returns 404 when encounter does not exist', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(makeDocSnap(null))
+    m.encounterRepo.get.mockResolvedValueOnce(null)
 
     const res = await request(app)
       .post('/v1/build-mode/process-section2')
@@ -850,18 +799,12 @@ describe('POST /v1/build-mode/process-section2', () => {
    * Regression test: raw-array format mismatch between section1 storage and section2 retrieval.
    *
    * Section 1 route stores `section1.llmResponse` as a raw DifferentialItem[] array.
-   * Section 2 route reads it and passes directly to buildSection2Prompt(), which
-   * expects `Pick<Section1Response, 'differential'>` = { differential: DifferentialItem[] }.
-   *
-   * When llmResponse is a raw array, `section1Response.differential` is undefined,
-   * causing a TypeError in buildSection2Prompt() → 500.
-   *
-   * Expected: Route should wrap the array as { differential: llmResponse }
-   * Actual: Passes raw array, causing buildSection2Prompt to crash
+   * Section 2 is now data-only (no LLM call), so it doesn't access llmResponse.
+   * This test verifies the handler doesn't crash regardless of llmResponse shape.
    */
   it('handles section1 llmResponse stored as raw array', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(
-      makeEncounterSnap({
+    m.encounterRepo.get.mockResolvedValueOnce(
+      makeEncounterDoc({
         section1: {
           status: 'completed',
           submissionCount: 1,
@@ -893,8 +836,8 @@ describe('POST /v1/build-mode/finalize', () => {
   }
 
   beforeEach(() => {
-    mockEncounterDocRef.get.mockResolvedValue(
-      makeEncounterSnap({
+    m.encounterRepo.get.mockResolvedValue(
+      makeEncounterDoc({
         section1: {
           status: 'completed',
           submissionCount: 1,
@@ -919,7 +862,7 @@ describe('POST /v1/build-mode/finalize', () => {
   })
 
   it('returns 200 with final MDM', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: VALID_FINALIZE_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: VALID_FINALIZE_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/finalize')
@@ -934,8 +877,8 @@ describe('POST /v1/build-mode/finalize', () => {
   })
 
   it('returns 400 with isLocked after 2 submissions', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(
-      makeEncounterSnap({
+    m.encounterRepo.get.mockResolvedValueOnce(
+      makeEncounterDoc({
         section1: { status: 'completed', submissionCount: 1 },
         section2: { status: 'completed', submissionCount: 1 },
         section3: { status: 'completed', submissionCount: 2 },
@@ -952,7 +895,7 @@ describe('POST /v1/build-mode/finalize', () => {
   })
 
   it('parses wrapped finalMdm response from LLM', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/finalize')
@@ -967,7 +910,7 @@ describe('POST /v1/build-mode/finalize', () => {
   })
 
   it('normalizes title-case complexityLevel to lowercase', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/finalize')
@@ -978,7 +921,7 @@ describe('POST /v1/build-mode/finalize', () => {
   })
 
   it('maps prompt field names to schema field names', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: WRAPPED_FINALIZE_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/finalize')
@@ -1000,7 +943,7 @@ describe('POST /v1/build-mode/finalize', () => {
   })
 
   it('returns fallback MDM when JSON is completely unparseable', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: 'This is not JSON at all <html>oops</html>' })
+    m.llmClient.generate.mockResolvedValueOnce({ text: 'This is not JSON at all <html>oops</html>', latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/build-mode/finalize')
@@ -1025,8 +968,8 @@ describe('POST /v1/quick-mode/generate', () => {
   }
 
   beforeEach(() => {
-    mockEncounterDocRef.get.mockResolvedValue(
-      makeEncounterSnap({
+    m.encounterRepo.get.mockResolvedValue(
+      makeEncounterDoc({
         mode: 'quick',
         status: 'draft',
         chiefComplaint: 'chest pain',
@@ -1044,7 +987,7 @@ describe('POST /v1/quick-mode/generate', () => {
   })
 
   it('returns 404 when encounter does not exist', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(makeDocSnap(null))
+    m.encounterRepo.get.mockResolvedValueOnce(null)
 
     const res = await request(app)
       .post('/v1/quick-mode/generate')
@@ -1053,8 +996,8 @@ describe('POST /v1/quick-mode/generate', () => {
   })
 
   it('returns 400 when encounter is not quick mode', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(
-      makeEncounterSnap({ mode: 'build' }),
+    m.encounterRepo.get.mockResolvedValueOnce(
+      makeEncounterDoc({ mode: 'build' }),
     )
 
     const res = await request(app)
@@ -1065,8 +1008,8 @@ describe('POST /v1/quick-mode/generate', () => {
   })
 
   it('returns 400 when encounter is already processed', async () => {
-    mockEncounterDocRef.get.mockResolvedValueOnce(
-      makeEncounterSnap({
+    m.encounterRepo.get.mockResolvedValueOnce(
+      makeEncounterDoc({
         mode: 'quick',
         quickModeData: { status: 'completed' },
       }),
@@ -1080,7 +1023,7 @@ describe('POST /v1/quick-mode/generate', () => {
   })
 
   it('returns 402 when quota exceeded', async () => {
-    mockCheckAndIncrementQuota.mockResolvedValueOnce(makeQuotaCheck({
+    m.userService.checkAndIncrementQuota.mockResolvedValueOnce(makeQuotaCheck({
       allowed: false, used: 10, limit: 10, remaining: 0,
     }))
 
@@ -1092,7 +1035,7 @@ describe('POST /v1/quick-mode/generate', () => {
   })
 
   it('returns 200 with MDM on valid request', async () => {
-    mockCallGemini.mockResolvedValueOnce({ text: VALID_QUICK_MODE_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: VALID_QUICK_MODE_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/quick-mode/generate')
@@ -1108,8 +1051,8 @@ describe('POST /v1/quick-mode/generate', () => {
 
   it('returns fallback when model fails (not 500)', async () => {
     // Reset fully then set rejection as the default to avoid any residual state
-    mockCallGemini.mockReset()
-    mockCallGemini.mockRejectedValue(new Error('Model unavailable'))
+    m.llmClient.generate.mockReset()
+    m.llmClient.generate.mockRejectedValue(new Error('Model unavailable'))
 
     const res = await request(app)
       .post('/v1/quick-mode/generate')
@@ -1132,7 +1075,7 @@ describe('POST /v1/quick-mode/generate', () => {
    */
   it('rejects oversized narrative that exceeds plan token limit', async () => {
     const oversizedNarrative = 'X'.repeat(12000) // ~3000 tokens, exceeds free plan's 2000
-    mockCallGemini.mockResolvedValueOnce({ text: VALID_QUICK_MODE_RESPONSE })
+    m.llmClient.generate.mockResolvedValueOnce({ text: VALID_QUICK_MODE_RESPONSE, latencyMs: 100 })
 
     const res = await request(app)
       .post('/v1/quick-mode/generate')

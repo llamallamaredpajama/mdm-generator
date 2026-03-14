@@ -1,18 +1,27 @@
 import type { Request, Response } from 'express'
-import { getCachedCdrLibrary, getCachedTestLibraryResponse } from '../../shared/libraryCache'
+import type { LibraryDeps } from '../../dependencies'
 
-export async function getTests(req: Request, res: Response) {
-  const response = await getCachedTestLibraryResponse()
+export function createLibraryController({ libraryCaches }: LibraryDeps) {
+  let cachedCategories: { tests: unknown[]; categories: string[] } | null = null
 
-  req.log!.info({ action: 'get-test-library', testCount: response.tests.length })
+  return {
+    getTests: async (req: Request, res: Response) => {
+      const tests = await libraryCaches.getTests()
+      if (!cachedCategories || cachedCategories.tests !== tests) {
+        cachedCategories = { tests, categories: [...new Set(tests.map(t => t.category))] }
+      }
 
-  return res.json(response)
-}
+      req.log!.info({ action: 'get-test-library', testCount: tests.length })
 
-export async function getCdrs(req: Request, res: Response) {
-  const cdrs = await getCachedCdrLibrary()
+      return res.json({ ok: true, tests, categories: cachedCategories.categories, cachedAt: new Date().toISOString() })
+    },
 
-  req.log!.info({ action: 'list-cdrs', cdrCount: cdrs.length })
+    getCdrs: async (req: Request, res: Response) => {
+      const cdrs = await libraryCaches.getCdrs()
 
-  return res.json({ ok: true, cdrs })
+      req.log!.info({ action: 'list-cdrs', cdrCount: cdrs.length })
+
+      return res.json({ ok: true, cdrs })
+    },
+  }
 }

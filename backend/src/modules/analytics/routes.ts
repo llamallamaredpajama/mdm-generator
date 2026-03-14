@@ -2,10 +2,14 @@ import { Router } from 'express'
 import { llmLimiter } from '../../middleware/rateLimiter'
 import { authenticate } from '../../middleware/auth'
 import { asyncHandler } from '../../shared/asyncHandler'
-import { getInsights } from './controller'
+import { createAnalyticsController } from './controller'
+import type { AnalyticsDeps } from '../../dependencies'
 
-const router = Router()
+export function createAnalyticsRoutes(deps: AnalyticsDeps): Router {
+  const router = Router()
+  const { getInsights } = createAnalyticsController(deps)
 
-router.post('/v1/analytics/insights', llmLimiter, authenticate, asyncHandler(getInsights))
+  router.post('/v1/analytics/insights', llmLimiter, authenticate, asyncHandler(getInsights))
 
-export default router
+  return router
+}

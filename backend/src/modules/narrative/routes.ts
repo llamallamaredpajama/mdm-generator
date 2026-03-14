@@ -4,10 +4,14 @@ import { authenticate } from '../../middleware/auth'
 import { validate } from '../../middleware/validate'
 import { asyncHandler } from '../../shared/asyncHandler'
 import { ParseNarrativeBodySchema } from './schemas'
-import { parseNarrative } from './controller'
+import { createNarrativeController } from './controller'
+import type { NarrativeDeps } from '../../dependencies'
 
-const router = Router()
+export function createNarrativeRoutes(deps: NarrativeDeps): Router {
+  const router = Router()
+  const { parseNarrative } = createNarrativeController(deps)
 
-router.post('/v1/parse-narrative', parseLimiter, authenticate, validate(ParseNarrativeBodySchema), asyncHandler(parseNarrative))
+  router.post('/v1/parse-narrative', parseLimiter, authenticate, validate(ParseNarrativeBodySchema), asyncHandler(parseNarrative))
 
-export default router
+  return router
+}

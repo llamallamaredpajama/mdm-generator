@@ -1,15 +1,19 @@
 import type { Request, Response } from 'express'
-import { userService } from '../../services/userService'
+import type { AdminDeps } from '../../dependencies'
 
-export async function setPlan(req: Request, res: Response) {
-  const { targetUid, plan } = req.body
+export function createAdminController({ userService }: AdminDeps) {
+  return {
+    setPlan: async (req: Request, res: Response) => {
+      const { targetUid, plan } = req.body
 
-  await userService.adminSetPlan(targetUid, plan)
+      await userService.adminSetPlan(targetUid, plan)
 
-  req.log!.info({ action: 'admin-set-plan', targetUid, plan })
+      req.log!.info({ action: 'admin-set-plan', targetUid, plan })
 
-  return res.json({
-    ok: true,
-    message: `User ${targetUid} updated to ${plan} plan`,
-  })
+      return res.json({
+        ok: true,
+        message: `User ${targetUid} updated to ${plan} plan`,
+      })
+    },
+  }
 }

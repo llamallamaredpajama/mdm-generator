@@ -1,8 +1,5 @@
 import admin from 'firebase-admin'
 
-// Defer Firestore initialization to avoid initialization order issues
-const getDb = () => admin.firestore()
-
 /** Returns current month key in YYYY-MM format (UTC) */
 export function getCurrentPeriodKey(): string {
   const now = new Date()
@@ -98,8 +95,19 @@ export const PLAN_FEATURES: Record<SubscriptionPlan, UserDocument['features']> =
 }
 
 export class UserService {
+  private _db?: FirebaseFirestore.Firestore
+
+  constructor(db?: FirebaseFirestore.Firestore) {
+    this._db = db
+  }
+
+  private get db(): FirebaseFirestore.Firestore {
+    if (!this._db) this._db = admin.firestore()
+    return this._db
+  }
+
   private get collection() {
-    return getDb().collection('users')
+    return this.db.collection('users')
   }
 
   /**
@@ -203,7 +211,7 @@ export class UserService {
     const ref = this.collection.doc(uid)
     const currentPeriod = this.getCurrentPeriodKey()
 
-    return getDb().runTransaction(async (tx) => {
+    return this.db.runTransaction(async (tx) => {
       const snap = await tx.get(ref)
       if (!snap.exists) {
         throw new Error('User not found')
@@ -248,7 +256,7 @@ export class UserService {
    */
   private async getStripeSubscriptionPlan(uid: string): Promise<SubscriptionPlan | null> {
     try {
-      const subscriptionsRef = getDb()
+      const subscriptionsRef = this.db
         .collection('customers')
         .doc(uid)
         .collection('subscriptions')
@@ -378,4 +386,5 @@ export class UserService {
   }
 }
 
+/** @deprecated Use DI via composition root. Retained for surveillance module. */
 export const userService = new UserService()
