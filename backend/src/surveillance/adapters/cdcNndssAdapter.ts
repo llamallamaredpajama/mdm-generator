@@ -16,6 +16,7 @@
 import type { DataSourceAdapter, DataSourceConfig } from './types.js'
 import type { SurveillanceDataPoint, SyndromeCategory, ResolvedRegion } from '../types.js'
 import { SurveillanceCache } from '../cache/surveillanceCache.js'
+import { logger } from '../../logger.js'
 
 export class CdcNndssAdapter implements DataSourceAdapter {
   private cache: SurveillanceCache
@@ -85,7 +86,7 @@ export class CdcNndssAdapter implements DataSourceAdapter {
       await this.cache.set(cacheKey, dataPoints, this.config.cacheTtlMs)
       return dataPoints
     } catch (error) {
-      console.warn(`CdcNndssAdapter fetch failed:`, error)
+      logger.warn({ err: error }, 'CdcNndssAdapter fetch failed')
       throw error
     }
   }

@@ -11,6 +11,7 @@
 import type { DataSourceAdapter, DataSourceConfig } from './types.js'
 import type { SurveillanceDataPoint, SyndromeCategory, ResolvedRegion } from '../types.js'
 import { SurveillanceCache } from '../cache/surveillanceCache.js'
+import { logger } from '../../logger.js'
 
 /** Maps each tracked respiratory condition to the real API field names. */
 const CONDITION_FIELDS = [
@@ -76,7 +77,7 @@ export class CdcRespiratoryAdapter implements DataSourceAdapter {
 
       if (!response.ok) {
         if (response.status === 429) {
-          console.warn('CDC API rate limited')
+          logger.warn('CDC API rate limited')
         }
         throw new Error(`CDC API error: ${response.status}`)
       }
@@ -87,7 +88,7 @@ export class CdcRespiratoryAdapter implements DataSourceAdapter {
       await this.cache.set(cacheKey, dataPoints, this.config.cacheTtlMs)
       return dataPoints
     } catch (error) {
-      console.warn(`CdcRespiratoryAdapter fetch failed:`, error)
+      logger.warn({ err: error }, 'CdcRespiratoryAdapter fetch failed')
       throw error
     }
   }

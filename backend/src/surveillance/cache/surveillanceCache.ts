@@ -5,6 +5,7 @@
  */
 
 import type { SurveillanceDataPoint } from '../types.js'
+import { logger } from '../../logger.js'
 
 /** Sanitize a cache key to be a valid Firestore document ID */
 function sanitizeKey(key: string): string {
@@ -36,7 +37,7 @@ export class SurveillanceCache {
 
       return (data.dataPoints as SurveillanceDataPoint[]) || null
     } catch (error) {
-      console.warn('Cache get failed:', error)
+      logger.warn({ err: error }, 'Cache get failed')
       return null
     }
   }
@@ -54,7 +55,7 @@ export class SurveillanceCache {
         key: sanitizeKey(key),
       })
     } catch (error) {
-      console.warn('Cache set failed:', error)
+      logger.warn({ err: error }, 'Cache set failed')
       // Cache failures are non-critical — do not throw
     }
   }

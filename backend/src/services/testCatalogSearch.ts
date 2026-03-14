@@ -11,6 +11,7 @@
 import admin from 'firebase-admin'
 import { generateEmbedding } from './embeddingService.js'
 import type { TestDefinition } from '../types/libraries.js'
+import { logger } from '../logger.js'
 
 const DEFAULT_LIMIT = 50
 
@@ -60,11 +61,11 @@ export async function getRelevantTests(
   }
 
   const elapsed = Date.now() - start
-  console.log({
+  logger.info({
     action: 'vector-search',
     results: tests.length,
     elapsed_ms: elapsed,
-  })
+  }, 'Test vector search completed')
 
   return tests
 }

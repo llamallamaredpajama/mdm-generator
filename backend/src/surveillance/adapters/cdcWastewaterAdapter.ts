@@ -16,6 +16,7 @@
 import type { DataSourceAdapter, DataSourceConfig } from './types.js'
 import type { SurveillanceDataPoint, SyndromeCategory, ResolvedRegion } from '../types.js'
 import { SurveillanceCache } from '../cache/surveillanceCache.js'
+import { logger } from '../../logger.js'
 
 /** Extract the 2-letter state abbreviation from a key_plot_id string.
  *  Pattern: `[Source]_[state]_[siteId]_...` where state is lowercase 2-letter code
@@ -84,7 +85,7 @@ export class CdcWastewaterAdapter implements DataSourceAdapter {
       await this.cache.set(cacheKey, dataPoints, this.config.cacheTtlMs)
       return dataPoints
     } catch (error) {
-      console.warn(`CdcWastewaterAdapter fetch failed:`, error)
+      logger.warn({ err: error }, 'CdcWastewaterAdapter fetch failed')
       throw error
     }
   }

@@ -5,6 +5,7 @@
  */
 
 import type { ResolvedRegion } from './types.js'
+import { logger } from '../logger.js'
 
 /** State abbreviation → HHS Region mapping (all 50 states + DC + territories) */
 export const STATE_TO_HHS_REGION: Record<string, number> = {
@@ -233,7 +234,7 @@ export class RegionResolver {
         }
       }
     } catch (error) {
-      console.warn('Zip code Firestore lookup failed, trying prefix fallback:', error)
+      logger.warn({ err: error }, 'Zip code Firestore lookup failed, trying prefix fallback')
     }
 
     // Fallback: resolve state from ZIP prefix (first 3 digits)
