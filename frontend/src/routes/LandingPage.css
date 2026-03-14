@@ -409,6 +409,12 @@
   transform: translateY(0);
 }
 
+.cl-slide.active .cl-slide__room--typed {
+  opacity: 1;
+  transform: translateY(0);
+  transition: none;
+}
+
 /* Redaction line */
 .cl-slide__redaction {
   height: 2px;
@@ -443,11 +449,23 @@
   transform: translateY(0);
 }
 
+.cl-slide.active .cl-slide__patient--typed {
+  opacity: 0.75;
+  transform: translateY(0);
+  transition: none;
+}
+
 /* Red blinking cursor */
 .cl-slide__cursor {
   color: var(--cl-color-accent);
   font-weight: normal;
   animation: cl-blink 1s step-end infinite;
+}
+
+.cl-slide__cursor--room {
+  display: inline-block;
+  transform: scaleX(0.45);
+  transform-origin: left center;
 }
 
 @keyframes cl-blink {

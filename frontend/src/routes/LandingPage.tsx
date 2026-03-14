@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/firebase'
 import { usePrefersReducedMotion } from '../hooks/useMediaQuery'
+import { useTypewriter } from '../hooks/useTypewriter'
 import AuthModal from '../components/AuthModal'
 import './LandingPage.css'
 
@@ -103,6 +104,15 @@ export default function LandingPage() {
   const slideRefs = useRef<(HTMLElement | null)[]>([])
   const grainCanvasRef = useRef<HTMLCanvasElement>(null)
   const grainVisibleRef = useRef(false)
+
+  const { displayedRoom, displayedPatient, phase } = useTypewriter({
+    roomText: SLIDES[currentIndex].room,
+    patientText: SLIDES[currentIndex].patient,
+    isActive: preloaderLoaded,
+    prefersReducedMotion,
+    initialDelay: 1400,
+    pauseBetween: 700,
+  })
 
   const handleCTA = useCallback(() => {
     if (user) {
@@ -367,11 +377,20 @@ export default function LandingPage() {
 
             <div className="cl-slide__content-left">
               <div className="cl-slide__dept">Emergency Department</div>
-              <h2 className="cl-slide__room">{slide.room}</h2>
+              <h2 className={`cl-slide__room${i === currentIndex ? ' cl-slide__room--typed' : ''}`}>
+                {i === currentIndex && !prefersReducedMotion ? displayedRoom : slide.room}
+                {i === currentIndex && (phase === 'room' || phase === 'pause') && (
+                  <span className="cl-slide__cursor cl-slide__cursor--room">{'\u2588'}</span>
+                )}
+              </h2>
               <div className="cl-slide__redaction" />
-              <p className="cl-slide__patient">
-                {slide.patient}
-                <span className="cl-slide__cursor">{'\u2588'}</span>
+              <p
+                className={`cl-slide__patient${i === currentIndex ? ' cl-slide__patient--typed' : ''}`}
+              >
+                {i === currentIndex && !prefersReducedMotion ? displayedPatient : slide.patient}
+                {i === currentIndex && (phase === 'patient' || phase === 'done') && (
+                  <span className="cl-slide__cursor">{'\u2588'}</span>
+                )}
               </p>
             </div>
 
