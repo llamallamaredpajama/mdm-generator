@@ -459,13 +459,22 @@
 .cl-slide__cursor {
   color: var(--cl-color-accent);
   font-weight: normal;
+  display: inline-block;
+  transform: scaleY(0.75);
   animation: cl-blink 1s step-end infinite;
 }
 
-.cl-slide__cursor--room {
-  display: inline-block;
-  transform: scaleX(0.45);
+.cl-slide__cursor--typing {
+  transform: scaleX(0.35) scaleY(0.75);
   transform-origin: left center;
+}
+
+.cl-slide__cursor--room {
+  line-height: 1.2;
+  transform: scaleX(0.1) scaleY(0.75);
+  transform-origin: left center;
+  margin-left: 3px;
+  margin-right: -0.67em;
 }
 
 @keyframes cl-blink {

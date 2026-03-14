@@ -389,7 +389,11 @@ export default function LandingPage() {
               >
                 {i === currentIndex && !prefersReducedMotion ? displayedPatient : slide.patient}
                 {i === currentIndex && (phase === 'patient' || phase === 'done') && (
-                  <span className="cl-slide__cursor">{'\u2588'}</span>
+                  <span
+                    className={`cl-slide__cursor${phase === 'patient' ? ' cl-slide__cursor--typing' : ''}`}
+                  >
+                    {'\u2588'}
+                  </span>
                 )}
               </p>
             </div>
