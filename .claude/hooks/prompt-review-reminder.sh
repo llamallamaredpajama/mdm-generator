@@ -50,7 +50,7 @@ esac
 
 # --- LLM interface ---
 case "$FILE_PATH" in
-  */backend/src/vertex.ts)
+  */backend/src/llm/vertexProvider.ts)
     echo "LLM interface changed ($BASENAME) — run prompt-reviewer agent. Focus: model config, temperature settings (affects all pipelines)."
     exit 0
     ;;

@@ -31,7 +31,7 @@ aiMDM transforms Emergency Medicine physician narratives into compliant, high-co
 
 ### Backend Infrastructure (P0 Foundation)
 
-Centralized config, logging, errors, and middleware added in `2931353`. Infrastructure is defined but route handlers are **not yet refactored** to use middleware — that's a future phase.
+Centralized config, logging, errors, and middleware added in `2931353`. All route handlers use the middleware stack (auth, validation, error handling, request logging).
 
 | Module | File | Purpose |
 |--------|------|---------|
@@ -86,11 +86,9 @@ Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS
 - **Frontend**: Firebase Hosting → https://aimdm.app (custom domain), https://mdm-generator.web.app (default)
   - `firebase deploy --only hosting --project mdm-generator` (from project root, after building frontend)
 - **Backend**: Cloud Run → `mdm-backend` (us-central1)
-  - Build: `gcloud builds submit --config /dev/stdin --project mdm-generator . <<'CLOUDBUILD'`
-    `steps: [{name: 'gcr.io/cloud-builders/docker', args: ['build','-f','backend/Dockerfile','-t','gcr.io/mdm-generator/mdm-backend:latest','.']}]`
-    `images: ['gcr.io/mdm-generator/mdm-backend:latest']`
-    `CLOUDBUILD`
-  - Deploy: `gcloud run deploy mdm-backend --image gcr.io/mdm-generator/mdm-backend:latest --project mdm-generator --region us-central1`
+  - One command: `bash scripts/deploy-backend.sh` (or `cd backend && pnpm deploy`)
+  - Runs pre-deploy gates (build + test), Cloud Build, and Cloud Run deploy
+  - Build config: `cloudbuild.yaml` (version-controlled)
 - **IMPORTANT**: Backend changes in `backend/src/` are NOT live until the Cloud Run container is rebuilt and deployed. `pnpm build` only compiles locally.
 - **Cloud Build context**: `.gcloudignore` excludes `frontend/`, `docs/`, `scripts/`, etc. — only `backend/` is uploaded (~5-10 MB). Prompt guides live in `backend/prompts/` (inside the Docker context).
 - **Do NOT** use Vercel, Netlify, or other hosting CLIs
@@ -213,7 +211,7 @@ cd backend && pnpm build         # TypeScript compilation (REQUIRED before commi
 | `backend/src/parsePromptBuilder.ts` | Narrative → structured fields parsing prompt |
 | `backend/src/outputSchema.ts` | Legacy MDM structure validation |
 | `backend/src/buildModeSchemas.ts` | Build Mode Zod schemas (requests, responses, Firestore) |
-| `backend/src/vertex.ts` | LLM interface (model config, temperature, safety) |
+| `backend/src/llm/vertexProvider.ts` | LLM interface (model config, temperature, safety) |
 
 ### Key Components
 - `frontend/src/components/DictationGuide.tsx` - Inline physician guidance

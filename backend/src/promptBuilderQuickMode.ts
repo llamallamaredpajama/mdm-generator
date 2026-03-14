@@ -54,7 +54,7 @@ async function loadMdmGuide(): Promise<string> {
 }
 
 /**
- * Prompt structure matching vertex.ts callGemini expectations
+ * Prompt structure matching vertexProvider.ts callGemini expectations
  */
 export interface PromptParts {
   system: string
