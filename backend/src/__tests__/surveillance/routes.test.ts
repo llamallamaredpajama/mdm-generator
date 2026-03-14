@@ -181,9 +181,13 @@ let app: Express
 
 beforeAll(async () => {
   const { default: router } = await import('../../surveillance/routes')
+  const { requestLogger } = await import('../../middleware/requestLogger')
+  const { errorHandler } = await import('../../middleware/errorHandler')
   app = express()
   app.use(express.json())
+  app.use(requestLogger)
   app.use(router)
+  app.use(errorHandler)
 })
 
 // ---------------------------------------------------------------------------
@@ -253,22 +257,22 @@ describe('POST /v1/surveillance/analyze', () => {
     location: { state: 'TX' },
   }
 
-  it('returns 400 on missing/invalid body', async () => {
+  it('returns 401 on missing body (auth middleware)', async () => {
     const res = await request(app)
       .post('/v1/surveillance/analyze')
       .send({})
 
-    expect(res.status).toBe(400)
-    expect(res.body.error).toBe('Invalid request')
+    expect(res.status).toBe(401)
+    expect(res.body.error).toBe('Unauthorized')
   })
 
-  it('returns 400 when userIdToken is too short', async () => {
+  it('returns 401 when userIdToken is too short (auth middleware rejects)', async () => {
     const res = await request(app)
       .post('/v1/surveillance/analyze')
       .send({ ...VALID_BODY, userIdToken: '123456789' })
 
-    expect(res.status).toBe(400)
-    expect(res.body.error).toBe('Invalid request')
+    expect(res.status).toBe(401)
+    expect(res.body.error).toBe('Unauthorized')
   })
 
   it('returns 400 when location has neither zip nor state', async () => {
@@ -388,13 +392,13 @@ describe('POST /v1/surveillance/report', () => {
     analysisId: TEST_ANALYSIS_ID,
   }
 
-  it('returns 400 on missing/invalid body', async () => {
+  it('returns 401 on missing body (auth middleware)', async () => {
     const res = await request(app)
       .post('/v1/surveillance/report')
       .send({})
 
-    expect(res.status).toBe(400)
-    expect(res.body.error).toBe('Invalid request')
+    expect(res.status).toBe(401)
+    expect(res.body.error).toBe('Unauthorized')
   })
 
   it('returns 400 when analysisId is not a valid UUID', async () => {

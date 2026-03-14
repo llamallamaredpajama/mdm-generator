@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
-import type admin from 'firebase-admin'
+import admin from 'firebase-admin'
 import { AuthenticationError, AuthorizationError } from '../errors'
 
 export function createAuthMiddleware(firebaseAdmin: typeof admin) {
@@ -42,3 +42,6 @@ export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
 export function requirePlan(minPlan: 'pro' | 'enterprise') {
   return (_req: Request, _res: Response, next: NextFunction) => next()
 }
+
+// Singleton — safe because middleware is only called at request time (after Firebase init)
+export const authenticate = createAuthMiddleware(admin)

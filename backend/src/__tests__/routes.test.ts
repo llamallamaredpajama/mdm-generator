@@ -232,17 +232,17 @@ describe('Auth & Validation (shared patterns)', () => {
 
   for (const ep of endpoints) {
     describe(`${ep.method.toUpperCase()} ${ep.path}`, () => {
-      it('returns 400 when userIdToken is missing', async () => {
+      it('returns 401 when userIdToken is missing (auth middleware)', async () => {
         const res = await request(app)[ep.method](ep.path).send(ep.body)
-        expect(res.status).toBe(400)
+        expect(res.status).toBe(401)
         expect(res.body.error).toBeDefined()
       })
 
-      it('returns 400 when userIdToken is too short (9 chars)', async () => {
+      it('returns 401 when userIdToken is too short (auth middleware rejects)', async () => {
         const res = await request(app)
           [ep.method](ep.path)
           .send({ ...ep.body, userIdToken: SHORT_TOKEN })
-        expect(res.status).toBe(400)
+        expect(res.status).toBe(401)
       })
 
       it('returns 401 when Firebase token is invalid', async () => {
@@ -405,28 +405,28 @@ describe('POST /v1/admin/set-plan', () => {
   it('returns 400 when required fields are missing', async () => {
     const res = await request(app)
       .post('/v1/admin/set-plan')
-      .send({ adminToken: ADMIN_TOKEN })
+      .send({ userIdToken: ADMIN_TOKEN })
     expect(res.status).toBe(400)
   })
 
-  it('returns 400 when adminToken is too short', async () => {
+  it('returns 401 when userIdToken is too short (auth middleware rejects)', async () => {
     const res = await request(app)
       .post('/v1/admin/set-plan')
-      .send({ adminToken: SHORT_TOKEN, targetUid: 'user-1', plan: 'pro' })
-    expect(res.status).toBe(400)
+      .send({ userIdToken: SHORT_TOKEN, targetUid: 'user-1', plan: 'pro' })
+    expect(res.status).toBe(401)
   })
 
   it('returns 401 when Firebase token verification fails', async () => {
     const res = await request(app)
       .post('/v1/admin/set-plan')
-      .send({ adminToken: INVALID_TOKEN, targetUid: 'user-1', plan: 'pro' })
+      .send({ userIdToken: INVALID_TOKEN, targetUid: 'user-1', plan: 'pro' })
     expect(res.status).toBe(401)
   })
 
   it('returns 403 when token lacks admin claim', async () => {
     const res = await request(app)
       .post('/v1/admin/set-plan')
-      .send({ adminToken: VALID_TOKEN, targetUid: 'user-1', plan: 'pro' })
+      .send({ userIdToken: VALID_TOKEN, targetUid: 'user-1', plan: 'pro' })
     expect(res.status).toBe(403)
     expect(res.body.error).toMatch(/admin/i)
   })
@@ -434,7 +434,7 @@ describe('POST /v1/admin/set-plan', () => {
   it('returns 200 and updates plan for admin token', async () => {
     const res = await request(app)
       .post('/v1/admin/set-plan')
-      .send({ adminToken: ADMIN_TOKEN, targetUid: 'user-1', plan: 'pro' })
+      .send({ userIdToken: ADMIN_TOKEN, targetUid: 'user-1', plan: 'pro' })
 
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(true)
@@ -445,10 +445,8 @@ describe('POST /v1/admin/set-plan', () => {
   /**
    * Regression test: error response must NOT leak e.message.
    *
-   * Previously (before security hardening), the catch block at line ~135 did:
-   *   return res.status(500).json({ error: e.message || 'Internal error' })
-   * which leaked raw error messages to the client. Now fixed to always return
-   * a generic "Internal error" message.
+   * Errors now flow through asyncHandler → errorHandler middleware.
+   * Unhandled errors return generic { error: 'Internal error', code: 'INTERNAL_ERROR' }.
    */
   it('does not leak internal error details in 500 response', async () => {
     mockAdminSetPlan.mockRejectedValueOnce(
@@ -457,7 +455,7 @@ describe('POST /v1/admin/set-plan', () => {
 
     const res = await request(app)
       .post('/v1/admin/set-plan')
-      .send({ adminToken: ADMIN_TOKEN, targetUid: 'user-1', plan: 'pro' })
+      .send({ userIdToken: ADMIN_TOKEN, targetUid: 'user-1', plan: 'pro' })
 
     expect(res.status).toBe(500)
     expect(res.body.error).toBe('Internal error')

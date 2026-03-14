@@ -27,3 +27,7 @@ export const TrendReportRequestSchema = z.object({
 })
 
 export type TrendReportRequest = z.infer<typeof TrendReportRequestSchema>
+
+/** Body-only variants for use with auth middleware */
+export const TrendAnalysisBodySchema = TrendAnalysisRequestSchema.omit({ userIdToken: true })
+export const TrendReportBodySchema = TrendReportRequestSchema.omit({ userIdToken: true })

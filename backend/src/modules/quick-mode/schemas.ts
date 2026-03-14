@@ -9,3 +9,6 @@ export const QuickModeGenerateSchema = z.object({
     state: z.string().optional(),
   }).optional(),
 })
+
+/** Body-only variant for use with auth middleware */
+export const QuickModeGenerateBodySchema = QuickModeGenerateSchema.omit({ userIdToken: true })

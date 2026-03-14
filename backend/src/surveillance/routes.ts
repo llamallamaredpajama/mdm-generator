@@ -4,15 +4,17 @@
  * POST /v1/surveillance/analyze  - Run regional trend analysis
  * POST /v1/surveillance/report   - Generate PDF trend report
  *
- * Both endpoints follow the project's 6-step auth pattern:
- * VALIDATE -> AUTHENTICATE -> AUTHORIZE -> EXECUTE -> AUDIT -> RESPOND
+ * Middleware chain: authenticate → validate → asyncHandler(controller)
  */
 
 import { Router } from 'express'
 import crypto from 'node:crypto'
 import admin from 'firebase-admin'
 import { userService } from '../services/userService'
-import { TrendAnalysisRequestSchema, TrendReportRequestSchema } from './schemas'
+import { authenticate } from '../middleware/auth'
+import { validate } from '../middleware/validate'
+import { asyncHandler } from '../shared/asyncHandler'
+import { TrendAnalysisBodySchema, TrendReportBodySchema } from './schemas'
 import { mapToSyndromes } from './syndromeMapper'
 import { RegionResolver } from './regionResolver'
 import { AdapterRegistry } from './adapters/adapterRegistry'
@@ -53,7 +55,6 @@ function formatHighlight(dp: SurveillanceDataPoint): string {
 
 /**
  * Build per-source summaries from raw data points and errors.
- * Returns one entry per known source indicating what was found.
  */
 function buildDataSourceSummaries(
   dataPoints: SurveillanceDataPoint[],
@@ -80,7 +81,6 @@ function buildDataSourceSummaries(
       return { source: key, label, status: 'no_data' as const, highlights: [] }
     }
 
-    // Pick the most recent data point per condition
     const latestByCondition = new Map<string, SurveillanceDataPoint>()
     for (const dp of points) {
       const existing = latestByCondition.get(dp.condition)
@@ -90,7 +90,6 @@ function buildDataSourceSummaries(
     }
 
     const highlights = Array.from(latestByCondition.values()).map(formatHighlight)
-
     return { source: key, label, status: 'data' as const, highlights }
   })
 }
@@ -126,25 +125,12 @@ function buildSummary(
 // POST /v1/surveillance/analyze
 // ---------------------------------------------------------------------------
 
-router.post('/v1/surveillance/analyze', async (req, res) => {
-  try {
-    // 1. VALIDATE
-    const parsed = TrendAnalysisRequestSchema.safeParse(req.body)
-    if (!parsed.success) {
-      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
-    }
-    const data = parsed.data
+router.post('/v1/surveillance/analyze', authenticate, validate(TrendAnalysisBodySchema),
+  asyncHandler(async (req, res) => {
+    const uid = req.user!.uid
+    const data = req.body
 
-    // 2. AUTHENTICATE
-    let decoded: admin.auth.DecodedIdToken
-    try {
-      decoded = await admin.auth().verifyIdToken(data.userIdToken)
-    } catch {
-      return res.status(401).json({ error: 'Unauthorized' })
-    }
-    const uid = decoded.uid
-
-    // 3. AUTHORIZE — surveillance requires Pro or Enterprise plan
+    // AUTHORIZE — surveillance requires Pro or Enterprise plan
     const stats = await userService.getUsageStats(uid)
     if (stats.plan === 'free') {
       return res.status(403).json({
@@ -154,7 +140,7 @@ router.post('/v1/surveillance/analyze', async (req, res) => {
       })
     }
 
-    // 4. EXECUTE
+    // EXECUTE
     const syndromes = mapToSyndromes(data.chiefComplaint, data.differential)
 
     const resolver = new RegionResolver()
@@ -179,7 +165,6 @@ router.post('/v1/surveillance/analyze', async (req, res) => {
 
     const analysisId = crypto.randomUUID()
 
-    // Determine which data sources were successfully queried
     const allSourceNames = ['CDC Respiratory', 'NWSS Wastewater', 'CDC NNDSS']
     const allSourceKeys = ['cdc_respiratory', 'cdc_wastewater', 'cdc_nndss']
     const failedSources = new Set(errors.map((e) => e.source))
@@ -187,7 +172,6 @@ router.post('/v1/surveillance/analyze', async (req, res) => {
       (_, i) => !failedSources.has(allSourceKeys[i]),
     )
 
-    // Build per-source summaries
     const queriedSourceKeys = new Set(queriedSources || allSourceKeys.filter((_, i) => !failedSources.has(allSourceKeys[i])))
     const dataSourceSummaries = buildDataSourceSummaries(dataPoints, errors, queriedSourceKeys)
 
@@ -205,7 +189,6 @@ router.post('/v1/surveillance/analyze', async (req, res) => {
     }
 
     // Store analysis in Firestore for later PDF generation.
-    // JSON round-trip strips `undefined` values that Firestore rejects.
     const cleanAnalysis = JSON.parse(JSON.stringify(analysis))
     const db = admin.firestore()
     await db
@@ -217,51 +200,32 @@ router.post('/v1/surveillance/analyze', async (req, res) => {
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       })
 
-    // 5. AUDIT (no PHI)
-    console.log({
+    req.log!.info({
       action: 'surveillance-analyze',
       uid,
       analysisId,
       findingsCount: correlations.length,
       alertsCount: alerts.length,
-      timestamp: new Date().toISOString(),
     })
 
-    // 6. RESPOND
     return res.json({
       ok: true,
       analysis,
       warnings: errors.length > 0 ? errors.map((e) => e.error) : undefined,
     })
-  } catch (e) {
-    console.error('surveillance/analyze error:', e)
-    return res.status(500).json({ error: 'Internal error' })
-  }
-})
+  })
+)
 
 // ---------------------------------------------------------------------------
 // POST /v1/surveillance/report
 // ---------------------------------------------------------------------------
 
-router.post('/v1/surveillance/report', async (req, res) => {
-  try {
-    // 1. VALIDATE
-    const parsed = TrendReportRequestSchema.safeParse(req.body)
-    if (!parsed.success) {
-      return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors })
-    }
-    const data = parsed.data
+router.post('/v1/surveillance/report', authenticate, validate(TrendReportBodySchema),
+  asyncHandler(async (req, res) => {
+    const uid = req.user!.uid
+    const data = req.body
 
-    // 2. AUTHENTICATE
-    let decoded: admin.auth.DecodedIdToken
-    try {
-      decoded = await admin.auth().verifyIdToken(data.userIdToken)
-    } catch {
-      return res.status(401).json({ error: 'Unauthorized' })
-    }
-    const uid = decoded.uid
-
-    // 3. AUTHORIZE — must have PDF export access
+    // AUTHORIZE — must have PDF export access
     const stats = await userService.getUsageStats(uid)
     if (!stats.features.exportFormats.includes('pdf')) {
       return res.status(403).json({
@@ -269,7 +233,7 @@ router.post('/v1/surveillance/report', async (req, res) => {
       })
     }
 
-    // 4. EXECUTE
+    // EXECUTE
     const db = admin.firestore()
     const analysisDoc = await db
       .collection('surveillance_analyses')
@@ -287,25 +251,19 @@ router.post('/v1/surveillance/report', async (req, res) => {
 
     const pdfBuffer = await generateTrendReport(analysisData)
 
-    // 5. AUDIT (no PHI)
-    console.log({
+    req.log!.info({
       action: 'surveillance-report',
       uid,
       analysisId: data.analysisId,
-      timestamp: new Date().toISOString(),
     })
 
-    // 6. RESPOND
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="surveillance-report-${data.analysisId}.pdf"`,
     )
     return res.send(pdfBuffer)
-  } catch (e) {
-    console.error('surveillance/report error:', e)
-    return res.status(500).json({ error: 'Internal error' })
-  }
-})
+  })
+)
 
 export default router
