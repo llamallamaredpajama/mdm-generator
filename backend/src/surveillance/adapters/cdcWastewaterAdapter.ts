@@ -17,8 +17,6 @@ import type { DataSourceAdapter, DataSourceConfig } from './types.js'
 import type { SurveillanceDataPoint, SyndromeCategory, ResolvedRegion } from '../types.js'
 import { SurveillanceCache } from '../cache/surveillanceCache.js'
 
-const cache = new SurveillanceCache()
-
 /** Extract the 2-letter state abbreviation from a key_plot_id string.
  *  Pattern: `[Source]_[state]_[siteId]_...` where state is lowercase 2-letter code
  *  followed by `_[digits]`. */
@@ -36,6 +34,12 @@ function median(values: number[]): number {
 }
 
 export class CdcWastewaterAdapter implements DataSourceAdapter {
+  private cache: SurveillanceCache
+
+  constructor(db: FirebaseFirestore.Firestore) {
+    this.cache = new SurveillanceCache(db)
+  }
+
   config: DataSourceConfig = {
     name: 'cdc_wastewater',
     baseUrl: 'https://data.cdc.gov/resource',
@@ -52,7 +56,7 @@ export class CdcWastewaterAdapter implements DataSourceAdapter {
     if (!this.isRelevant(syndromes)) return []
 
     const cacheKey = `${this.config.name}_${region.stateAbbrev}_wastewater`
-    const cached = await cache.get(cacheKey)
+    const cached = await this.cache.get(cacheKey)
     if (cached) return cached
 
     try {
@@ -77,7 +81,7 @@ export class CdcWastewaterAdapter implements DataSourceAdapter {
       const rawData = await response.json()
       const dataPoints = this.normalize(rawData, region)
 
-      await cache.set(cacheKey, dataPoints, this.config.cacheTtlMs)
+      await this.cache.set(cacheKey, dataPoints, this.config.cacheTtlMs)
       return dataPoints
     } catch (error) {
       console.warn(`CdcWastewaterAdapter fetch failed:`, error)

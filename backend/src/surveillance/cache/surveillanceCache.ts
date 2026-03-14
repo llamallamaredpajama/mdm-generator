@@ -4,7 +4,6 @@
  * Used to avoid redundant CDC API calls within the cache window.
  */
 
-import admin from 'firebase-admin'
 import type { SurveillanceDataPoint } from '../types.js'
 
 /** Sanitize a cache key to be a valid Firestore document ID */
@@ -15,14 +14,15 @@ function sanitizeKey(key: string): string {
 export class SurveillanceCache {
   private collectionName = 'surveillance_cache'
 
+  constructor(private db: FirebaseFirestore.Firestore) {}
+
   /**
    * Get cached data if it exists and hasn't expired.
    * Returns null if expired or not found.
    */
   async get(key: string): Promise<SurveillanceDataPoint[] | null> {
     try {
-      const db = admin.firestore()
-      const docRef = db.collection(this.collectionName).doc(sanitizeKey(key))
+      const docRef = this.db.collection(this.collectionName).doc(sanitizeKey(key))
       const snap = await docRef.get()
 
       if (!snap.exists) return null
@@ -46,8 +46,7 @@ export class SurveillanceCache {
    */
   async set(key: string, data: SurveillanceDataPoint[], ttlMs: number): Promise<void> {
     try {
-      const db = admin.firestore()
-      const docRef = db.collection(this.collectionName).doc(sanitizeKey(key))
+      const docRef = this.db.collection(this.collectionName).doc(sanitizeKey(key))
       await docRef.set({
         dataPoints: data,
         cachedAt: Date.now(),

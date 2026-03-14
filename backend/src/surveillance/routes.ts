@@ -139,7 +139,7 @@ export function createSurveillanceRoutes(deps: SurveillanceDeps): Router {
       // EXECUTE
       const syndromes = mapToSyndromes(data.chiefComplaint, data.differential)
 
-      const resolver = new RegionResolver()
+      const resolver = new RegionResolver(db)
       const region = await resolver.resolve(data.location)
       if (!region) {
         return res.status(400).json({ error: 'Could not resolve location' })
@@ -149,7 +149,7 @@ export function createSurveillanceRoutes(deps: SurveillanceDeps): Router {
         ? `${region.county}, ${region.stateAbbrev} area — HHS Region ${region.hhsRegion}`
         : `${region.state} — HHS Region ${region.hhsRegion}`
 
-      const registry = new AdapterRegistry()
+      const registry = new AdapterRegistry(db)
       const { dataPoints, errors, queriedSources } = await registry.fetchAll(region, syndromes)
 
       const correlations = computeCorrelations({

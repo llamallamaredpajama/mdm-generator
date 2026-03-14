@@ -13,11 +13,11 @@ import { CdcNndssAdapter } from './cdcNndssAdapter.js'
 export class AdapterRegistry {
   private adapters: DataSourceAdapter[]
 
-  constructor() {
+  constructor(db: FirebaseFirestore.Firestore) {
     this.adapters = [
-      new CdcRespiratoryAdapter(),
-      new CdcWastewaterAdapter(),
-      new CdcNndssAdapter(),
+      new CdcRespiratoryAdapter(db),
+      new CdcWastewaterAdapter(db),
+      new CdcNndssAdapter(db),
     ]
   }
 

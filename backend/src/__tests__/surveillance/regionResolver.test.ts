@@ -1,24 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { RegionResolver, STATE_TO_HHS_REGION, STATE_NAMES } from '../../surveillance/regionResolver.js'
 
-// Mock firebase-admin
 const mockGet = vi.fn()
-vi.mock('firebase-admin', () => ({
-  default: {
-    firestore: () => ({
-      collection: () => ({
-        doc: () => ({ get: mockGet }),
-      }),
-    }),
-  },
-}))
+const mockDb = {
+  collection: () => ({
+    doc: () => ({ get: mockGet }),
+  }),
+} as unknown as FirebaseFirestore.Firestore
 
 describe('RegionResolver', () => {
   let resolver: RegionResolver
 
   beforeEach(() => {
     vi.clearAllMocks()
-    resolver = new RegionResolver()
+    resolver = new RegionResolver(mockDb)
   })
 
   describe('STATE_TO_HHS_REGION', () => {

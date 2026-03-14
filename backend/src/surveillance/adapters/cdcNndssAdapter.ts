@@ -17,9 +17,13 @@ import type { DataSourceAdapter, DataSourceConfig } from './types.js'
 import type { SurveillanceDataPoint, SyndromeCategory, ResolvedRegion } from '../types.js'
 import { SurveillanceCache } from '../cache/surveillanceCache.js'
 
-const cache = new SurveillanceCache()
-
 export class CdcNndssAdapter implements DataSourceAdapter {
+  private cache: SurveillanceCache
+
+  constructor(db: FirebaseFirestore.Firestore) {
+    this.cache = new SurveillanceCache(db)
+  }
+
   config: DataSourceConfig = {
     name: 'cdc_nndss',
     baseUrl: 'https://data.cdc.gov/resource',
@@ -55,7 +59,7 @@ export class CdcNndssAdapter implements DataSourceAdapter {
     if (!this.isRelevant(syndromes)) return []
 
     const cacheKey = `${this.config.name}_${region.stateAbbrev}_nndss`
-    const cached = await cache.get(cacheKey)
+    const cached = await this.cache.get(cacheKey)
     if (cached) return cached
 
     try {
@@ -78,7 +82,7 @@ export class CdcNndssAdapter implements DataSourceAdapter {
       const rawData = await response.json()
       const dataPoints = this.normalize(rawData, region)
 
-      await cache.set(cacheKey, dataPoints, this.config.cacheTtlMs)
+      await this.cache.set(cacheKey, dataPoints, this.config.cacheTtlMs)
       return dataPoints
     } catch (error) {
       console.warn(`CdcNndssAdapter fetch failed:`, error)

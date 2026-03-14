@@ -13,7 +13,6 @@ import { generateEmbedding } from './embeddingService.js'
 import type { TestDefinition } from '../types/libraries.js'
 
 const DEFAULT_LIMIT = 50
-const getDb = () => admin.firestore()
 
 /**
  * Find the most relevant tests for a clinical narrative using vector search.
@@ -23,19 +22,24 @@ const getDb = () => admin.firestore()
  *
  * @param narrative - Clinical narrative text (Section 1 content)
  * @param limit - Max results to return (default 50)
+ * @param db - Optional Firestore instance (falls back to admin.firestore() if not provided)
  * @returns Matching TestDefinition[] sorted by relevance (most similar first)
  */
 export async function getRelevantTests(
   narrative: string,
-  limit: number = DEFAULT_LIMIT
+  limit: number = DEFAULT_LIMIT,
+  db?: FirebaseFirestore.Firestore,
 ): Promise<TestDefinition[]> {
   const start = Date.now()
 
   // 1. Embed the narrative
   const queryVector = await generateEmbedding(narrative, 'RETRIEVAL_QUERY')
 
+  // Use injected db or fall back to admin.firestore()
+  const firestore = db ?? admin.firestore()
+
   // 2. Vector search via Firestore findNearest
-  const snapshot = await getDb()
+  const snapshot = await firestore
     .collection('testLibrary')
     .findNearest({
       vectorField: 'embedding',

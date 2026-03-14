@@ -4,7 +4,6 @@
  * Uses Firestore for zip-to-FIPS lookups and in-memory data for state/HHS mapping.
  */
 
-import admin from 'firebase-admin'
 import type { ResolvedRegion } from './types.js'
 
 /** State abbreviation → HHS Region mapping (all 50 states + DC + territories) */
@@ -200,15 +199,21 @@ export const ZIP_PREFIX_TO_STATE: Record<string, string> = {
 }
 
 export class RegionResolver {
+  constructor(private db?: FirebaseFirestore.Firestore) {}
+
   /**
    * Resolve a zip code to a full region via Firestore lookup,
    * falling back to ZIP prefix → state mapping when Firestore is unavailable.
    */
   async resolveFromZip(zipCode: string): Promise<ResolvedRegion | null> {
+    // Firestore lookup requires an injected db instance
+    if (!this.db) {
+      return this.resolveFromZipPrefix(zipCode)
+    }
+
     // Try Firestore first for county-level granularity
     try {
-      const db = admin.firestore()
-      const doc = await db.collection('zip_to_fips').doc(zipCode).get()
+      const doc = await this.db.collection('zip_to_fips').doc(zipCode).get()
 
       if (doc.exists) {
         const data = doc.data()!

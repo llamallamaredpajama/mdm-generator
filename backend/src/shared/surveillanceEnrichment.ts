@@ -22,18 +22,24 @@ import type { GapItem } from '../buildModeSchemas.js'
  * Run surveillance enrichment for a narrative + location.
  * Returns a surveillance context string for prompt injection, or undefined on failure.
  * Non-blocking: failures are logged and swallowed.
+ *
+ * @param narrative - Clinical narrative text
+ * @param location - User location (zip code and/or state)
+ * @param db - Optional Firestore instance (falls back to getDb() if not provided)
  */
 export async function runSurveillanceEnrichment(
   narrative: string,
   location: { zipCode?: string; state?: string },
+  db?: FirebaseFirestore.Firestore,
 ): Promise<string | undefined> {
   try {
+    const firestore = db ?? getDb()
     const syndromes = mapToSyndromes(narrative, [])
-    const resolver = new RegionResolver()
+    const resolver = new RegionResolver(firestore)
     const region = await resolver.resolve(location)
     if (!region) return undefined
 
-    const registry = new AdapterRegistry()
+    const registry = new AdapterRegistry(firestore)
     const { dataPoints, errors: survErrors } = await registry.fetchAll(region, syndromes)
     const correlations = computeCorrelations({
       chiefComplaint: narrative,
@@ -72,10 +78,14 @@ export async function runSurveillanceEnrichment(
  * Run CDR enrichment for a narrative.
  * Returns a CDR context string for prompt injection, or undefined on failure.
  * Non-blocking: failures are logged and swallowed.
+ *
+ * @param narrative - Clinical narrative text
+ * @param db - Optional Firestore instance (falls back to getDb() if not provided)
  */
-export async function runCdrEnrichment(narrative: string): Promise<string | undefined> {
+export async function runCdrEnrichment(narrative: string, db?: FirebaseFirestore.Firestore): Promise<string | undefined> {
   try {
-    const cdrResults = await searchCdrCatalog(narrative, getDb(), 15)
+    const firestore = db ?? getDb()
+    const cdrResults = await searchCdrCatalog(narrative, firestore, 15)
     if (cdrResults.length > 0) {
       return formatCdrContext(cdrResults) || undefined
     }

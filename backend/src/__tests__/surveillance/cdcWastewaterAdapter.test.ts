@@ -5,10 +5,13 @@ import type { ResolvedRegion } from '../../surveillance/types.js'
 // Mock cache
 vi.mock('../../surveillance/cache/surveillanceCache', () => ({
   SurveillanceCache: class {
+    constructor(_db: unknown) {}
     get = vi.fn().mockResolvedValue(null)
     set = vi.fn().mockResolvedValue(undefined)
   },
 }))
+
+const mockDb = {} as FirebaseFirestore.Firestore
 
 // Mock fetch
 const mockFetch = vi.fn()
@@ -26,7 +29,7 @@ describe('CdcWastewaterAdapter', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    adapter = new CdcWastewaterAdapter()
+    adapter = new CdcWastewaterAdapter(mockDb)
   })
 
   describe('isRelevant', () => {

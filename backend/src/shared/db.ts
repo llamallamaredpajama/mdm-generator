@@ -8,7 +8,10 @@
 
 import admin from 'firebase-admin'
 
-/** Get the Firestore instance (requires Firebase Admin to be initialized) */
+/**
+ * Get the Firestore instance (requires Firebase Admin to be initialized).
+ * @deprecated Use DI-injected db instance from the composition root instead.
+ */
 export const getDb = () => admin.firestore()
 
 /** Convert Firestore doc to JSON-safe object, serializing Timestamps to ISO strings */

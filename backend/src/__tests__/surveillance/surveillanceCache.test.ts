@@ -5,15 +5,11 @@ import type { SurveillanceDataPoint } from '../../surveillance/types.js'
 const mockGet = vi.fn()
 const mockSet = vi.fn()
 
-vi.mock('firebase-admin', () => ({
-  default: {
-    firestore: () => ({
-      collection: () => ({
-        doc: () => ({ get: mockGet, set: mockSet }),
-      }),
-    }),
-  },
-}))
+const mockDb = {
+  collection: () => ({
+    doc: () => ({ get: mockGet, set: mockSet }),
+  }),
+} as unknown as FirebaseFirestore.Firestore
 
 const sampleDataPoint: SurveillanceDataPoint = {
   source: 'cdc_respiratory',
@@ -34,7 +30,7 @@ describe('SurveillanceCache', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    cache = new SurveillanceCache()
+    cache = new SurveillanceCache(mockDb)
     mockSet.mockResolvedValue(undefined)
   })
 
