@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express'
 import admin from 'firebase-admin'
-import { AuthenticationError, AuthorizationError } from '../errors'
+import { AuthenticationError, AuthorizationError } from '../errors.js'
 
 export function createAuthMiddleware(firebaseAdmin: typeof admin) {
   return async function authenticate(req: Request, _res: Response, next: NextFunction) {

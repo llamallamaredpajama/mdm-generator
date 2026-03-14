@@ -4,7 +4,7 @@
  * Uses keyword matching — no LLM calls.
  */
 
-import type { SyndromeCategory } from './types'
+import type { SyndromeCategory } from './types.js'
 
 /** Keyword tables for syndrome categories */
 const SYNDROME_KEYWORDS: Record<SyndromeCategory, string[]> = {

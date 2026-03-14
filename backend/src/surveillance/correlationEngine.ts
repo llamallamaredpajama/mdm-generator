@@ -9,7 +9,7 @@ import type {
   ClinicalCorrelation,
   TrendAlert,
   SyndromeCategory,
-} from './types'
+} from './types.js'
 
 /** Pathogen → expected symptoms for SYMPTOM_MATCH scoring */
 const PATHOGEN_SYMPTOM_MAP: Record<string, string[]> = {

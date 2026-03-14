@@ -1,4 +1,4 @@
-import type { CdrSearchResult } from './cdrCatalogSearch'
+import type { CdrSearchResult } from './cdrCatalogSearch.js'
 
 const MAX_CHARS = 12000
 const STRUCTURED_LIMIT = 10

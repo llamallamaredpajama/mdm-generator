@@ -6,7 +6,7 @@
  */
 
 import PDFDocument from 'pdfkit'
-import type { TrendAnalysisResult, ClinicalCorrelation, TrendAlert } from './types'
+import type { TrendAnalysisResult, ClinicalCorrelation, TrendAlert } from './types.js'
 
 // ── Colour palette ────────────────────────────────────────────────
 const COLORS = {

@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express'
 import admin from 'firebase-admin'
-import { buildAnalyticsInsightsPrompt } from '../../promptBuilderAnalytics'
-import type { AnalyticsDeps } from '../../dependencies'
+import { buildAnalyticsInsightsPrompt } from '../../promptBuilderAnalytics.js'
+import type { AnalyticsDeps } from '../../dependencies.js'
 
 export function createAnalyticsController({ userService, db, llmClient }: AnalyticsDeps) {
   return {

@@ -9,8 +9,8 @@
  */
 
 import admin from 'firebase-admin'
-import { generateEmbedding } from './embeddingService'
-import type { TestDefinition } from '../types/libraries'
+import { generateEmbedding } from './embeddingService.js'
+import type { TestDefinition } from '../types/libraries.js'
 
 const DEFAULT_LIMIT = 50
 const getDb = () => admin.firestore()

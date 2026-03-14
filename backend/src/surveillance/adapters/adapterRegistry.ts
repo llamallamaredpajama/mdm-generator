@@ -4,11 +4,11 @@
  * Failed adapters contribute errors; successful ones contribute data.
  */
 
-import type { DataSourceAdapter, AdapterFetchResult } from './types'
-import type { SyndromeCategory, ResolvedRegion, DataSourceError } from '../types'
-import { CdcRespiratoryAdapter } from './cdcRespiratoryAdapter'
-import { CdcWastewaterAdapter } from './cdcWastewaterAdapter'
-import { CdcNndssAdapter } from './cdcNndssAdapter'
+import type { DataSourceAdapter, AdapterFetchResult } from './types.js'
+import type { SyndromeCategory, ResolvedRegion, DataSourceError } from '../types.js'
+import { CdcRespiratoryAdapter } from './cdcRespiratoryAdapter.js'
+import { CdcWastewaterAdapter } from './cdcWastewaterAdapter.js'
+import { CdcNndssAdapter } from './cdcNndssAdapter.js'
 
 export class AdapterRegistry {
   private adapters: DataSourceAdapter[]

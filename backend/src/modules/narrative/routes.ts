@@ -1,11 +1,11 @@
 import { Router } from 'express'
-import { parseLimiter } from '../../middleware/rateLimiter'
-import { authenticate } from '../../middleware/auth'
-import { validate } from '../../middleware/validate'
-import { asyncHandler } from '../../shared/asyncHandler'
-import { ParseNarrativeBodySchema } from './schemas'
-import { createNarrativeController } from './controller'
-import type { NarrativeDeps } from '../../dependencies'
+import { parseLimiter } from '../../middleware/rateLimiter.js'
+import { authenticate } from '../../middleware/auth.js'
+import { validate } from '../../middleware/validate.js'
+import { asyncHandler } from '../../shared/asyncHandler.js'
+import { ParseNarrativeBodySchema } from './schemas.js'
+import { createNarrativeController } from './controller.js'
+import type { NarrativeDeps } from '../../dependencies.js'
 
 export function createNarrativeRoutes(deps: NarrativeDeps): Router {
   const router = Router()

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { MdmSchema, renderMdmText, type Mdm } from '../outputSchema'
-import { PHYSICIAN_ATTESTATION } from '../constants'
+import { MdmSchema, renderMdmText, type Mdm } from '../outputSchema.js'
+import { PHYSICIAN_ATTESTATION } from '../constants.js'
 
 // ============================================================================
 // MdmSchema Zod validation

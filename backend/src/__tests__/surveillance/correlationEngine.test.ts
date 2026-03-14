@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { computeCorrelations, detectAlerts, type CorrelationInput } from '../../surveillance/correlationEngine'
-import type { SurveillanceDataPoint, ClinicalCorrelation } from '../../surveillance/types'
+import { computeCorrelations, detectAlerts, type CorrelationInput } from '../../surveillance/correlationEngine.js'
+import type { SurveillanceDataPoint, ClinicalCorrelation } from '../../surveillance/types.js'
 
 function makeDataPoint(overrides: Partial<SurveillanceDataPoint> = {}): SurveillanceDataPoint {
   return {

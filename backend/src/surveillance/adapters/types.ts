@@ -4,7 +4,7 @@
  * to normalize responses into SurveillanceDataPoint format.
  */
 
-import type { SurveillanceDataPoint, SyndromeCategory, GeoLevel, ResolvedRegion, DataSourceError } from '../types'
+import type { SurveillanceDataPoint, SyndromeCategory, GeoLevel, ResolvedRegion, DataSourceError } from '../types.js'
 
 /** Configuration for a data source */
 export interface DataSourceConfig {

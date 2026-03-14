@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express'
 import admin from 'firebase-admin'
-import { serializeFirestoreDoc } from '../../shared/db'
-import type { UserModuleDeps } from '../../dependencies'
+import { serializeFirestoreDoc } from '../../shared/db.js'
+import type { UserModuleDeps } from '../../dependencies.js'
 
 export function createUserController({ userService, db }: UserModuleDeps) {
   // Subcollection helpers — use injected db instead of shared/db helpers

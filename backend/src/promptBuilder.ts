@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises'
-import path from 'node:path'
+import { promptPath } from './shared/paths.js'
 
 export type PromptParts = {
   system: string
@@ -7,7 +7,7 @@ export type PromptParts = {
 }
 
 export async function buildPrompt(narrative: string): Promise<PromptParts> {
-  const guidePath = path.join(__dirname, '../prompts/mdm-gen-guide-v2.md')
+  const guidePath = promptPath('mdm-gen-guide-v2.md')
   const guide = await fs.readFile(guidePath, 'utf8')
 
   const system = [

@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod'
-import { logger } from '../logger'
+import { logger } from '../logger.js'
 import {
   DifferentialItemSchema,
   FinalMdmSchema,
@@ -14,8 +14,8 @@ import {
   type DifferentialItem,
   type FinalMdm,
   type GapItem,
-} from '../buildModeSchemas'
-import { renderMdmText } from '../outputSchema'
+} from '../buildModeSchemas.js'
+import { renderMdmText } from '../outputSchema.js'
 
 /**
  * Map of common LLM urgency variations to valid DifferentialItemSchema values.

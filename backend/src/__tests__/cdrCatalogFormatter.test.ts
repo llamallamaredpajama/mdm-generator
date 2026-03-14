@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { formatCdrContext } from '../services/cdrCatalogFormatter'
-import type { CdrSearchResult } from '../services/cdrCatalogSearch'
+import { formatCdrContext } from '../services/cdrCatalogFormatter.js'
+import type { CdrSearchResult } from '../services/cdrCatalogSearch.js'
 
 const makeCdr = (id: string, name: string, category: string): CdrSearchResult => ({
   cdr: {

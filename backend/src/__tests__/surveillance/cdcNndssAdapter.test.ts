@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { CdcNndssAdapter } from '../../surveillance/adapters/cdcNndssAdapter'
-import type { ResolvedRegion } from '../../surveillance/types'
+import { CdcNndssAdapter } from '../../surveillance/adapters/cdcNndssAdapter.js'
+import type { ResolvedRegion } from '../../surveillance/types.js'
 
 // Mock cache
 vi.mock('../../surveillance/cache/surveillanceCache', () => ({

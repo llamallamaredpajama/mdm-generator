@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { Request, Response, NextFunction } from 'express'
-import { logger } from '../logger'
+import { logger } from '../logger.js'
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
   const traceHeader = req.headers['x-cloud-trace-context'] as string | undefined

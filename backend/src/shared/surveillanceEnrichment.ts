@@ -6,17 +6,17 @@
  */
 
 import admin from 'firebase-admin'
-import { logger } from '../logger'
-import { mapToSyndromes } from '../surveillance/syndromeMapper'
-import { RegionResolver } from '../surveillance/regionResolver'
-import { AdapterRegistry } from '../surveillance/adapters/adapterRegistry'
-import { computeCorrelations } from '../surveillance/correlationEngine'
-import { buildSurveillanceContext, appendSurveillanceToMdmText } from '../surveillance/promptAugmenter'
-import { searchCdrCatalog } from '../services/cdrCatalogSearch'
-import { formatCdrContext } from '../services/cdrCatalogFormatter'
-import { getDb } from './db'
-import { getCurrentPeriodKey } from '../services/userService'
-import type { GapItem } from '../buildModeSchemas'
+import { logger } from '../logger.js'
+import { mapToSyndromes } from '../surveillance/syndromeMapper.js'
+import { RegionResolver } from '../surveillance/regionResolver.js'
+import { AdapterRegistry } from '../surveillance/adapters/adapterRegistry.js'
+import { computeCorrelations } from '../surveillance/correlationEngine.js'
+import { buildSurveillanceContext, appendSurveillanceToMdmText } from '../surveillance/promptAugmenter.js'
+import { searchCdrCatalog } from '../services/cdrCatalogSearch.js'
+import { formatCdrContext } from '../services/cdrCatalogFormatter.js'
+import { getDb } from './db.js'
+import { getCurrentPeriodKey } from '../services/userService.js'
+import type { GapItem } from '../buildModeSchemas.js'
 
 /**
  * Run surveillance enrichment for a narrative + location.

@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express'
-import type { AdminDeps } from '../../dependencies'
+import type { AdminDeps } from '../../dependencies.js'
 
 export function createAdminController({ userService }: AdminDeps) {
   return {

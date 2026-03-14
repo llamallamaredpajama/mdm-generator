@@ -5,8 +5,8 @@
  * S1 differential diagnoses using case-insensitive substring matching.
  */
 
-import type { DifferentialItem } from '../buildModeSchemas'
-import type { CdrDefinition } from '../types/libraries'
+import type { DifferentialItem } from '../buildModeSchemas.js'
+import type { CdrDefinition } from '../types/libraries.js'
 
 /**
  * Match CDR library entries against S1 differential items.

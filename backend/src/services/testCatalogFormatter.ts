@@ -5,7 +5,7 @@
  * Groups tests by category with pipe-delimited id|Name pairs (~3 tokens per test).
  */
 
-import type { TestDefinition, TestCategory } from '../types/libraries'
+import type { TestDefinition, TestCategory } from '../types/libraries.js'
 
 const CATEGORY_HEADERS: Record<TestCategory, string> = {
   labs: 'LABS',

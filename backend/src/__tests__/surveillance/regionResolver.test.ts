@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { RegionResolver, STATE_TO_HHS_REGION, STATE_NAMES } from '../../surveillance/regionResolver'
+import { RegionResolver, STATE_TO_HHS_REGION, STATE_NAMES } from '../../surveillance/regionResolver.js'
 
 // Mock firebase-admin
 const mockGet = vi.fn()

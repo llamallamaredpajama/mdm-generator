@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
-import { buildParsePrompt, getEmptyParsedNarrative, type ParsedNarrative } from '../../parsePromptBuilder'
-import type { NarrativeDeps } from '../../dependencies'
+import { buildParsePrompt, getEmptyParsedNarrative, type ParsedNarrative } from '../../parsePromptBuilder.js'
+import type { NarrativeDeps } from '../../dependencies.js'
 
 export function createNarrativeController({ llmClient, responseParser }: NarrativeDeps) {
   return {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mapToSyndromes } from '../../surveillance/syndromeMapper'
+import { mapToSyndromes } from '../../surveillance/syndromeMapper.js'
 
 describe('syndromeMapper', () => {
   describe('mapToSyndromes', () => {

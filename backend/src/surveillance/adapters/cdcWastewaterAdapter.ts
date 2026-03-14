@@ -13,9 +13,9 @@
  * so we aggregate to a per-date median for a clean trend signal.
  */
 
-import type { DataSourceAdapter, DataSourceConfig } from './types'
-import type { SurveillanceDataPoint, SyndromeCategory, ResolvedRegion } from '../types'
-import { SurveillanceCache } from '../cache/surveillanceCache'
+import type { DataSourceAdapter, DataSourceConfig } from './types.js'
+import type { SurveillanceDataPoint, SyndromeCategory, ResolvedRegion } from '../types.js'
+import { SurveillanceCache } from '../cache/surveillanceCache.js'
 
 const cache = new SurveillanceCache()
 

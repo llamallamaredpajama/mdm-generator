@@ -14,7 +14,7 @@ vi.mock('google-auth-library', () => ({
   },
 }))
 
-import { generateEmbedding, generateEmbeddings } from '../services/embeddingService'
+import { generateEmbedding, generateEmbeddings } from '../services/embeddingService.js'
 
 beforeEach(() => {
   mockRequest.mockReset()

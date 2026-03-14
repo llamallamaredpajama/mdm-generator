@@ -5,7 +5,7 @@
  */
 
 import admin from 'firebase-admin'
-import type { ResolvedRegion } from './types'
+import type { ResolvedRegion } from './types.js'
 
 /** State abbreviation → HHS Region mapping (all 50 states + DC + territories) */
 export const STATE_TO_HHS_REGION: Record<string, number> = {

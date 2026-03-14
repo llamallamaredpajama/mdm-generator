@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { authenticate } from '../../middleware/auth'
-import { validate } from '../../middleware/validate'
-import { asyncHandler } from '../../shared/asyncHandler'
+import { authenticate } from '../../middleware/auth.js'
+import { validate } from '../../middleware/validate.js'
+import { asyncHandler } from '../../shared/asyncHandler.js'
 import {
   OrderSetCreateSchema,
   OrderSetUpdateSchema,
@@ -10,10 +10,10 @@ import {
   ReportTemplateCreateSchema,
   ReportTemplateUpdateSchema,
   CustomizableOptionsSchema,
-} from '../../types/userProfile'
-import { CompleteOnboardingSchema } from './schemas'
-import { createUserController } from './controller'
-import type { UserModuleDeps } from '../../dependencies'
+} from '../../types/userProfile.js'
+import { CompleteOnboardingSchema } from './schemas.js'
+import { createUserController } from './controller.js'
+import type { UserModuleDeps } from '../../dependencies.js'
 
 export function createUserRoutes(deps: UserModuleDeps): Router {
   const router = Router()

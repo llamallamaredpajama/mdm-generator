@@ -1,11 +1,11 @@
 import type { Request, Response } from 'express'
 import { z } from 'zod'
 import fs from 'node:fs/promises'
-import path from 'node:path'
 import admin from 'firebase-admin'
-import { PHYSICIAN_ATTESTATION } from '../../constants'
-import { buildPrompt } from '../../promptBuilder'
-import { MdmSchema, renderMdmText } from '../../outputSchema'
+import { promptPath } from '../../shared/paths.js'
+import { PHYSICIAN_ATTESTATION } from '../../constants.js'
+import { buildPrompt } from '../../promptBuilder.js'
+import { MdmSchema, renderMdmText } from '../../outputSchema.js'
 import {
   type CdrAnalysisItem,
   type DifferentialItem,
@@ -15,7 +15,7 @@ import {
   type TestResult,
   type GapItem,
   type WorkupRecommendation,
-} from '../../buildModeSchemas'
+} from '../../buildModeSchemas.js'
 import {
   buildSection1Prompt,
   buildFinalizePrompt,
@@ -23,18 +23,18 @@ import {
   buildSuggestDiagnosisPrompt,
   buildParseResultsPrompt,
   type FinalizeStructuredData,
-} from '../../promptBuilderBuildMode'
-import { buildCompactCatalog } from '../../services/testCatalogFormatter'
-import { getRelevantTests } from '../../services/testCatalogSearch'
-import { matchCdrsFromDifferential } from '../../services/cdrMatcher'
-import { buildCdrTracking } from '../../services/cdrTrackingBuilder'
+} from '../../promptBuilderBuildMode.js'
+import { buildCompactCatalog } from '../../services/testCatalogFormatter.js'
+import { getRelevantTests } from '../../services/testCatalogSearch.js'
+import { matchCdrsFromDifferential } from '../../services/cdrMatcher.js'
+import { buildCdrTracking } from '../../services/cdrTrackingBuilder.js'
 import { buildPhotoCatalogPrompt, validatePhoto } from '../../photoCatalog.js'
-import { cleanLlmJsonResponse } from '../../llm/normalizers'
-import { getDifferential } from '../../shared/llmResponseUtils'
-import { checkTokenSize } from '../../shared/quotaHelpers'
-import { runSurveillanceEnrichment, runCdrEnrichment, injectSurveillanceIntoMdm, incrementGapTallies } from '../../shared/surveillanceEnrichment'
-import type { TestDefinition } from '../../types/libraries'
-import type { EncounterDeps } from '../../dependencies'
+import { cleanLlmJsonResponse } from '../../llm/normalizers.js'
+import { getDifferential } from '../../shared/llmResponseUtils.js'
+import { checkTokenSize } from '../../shared/quotaHelpers.js'
+import { runSurveillanceEnrichment, runCdrEnrichment, injectSurveillanceIntoMdm, incrementGapTallies } from '../../shared/surveillanceEnrichment.js'
+import type { TestDefinition } from '../../types/libraries.js'
+import type { EncounterDeps } from '../../dependencies.js'
 
 // ============================================================================
 // Prompt guide cache (static files, read once)
@@ -47,10 +47,7 @@ async function getPromptGuide(filename: string): Promise<string | undefined> {
   if (cached) return cached
 
   try {
-    const content = await fs.readFile(
-      path.join(__dirname, '../../../prompts', filename),
-      'utf8'
-    )
+    const content = await fs.readFile(promptPath(filename), 'utf8')
     promptGuideCache.set(filename, content)
     return content
   } catch {

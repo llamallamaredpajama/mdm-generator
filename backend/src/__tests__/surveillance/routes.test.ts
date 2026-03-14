@@ -180,9 +180,9 @@ const MOCK_CORRELATION = {
 let app: Express
 
 beforeAll(async () => {
-  const { default: router } = await import('../../surveillance/routes')
-  const { requestLogger } = await import('../../middleware/requestLogger')
-  const { errorHandler } = await import('../../middleware/errorHandler')
+  const { default: router } = await import('../../surveillance/routes.js')
+  const { requestLogger } = await import('../../middleware/requestLogger.js')
+  const { errorHandler } = await import('../../middleware/errorHandler.js')
   app = express()
   app.use(express.json())
   app.use(requestLogger)

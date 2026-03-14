@@ -1,8 +1,8 @@
 import { Router } from 'express'
-import { authenticate } from '../../middleware/auth'
-import { asyncHandler } from '../../shared/asyncHandler'
-import { createLibraryController } from './controller'
-import type { LibraryDeps } from '../../dependencies'
+import { authenticate } from '../../middleware/auth.js'
+import { asyncHandler } from '../../shared/asyncHandler.js'
+import { createLibraryController } from './controller.js'
+import type { LibraryDeps } from '../../dependencies.js'
 
 export function createLibraryRoutes(deps: LibraryDeps): Router {
   const router = Router()

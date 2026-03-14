@@ -4,13 +4,13 @@ import {
   getEmptyParsedNarrative,
   type ParsedNarrative,
   type PromptParts,
-} from '../parsePromptBuilder'
+} from '../parsePromptBuilder.js'
 import {
   parseQuickModeResponse,
   getQuickModeFallback,
   type QuickModeGenerationResult,
-} from '../promptBuilderQuickMode'
-import { buildFinalizePrompt } from '../promptBuilderBuildMode'
+} from '../promptBuilderQuickMode.js'
+import { buildFinalizePrompt } from '../promptBuilderBuildMode.js'
 
 // ============================================================================
 // buildParsePrompt (parsePromptBuilder.ts)

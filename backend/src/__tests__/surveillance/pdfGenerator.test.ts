@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { generateTrendReport } from '../../surveillance/pdfGenerator'
-import type { TrendAnalysisResult } from '../../surveillance/types'
+import { generateTrendReport } from '../../surveillance/pdfGenerator.js'
+import type { TrendAnalysisResult } from '../../surveillance/types.js'
 
 /** Build a fully-populated mock analysis result. */
 function makeMockAnalysis(

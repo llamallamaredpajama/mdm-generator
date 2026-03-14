@@ -7,7 +7,7 @@
  */
 
 import fs from 'node:fs/promises'
-import path from 'node:path'
+import { promptPath } from './shared/paths.js'
 import { PHYSICIAN_ATTESTATION } from './constants.js'
 import { safeParseGaps, type GapItem } from './buildModeSchemas.js'
 
@@ -41,7 +41,7 @@ export interface QuickModeGenerationResult {
  */
 async function loadMdmGuide(): Promise<string> {
   try {
-    const guidePath = path.join(__dirname, '../prompts/mdm-gen-guide-v2.md')
+    const guidePath = promptPath('mdm-gen-guide-v2.md')
     return await fs.readFile(guidePath, 'utf8')
   } catch {
     // Return minimal guidance if file not found

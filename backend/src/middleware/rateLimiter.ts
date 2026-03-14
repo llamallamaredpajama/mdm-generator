@@ -1,5 +1,5 @@
 import rateLimit from 'express-rate-limit'
-import { config } from '../config'
+import { config } from '../config.js'
 
 export function createRateLimiter(opts: { windowMs?: number; max: number }) {
   return rateLimit({

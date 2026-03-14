@@ -4,7 +4,7 @@ vi.mock('../services/embeddingService', () => ({
   generateEmbedding: vi.fn().mockResolvedValue(Array(768).fill(0.1))
 }))
 
-import { searchCdrCatalog } from '../services/cdrCatalogSearch'
+import { searchCdrCatalog } from '../services/cdrCatalogSearch.js'
 
 describe('cdrCatalogSearch', () => {
   it('returns matched CDRs stripped of embedding field', async () => {

@@ -14,7 +14,7 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import type { Application } from 'express'
 import request from 'supertest'
-import { createApp } from '../app'
+import { createApp } from '../app.js'
 import {
   VALID_TOKEN,
   ADMIN_TOKEN,
@@ -39,13 +39,13 @@ import {
   ALL_UNMAPPED_URGENCY_SECTION1_RESPONSE,
   EXTRA_FIELDS_SECTION1_RESPONSE,
   SAMPLE_NARRATIVE,
-} from './helpers/mockFactories'
+} from './helpers/mockFactories.js'
 import {
   createMockDependencies,
   type MockLlmClient,
   type MockEncounterRepo,
   type MockUserService,
-} from './helpers/mockDependencies'
+} from './helpers/mockDependencies.js'
 
 // ============================================================================
 // Module-level mocks (hoisted by vitest)

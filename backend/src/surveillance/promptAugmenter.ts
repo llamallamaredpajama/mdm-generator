@@ -5,7 +5,7 @@
  * Target budget: 200-400 tokens (~800-1600 chars), hard cap at 500 tokens (~2000 chars).
  */
 
-import type { TrendAnalysisResult, ClinicalCorrelation, TrendAlert, DataSourceSummary } from './types'
+import type { TrendAnalysisResult, ClinicalCorrelation, TrendAlert, DataSourceSummary } from './types.js'
 
 const MAX_CHARS = 2000
 

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { buildSurveillanceContext } from '../../surveillance/promptAugmenter'
+import { buildSurveillanceContext } from '../../surveillance/promptAugmenter.js'
 import type {
   TrendAnalysisResult,
   ClinicalCorrelation,
   TrendAlert,
   ResolvedRegion,
-} from '../../surveillance/types'
+} from '../../surveillance/types.js'
 
 /* ------------------------------------------------------------------ */
 /*  Mock data helpers                                                   */

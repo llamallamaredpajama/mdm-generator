@@ -1,8 +1,8 @@
 import { Router } from 'express'
-import { llmLimiter } from '../../middleware/rateLimiter'
-import { authenticate } from '../../middleware/auth'
-import { validate } from '../../middleware/validate'
-import { asyncHandler } from '../../shared/asyncHandler'
+import { llmLimiter } from '../../middleware/rateLimiter.js'
+import { authenticate } from '../../middleware/auth.js'
+import { validate } from '../../middleware/validate.js'
+import { asyncHandler } from '../../shared/asyncHandler.js'
 import {
   Section1RequestSchema,
   Section2RequestSchema,
@@ -10,9 +10,9 @@ import {
   MatchCdrsRequestSchema,
   SuggestDiagnosisRequestSchema,
   ParseResultsRequestSchema,
-} from '../../buildModeSchemas'
-import { GenerateSchema, createEncounterController } from './controller'
-import type { EncounterDeps } from '../../dependencies'
+} from '../../buildModeSchemas.js'
+import { GenerateSchema, createEncounterController } from './controller.js'
+import type { EncounterDeps } from '../../dependencies.js'
 
 // Body-only schema variants (omit userIdToken — handled by auth middleware)
 const GenerateBodySchema = GenerateSchema.omit({ userIdToken: true })

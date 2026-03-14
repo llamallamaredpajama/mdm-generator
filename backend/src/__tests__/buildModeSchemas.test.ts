@@ -17,7 +17,7 @@ import {
   BuildModeReprocessRequestSchema,
   QuickModeReprocessRequestSchema,
   safeParseGaps,
-} from '../buildModeSchemas'
+} from '../buildModeSchemas.js'
 
 // ============================================================================
 // Character limit constants

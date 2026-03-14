@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { SurveillanceCache } from '../../surveillance/cache/surveillanceCache'
-import type { SurveillanceDataPoint } from '../../surveillance/types'
+import { SurveillanceCache } from '../../surveillance/cache/surveillanceCache.js'
+import type { SurveillanceDataPoint } from '../../surveillance/types.js'
 
 const mockGet = vi.fn()
 const mockSet = vi.fn()

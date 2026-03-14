@@ -3,16 +3,16 @@ import admin from 'firebase-admin'
 import {
   buildQuickModePrompt,
   type QuickModeGenerationResult,
-} from '../../promptBuilderQuickMode'
+} from '../../promptBuilderQuickMode.js'
 import { buildPhotoCatalogPrompt, validatePhoto } from '../../photoCatalog.js'
-import { checkTokenSize } from '../../shared/quotaHelpers'
+import { checkTokenSize } from '../../shared/quotaHelpers.js'
 import {
   runSurveillanceEnrichment,
   runCdrEnrichment,
   injectSurveillanceIntoMdm,
   incrementGapTallies,
-} from '../../shared/surveillanceEnrichment'
-import type { QuickModeDeps } from '../../dependencies'
+} from '../../shared/surveillanceEnrichment.js'
+import type { QuickModeDeps } from '../../dependencies.js'
 
 export function createQuickModeController(deps: QuickModeDeps) {
   const { encounterRepo, userService, llmClient, responseParser, db } = deps

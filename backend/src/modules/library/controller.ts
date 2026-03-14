@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express'
-import type { LibraryDeps } from '../../dependencies'
+import type { LibraryDeps } from '../../dependencies.js'
 
 export function createLibraryController({ libraryCaches }: LibraryDeps) {
   let cachedCategories: { tests: unknown[]; categories: string[] } | null = null

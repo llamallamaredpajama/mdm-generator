@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PLAN_FEATURES, type SubscriptionPlan } from '../services/userService'
+import { PLAN_FEATURES, type SubscriptionPlan } from '../services/userService.js'
 
 // ============================================================================
 // getCurrentPeriodKey logic (tested via direct implementation since it's private)

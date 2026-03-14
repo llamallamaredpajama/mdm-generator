@@ -5,7 +5,7 @@
  */
 
 import admin from 'firebase-admin'
-import type { SurveillanceDataPoint } from '../types'
+import type { SurveillanceDataPoint } from '../types.js'
 
 /** Sanitize a cache key to be a valid Firestore document ID */
 function sanitizeKey(key: string): string {

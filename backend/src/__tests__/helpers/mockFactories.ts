@@ -6,7 +6,7 @@
  */
 
 import { vi } from 'vitest'
-import type { PLAN_FEATURES, UserDocument } from '../../services/userService'
+import type { PLAN_FEATURES, UserDocument } from '../../services/userService.js'
 
 // ---------------------------------------------------------------------------
 // Firebase Auth mock helpers

@@ -1,5 +1,5 @@
-import { generateEmbedding } from './embeddingService'
-import type { CdrDefinition } from '../types/libraries'
+import { generateEmbedding } from './embeddingService.js'
+import type { CdrDefinition } from '../types/libraries.js'
 
 export interface CdrSearchResult {
   cdr: CdrDefinition

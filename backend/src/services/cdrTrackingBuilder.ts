@@ -5,8 +5,8 @@
  * and auto-populated component values from Gemini.
  */
 
-import type { CdrTracking, CdrTrackingEntry, CdrComponentState, CdrStatus } from '../buildModeSchemas'
-import type { CdrDefinition } from '../types/libraries'
+import type { CdrTracking, CdrTrackingEntry, CdrComponentState, CdrStatus } from '../buildModeSchemas.js'
+import type { CdrDefinition } from '../types/libraries.js'
 
 /** Shape of auto-populated values from Gemini */
 export interface AutoPopulatedValues {

@@ -5,8 +5,8 @@
  * Each function builds prompts that generate structured output for their section.
  */
 
-import type { DifferentialItem, DispositionOption, MdmPreview, Section1Response, Section2Response, TestResult, WorkingDiagnosis } from './buildModeSchemas'
-import type { CdrDefinition, TestDefinition } from './types/libraries'
+import type { DifferentialItem, DispositionOption, MdmPreview, Section1Response, Section2Response, TestResult, WorkingDiagnosis } from './buildModeSchemas.js'
+import type { CdrDefinition, TestDefinition } from './types/libraries.js'
 
 /**
  * Structured data from S2/S3 that enriches the finalize prompt.
