@@ -1,88 +1,205 @@
 /**
  * useDispoFlows Hook
  *
- * Manages saved disposition flows in localStorage.
- * A flow captures a common disposition + follow-up combination
- * for one-tap application in Section 3.
+ * API-backed CRUD for saved disposition flows, persisted in Firestore via
+ * /v1/user/dispo-flows endpoints. Includes one-time migration from
+ * localStorage for users who had locally-saved flows.
  */
 
-import { useState, useCallback, useEffect } from 'react'
-import type { DispositionOption } from '../types/encounter'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { useAuthToken } from '../lib/firebase'
+import type { DispositionFlow } from '../types/userProfile'
+import {
+  getDispoFlows,
+  createDispoFlow,
+  updateDispoFlow as apiUpdateDispoFlow,
+  deleteDispoFlow as apiDeleteDispoFlow,
+  useDispoFlow as apiUseDispoFlow,
+} from '../lib/api'
 
-const STORAGE_KEY = 'mdm-dispo-flows'
+export type { DispositionFlow } from '../types/userProfile'
+export type { DispositionFlow as DispoFlow } from '../types/userProfile'
 
-export interface DispoFlow {
+const LEGACY_STORAGE_KEY = 'mdm-dispo-flows'
+const MIGRATION_FLAG = 'mdm-dispo-flows-migrated'
+const MIGRATION_RETRY_KEY = 'mdm-dispo-flows-migration-retries'
+const MAX_MIGRATION_RETRIES = 3
+
+export interface UseDispoFlowsReturn {
+  flows: DispositionFlow[]
+  loading: boolean
+  saveFlow: (
+    name: string,
+    disposition: string,
+    followUp: string[],
+  ) => Promise<DispositionFlow | null>
+  updateFlow: (
+    id: string,
+    data: { name?: string; disposition?: string; followUp?: string[] },
+  ) => Promise<void>
+  deleteFlow: (id: string) => Promise<void>
+  incrementUsage: (id: string) => void
+}
+
+interface LegacyDispoFlow {
   id: string
   name: string
-  disposition: DispositionOption
+  disposition: string | { value: string }
   followUp: string[]
 }
 
-export interface UseDispoFlowsReturn {
-  flows: DispoFlow[]
-  saveFlow: (name: string, disposition: DispositionOption, followUp: string[]) => DispoFlow
-  deleteFlow: (id: string) => void
-}
+async function migrateFromLocalStorage(token: string): Promise<void> {
+  if (localStorage.getItem(MIGRATION_FLAG)) return
 
-function loadFlows(): DispoFlow[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed
-  } catch {
-    return []
-  }
-}
+  const retries = parseInt(localStorage.getItem(MIGRATION_RETRY_KEY) ?? '0', 10)
+  if (retries >= MAX_MIGRATION_RETRIES) return
 
-function persistFlows(flows: DispoFlow[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(flows))
+    const raw = localStorage.getItem(LEGACY_STORAGE_KEY)
+    if (!raw) {
+      localStorage.setItem(MIGRATION_FLAG, '1')
+      return
+    }
+
+    const legacy: LegacyDispoFlow[] = JSON.parse(raw)
+    if (!Array.isArray(legacy) || legacy.length === 0) {
+      localStorage.setItem(MIGRATION_FLAG, '1')
+      return
+    }
+
+    for (const flow of legacy) {
+      const disposition =
+        typeof flow.disposition === 'string' ? flow.disposition : (flow.disposition?.value ?? '')
+      if (disposition) {
+        await createDispoFlow(token, {
+          name: flow.name,
+          disposition,
+          followUp: flow.followUp,
+        })
+      }
+    }
+
+    localStorage.setItem(MIGRATION_FLAG, '1')
+    localStorage.removeItem(LEGACY_STORAGE_KEY)
+    localStorage.removeItem(MIGRATION_RETRY_KEY)
   } catch {
-    // Silently fail if localStorage is full/unavailable
+    localStorage.setItem(MIGRATION_RETRY_KEY, String(retries + 1))
   }
 }
 
 export function useDispoFlows(): UseDispoFlowsReturn {
-  const [flows, setFlows] = useState<DispoFlow[]>(() => loadFlows())
+  const token = useAuthToken()
+  const [flows, setFlows] = useState<DispositionFlow[]>([])
+  const [loading, setLoading] = useState(true)
+  const fetchedRef = useRef(false)
 
-  // Sync from localStorage on mount (handles cross-tab changes)
   useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) {
-        setFlows(loadFlows())
+    if (!token || fetchedRef.current) return
+    fetchedRef.current = true
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        await migrateFromLocalStorage(token)
+        const res = await getDispoFlows(token)
+        if (!cancelled) setFlows(res.items)
+      } catch {
+        // Fall back to empty
+      } finally {
+        if (!cancelled) setLoading(false)
       }
+    })()
+
+    return () => {
+      cancelled = true
     }
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
+  }, [token])
+
+  useEffect(() => {
+    if (!token) {
+      fetchedRef.current = false
+      setFlows([])
+      setLoading(true)
+    }
+  }, [token])
 
   const saveFlow = useCallback(
-    (name: string, disposition: DispositionOption, followUp: string[]): DispoFlow => {
-      const flow: DispoFlow = {
-        id: `flow_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        name,
-        disposition,
-        followUp,
+    async (
+      name: string,
+      disposition: string,
+      followUp: string[],
+    ): Promise<DispositionFlow | null> => {
+      if (!token) return null
+      try {
+        const res = await createDispoFlow(token, {
+          name: name.trim(),
+          disposition,
+          followUp,
+        })
+        setFlows((prev) => [...prev, res.item])
+        return res.item
+      } catch {
+        return null
       }
-      setFlows((prev) => {
-        const updated = [...prev, flow]
-        persistFlows(updated)
-        return updated
-      })
-      return flow
     },
-    []
+    [token],
   )
 
-  const deleteFlow = useCallback((id: string) => {
-    setFlows((prev) => {
-      const updated = prev.filter((f) => f.id !== id)
-      persistFlows(updated)
-      return updated
-    })
-  }, [])
+  const updateFlow = useCallback(
+    async (id: string, data: { name?: string; disposition?: string; followUp?: string[] }) => {
+      if (!token) return
+      const existing = flows.find((f) => f.id === id)
+      if (!existing) return
 
-  return { flows, saveFlow, deleteFlow }
+      try {
+        const res = await apiUpdateDispoFlow(token, id, {
+          name: data.name ?? existing.name,
+          disposition: data.disposition ?? existing.disposition,
+          ...(data.followUp !== undefined && { followUp: data.followUp }),
+        })
+        setFlows((prev) => prev.map((f) => (f.id === id ? res.item : f)))
+      } catch {
+        // Silently fail
+      }
+    },
+    [token, flows],
+  )
+
+  const deleteFlow = useCallback(
+    async (id: string) => {
+      if (!token) return
+      setFlows((prev) => prev.filter((f) => f.id !== id))
+      try {
+        await apiDeleteDispoFlow(token, id)
+      } catch {
+        try {
+          const res = await getDispoFlows(token)
+          setFlows(res.items)
+        } catch {
+          // Give up
+        }
+      }
+    },
+    [token],
+  )
+
+  const incrementUsage = useCallback(
+    (id: string) => {
+      if (!token) return
+      setFlows((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, usageCount: f.usageCount + 1 } : f)),
+      )
+      apiUseDispoFlow(token, id).catch(() => {})
+    },
+    [token],
+  )
+
+  return {
+    flows,
+    loading,
+    saveFlow,
+    updateFlow,
+    deleteFlow,
+    incrementUsage,
+  }
 }

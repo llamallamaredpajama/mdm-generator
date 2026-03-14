@@ -17,6 +17,8 @@ const mockFlows: DispoFlow[] = [
     name: 'Standard Discharge',
     disposition: 'discharge',
     followUp: ['PCP follow-up', 'Return to ED if worsening'],
+    createdAt: '2026-01-01T00:00:00Z',
+    usageCount: 0,
   },
 ]
 
@@ -55,12 +57,7 @@ describe('DispositionSelector', () => {
 
   it('selecting a disposition calls onDispositionChange', () => {
     const onDispositionChange = vi.fn()
-    render(
-      <DispositionSelector
-        {...defaultProps}
-        onDispositionChange={onDispositionChange}
-      />
-    )
+    render(<DispositionSelector {...defaultProps} onDispositionChange={onDispositionChange} />)
 
     fireEvent.click(screen.getByText('Discharge'))
     expect(onDispositionChange).toHaveBeenCalledWith('discharge')
@@ -68,12 +65,7 @@ describe('DispositionSelector', () => {
 
   it('toggling a follow-up checkbox calls onFollowUpChange', () => {
     const onFollowUpChange = vi.fn()
-    render(
-      <DispositionSelector
-        {...defaultProps}
-        onFollowUpChange={onFollowUpChange}
-      />
-    )
+    render(<DispositionSelector {...defaultProps} onFollowUpChange={onFollowUpChange} />)
 
     fireEvent.click(screen.getByText('PCP follow-up'))
     expect(onFollowUpChange).toHaveBeenCalledWith(['PCP follow-up'])
@@ -86,7 +78,7 @@ describe('DispositionSelector', () => {
         {...defaultProps}
         followUp={['PCP follow-up', 'Specialist follow-up']}
         onFollowUpChange={onFollowUpChange}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByText('PCP follow-up'))
@@ -96,11 +88,7 @@ describe('DispositionSelector', () => {
   it('shows saved flows and applies on click', () => {
     const onApplyFlow = vi.fn()
     render(
-      <DispositionSelector
-        {...defaultProps}
-        savedFlows={mockFlows}
-        onApplyFlow={onApplyFlow}
-      />
+      <DispositionSelector {...defaultProps} savedFlows={mockFlows} onApplyFlow={onApplyFlow} />,
     )
 
     expect(screen.getByText('Standard Discharge')).toBeDefined()
@@ -111,11 +99,7 @@ describe('DispositionSelector', () => {
   it('deletes a saved flow on delete click', () => {
     const onDeleteFlow = vi.fn()
     render(
-      <DispositionSelector
-        {...defaultProps}
-        savedFlows={mockFlows}
-        onDeleteFlow={onDeleteFlow}
-      />
+      <DispositionSelector {...defaultProps} savedFlows={mockFlows} onDeleteFlow={onDeleteFlow} />,
     )
 
     fireEvent.click(screen.getByTestId('delete-flow-flow_1'))
@@ -123,25 +107,14 @@ describe('DispositionSelector', () => {
   })
 
   it('shows save flow button when disposition is selected', () => {
-    render(
-      <DispositionSelector
-        {...defaultProps}
-        disposition="discharge"
-      />
-    )
+    render(<DispositionSelector {...defaultProps} disposition="discharge" />)
 
     expect(screen.getByTestId('save-flow-btn')).toBeDefined()
   })
 
   it('save flow workflow: click save, enter name, confirm', () => {
     const onSaveFlow = vi.fn()
-    render(
-      <DispositionSelector
-        {...defaultProps}
-        disposition="admit"
-        onSaveFlow={onSaveFlow}
-      />
-    )
+    render(<DispositionSelector {...defaultProps} disposition="admit" onSaveFlow={onSaveFlow} />)
 
     fireEvent.click(screen.getByTestId('save-flow-btn'))
     const nameInput = screen.getByTestId('flow-name-input')
@@ -157,7 +130,7 @@ describe('DispositionSelector', () => {
         savedFlows={mockFlows}
         disposition="discharge"
         disabled
-      />
+      />,
     )
 
     const radios = screen.getAllByRole('radio')
@@ -168,12 +141,7 @@ describe('DispositionSelector', () => {
 
   it('adds custom follow-up via text input', () => {
     const onFollowUpChange = vi.fn()
-    render(
-      <DispositionSelector
-        {...defaultProps}
-        onFollowUpChange={onFollowUpChange}
-      />
-    )
+    render(<DispositionSelector {...defaultProps} onFollowUpChange={onFollowUpChange} />)
 
     const input = screen.getByTestId('custom-followup-input')
     fireEvent.change(input, { target: { value: 'Cardiology in 2 weeks' } })
@@ -182,12 +150,7 @@ describe('DispositionSelector', () => {
   })
 
   it('shows selected disposition as highlighted', () => {
-    const { container } = render(
-      <DispositionSelector
-        {...defaultProps}
-        disposition="icu"
-      />
-    )
+    const { container } = render(<DispositionSelector {...defaultProps} disposition="icu" />)
 
     expect(container.querySelector('.dispo-selector__radio--selected')).not.toBeNull()
     expect(container.querySelector('.dispo-selector__radio--selected')?.textContent).toBe('ICU')

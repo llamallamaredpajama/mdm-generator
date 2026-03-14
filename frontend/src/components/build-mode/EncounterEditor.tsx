@@ -777,8 +777,8 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
    * Apply a saved disposition flow — sets disposition + follow-up in one action
    */
   const handleApplyDispoFlow = useCallback(
-    (flow: { id: string; name: string; disposition: DispositionOption; followUp: string[] }) => {
-      setS3Disposition(flow.disposition)
+    (flow: { id: string; name: string; disposition: string; followUp: string[] }) => {
+      setS3Disposition(flow.disposition as DispositionOption)
       setS3FollowUp(flow.followUp)
       if (user && encounterId) {
         const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)

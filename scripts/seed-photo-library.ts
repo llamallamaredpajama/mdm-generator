@@ -25,17 +25,21 @@ import path from 'node:path'
 const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
 const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
 
+const storageBucket = 'mdm-generator.firebasestorage.app'
+
 if (serviceAccountJson) {
   admin.initializeApp({
     credential: admin.credential.cert(JSON.parse(serviceAccountJson)),
+    storageBucket,
   })
 } else if (serviceAccountPath) {
   const content = fs.readFileSync(path.resolve(serviceAccountPath), 'utf8')
   admin.initializeApp({
     credential: admin.credential.cert(JSON.parse(content)),
+    storageBucket,
   })
 } else {
-  admin.initializeApp()
+  admin.initializeApp({ storageBucket })
 }
 
 const db = admin.firestore()

@@ -4,7 +4,6 @@ import {
   Kanban as KanbanIcon,
   Archive as ArchiveIcon,
   ChartLineUp as ChartLineUpIcon,
-  Question as QuestionIcon,
   GearSix as GearSixIcon,
   CaretRight as CaretRightIcon,
   CaretLeft as CaretLeftIcon,
@@ -48,7 +47,6 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { id: 'help', icon: QuestionIcon, label: 'Help', path: '/help' },
   { id: 'settings', icon: GearSixIcon, label: 'Settings', path: '/settings' },
 ]
 
@@ -75,7 +73,6 @@ export default function SidebarLayout() {
   const getActiveId = useCallback((): string => {
     const path = location.pathname
     if (path.startsWith('/settings')) return 'settings'
-    if (path.startsWith('/help')) return 'help'
     if (path.startsWith('/archive')) return 'archive'
     if (path.startsWith('/analytics')) return 'analytics'
     // Default to board for /compose, /build, /preflight, /output, etc.

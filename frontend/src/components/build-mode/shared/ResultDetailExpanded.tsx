@@ -63,7 +63,8 @@ export default function ResultDetailExpanded({
 
   function handleSaveTemplate() {
     if (!templateName.trim() || !result.notes) return
-    saveTemplate(testDef.id, templateName.trim(), result.notes, result.status)
+    const status = result.status === 'pending' ? 'unremarkable' : result.status
+    saveTemplate(testDef.id, templateName.trim(), result.notes, status)
     setTemplateName('')
     setShowSaveTemplate(false)
   }
@@ -185,7 +186,10 @@ export default function ResultDetailExpanded({
               <button
                 type="button"
                 className="result-detail__save-template-cancel"
-                onClick={() => { setShowSaveTemplate(false); setTemplateName('') }}
+                onClick={() => {
+                  setShowSaveTemplate(false)
+                  setTemplateName('')
+                }}
               >
                 Cancel
               </button>

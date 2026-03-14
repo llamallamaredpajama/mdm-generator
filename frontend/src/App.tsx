@@ -9,6 +9,7 @@ import Preflight from './routes/Preflight'
 import Output from './routes/Output'
 import Settings from './routes/Settings'
 import Analytics from './routes/Analytics'
+import Onboarding from './routes/Onboarding'
 import './App.css'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <ToastProvider>
             <Routes>
               <Route path="/" element={<LandingPage />} />
+              <Route path="onboarding" element={<Onboarding />} />
               <Route element={<SidebarLayout />}>
                 <Route path="compose" element={<EncounterBoard />} />
                 <Route path="preflight" element={<Preflight />} />
