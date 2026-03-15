@@ -1,3 +1,8 @@
+/* ===========================================
+   BoardCard — 16:9 Photo + Single-Line Footer
+   BEM naming: .board-card__*
+   =========================================== */
+
 .board-card {
   overflow: hidden;
   cursor: pointer;
@@ -14,12 +19,21 @@
   border-color: var(--color-text-primary, #fff);
 }
 
+.board-card--draft {
+  border-style: dashed;
+}
+
+/* ── Photo: 16:9 aspect ratio ── */
 .board-card__photo {
   width: 100%;
-  height: 120px;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   border-bottom: 2px solid var(--color-border-primary, #222);
   position: relative;
+}
+
+.board-card__photo--dimmed {
+  opacity: 0.6;
 }
 
 .board-card__photo-img {
@@ -37,10 +51,10 @@
 
 .board-card__room {
   position: absolute;
-  bottom: 8px;
-  left: 10px;
+  bottom: 6px;
+  left: 8px;
   font-family: var(--font-mono, monospace);
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 900;
   color: var(--color-text-primary, #fff);
   text-shadow:
@@ -50,24 +64,61 @@
   letter-spacing: -0.02em;
 }
 
-.board-card__info {
-  padding: 12px 14px 14px;
-}
-
-.board-card__meta {
-  font-family: var(--font-mono, monospace);
-  font-size: 13px;
-  color: var(--color-text-secondary, #999);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  margin-bottom: 6px;
+/* ── Single-line footer ── */
+.board-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  min-height: 28px;
+  gap: 6px;
 }
 
 .board-card__complaint {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--color-text-primary, #fff);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  line-height: 1.3;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── S1/S2/S3 status squares ── */
+.board-card__sections {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.board-card__section-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-text-dim, #333);
+}
+
+.board-card__section-dot--complete {
+  background: #16a34a;
+}
+
+/* ── Quick mode: patient identifier ── */
+.board-card__identifier {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-primary, #fff);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Quick mode draft ── */
+.board-card__draft-label {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--color-text-muted, #555);
+  letter-spacing: 0.03em;
 }

@@ -4,6 +4,7 @@ import {
   onSnapshot,
   addDoc,
   deleteDoc,
+  updateDoc,
   doc,
   serverTimestamp,
   writeBatch,
@@ -88,7 +89,11 @@ function convertEncounterDoc(docId: string, data: DocumentData): EncounterDocume
 /**
  * Parses a room number string into structured parts for sorting
  */
-function parseRoomNumber(room: string): { type: 'word' | 'compound' | 'numeric'; word: string; num: number } {
+function parseRoomNumber(room: string): {
+  type: 'word' | 'compound' | 'numeric'
+  word: string
+  num: number
+} {
   const trimmed = room.trim().toLowerCase()
   const numericMatch = trimmed.match(/^(\d+)/)
   if (numericMatch) {
@@ -128,12 +133,19 @@ export interface UseEncounterListReturn {
   loading: boolean
   /** Error if fetch failed */
   error: Error | null
-  /** Create a new encounter with room number and chief complaint */
+  /** Create a new encounter (room number and chief complaint are optional) */
   createEncounter: (roomNumber: string, chiefComplaint: string) => Promise<string>
+  /** Update an encounter's room number and/or chief complaint */
+  updateEncounterMeta: (
+    encounterId: string,
+    updates: { roomNumber?: string; chiefComplaint?: string },
+  ) => Promise<void>
   /** Delete an encounter (only allowed for draft/archived status) */
   deleteEncounter: (encounterId: string) => Promise<void>
-  /** Delete all encounters in the current mode (batch delete) */
+  /** Delete all visible (non-archived) encounters (batch delete) */
   clearAllEncounters: () => Promise<void>
+  /** Switch an encounter between quick and build mode */
+  switchEncounterMode: (encounterId: string, newMode: EncounterMode) => Promise<void>
 }
 
 /**
@@ -198,7 +210,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
         console.error('Error listening to encounters:', err)
         setError(err instanceof Error ? err : new Error('Failed to load encounters'))
         setLoading(false)
-      }
+      },
     )
 
     return () => {
@@ -219,14 +231,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
         throw new Error('User must be authenticated to create encounters')
       }
 
-      if (!roomNumber.trim()) {
-        throw new Error('Room number is required')
-      }
-
-      // Chief complaint required for build mode, optional for quick mode
-      if (mode === 'build' && !chiefComplaint.trim()) {
-        throw new Error('Chief complaint is required')
-      }
+      // Room number and chief complaint are optional for frictionless creation flow
 
       const encountersRef = collection(db, 'customers', user.uid, 'encounters')
 
@@ -280,7 +285,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
       const docRef = await addDoc(encountersRef, newEncounter)
       return docRef.id
     },
-    [user, mode]
+    [user, mode],
   )
 
   /**
@@ -296,12 +301,33 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
       const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
       await deleteDoc(encounterRef)
     },
-    [user]
+    [user],
   )
 
   /**
-   * Deletes all encounters in the current mode using a batch operation.
-   * Only deletes encounters visible in the current list (filtered by mode).
+   * Updates an encounter's room number and/or chief complaint.
+   * Used by the SaveDraftPopup when closing a frictionless encounter.
+   */
+  const updateEncounterMeta = useCallback(
+    async (
+      encounterId: string,
+      updates: { roomNumber?: string; chiefComplaint?: string },
+    ): Promise<void> => {
+      if (!user) {
+        throw new Error('User must be authenticated to update encounters')
+      }
+
+      const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+      await updateDoc(encounterRef, {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      })
+    },
+    [user],
+  )
+
+  /**
+   * Deletes all visible (non-archived) encounters using a batch operation.
    */
   const clearAllEncounters = useCallback(async (): Promise<void> => {
     if (!user) {
@@ -322,12 +348,34 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
     await batch.commit()
   }, [user, encounters])
 
+  const switchEncounterMode = useCallback(
+    async (encounterId: string, newMode: EncounterMode): Promise<void> => {
+      if (!user) throw new Error('User must be authenticated to switch mode')
+      const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+      if (newMode === 'quick') {
+        await updateDoc(encounterRef, {
+          mode: newMode,
+          quickModeData: { narrative: '', status: 'draft' as QuickModeStatus },
+          updatedAt: serverTimestamp(),
+        })
+      } else {
+        await updateDoc(encounterRef, {
+          mode: newMode,
+          updatedAt: serverTimestamp(),
+        })
+      }
+    },
+    [user],
+  )
+
   return {
     encounters,
     loading,
     error,
     createEncounter,
+    updateEncounterMeta,
     deleteEncounter,
     clearAllEncounters,
+    switchEncounterMode,
   }
 }

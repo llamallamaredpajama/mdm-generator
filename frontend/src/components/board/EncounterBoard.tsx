@@ -1,186 +1,189 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
-import { AnimatePresence } from 'framer-motion'
-import { useLocation } from 'react-router-dom'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useEncounterList } from '../../hooks/useEncounterList'
-import { useIsMobile } from '../../hooks/useMediaQuery'
-import { useSubscription, GENERATION_LIMITS } from '../../hooks/useSubscription'
+import { useIsMobile, usePrefersReducedMotion } from '../../hooks/useMediaQuery'
 import { getDisplayColumn, type DisplayColumn } from '../../lib/statusMapper'
-import type { EncounterDocument, EncounterMode } from '../../types/encounter'
-import StatusColumn from './StatusColumn'
+import type { EncounterDocument } from '../../types/encounter'
+import { useSubscription } from '../../hooks/useSubscription'
+import { useToast } from '../../contexts/ToastContext'
+import SwimLaneRow from './SwimLaneRow'
 import DetailPanel from './DetailPanel'
+import SaveDraftPopup from './SaveDraftPopup'
 import './EncounterBoard.css'
 
-const COLUMNS: DisplayColumn[] = ['COMPOSING', 'BUILDING', 'COMPLETE']
+const ROWS: DisplayColumn[] = ['COMPLETE', 'COMPOSING']
 
 export default function EncounterBoard() {
   const isMobile = useIsMobile()
+  const prefersReducedMotion = usePrefersReducedMotion()
   const location = useLocation() as { state?: { openNew?: boolean } }
 
+  const navigate = useNavigate()
+  const { canGenerate, tier } = useSubscription()
+  const toast = useToast()
+
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [showNewForm, setShowNewForm] = useState(false)
-  const [newRoom, setNewRoom] = useState('')
-  const [newComplaint, setNewComplaint] = useState('')
-  const [newMode, setNewMode] = useState<EncounterMode>('build')
+  const [showSaveDraft, setShowSaveDraft] = useState(false)
+  const creatingRef = useRef(false)
 
-  const { encounters, loading, createEncounter } = useEncounterList(newMode)
-  const { tier, remainingGenerations, canGenerate } = useSubscription()
-  const limit = GENERATION_LIMITS[tier]
+  const { encounters, loading, createEncounter, updateEncounterMeta, switchEncounterMode } =
+    useEncounterList('build')
 
-  // Auto-show form if navigated from sidebar "New" button
+  // Handle + button: create empty encounter and open panel
+  const handleNewEncounter = useCallback(async () => {
+    if (creatingRef.current) return
+    if (!canGenerate) {
+      toast.warning(`Monthly generation limit reached (${tier} plan). Upgrade for more.`)
+      return
+    }
+    creatingRef.current = true
+    try {
+      const newId = await createEncounter('', '')
+      setActiveId(newId)
+    } catch {
+      // Error handled by hook
+    } finally {
+      creatingRef.current = false
+    }
+  }, [createEncounter, canGenerate, tier, toast])
+
+  // Auto-trigger when navigated with openNew state
   useEffect(() => {
     if (location.state?.openNew) {
-      setShowNewForm(true)
+      navigate('/compose', { replace: true, state: {} })
+      void handleNewEncounter()
     }
-  }, [location.state?.openNew])
+  }, [location.state?.openNew, handleNewEncounter, navigate])
 
-  // Group encounters into 3 columns
+  // Group encounters into 2 rows
   const grouped = useMemo(() => {
-    const cols: Record<DisplayColumn, EncounterDocument[]> = {
+    const rows: Record<DisplayColumn, EncounterDocument[]> = {
       COMPOSING: [],
-      BUILDING: [],
       COMPLETE: [],
     }
-    encounters.forEach((e) => cols[getDisplayColumn(e)].push(e))
-    return cols
+    encounters.forEach((e) => rows[getDisplayColumn(e)].push(e))
+    return rows
   }, [encounters])
+
+  const composingEmpty = grouped.COMPOSING.length === 0
 
   // Toggle card selection
   const handleCardClick = useCallback((id: string) => {
     setActiveId((prev) => (prev === id ? null : id))
   }, [])
 
-  // Create encounter
-  const handleCreate = useCallback(async () => {
-    if (!newRoom.trim()) return
-    try {
-      const newId = await createEncounter(newRoom.trim(), newComplaint.trim())
-      setShowNewForm(false)
-      setNewRoom('')
-      setNewComplaint('')
-      setActiveId(newId)
-    } catch {
-      // Error handled by hook
-    }
-  }, [newRoom, newComplaint, createEncounter])
+  // Close panel — show save draft popup if encounter has no room/CC
+  const activeEncounter = activeId ? encounters.find((e) => e.id === activeId) : null
 
-  const handleCancel = useCallback(() => {
-    setShowNewForm(false)
-    setNewRoom('')
-    setNewComplaint('')
+  const handleClosePanel = useCallback(() => {
+    if (
+      activeEncounter &&
+      !activeEncounter.roomNumber &&
+      !activeEncounter.chiefComplaint &&
+      activeEncounter.status === 'draft'
+    ) {
+      setShowSaveDraft(true)
+    } else {
+      setActiveId(null)
+    }
+  }, [activeEncounter])
+
+  const handleSaveDraftSkip = useCallback(() => {
+    setShowSaveDraft(false)
+    setActiveId(null)
   }, [])
 
-  // Find the active encounter for the detail panel
-  const activeEncounter = activeId ? encounters.find((e) => e.id === activeId) : null
+  const handleSaveDraftConfirm = useCallback(
+    async (data: { roomNumber: string; chiefComplaint: string }) => {
+      if (activeEncounter) {
+        const updates: { roomNumber?: string; chiefComplaint?: string } = {}
+        if (data.roomNumber) updates.roomNumber = data.roomNumber
+        if (data.chiefComplaint) updates.chiefComplaint = data.chiefComplaint
+        if (Object.keys(updates).length > 0) {
+          try {
+            await updateEncounterMeta(activeEncounter.id, updates)
+          } catch {
+            // Error handled silently
+          }
+        }
+      }
+      setShowSaveDraft(false)
+      setActiveId(null)
+    },
+    [activeEncounter, updateEncounterMeta],
+  )
+
+  const panelTransition = prefersReducedMotion
+    ? { duration: 0 }
+    : { type: 'spring' as const, damping: 25, stiffness: 200 }
+
+  if (loading) {
+    return (
+      <div className="encounter-board">
+        <div className="encounter-board__loading">Loading encounters...</div>
+      </div>
+    )
+  }
 
   return (
     <div className={`encounter-board${isMobile ? ' encounter-board--mobile' : ''}`}>
-      {/* Top bar */}
-      <div className="encounter-board__top-bar">
-        <h1 className="encounter-board__title">BOARD</h1>
-        {remainingGenerations !== null && (
-          <span
-            className={`encounter-board__quota${
-              remainingGenerations === 0
-                ? ' encounter-board__quota--exhausted'
-                : remainingGenerations < limit * 0.2
-                  ? ' encounter-board__quota--low'
-                  : ''
-            }`}
-          >
-            {remainingGenerations} / {limit} generations
-            {!canGenerate && tier === 'free' && (
-              <a href="/settings" className="encounter-board__quota-upgrade">
-                Upgrade
-              </a>
+      <div className="encounter-board__split">
+        {/* Desktop: push-split panel */}
+        {!isMobile && (
+          <AnimatePresence>
+            {activeEncounter && (
+              <motion.div
+                key="panel"
+                className="encounter-board__panel-wrap"
+                initial={{ width: 0 }}
+                animate={{ width: '50%' }}
+                exit={{ width: 0 }}
+                transition={panelTransition}
+              >
+                <DetailPanel
+                  encounter={activeEncounter}
+                  onClose={handleClosePanel}
+                  onSwitchMode={switchEncounterMode}
+                />
+              </motion.div>
             )}
-          </span>
+          </AnimatePresence>
         )}
-        <span className="encounter-board__count">{encounters.length} TOTAL</span>
-      </div>
 
-      {/* Board content */}
-      {loading ? (
-        <div className="encounter-board__loading">Loading encounters...</div>
-      ) : (
-        <div className="encounter-board__columns">
-          {COLUMNS.map((col) => (
-            <div key={col} className="encounter-board__column-wrapper">
-              {/* Inline new encounter form at top of COMPOSING column */}
-              {col === 'COMPOSING' && showNewForm && (
-                <div className="encounter-board__new-form">
-                  <div className="encounter-board__new-form-row">
-                    <input
-                      className="encounter-board__new-input"
-                      type="text"
-                      placeholder="Room #"
-                      value={newRoom}
-                      onChange={(e) => setNewRoom(e.target.value)}
-                      autoFocus
-                    />
-                    <input
-                      className="encounter-board__new-input"
-                      type="text"
-                      placeholder="Chief complaint"
-                      value={newComplaint}
-                      onChange={(e) => setNewComplaint(e.target.value)}
-                    />
-                  </div>
-                  <div className="encounter-board__mode-toggle">
-                    <button
-                      className={`encounter-board__mode-btn${newMode === 'quick' ? ' encounter-board__mode-btn--active' : ''}`}
-                      onClick={() => setNewMode('quick')}
-                      type="button"
-                    >
-                      Quick
-                    </button>
-                    <button
-                      className={`encounter-board__mode-btn${newMode === 'build' ? ' encounter-board__mode-btn--active' : ''}`}
-                      onClick={() => setNewMode('build')}
-                      type="button"
-                    >
-                      Build
-                    </button>
-                  </div>
-                  <div className="encounter-board__new-actions">
-                    <button
-                      className="encounter-board__cancel-btn"
-                      onClick={handleCancel}
-                      type="button"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="encounter-board__create-btn"
-                      onClick={handleCreate}
-                      disabled={!newRoom.trim()}
-                      type="button"
-                    >
-                      Create
-                    </button>
-                  </div>
-                </div>
-              )}
-              <StatusColumn
-                status={col}
-                encounters={grouped[col]}
-                activeId={activeId}
-                onCardClick={handleCardClick}
-              />
-            </div>
+        {/* Board area with swim lane rows */}
+        <div className="encounter-board__board-area">
+          {ROWS.map((row) => (
+            <SwimLaneRow
+              key={row}
+              status={row}
+              encounters={grouped[row]}
+              activeId={activeId}
+              onCardClick={handleCardClick}
+              wrapping={row === 'COMPLETE' && composingEmpty}
+            />
           ))}
         </div>
+      </div>
+
+      {/* Mobile: full-screen panel overlay */}
+      {isMobile && (
+        <AnimatePresence>
+          {activeEncounter && (
+            <DetailPanel
+              key={activeEncounter.id}
+              encounter={activeEncounter}
+              onClose={handleClosePanel}
+              onSwitchMode={switchEncounterMode}
+            />
+          )}
+        </AnimatePresence>
       )}
 
-      {/* Detail panel */}
-      <AnimatePresence>
-        {activeEncounter && (
-          <DetailPanel
-            key={activeEncounter.id}
-            encounter={activeEncounter}
-            onClose={() => setActiveId(null)}
-          />
-        )}
-      </AnimatePresence>
+      {/* Save draft popup */}
+      {showSaveDraft && (
+        <SaveDraftPopup onSkip={handleSaveDraftSkip} onSave={handleSaveDraftConfirm} />
+      )}
     </div>
   )
 }

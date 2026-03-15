@@ -1,0 +1,109 @@
+/* ===========================================
+   SaveDraftPopup — Optional metadata on close
+   BEM naming: .save-draft-popup__*
+   =========================================== */
+
+.save-draft-popup__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.save-draft-popup {
+  background: var(--color-bg-secondary, #0a0a0a);
+  border: 2px solid var(--color-border-primary, #222);
+  padding: 24px;
+  width: 340px;
+  max-width: 90vw;
+}
+
+.save-draft-popup__title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-text-primary, #fff);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.save-draft-popup__desc {
+  font-size: 13px;
+  color: var(--color-text-secondary, #999);
+  margin: 0 0 20px;
+}
+
+.save-draft-popup__field {
+  margin-bottom: 14px;
+}
+
+.save-draft-popup__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted, #555);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.save-draft-popup__input {
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 2px solid var(--color-border-primary, #222);
+  color: var(--color-text-primary, #fff);
+  font-size: 13px;
+  font-family: var(--font-family, 'Inter', sans-serif);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.save-draft-popup__input::placeholder {
+  color: var(--color-text-muted, #555);
+}
+
+.save-draft-popup__input:focus {
+  border-color: var(--color-text-secondary, #999);
+}
+
+.save-draft-popup__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.save-draft-popup__btn {
+  padding: 8px 18px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: var(--font-family, 'Inter', sans-serif);
+  border: 2px solid var(--color-border-primary, #222);
+}
+
+.save-draft-popup__btn--skip {
+  background: transparent;
+  color: var(--color-text-secondary, #999);
+}
+
+.save-draft-popup__btn--skip:hover {
+  border-color: var(--color-text-secondary, #999);
+  color: var(--color-text-primary, #fff);
+}
+
+.save-draft-popup__btn--save {
+  background: var(--color-accent, #dc2626);
+  border-color: var(--color-accent, #dc2626);
+  color: #fff;
+}
+
+.save-draft-popup__btn--save:hover {
+  opacity: 0.9;
+}

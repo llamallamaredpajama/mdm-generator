@@ -2,9 +2,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { EncounterDocument } from '../../types/encounter'
 import type { DisplayColumn } from '../../lib/statusMapper'
 import BoardCard from './BoardCard'
-import './StatusColumn.css'
+import './SwimLaneRow.css'
 
-interface StatusColumnProps {
+interface SwimLaneRowProps {
   status: DisplayColumn
   encounters: EncounterDocument[]
   activeId: string | null
@@ -29,36 +29,31 @@ const cardVariants = {
   },
 }
 
-/** @deprecated Renamed to SwimLaneRow. Delete in cleanup pass. */
-export default function StatusColumn({
+export default function SwimLaneRow({
   status,
   encounters,
   activeId,
   onCardClick,
   wrapping = false,
-}: StatusColumnProps) {
+}: SwimLaneRowProps) {
   const count = encounters.length
 
   return (
-    <div className={`status-column${wrapping ? ' status-column--wrapping' : ''}`}>
-      <div className="status-column__header">
-        <span className="status-column__label">{status}</span>
+    <div className={`swim-lane-row${wrapping ? ' swim-lane-row--wrapping' : ''}`}>
+      <div className="swim-lane-row__header">
+        <span className="swim-lane-row__label">{status}</span>
         <span
-          className="status-column__count"
-          style={{
-            color:
-              count > 0 ? 'var(--color-text-primary, #fff)' : 'var(--color-text-secondary, #999)',
-          }}
+          className={`swim-lane-row__count ${count > 0 ? 'swim-lane-row__count--active' : 'swim-lane-row__count--empty'}`}
         >
           {count}
         </span>
       </div>
 
       {count === 0 ? (
-        <div className="status-column__empty">EMPTY</div>
+        <div className="swim-lane-row__empty">EMPTY</div>
       ) : (
         <motion.div
-          className="status-column__cards"
+          className="swim-lane-row__cards"
           variants={rowVariants}
           initial="hidden"
           animate="visible"
@@ -67,7 +62,7 @@ export default function StatusColumn({
             {encounters.map((encounter) => (
               <motion.div
                 key={encounter.id}
-                className="status-column__card-slot"
+                className="swim-lane-row__card-slot"
                 variants={cardVariants}
                 exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
               >

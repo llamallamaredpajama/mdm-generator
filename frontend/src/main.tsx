@@ -2,9 +2,11 @@ import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
-import SidebarLayout from './routes/SidebarLayout'
+import DashboardLayout from './routes/DashboardLayout'
+import { PhotoLibraryProvider } from './contexts/PhotoLibraryContext'
 import LandingPage from './routes/LandingPage'
 import EncounterBoard from './components/board/EncounterBoard'
+import ArchiveView from './components/board/ArchiveView'
 import Preflight from './routes/Preflight'
 import Output from './routes/Output'
 import Settings from './routes/Settings'
@@ -30,9 +32,10 @@ const router = createBrowserRouter([
     element: <OnboardingGuard />,
     children: [
       {
-        element: <SidebarLayout />,
+        element: <DashboardLayout />,
         children: [
           { path: 'compose', element: <EncounterBoard /> },
+          { path: 'archive', element: <ArchiveView /> },
           { path: 'preflight', element: <Preflight /> },
           { path: 'output', element: <Output /> },
           { path: 'settings', element: <Settings /> },
@@ -48,11 +51,13 @@ const router = createBrowserRouter([
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      <ToastProvider>
-        <TrendAnalysisProvider>
-          <RouterProvider router={router} />
-        </TrendAnalysisProvider>
-      </ToastProvider>
+      <PhotoLibraryProvider>
+        <ToastProvider>
+          <TrendAnalysisProvider>
+            <RouterProvider router={router} />
+          </TrendAnalysisProvider>
+        </ToastProvider>
+      </PhotoLibraryProvider>
     </AuthProvider>
   </StrictMode>,
 )

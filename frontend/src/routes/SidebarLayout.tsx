@@ -50,6 +50,7 @@ const BOTTOM_ITEMS: NavItem[] = [
   { id: 'settings', icon: GearSixIcon, label: 'Settings', path: '/settings' },
 ]
 
+/** @deprecated Replaced by DashboardLayout (top/bottom nav). */
 export default function SidebarLayout() {
   const [collapsed, setCollapsed] = useState(getInitialCollapsed)
   const { user } = useAuth()
@@ -83,11 +84,7 @@ export default function SidebarLayout() {
 
   const handleNavClick = useCallback(
     (item: NavItem) => {
-      if (item.id === 'archive') {
-        navigate('/compose', { state: { viewArchive: true } })
-      } else {
-        navigate(item.path)
-      }
+      navigate(item.path)
     },
     [navigate],
   )
@@ -110,7 +107,7 @@ export default function SidebarLayout() {
           <button
             type="button"
             className={`sidebar-layout__mobile-btn${activeId === 'archive' ? ' sidebar-layout__mobile-btn--active' : ''}`}
-            onClick={() => navigate('/compose', { state: { viewArchive: true } })}
+            onClick={() => navigate('/archive')}
             aria-label="Archive"
           >
             <ArchiveIcon className="sidebar-layout__mobile-icon" weight="bold" size={22} />

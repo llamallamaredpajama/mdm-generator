@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './lib/firebase'
 import { ToastProvider } from './contexts/ToastContext'
 import { PhotoLibraryProvider } from './contexts/PhotoLibraryContext'
-import SidebarLayout from './routes/SidebarLayout'
+import DashboardLayout from './routes/DashboardLayout'
 import LandingPage from './routes/LandingPage'
 import EncounterBoard from './components/board/EncounterBoard'
 import Preflight from './routes/Preflight'
@@ -12,6 +12,7 @@ import Analytics from './routes/Analytics'
 import Onboarding from './routes/Onboarding'
 import './App.css'
 
+/** @deprecated Dead code — main.tsx uses createBrowserRouter + DashboardLayout. Kept for app.test.tsx. */
 function App() {
   return (
     <BrowserRouter>
@@ -21,7 +22,7 @@ function App() {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="onboarding" element={<Onboarding />} />
-              <Route element={<SidebarLayout />}>
+              <Route element={<DashboardLayout />}>
                 <Route path="compose" element={<EncounterBoard />} />
                 <Route path="preflight" element={<Preflight />} />
                 <Route path="output" element={<Output />} />

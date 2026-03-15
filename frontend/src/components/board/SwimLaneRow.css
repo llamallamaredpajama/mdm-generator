@@ -1,15 +1,15 @@
 /* ===========================================
-   StatusColumn — Horizontal Swim Lane Row
-   BEM naming: .status-column__*
+   SwimLaneRow — Horizontal Swim Lane Row
+   BEM naming: .swim-lane-row__*
    =========================================== */
 
-.status-column {
+.swim-lane-row {
   display: flex;
   flex-direction: column;
   padding: 0 0 8px;
 }
 
-.status-column__header {
+.swim-lane-row__header {
   padding: 0 24px 8px;
   display: flex;
   justify-content: space-between;
@@ -20,7 +20,7 @@
   z-index: 1;
 }
 
-.status-column__label {
+.swim-lane-row__label {
   font-size: 12px;
   font-weight: 800;
   color: var(--color-text-primary, #fff);
@@ -28,14 +28,22 @@
   font-family: var(--font-family, 'Inter', sans-serif);
 }
 
-.status-column__count {
+.swim-lane-row__count {
   font-size: 12px;
   font-weight: 700;
   font-family: var(--font-mono, monospace);
 }
 
+.swim-lane-row__count--active {
+  color: var(--color-text-primary, #fff);
+}
+
+.swim-lane-row__count--empty {
+  color: var(--color-text-secondary, #999);
+}
+
 /* ── Horizontal scroll row ── */
-.status-column__cards {
+.swim-lane-row__cards {
   display: flex;
   flex-direction: row;
   gap: 12px;
@@ -46,36 +54,36 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.status-column__cards::-webkit-scrollbar {
+.swim-lane-row__cards::-webkit-scrollbar {
   height: 4px;
 }
 
-.status-column__cards::-webkit-scrollbar-track {
+.swim-lane-row__cards::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.status-column__cards::-webkit-scrollbar-thumb {
+.swim-lane-row__cards::-webkit-scrollbar-thumb {
   background: var(--color-border-primary, #222);
   border-radius: 2px;
 }
 
 /* ── Fixed card width ── */
-.status-column__card-slot {
+.swim-lane-row__card-slot {
   flex: 0 0 150px;
   scroll-snap-align: start;
 }
 
 /* ── Wrapping mode: complete row fills space when composing is empty ── */
-.status-column--wrapping {
+.swim-lane-row--wrapping {
   flex: 1;
 }
 
-.status-column--wrapping .status-column__cards {
+.swim-lane-row--wrapping .swim-lane-row__cards {
   flex-wrap: wrap;
   overflow-x: visible;
 }
 
-.status-column__empty {
+.swim-lane-row__empty {
   border: 1px dashed var(--color-border-primary, #222);
   padding: 24px 16px;
   margin: 0 24px;
@@ -88,15 +96,15 @@
 
 /* ── Mobile: smaller cards ── */
 @media (max-width: 767px) {
-  .status-column__card-slot {
+  .swim-lane-row__card-slot {
     flex: 0 0 120px;
   }
 
-  .status-column__cards {
+  .swim-lane-row__cards {
     padding: 4px 16px 8px;
   }
 
-  .status-column__header {
+  .swim-lane-row__header {
     padding: 0 16px 8px;
   }
 }

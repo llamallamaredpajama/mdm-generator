@@ -48,6 +48,7 @@
   --color-warning-light: #f39c12;
   --color-error: #dc3545;
   --color-error-light: #e74c3c;
+  --color-danger-bg-hover: rgba(220, 38, 38, 0.1);
   --color-info: #17a2b8;
 
   /* ─────────────────────────────────────────
@@ -168,7 +169,7 @@
 
 /* ─────────────────────────────────────────
    Brutalist Theme Overrides
-   Applied via .brutalist class on SidebarLayout wrapper
+   Applied via .brutalist class on DashboardLayout wrapper
    ───────────────────────────────────────── */
 
 .brutalist {

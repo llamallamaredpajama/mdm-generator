@@ -7,7 +7,13 @@ import { getEncounterMode, formatRoomDisplay } from '../../types/encounter'
 import { getEncounterPhoto } from '../../lib/photoMapper'
 import { getDifferential, getMdmPreview, getFinalMdm } from '../../lib/encounterUtils'
 import { usePhotoUrls } from '../../contexts/PhotoLibraryContext'
-import type { EncounterDocument, SectionNumber } from '../../types/encounter'
+import { useToast } from '../../contexts/ToastContext'
+import type {
+  EncounterDocument,
+  EncounterStatus,
+  SectionNumber,
+  EncounterMode,
+} from '../../types/encounter'
 import NarrativeToolbar from './NarrativeToolbar'
 import RulesPanel from './RulesPanel'
 import GuidesPanel from './GuidesPanel'
@@ -17,6 +23,13 @@ import './DetailPanel.css'
 interface DetailPanelProps {
   encounter: EncounterDocument
   onClose: () => void
+  onSwitchMode: (encounterId: string, newMode: EncounterMode) => Promise<void>
+}
+
+const STATUS_LABELS: Partial<Record<EncounterStatus, string>> = {
+  finalized: 'COMPLETE',
+  section2_done: 'S2 DONE',
+  section1_done: 'S1 DONE',
 }
 
 const SECTION_LABELS: Record<SectionNumber, string> = {
@@ -25,9 +38,8 @@ const SECTION_LABELS: Record<SectionNumber, string> = {
   3: 'TREATMENT & DISPOSITION',
 }
 
-export default function DetailPanel({ encounter, onClose }: DetailPanelProps) {
+export default function DetailPanel({ encounter, onClose, onSwitchMode }: DetailPanelProps) {
   const isMobile = useIsMobile()
-  const prefersReducedMotion = usePrefersReducedMotion()
   const mode = getEncounterMode(encounter)
 
   if (mode === 'quick') {
@@ -36,7 +48,7 @@ export default function DetailPanel({ encounter, onClose }: DetailPanelProps) {
         encounter={encounter}
         onClose={onClose}
         isMobile={isMobile}
-        prefersReducedMotion={prefersReducedMotion}
+        onSwitchMode={onSwitchMode}
       />
     )
   }
@@ -46,7 +58,7 @@ export default function DetailPanel({ encounter, onClose }: DetailPanelProps) {
       encounter={encounter}
       onClose={onClose}
       isMobile={isMobile}
-      prefersReducedMotion={prefersReducedMotion}
+      onSwitchMode={onSwitchMode}
     />
   )
 }
@@ -59,14 +71,14 @@ interface DetailContentProps {
   encounter: EncounterDocument
   onClose: () => void
   isMobile: boolean
-  prefersReducedMotion: boolean
+  onSwitchMode: (encounterId: string, newMode: EncounterMode) => Promise<void>
 }
 
 function BuildDetailContent({
   encounter: initialEncounter,
   onClose,
   isMobile,
-  prefersReducedMotion,
+  onSwitchMode,
 }: DetailContentProps) {
   const { encounter, updateSectionContent, submitSection, isSubmitting } = useEncounter(
     initialEncounter.id,
@@ -104,23 +116,15 @@ function BuildDetailContent({
 
   const canSubmit = !isSubmitting && !sectionData.isLocked && sectionData.content.trim().length > 0
 
-  // Get status label
-  const statusLabel =
-    currentEncounter.status === 'finalized'
-      ? 'COMPLETE'
-      : currentEncounter.status === 'section2_done'
-        ? 'S2 DONE'
-        : currentEncounter.status === 'section1_done'
-          ? 'S1 DONE'
-          : 'DRAFT'
+  const statusLabel = STATUS_LABELS[currentEncounter.status] || 'DRAFT'
 
   return (
     <DetailPanelShell
       encounter={currentEncounter}
       onClose={onClose}
       isMobile={isMobile}
-      prefersReducedMotion={prefersReducedMotion}
       statusLabel={statusLabel}
+      onSwitchMode={onSwitchMode}
     >
       {/* Section label */}
       <div className="detail-panel__section-label">
@@ -229,7 +233,7 @@ function QuickDetailContent({
   encounter: initialEncounter,
   onClose,
   isMobile,
-  prefersReducedMotion,
+  onSwitchMode,
 }: DetailContentProps) {
   const { narrative, setNarrative, submitNarrative, isSubmitting, mdmOutput, quickStatus } =
     useQuickEncounter(initialEncounter.id)
@@ -261,7 +265,6 @@ function QuickDetailContent({
   const canSubmit = !isSubmitting && narrative.trim().length > 0 && quickStatus !== 'completed'
   const isComplete = quickStatus === 'completed'
 
-  // Status label
   const statusLabel = quickStatus ? quickStatus.toUpperCase() : 'DRAFT'
 
   return (
@@ -269,8 +272,8 @@ function QuickDetailContent({
       encounter={initialEncounter}
       onClose={onClose}
       isMobile={isMobile}
-      prefersReducedMotion={prefersReducedMotion}
       statusLabel={statusLabel}
+      onSwitchMode={onSwitchMode}
     >
       {/* Narrative textarea */}
       <div
@@ -323,15 +326,68 @@ function QuickDetailContent({
 }
 
 // ============================================================================
-// Shared Panel Shell (backdrop, photo, header, animation)
+// Mode Toggle Pill
+// ============================================================================
+
+function ModeToggle({
+  mode,
+  encounterId,
+  enabled,
+  onSwitchMode,
+}: {
+  mode: EncounterMode
+  encounterId: string
+  enabled: boolean
+  onSwitchMode: (encounterId: string, newMode: EncounterMode) => Promise<void>
+}) {
+  const toast = useToast()
+
+  const handleSwitch = useCallback(
+    async (newMode: EncounterMode) => {
+      if (!enabled || newMode === mode) return
+      try {
+        await onSwitchMode(encounterId, newMode)
+      } catch {
+        toast.error('Failed to switch mode. Please try again.')
+      }
+    },
+    [enabled, mode, encounterId, onSwitchMode, toast],
+  )
+
+  return (
+    <div
+      className={`detail-panel__mode-toggle${!enabled ? ' detail-panel__mode-toggle--disabled' : ''}`}
+    >
+      <button
+        type="button"
+        className={`detail-panel__mode-btn${mode === 'quick' ? ' detail-panel__mode-btn--active' : ''}`}
+        onClick={() => handleSwitch('quick')}
+        disabled={!enabled}
+      >
+        Quick
+      </button>
+      <button
+        type="button"
+        className={`detail-panel__mode-btn${mode === 'build' ? ' detail-panel__mode-btn--active' : ''}`}
+        onClick={() => handleSwitch('build')}
+        disabled={!enabled}
+      >
+        Build
+      </button>
+    </div>
+  )
+}
+
+// ============================================================================
+// Shared Panel Shell
 // ============================================================================
 
 interface PanelShellProps {
   encounter: EncounterDocument
   onClose: () => void
   isMobile: boolean
-  prefersReducedMotion: boolean
   statusLabel: string
+  onSwitchMode: (encounterId: string, newMode: EncounterMode) => Promise<void>
   children: React.ReactNode
 }
 
@@ -339,74 +395,79 @@ function DetailPanelShell({
   encounter,
   onClose,
   isMobile,
-  prefersReducedMotion,
   statusLabel,
+  onSwitchMode,
   children,
 }: PanelShellProps) {
+  const prefersReducedMotion = usePrefersReducedMotion()
   const photoUrls = usePhotoUrls()
   const photo = getEncounterPhoto(encounter.chiefComplaint, encounter.encounterPhoto, photoUrls)
   const roomDisplay = formatRoomDisplay(encounter.roomNumber)
+  const mode = getEncounterMode(encounter)
 
-  const panelWidth = isMobile ? '100%' : 600
+  // Mode toggle is enabled only for unsubmitted drafts
+  const canToggleMode =
+    encounter.status === 'draft' &&
+    encounter.section1.submissionCount === 0 &&
+    (!encounter.quickModeData || encounter.quickModeData.status === 'draft')
 
-  const slideTransition = prefersReducedMotion
-    ? { duration: 0 }
-    : { type: 'spring' as const, damping: 25, stiffness: 200 }
-
-  const fadeTransition = prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }
-
-  return (
+  const content = (
     <>
-      {/* Backdrop */}
-      {!isMobile && (
-        <motion.div
-          className="detail-panel__backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={fadeTransition}
-          onClick={onClose}
-          style={{ backdropFilter: 'blur(2px)' }}
+      {/* Photo banner */}
+      <div className="detail-panel__photo">
+        <img
+          className="detail-panel__photo-img"
+          src={photo}
+          alt={encounter.chiefComplaint || 'Encounter'}
         />
-      )}
+        <button className="detail-panel__close" onClick={onClose} type="button">
+          ✕
+        </button>
+      </div>
 
-      {/* Slide-out panel */}
-      <motion.div
-        className={`detail-panel${isMobile ? ' detail-panel--mobile' : ''}`}
-        initial={prefersReducedMotion ? undefined : { x: panelWidth }}
-        animate={prefersReducedMotion ? undefined : { x: 0 }}
-        exit={prefersReducedMotion ? undefined : { x: panelWidth }}
-        transition={slideTransition}
-        style={isMobile ? { width: '100%' } : { width: 600 }}
-      >
-        {/* Photo banner */}
-        <div className="detail-panel__photo">
-          <img
-            className="detail-panel__photo-img"
-            src={photo}
-            alt={encounter.chiefComplaint || 'Encounter'}
-          />
-          <button className="detail-panel__close" onClick={onClose} type="button">
-            ✕
-          </button>
-        </div>
-
-        {/* Header */}
-        <div className="detail-panel__header">
-          <div className="detail-panel__header-top">
-            <div className="detail-panel__header-left">
-              <span className="detail-panel__room">{roomDisplay}</span>
-            </div>
+      {/* Header */}
+      <div className="detail-panel__header">
+        <div className="detail-panel__header-top">
+          <div className="detail-panel__header-left">
+            {roomDisplay && <span className="detail-panel__room">{roomDisplay}</span>}
             <span className="detail-panel__status">{statusLabel}</span>
           </div>
-          {encounter.chiefComplaint && (
-            <div className="detail-panel__complaint">{encounter.chiefComplaint}</div>
-          )}
+          <ModeToggle
+            mode={mode}
+            encounterId={encounter.id}
+            enabled={canToggleMode}
+            onSwitchMode={onSwitchMode}
+          />
         </div>
+        {encounter.chiefComplaint && (
+          <div className="detail-panel__complaint">{encounter.chiefComplaint}</div>
+        )}
+      </div>
 
-        {/* Scrollable content */}
-        <div className="detail-panel__content">{children}</div>
-      </motion.div>
+      {/* Scrollable content */}
+      <div className="detail-panel__content">{children}</div>
     </>
   )
+
+  // Mobile: fixed overlay with slide animation
+  if (isMobile) {
+    const slideTransition = prefersReducedMotion
+      ? { duration: 0 }
+      : { type: 'spring' as const, damping: 25, stiffness: 200 }
+
+    return (
+      <motion.div
+        className="detail-panel detail-panel--mobile"
+        initial={prefersReducedMotion ? undefined : { x: '100%' }}
+        animate={prefersReducedMotion ? undefined : { x: 0 }}
+        exit={prefersReducedMotion ? undefined : { x: '100%' }}
+        transition={slideTransition}
+      >
+        {content}
+      </motion.div>
+    )
+  }
+
+  // Desktop: plain div, parent container handles width animation
+  return <div className="detail-panel">{content}</div>
 }

@@ -1,35 +1,28 @@
 import type { EncounterDocument } from '../types/encounter'
 import { getEncounterMode } from '../types/encounter'
 
-export type DisplayColumn = 'COMPOSING' | 'BUILDING' | 'COMPLETE'
+export type DisplayColumn = 'COMPOSING' | 'COMPLETE'
 
 /**
- * Maps an encounter's status to a board display column.
+ * Maps an encounter's status to a board display row.
  *
- * Quick mode mapping:
- *   - 'processing' → BUILDING
+ * Quick mode:
  *   - 'completed' → COMPLETE
- *   - everything else (draft, error) → COMPOSING
+ *   - everything else (draft, processing, error) → COMPOSING
  *
- * Build mode mapping:
- *   - 'section1_done' or 'section2_done' → BUILDING
+ * Build mode:
  *   - 'finalized' → COMPLETE
- *   - everything else (draft) → COMPOSING
+ *   - everything else (draft, section1_done, section2_done, errors) → COMPOSING
  */
 export function getDisplayColumn(encounter: EncounterDocument): DisplayColumn {
   const mode = getEncounterMode(encounter)
 
   if (mode === 'quick') {
-    const qs = encounter.quickModeData?.status
-    if (qs === 'processing') return 'BUILDING'
-    if (qs === 'completed') return 'COMPLETE'
+    if (encounter.quickModeData?.status === 'completed') return 'COMPLETE'
     return 'COMPOSING'
   }
 
   // Build mode
-  if (encounter.status === 'section1_done' || encounter.status === 'section2_done')
-    return 'BUILDING'
   if (encounter.status === 'finalized') return 'COMPLETE'
-  if (encounter.status === 'section3_error' || encounter.status === 'error') return 'BUILDING'
   return 'COMPOSING'
 }

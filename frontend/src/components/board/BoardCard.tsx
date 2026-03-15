@@ -11,45 +11,60 @@ interface BoardCardProps {
   onClick: () => void
 }
 
+function getSectionComplete(encounter: EncounterDocument, section: 1 | 2 | 3): boolean {
+  const sectionKey = `section${section}` as 'section1' | 'section2' | 'section3'
+  return !!encounter[sectionKey].llmResponse
+}
+
 export default function BoardCard({ encounter, isActive, onClick }: BoardCardProps) {
   const mode = getEncounterMode(encounter)
   const photoUrls = usePhotoUrls()
   const photo = getEncounterPhoto(encounter.chiefComplaint, encounter.encounterPhoto, photoUrls)
   const roomDisplay = formatRoomDisplay(encounter.roomNumber)
 
-  // Build the meta line and complaint based on mode
-  let metaText: string
-  let complaintText: string
-
-  if (mode === 'quick') {
-    const identifier = formatPatientIdentifier(encounter.quickModeData?.patientIdentifier)
-    metaText = identifier || 'Draft'
-    complaintText = encounter.chiefComplaint || ''
-  } else {
-    metaText = roomDisplay
-    complaintText = encounter.chiefComplaint || ''
-  }
+  const isQuickDraft =
+    mode === 'quick' &&
+    (!encounter.quickModeData?.status || encounter.quickModeData.status === 'draft')
+  const isQuickComplete = mode === 'quick' && encounter.quickModeData?.status === 'completed'
 
   return (
     <motion.div
       layoutId={`board-card-${encounter.id}`}
-      className={`board-card${isActive ? ' board-card--active' : ''}`}
+      className={`board-card${isActive ? ' board-card--active' : ''}${isQuickDraft ? ' board-card--draft' : ''}`}
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
     >
-      <div className="board-card__photo">
+      <div className={`board-card__photo${isQuickDraft ? ' board-card__photo--dimmed' : ''}`}>
         <img
           className="board-card__photo-img"
           src={photo}
           alt={encounter.chiefComplaint || 'Encounter'}
           loading="lazy"
         />
-        <span className="board-card__room">{roomDisplay}</span>
+        {roomDisplay && <span className="board-card__room">{roomDisplay}</span>}
       </div>
-      <div className="board-card__info">
-        <div className="board-card__meta">{metaText}</div>
-        {complaintText && <div className="board-card__complaint">{complaintText}</div>}
+
+      <div className="board-card__footer">
+        {mode === 'build' ? (
+          <>
+            <span className="board-card__complaint">{encounter.chiefComplaint || '\u2014'}</span>
+            <div className="board-card__sections">
+              {([1, 2, 3] as const).map((s) => (
+                <span
+                  key={s}
+                  className={`board-card__section-dot${getSectionComplete(encounter, s) ? ' board-card__section-dot--complete' : ''}`}
+                />
+              ))}
+            </div>
+          </>
+        ) : isQuickComplete ? (
+          <span className="board-card__identifier">
+            {formatPatientIdentifier(encounter.quickModeData?.patientIdentifier) || 'Complete'}
+          </span>
+        ) : (
+          <span className="board-card__draft-label">Draft</span>
+        )}
       </div>
     </motion.div>
   )

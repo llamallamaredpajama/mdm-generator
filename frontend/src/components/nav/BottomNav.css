@@ -1,0 +1,77 @@
+/* ===========================================
+   BottomNav — Mobile Bottom Navigation Bar (56px)
+   BEM naming: .bottom-nav__*
+   =========================================== */
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: var(--color-bg-secondary, #000);
+  border-top: 1px solid var(--color-border-primary, #222);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 100;
+  padding: 0 8px;
+}
+
+.bottom-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted, #555);
+  cursor: pointer;
+  font-family: var(--font-family, 'Inter', sans-serif);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: color 0.15s ease;
+}
+
+.bottom-nav__item--active {
+  color: var(--color-text-primary, #fff);
+}
+
+.bottom-nav__icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.bottom-nav__label {
+  white-space: nowrap;
+}
+
+/* ── Elevated + Button ── */
+.bottom-nav__new-btn {
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 12px rgba(220, 38, 38, 0.5);
+  transform: translateY(-10px);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.bottom-nav__new-btn:hover {
+  background: #b91c1c;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.6);
+  transform: translateY(-12px) scale(1.04);
+}
