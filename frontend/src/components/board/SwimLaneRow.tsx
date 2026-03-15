@@ -9,8 +9,12 @@ interface SwimLaneRowProps {
   encounters: EncounterDocument[]
   activeId: string | null
   onCardClick: (id: string) => void
-  wrapping?: boolean
+  fill?: boolean
+  isMobile: boolean
 }
+
+const COLS = 5
+const MAX_ROWS = 2
 
 const rowVariants = {
   hidden: { opacity: 0 },
@@ -34,12 +38,22 @@ export default function SwimLaneRow({
   encounters,
   activeId,
   onCardClick,
-  wrapping = false,
+  fill = false,
+  isMobile,
 }: SwimLaneRowProps) {
   const count = encounters.length
+  const showOverflow = !isMobile && count > COLS * MAX_ROWS
+
+  const cls = [
+    'swim-lane-row',
+    fill && 'swim-lane-row--fill',
+    showOverflow && 'swim-lane-row--overflow',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
-    <div className={`swim-lane-row${wrapping ? ' swim-lane-row--wrapping' : ''}`}>
+    <div className={cls}>
       <div className="swim-lane-row__header">
         <span className="swim-lane-row__label">{status}</span>
         <span

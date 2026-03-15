@@ -1,5 +1,5 @@
 /* ===========================================
-   SwimLaneRow — Horizontal Swim Lane Row
+   SwimLaneRow — Fixed 5-Column Card Grid
    BEM naming: .swim-lane-row__*
    =========================================== */
 
@@ -7,6 +7,7 @@
   display: flex;
   flex-direction: column;
   padding: 0 0 8px;
+  min-height: 0;
 }
 
 .swim-lane-row__header {
@@ -18,6 +19,7 @@
   left: 0;
   background: var(--color-bg-primary, #0c0c0c);
   z-index: 1;
+  flex-shrink: 0;
 }
 
 .swim-lane-row__label {
@@ -42,45 +44,56 @@
   color: var(--color-text-secondary, #999);
 }
 
-/* ── Horizontal scroll row ── */
+/* ── Normal mode: fixed 5-column grid ──
+   Column count synced with COLS in SwimLaneRow.tsx */
 .swim-lane-row__cards {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
+  padding: 4px 24px 8px;
+  overflow: visible;
+}
+
+/* ── Card slot: transparent grid child ── */
+.swim-lane-row__card-slot {
+  min-width: 0;
+}
+
+/* ── Overflow mode (>10 cards): 2-row horizontal scroll ──
+   Row count synced with MAX_ROWS in SwimLaneRow.tsx */
+.swim-lane-row--overflow .swim-lane-row__cards {
+  grid-template-columns: unset;
+  grid-template-rows: repeat(2, auto);
+  grid-auto-flow: column;
+  /* Match normal column width: (content width - 4 gaps × 12px) / 5 cols */
+  grid-auto-columns: calc((100% - 48px) / 5);
   overflow-x: auto;
   overflow-y: visible;
-  padding: 4px 24px 8px;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
 }
 
-.swim-lane-row__cards::-webkit-scrollbar {
+.swim-lane-row--overflow .swim-lane-row__card-slot {
+  scroll-snap-align: start;
+}
+
+/* ── Scrollbar styling (overflow mode only) ── */
+.swim-lane-row--overflow .swim-lane-row__cards::-webkit-scrollbar {
   height: 4px;
 }
 
-.swim-lane-row__cards::-webkit-scrollbar-track {
+.swim-lane-row--overflow .swim-lane-row__cards::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.swim-lane-row__cards::-webkit-scrollbar-thumb {
+.swim-lane-row--overflow .swim-lane-row__cards::-webkit-scrollbar-thumb {
   background: var(--color-border-primary, #222);
   border-radius: 2px;
 }
 
-/* ── Fixed card width ── */
-.swim-lane-row__card-slot {
-  flex: 0 0 150px;
-  scroll-snap-align: start;
-}
-
-/* ── Wrapping mode: complete row fills space when composing is empty ── */
-.swim-lane-row--wrapping {
+/* ── Fill available space when sibling section is empty ── */
+.swim-lane-row--fill {
   flex: 1;
-}
-
-.swim-lane-row--wrapping .swim-lane-row__cards {
-  flex-wrap: wrap;
-  overflow-x: visible;
 }
 
 .swim-lane-row__empty {
@@ -94,13 +107,10 @@
   letter-spacing: 0.05em;
 }
 
-/* ── Mobile: smaller cards ── */
+/* ── Mobile: 2-column grid, no overflow mode ── */
 @media (max-width: 767px) {
-  .swim-lane-row__card-slot {
-    flex: 0 0 120px;
-  }
-
   .swim-lane-row__cards {
+    grid-template-columns: repeat(2, 1fr);
     padding: 4px 16px 8px;
   }
 

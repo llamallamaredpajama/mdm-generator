@@ -63,10 +63,16 @@ export default function EncounterBoard() {
       COMPLETE: [],
     }
     encounters.forEach((e) => rows[getDisplayColumn(e)].push(e))
+    // Newest encounters first (left) in each row
+    const byNewest = (a: EncounterDocument, b: EncounterDocument) =>
+      (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0)
+    rows.COMPOSING.sort(byNewest)
+    rows.COMPLETE.sort(byNewest)
     return rows
   }, [encounters])
 
   const composingEmpty = grouped.COMPOSING.length === 0
+  const completeEmpty = grouped.COMPLETE.length === 0
 
   // Toggle card selection
   const handleCardClick = useCallback((id: string) => {
@@ -160,7 +166,10 @@ export default function EncounterBoard() {
               encounters={grouped[row]}
               activeId={activeId}
               onCardClick={handleCardClick}
-              wrapping={row === 'COMPLETE' && composingEmpty}
+              isMobile={isMobile}
+              fill={
+                (row === 'COMPLETE' && composingEmpty) || (row === 'COMPOSING' && completeEmpty)
+              }
             />
           ))}
         </div>
