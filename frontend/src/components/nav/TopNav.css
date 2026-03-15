@@ -64,8 +64,11 @@
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: none;
+  background: transparent;
   border: none;
+  outline: none;
+  box-shadow: none;
+  -webkit-appearance: none;
   color: var(--color-text-muted, #555);
   cursor: pointer;
   font-family: var(--font-family, 'Inter', sans-serif);
@@ -100,6 +103,10 @@
   height: 48px;
   border: none;
   border-radius: 50%;
+  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
   background: linear-gradient(145deg, #e52d2d, #be2020);
   color: #fff;
   cursor: pointer;
