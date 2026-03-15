@@ -1,0 +1,157 @@
+/* ===========================================
+   TopNav — Desktop Top Navigation Bar (56px)
+   BEM naming: .top-nav__*
+   =========================================== */
+
+.top-nav {
+  height: 56px;
+  background: var(--color-bg-secondary, #000);
+  border-bottom: 1px solid var(--color-border-primary, #222);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+
+/* ── Logo ── */
+.top-nav__logo {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: -0.04em;
+}
+
+.top-nav__logo-ai {
+  background: #dc2626;
+  color: #fff;
+  padding: 2px 5px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.top-nav__logo-mdm {
+  color: var(--color-text-primary, #fff);
+}
+
+/* ── Center nav group ── */
+.top-nav__center {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.top-nav__group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.top-nav__group--left {
+  justify-content: flex-end;
+}
+
+.top-nav__group--right {
+  justify-content: flex-start;
+}
+
+.top-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted, #555);
+  cursor: pointer;
+  font-family: var(--font-family, 'Inter', sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: color 0.15s ease;
+}
+
+.top-nav__item:hover {
+  color: var(--color-text-secondary, #999);
+}
+
+.top-nav__item--active {
+  color: var(--color-text-primary, #fff);
+}
+
+.top-nav__icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.top-nav__label {
+  white-space: nowrap;
+}
+
+/* ── New Encounter Button ── */
+.top-nav__new-btn {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #e52d2d, #be2020);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 12px;
+  position: relative;
+  top: 6px;
+  box-shadow:
+    4px 4px 10px rgba(0, 0, 0, 0.6),
+    -2px -2px 6px rgba(255, 255, 255, 0.04),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+/* Glass highlight — flat-top hemisphere cross-section */
+.top-nav__new-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 44%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  border-radius: 0 0 40% 40%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.top-nav__new-btn > svg {
+  position: relative;
+  z-index: 1;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.top-nav__new-btn:hover {
+  box-shadow:
+    6px 6px 14px rgba(0, 0, 0, 0.7),
+    -2px -2px 8px rgba(255, 255, 255, 0.06),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  transform: scale(1.06);
+}
+
+/* Pressed state — inset neumorphism */
+.top-nav__new-btn:active {
+  box-shadow:
+    inset 2px 2px 6px rgba(0, 0, 0, 0.5),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.05);
+  transform: scale(0.97);
+}
