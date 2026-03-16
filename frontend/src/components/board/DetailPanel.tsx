@@ -110,7 +110,9 @@ function BuildDetailContent({
     ? getSocietyGuidelines(currentEncounter.section1.llmResponse)
     : []
 
-  // Trigger CDR matching when S1 is complete but cdrTracking is empty
+  // Trigger CDR matching when S1 is complete but cdrTracking is empty.
+  // matchCdrs matches against the CDR *library* using the differential —
+  // it does NOT depend on the LLM's cdrAnalysis output.
   const hasCdrTracking = Object.keys(currentEncounter.cdrTracking).length > 0
   const matchFiredRef = useRef(false)
 
@@ -123,21 +125,15 @@ function BuildDetailContent({
       currentEncounter.section1.llmResponse &&
       !hasCdrTracking &&
       !matchFiredRef.current &&
-      token &&
-      cdrAnalysis.length > 0
+      token
     ) {
       matchFiredRef.current = true
       matchCdrs(currentEncounter.id, token).catch(() => {
-        // Silently fail — cdrAnalysis fallback is already showing
+        // Reset so the effect can retry on next render cycle
+        matchFiredRef.current = false
       })
     }
-  }, [
-    currentEncounter.id,
-    currentEncounter.section1.llmResponse,
-    hasCdrTracking,
-    token,
-    cdrAnalysis.length,
-  ])
+  }, [currentEncounter.id, currentEncounter.section1.llmResponse, hasCdrTracking, token])
 
   const handleContentChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
