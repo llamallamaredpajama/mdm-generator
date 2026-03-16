@@ -24,6 +24,7 @@ import {
   type TestResult,
   type GapItem,
   type WorkupRecommendation,
+  type SocietyGuideline,
 } from '../../buildModeSchemas.js'
 import {
   buildSection1Prompt,
@@ -299,6 +300,7 @@ export class EncounterOrchestrator {
     let differential: DifferentialItem[]
     let cdrAnalysis: CdrAnalysisItem[]
     let workupRecommendations: WorkupRecommendation[]
+    let societyGuidelines: SocietyGuideline[]
     let encounterPhoto: { category: string; subcategory: string } | undefined
 
     try {
@@ -308,6 +310,7 @@ export class EncounterOrchestrator {
       differential = parsed.data.differential
       cdrAnalysis = parsed.data.cdrAnalysis
       workupRecommendations = parsed.data.workupRecommendations
+      societyGuidelines = parsed.data.societyGuidelines
       encounterPhoto = parsed.data.encounterPhoto
 
       if ('reason' in parsed) {
@@ -328,6 +331,7 @@ export class EncounterOrchestrator {
         differential,
         ...(cdrAnalysis.length > 0 && { cdrAnalysis }),
         ...(workupRecommendations.length > 0 && { workupRecommendations }),
+        ...(societyGuidelines.length > 0 && { societyGuidelines }),
         processedAt: admin.firestore.Timestamp.now(),
       },
       'section1.submissionCount': newSubmissionCount,
@@ -354,6 +358,7 @@ export class EncounterOrchestrator {
       differential,
       ...(cdrAnalysis.length > 0 && { cdrAnalysis }),
       ...(workupRecommendations.length > 0 && { workupRecommendations }),
+      ...(societyGuidelines.length > 0 && { societyGuidelines }),
       submissionCount: newSubmissionCount,
       isLocked,
       quotaRemaining,

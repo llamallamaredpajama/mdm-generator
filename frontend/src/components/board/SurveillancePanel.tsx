@@ -1,7 +1,9 @@
 import { useTrendAnalysisContext } from '../../contexts/TrendAnalysisContext'
+import type { TrendAnalysisResult } from '../../types/surveillance'
 import IntelPanel from './IntelPanel'
 
 interface SurveillancePanelProps {
+  trendAnalysis?: TrendAnalysisResult
   delay?: number
 }
 
@@ -35,8 +37,10 @@ function getTierStyle(tier: string): { color: string; border: string; icon: stri
   }
 }
 
-export default function SurveillancePanel({ delay = 0 }: SurveillancePanelProps) {
+export default function SurveillancePanel({ trendAnalysis, delay = 0 }: SurveillancePanelProps) {
   const { isEnabled, lastAnalysis } = useTrendAnalysisContext()
+  // Prefer persisted trendAnalysis from Firestore, fall back to in-memory context
+  const analysis = trendAnalysis || lastAnalysis
 
   return (
     <IntelPanel title="Regional Surveillance" delay={delay}>
@@ -54,7 +58,7 @@ export default function SurveillancePanel({ delay = 0 }: SurveillancePanelProps)
         >
           Enable surveillance in Settings to see regional trends
         </div>
-      ) : !lastAnalysis ? (
+      ) : !analysis ? (
         <div
           style={{
             padding: '16px 12px',
@@ -71,7 +75,7 @@ export default function SurveillancePanel({ delay = 0 }: SurveillancePanelProps)
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {/* Region label */}
-          {lastAnalysis.regionLabel && (
+          {analysis.regionLabel && (
             <div
               style={{
                 fontSize: '10px',
@@ -83,12 +87,12 @@ export default function SurveillancePanel({ delay = 0 }: SurveillancePanelProps)
                 marginBottom: 4,
               }}
             >
-              {lastAnalysis.regionLabel}
+              {analysis.regionLabel}
             </div>
           )}
 
           {/* Alerts first */}
-          {lastAnalysis.alerts.map((alert, i) => {
+          {analysis.alerts.map((alert, i) => {
             const isElevated = alert.level === 'critical' || alert.level === 'warning'
             return (
               <div
@@ -145,7 +149,7 @@ export default function SurveillancePanel({ delay = 0 }: SurveillancePanelProps)
           })}
 
           {/* Ranked findings */}
-          {lastAnalysis.rankedFindings.map((finding, i) => {
+          {analysis.rankedFindings.map((finding, i) => {
             const style = getTierStyle(finding.tier)
             return (
               <div
@@ -199,7 +203,7 @@ export default function SurveillancePanel({ delay = 0 }: SurveillancePanelProps)
           })}
 
           {/* Fallback if no alerts or findings */}
-          {lastAnalysis.alerts.length === 0 && lastAnalysis.rankedFindings.length === 0 && (
+          {analysis.alerts.length === 0 && analysis.rankedFindings.length === 0 && (
             <div
               style={{
                 padding: '12px',
@@ -208,7 +212,7 @@ export default function SurveillancePanel({ delay = 0 }: SurveillancePanelProps)
                 lineHeight: 1.5,
               }}
             >
-              {lastAnalysis.summary || 'No notable regional trends detected'}
+              {analysis.summary || 'No notable regional trends detected'}
             </div>
           )}
         </div>

@@ -148,6 +148,20 @@ export const WorkupRecommendationSchema = z.object({
 export type WorkupRecommendation = z.infer<typeof WorkupRecommendationSchema>
 
 /**
+ * Society Guideline identified by the LLM during Section 1 analysis.
+ */
+export const SocietyGuidelineSchema = z.object({
+  /** Issuing organization (e.g., "AHA/ACC 2024", "ACEP", "AHA/ASA") */
+  source: z.string(),
+  /** Guideline name */
+  title: z.string(),
+  /** Why it's relevant to this encounter */
+  relevance: z.string(),
+})
+
+export type SocietyGuideline = z.infer<typeof SocietyGuidelineSchema>
+
+/**
  * Section 1 Response: Worst-first differential diagnosis list
  * with CDR analysis and workup recommendations.
  */
@@ -157,6 +171,8 @@ export const Section1ResponseSchema = z.object({
   cdrAnalysis: z.array(CdrAnalysisItemSchema).optional(),
   /** Recommended workup based on presentation, differential, and CDRs (optional for backward compat) */
   workupRecommendations: z.array(WorkupRecommendationSchema).optional(),
+  /** Relevant society guidelines for this presentation (optional for backward compat) */
+  societyGuidelines: z.array(SocietyGuidelineSchema).optional(),
   submissionCount: z.number().int().min(0).max(2),
   isLocked: z.boolean(),
   quotaRemaining: z.number().int().min(0),
@@ -269,6 +285,19 @@ export function safeParseGaps(raw: unknown): GapItem[] {
   if (!Array.isArray(raw)) return []
   return raw.reduce<GapItem[]>((acc, item) => {
     const parsed = GapItemSchema.safeParse(item)
+    if (parsed.success) acc.push(parsed.data)
+    return acc
+  }, [])
+}
+
+/**
+ * Safely parse a raw cdrAnalysis array, filtering out individual malformed items.
+ * Never fails — returns [] if nothing is valid.
+ */
+export function safeParseCdrAnalysis(raw: unknown): CdrAnalysisItem[] {
+  if (!Array.isArray(raw)) return []
+  return raw.reduce<CdrAnalysisItem[]>((acc, item) => {
+    const parsed = CdrAnalysisItemSchema.safeParse(item)
     if (parsed.success) acc.push(parsed.data)
     return acc
   }, [])

@@ -136,6 +136,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
               shiftStartedAt: data.shiftStartedAt,
               archivedAt: data.archivedAt,
               encounterPhoto: data.encounterPhoto ?? undefined,
+              trendAnalysis: data.trendAnalysis ?? undefined,
             }
 
             setEncounter(encounterData)
@@ -285,6 +286,9 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
                 ...(s1Response.cdrAnalysis && { cdrAnalysis: s1Response.cdrAnalysis }),
                 ...(s1Response.workupRecommendations && {
                   workupRecommendations: s1Response.workupRecommendations,
+                }),
+                ...(s1Response.societyGuidelines && {
+                  societyGuidelines: s1Response.societyGuidelines,
                 }),
                 processedAt: serverTimestamp(),
               },

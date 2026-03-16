@@ -8,6 +8,7 @@
  */
 
 import type { Timestamp } from 'firebase/firestore'
+import type { TrendAnalysisResult } from './surveillance'
 
 // ============================================================================
 // Character Limit Constants
@@ -91,6 +92,8 @@ export interface QuickModeData {
   processedAt?: import('firebase/firestore').Timestamp
   /** Enhancement advisor gaps (populated after processing) */
   gaps?: EnhancementGap[]
+  /** CDR analysis from Quick Mode LLM (structured CDR results) */
+  cdrAnalysis?: CdrAnalysisItem[]
   /** Whether user dismissed the enhancement advisor */
   enhancementDismissed?: boolean
   /** Whether user has reprocessed with gap responses */
@@ -183,6 +186,18 @@ export interface WorkupRecommendation {
   source: WorkupRecommendationSource
   /** Priority: stat or routine */
   priority?: 'stat' | 'routine'
+}
+
+/**
+ * Society guideline identified during Section 1 analysis.
+ */
+export interface SocietyGuideline {
+  /** Issuing organization (e.g., "AHA/ACC 2024", "ACEP") */
+  source: string
+  /** Guideline name */
+  title: string
+  /** Why it's relevant to this encounter */
+  relevance: string
 }
 
 /**
@@ -339,6 +354,8 @@ export interface Section1Data {
     cdrAnalysis?: CdrAnalysisItem[]
     /** Workup recommendations (optional — added in CDR integration) */
     workupRecommendations?: WorkupRecommendation[]
+    /** Society guidelines relevant to this presentation (optional) */
+    societyGuidelines?: SocietyGuideline[]
     /** When the LLM processed this section */
     processedAt: Timestamp
   }
@@ -482,6 +499,8 @@ export interface EncounterDocument {
   archivedAt?: Timestamp
   /** LLM-assigned encounter photo (category/subcategory) */
   encounterPhoto?: { category: string; subcategory: string }
+  /** Persisted surveillance trend analysis (populated after analyze call) */
+  trendAnalysis?: TrendAnalysisResult
   /** Whether user dismissed the enhancement advisor (build mode) */
   enhancementDismissed?: boolean
   /** Whether user has reprocessed with gap responses (build mode) */
@@ -502,6 +521,8 @@ export interface Section1Response {
   cdrAnalysis?: CdrAnalysisItem[]
   /** Workup recommendations (optional — may be absent on older encounters) */
   workupRecommendations?: WorkupRecommendation[]
+  /** Relevant society guidelines (optional — may be absent on older encounters) */
+  societyGuidelines?: SocietyGuideline[]
   /** Updated submission count for this section */
   submissionCount: number
   /** Whether the section is now locked */

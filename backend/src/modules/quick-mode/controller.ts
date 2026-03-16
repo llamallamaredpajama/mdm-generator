@@ -116,6 +116,7 @@ export function createQuickModeController(deps: QuickModeDeps) {
           json: result.json,
         },
         'quickModeData.gaps': result.gaps,
+        'quickModeData.cdrAnalysis': result.cdrAnalysis,
         'quickModeData.processedAt': admin.firestore.Timestamp.now(),
         ...(generationFailed && { 'quickModeData.errorMessage': 'MDM generation failed — model returned unusable output' }),
         chiefComplaint: [

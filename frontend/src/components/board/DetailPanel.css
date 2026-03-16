@@ -292,6 +292,39 @@
   font-family: var(--font-family, 'Inter', sans-serif);
 }
 
+/* ── Copy MDM button ── */
+.detail-panel__copy-wrap {
+  text-align: right;
+  margin-top: 10px;
+}
+
+.detail-panel__copy-btn {
+  display: inline-block;
+  padding: 10px 16px;
+  background: transparent;
+  border: 2px solid #16a34a;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.detail-panel__copy-btn:hover {
+  background: #16a34a;
+  color: #fff;
+}
+
+.detail-panel__copy-btn--copied {
+  background: #16a34a;
+  color: #fff;
+}
+
 .detail-panel__complete-badge {
   font-size: 12px;
   color: var(--color-text-primary, #fff);

@@ -1,11 +1,19 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useEncounter } from '../../hooks/useEncounter'
 import { useQuickEncounter } from '../../hooks/useQuickEncounter'
 import { useIsMobile, usePrefersReducedMotion } from '../../hooks/useMediaQuery'
 import { getEncounterMode, formatRoomDisplay } from '../../types/encounter'
 import { getEncounterPhoto } from '../../lib/photoMapper'
-import { getDifferential, getMdmPreview, getFinalMdm } from '../../lib/encounterUtils'
+import {
+  getDifferential,
+  getMdmPreview,
+  getFinalMdm,
+  getCdrAnalysis,
+  getSocietyGuidelines,
+} from '../../lib/encounterUtils'
+import { matchCdrs } from '../../lib/api'
+import { useAuthToken } from '../../lib/firebase'
 import { usePhotoUrls } from '../../contexts/PhotoLibraryContext'
 import { useToast } from '../../contexts/ToastContext'
 import type {
@@ -84,6 +92,7 @@ function BuildDetailContent({
     initialEncounter.id,
   )
 
+  const token = useAuthToken()
   const [isDictating, setIsDictating] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -92,6 +101,43 @@ function BuildDetailContent({
   const sectionKey = `section${currentSection}` as 'section1' | 'section2' | 'section3'
   const sectionData = currentEncounter[sectionKey]
   const hasOutput = !!sectionData.llmResponse
+
+  // Extract CDR analysis and society guidelines from S1 for display
+  const cdrAnalysis = currentEncounter.section1.llmResponse
+    ? getCdrAnalysis(currentEncounter.section1.llmResponse)
+    : []
+  const societyGuidelines = currentEncounter.section1.llmResponse
+    ? getSocietyGuidelines(currentEncounter.section1.llmResponse)
+    : []
+
+  // Trigger CDR matching when S1 is complete but cdrTracking is empty
+  const hasCdrTracking = Object.keys(currentEncounter.cdrTracking).length > 0
+  const matchFiredRef = useRef(false)
+
+  useEffect(() => {
+    matchFiredRef.current = false
+  }, [currentEncounter.id])
+
+  useEffect(() => {
+    if (
+      currentEncounter.section1.llmResponse &&
+      !hasCdrTracking &&
+      !matchFiredRef.current &&
+      token &&
+      cdrAnalysis.length > 0
+    ) {
+      matchFiredRef.current = true
+      matchCdrs(currentEncounter.id, token).catch(() => {
+        // Silently fail — cdrAnalysis fallback is already showing
+      })
+    }
+  }, [
+    currentEncounter.id,
+    currentEncounter.section1.llmResponse,
+    hasCdrTracking,
+    token,
+    cdrAnalysis.length,
+  ])
 
   const handleContentChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -207,6 +253,7 @@ function BuildDetailContent({
             <div className="detail-panel__output">
               <div className="detail-panel__output-label">Final MDM</div>
               <div className="detail-panel__mdm-output">{String(finalMdm.text)}</div>
+              <CopyMdmButton text={finalMdm.text} />
             </div>
           ) : null
         })()}
@@ -214,10 +261,14 @@ function BuildDetailContent({
       {/* Intelligence panels */}
       {hasOutput && (
         <div className="detail-panel__intel-section">
-          <RulesPanel cdrTracking={currentEncounter.cdrTracking} delay={0.1} />
+          <RulesPanel
+            cdrTracking={currentEncounter.cdrTracking}
+            cdrAnalysis={cdrAnalysis}
+            delay={0.1}
+          />
           <div className="detail-panel__intel-grid">
-            <GuidesPanel delay={0.2} />
-            <SurveillancePanel delay={0.3} />
+            <GuidesPanel guidelines={societyGuidelines} delay={0.2} />
+            <SurveillancePanel trendAnalysis={currentEncounter.trendAnalysis} delay={0.3} />
           </div>
         </div>
       )}
@@ -306,6 +357,7 @@ function QuickDetailContent({
         <div className="detail-panel__output">
           <div className="detail-panel__output-label">MDM Output</div>
           <div className="detail-panel__mdm-output">{mdmOutput.text}</div>
+          <CopyMdmButton text={mdmOutput.text} />
         </div>
       )}
 
@@ -314,14 +366,53 @@ function QuickDetailContent({
       {/* Intelligence panels */}
       {mdmOutput && (
         <div className="detail-panel__intel-section">
-          <RulesPanel cdrTracking={initialEncounter.cdrTracking} delay={0.1} />
+          <RulesPanel
+            cdrTracking={initialEncounter.cdrTracking}
+            cdrAnalysis={initialEncounter.quickModeData?.cdrAnalysis}
+            delay={0.1}
+          />
           <div className="detail-panel__intel-grid">
             <GuidesPanel delay={0.2} />
-            <SurveillancePanel delay={0.3} />
+            <SurveillancePanel trendAnalysis={initialEncounter.trendAnalysis} delay={0.3} />
           </div>
         </div>
       )}
     </DetailPanelShell>
+  )
+}
+
+// ============================================================================
+// Copy MDM Button
+// ============================================================================
+
+function CopyMdmButton({ text }: { text: string }) {
+  const toast = useToast()
+  const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => () => clearTimeout(timerRef.current), [])
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      toast.success('MDM copied to clipboard')
+      timerRef.current = setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('Failed to copy — try selecting the text manually')
+    }
+  }, [text, toast])
+
+  return (
+    <div className="detail-panel__copy-wrap">
+      <button
+        type="button"
+        className={`detail-panel__copy-btn${copied ? ' detail-panel__copy-btn--copied' : ''}`}
+        onClick={handleCopy}
+      >
+        {copied ? 'COPIED' : 'COPY MDM'}
+      </button>
+    </div>
   )
 }
 

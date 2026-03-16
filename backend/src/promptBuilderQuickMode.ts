@@ -9,7 +9,7 @@
 import fs from 'node:fs/promises'
 import { promptPath } from './shared/paths.js'
 import { PHYSICIAN_ATTESTATION } from './constants.js'
-import { safeParseGaps, type GapItem } from './buildModeSchemas.js'
+import { safeParseGaps, safeParseCdrAnalysis, type GapItem, type CdrAnalysisItem } from './buildModeSchemas.js'
 
 /**
  * Patient identifier extracted from narrative
@@ -34,6 +34,8 @@ export interface QuickModeGenerationResult {
   gaps: GapItem[]
   /** LLM-assigned encounter photo */
   encounterPhoto?: { category: string; subcategory: string }
+  /** Structured CDR analysis (same shape as Build Mode S1) */
+  cdrAnalysis: CdrAnalysisItem[]
 }
 
 /**
@@ -138,7 +140,18 @@ Respond with this exact JSON structure:
       "toggleItems": [{ "id": "toggle_id", "label": "Yes/No question for physician", "defaultValue": false }]
     }
   ],
-  "encounterPhoto": { "category": "...", "subcategory": "..." }
+  "encounterPhoto": { "category": "...", "subcategory": "..." },
+  "cdrAnalysis": [
+    {
+      "name": "CDR name (e.g., HEART Score)",
+      "applicable": true,
+      "score": null,
+      "interpretation": null,
+      "missingData": ["data point 1", "data point 2"],
+      "availableData": ["data point used"],
+      "reasoning": "Why this CDR is applicable"
+    }
+  ]
 }
 
 ## Important Notes
@@ -148,6 +161,7 @@ Respond with this exact JSON structure:
 - Always use worst-first approach for differential diagnosis
 - Include the physician attestation statement at the end of the output text
 - The "gaps" array identifies 3-8 documentation opportunities per §2.10. Use canonical IDs when applicable.
+- The "cdrAnalysis" array lists all applicable clinical decision rules. Include score, interpretation, and missing/available data. If no CDRs apply, return an empty array.
 - This is educational use only - no real patient data`
 
   const userPrompt = `## Narrative Input
@@ -201,6 +215,7 @@ export function parseQuickModeResponse(rawResponse: string): QuickModeGeneration
       },
       gaps: safeParseGaps(parsed.gaps),
       encounterPhoto: parsed.encounterPhoto || undefined,
+      cdrAnalysis: safeParseCdrAnalysis(parsed.cdrAnalysis),
     }
   } catch (parseError) {
     // Try to extract JSON from the response
@@ -221,6 +236,7 @@ export function parseQuickModeResponse(rawResponse: string): QuickModeGeneration
         },
         gaps: safeParseGaps(parsed.gaps),
         encounterPhoto: parsed.encounterPhoto || undefined,
+        cdrAnalysis: safeParseCdrAnalysis(parsed.cdrAnalysis),
       }
     }
 
@@ -246,5 +262,6 @@ export function getQuickModeFallback(): QuickModeGenerationResult {
     patientIdentifier: {},
     gaps: [],
     encounterPhoto: undefined,
+    cdrAnalysis: [],
   }
 }

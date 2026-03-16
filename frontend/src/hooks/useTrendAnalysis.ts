@@ -4,7 +4,8 @@
  */
 
 import { useState, useCallback } from 'react'
-import { useAuthToken } from '../lib/firebase'
+import { doc, updateDoc } from 'firebase/firestore'
+import { getAppDb, useAuth, useAuthToken } from '../lib/firebase'
 import { useTrendAnalysisContext } from '../contexts/TrendAnalysisContext'
 import { analyzeSurveillance, downloadSurveillanceReport, ApiError } from '../lib/api'
 import type { TrendAnalysisResult } from '../types/surveillance'
@@ -17,13 +18,20 @@ export interface TrendAnalysisError {
 }
 
 export function useTrendAnalysis() {
+  const db = getAppDb()
+  const { user } = useAuth()
   const token = useAuthToken()
-  const { isEnabled, location, isLocationValid, lastAnalysis, setLastAnalysis } = useTrendAnalysisContext()
+  const { isEnabled, location, isLocationValid, lastAnalysis, setLastAnalysis } =
+    useTrendAnalysisContext()
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<TrendAnalysisError | null>(null)
 
   const analyze = useCallback(
-    async (chiefComplaint: string, differential: string[]): Promise<TrendAnalysisResult | null> => {
+    async (
+      chiefComplaint: string,
+      differential: string[],
+      encounterId?: string,
+    ): Promise<TrendAnalysisResult | null> => {
       if (!isEnabled || !isLocationValid || !location || !token) {
         return null
       }
@@ -32,15 +40,18 @@ export function useTrendAnalysis() {
       setError(null)
 
       try {
-        const response = await analyzeSurveillance(
-          chiefComplaint,
-          differential,
-          location,
-          token
-        )
+        const response = await analyzeSurveillance(chiefComplaint, differential, location, token)
 
         if (response.analysis) {
           setLastAnalysis(response.analysis)
+
+          // Persist to Firestore so DetailPanel can read it without context
+          if (encounterId && user) {
+            const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+            updateDoc(encounterRef, { trendAnalysis: response.analysis }).catch(() => {
+              // Non-blocking — context still has the data
+            })
+          }
         }
         return response.analysis
       } catch (err) {
@@ -58,7 +69,7 @@ export function useTrendAnalysis() {
         setIsAnalyzing(false)
       }
     },
-    [isEnabled, isLocationValid, location, token, setLastAnalysis]
+    [isEnabled, isLocationValid, location, token, setLastAnalysis, db, user],
   )
 
   const downloadPdf = useCallback(
@@ -80,7 +91,7 @@ export function useTrendAnalysis() {
         throw err
       }
     },
-    [token]
+    [token],
   )
 
   const clearAnalysis = useCallback(() => {

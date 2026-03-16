@@ -18,11 +18,14 @@ import {
 import {
   CdrAnalysisItemSchema,
   WorkupRecommendationSchema,
+  SocietyGuidelineSchema,
   FinalMdmSchema,
   safeParseGaps,
+  safeParseCdrAnalysis,
   type DifferentialItem,
   type CdrAnalysisItem,
   type WorkupRecommendation,
+  type SocietyGuideline,
   type FinalMdm,
   type GapItem,
   type ParsedResultItem,
@@ -52,6 +55,7 @@ export interface Section1ParsedData {
   differential: DifferentialItem[]
   cdrAnalysis: CdrAnalysisItem[]
   workupRecommendations: WorkupRecommendation[]
+  societyGuidelines: SocietyGuideline[]
   encounterPhoto?: { category: string; subcategory: string }
 }
 
@@ -80,6 +84,7 @@ export class LlmResponseParser {
     let differential: DifferentialItem[] = []
     let cdrAnalysis: CdrAnalysisItem[] = []
     let workupRecommendations: WorkupRecommendation[] = []
+    let societyGuidelines: SocietyGuideline[] = []
     let encounterPhoto: { category: string; subcategory: string } | undefined
 
     try {
@@ -120,6 +125,16 @@ export class LlmResponseParser {
           }
         }
 
+        // Society guidelines (non-blocking)
+        if (Array.isArray(rawParsed.societyGuidelines)) {
+          const guidelinesValidated = z.array(SocietyGuidelineSchema).safeParse(rawParsed.societyGuidelines)
+          if (guidelinesValidated.success) {
+            societyGuidelines = guidelinesValidated.data
+          } else {
+            logger.warn('Section 1 societyGuidelines validation failed (non-blocking)')
+          }
+        }
+
         encounterPhoto = validatePhoto(rawParsed.encounterPhoto)
       }
 
@@ -143,7 +158,7 @@ export class LlmResponseParser {
       if (differential.length > 0) {
         return {
           success: true,
-          data: { differential, cdrAnalysis, workupRecommendations, encounterPhoto },
+          data: { differential, cdrAnalysis, workupRecommendations, societyGuidelines, encounterPhoto },
           fallback: false,
         }
       }
@@ -160,6 +175,7 @@ export class LlmResponseParser {
           }],
           cdrAnalysis,
           workupRecommendations,
+          societyGuidelines,
         },
         fallback: true,
         reason: 'No valid differential items parsed from model output',
@@ -176,6 +192,7 @@ export class LlmResponseParser {
           }],
           cdrAnalysis,
           workupRecommendations,
+          societyGuidelines,
         },
         fallback: true,
         reason: 'JSON parse failed',
@@ -298,6 +315,7 @@ export class LlmResponseParser {
           },
           gaps: safeParseGaps(parsed.gaps),
           encounterPhoto: parsed.encounterPhoto || undefined,
+          cdrAnalysis: safeParseCdrAnalysis(parsed.cdrAnalysis),
         },
         fallback: false,
       }
@@ -319,6 +337,7 @@ export class LlmResponseParser {
               },
               gaps: safeParseGaps(parsed.gaps),
               encounterPhoto: parsed.encounterPhoto || undefined,
+              cdrAnalysis: safeParseCdrAnalysis(parsed.cdrAnalysis),
             },
             fallback: true,
             reason: 'Primary parse failed, extracted via brace matching',
@@ -344,6 +363,7 @@ export class LlmResponseParser {
           patientIdentifier: {},
           gaps: [],
           encounterPhoto: undefined,
+          cdrAnalysis: [],
         },
         reason: 'No valid JSON found in response',
       }

@@ -1,8 +1,9 @@
-import type { CdrTracking, CdrStatus } from '../../types/encounter'
+import type { CdrTracking, CdrStatus, CdrAnalysisItem } from '../../types/encounter'
 import IntelPanel from './IntelPanel'
 
 interface RulesPanelProps {
   cdrTracking: CdrTracking
+  cdrAnalysis?: CdrAnalysisItem[]
   delay?: number
 }
 
@@ -36,12 +37,14 @@ const STATUS_STYLES: Record<
   },
 }
 
-export default function RulesPanel({ cdrTracking, delay = 0 }: RulesPanelProps) {
+export default function RulesPanel({ cdrTracking, cdrAnalysis, delay = 0 }: RulesPanelProps) {
   const entries = Object.entries(cdrTracking)
+  const hasTracking = entries.length > 0
+  const hasAnalysisFallback = !hasTracking && cdrAnalysis && cdrAnalysis.length > 0
 
   return (
     <IntelPanel title="Clinical Decision Rules" delay={delay}>
-      {entries.length === 0 ? (
+      {!hasTracking && !hasAnalysisFallback ? (
         <div
           style={{
             padding: '16px 12px',
@@ -54,6 +57,62 @@ export default function RulesPanel({ cdrTracking, delay = 0 }: RulesPanelProps) 
           }}
         >
           No clinical decision rules identified
+        </div>
+      ) : hasAnalysisFallback ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {cdrAnalysis!
+            .filter((c) => c.applicable)
+            .map((cdr, idx) => (
+              <div
+                key={idx}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 12px',
+                  border: '1px solid var(--color-border-primary, #222)',
+                  background: 'var(--color-bg-deep, #000)',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      color: 'var(--color-text-primary, #fff)',
+                      fontFamily: "var(--font-family, 'Inter', sans-serif)",
+                    }}
+                  >
+                    {cdr.name}
+                  </div>
+                  {cdr.reasoning && (
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--color-text-secondary, #999)',
+                        marginTop: 3,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {cdr.reasoning}
+                    </div>
+                  )}
+                </div>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    color: 'var(--color-text-muted, #555)',
+                    letterSpacing: '0.08em',
+                    fontFamily: "var(--font-mono, 'JetBrains Mono', 'SF Mono', monospace)",
+                    flexShrink: 0,
+                    marginLeft: 12,
+                  }}
+                >
+                  LOADING
+                </span>
+              </div>
+            ))}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

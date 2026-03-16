@@ -10,6 +10,7 @@ import type {
   DifferentialItem,
   CdrAnalysisItem,
   WorkupRecommendation,
+  SocietyGuideline,
   MdmPreview,
   FinalMdm,
 } from '../types/encounter'
@@ -46,6 +47,19 @@ export function getWorkupRecommendations(llmResponse: unknown): WorkupRecommenda
     const wrapped = llmResponse as { workupRecommendations?: unknown }
     if (Array.isArray(wrapped.workupRecommendations))
       return wrapped.workupRecommendations as WorkupRecommendation[]
+  }
+  return []
+}
+
+/**
+ * Extract society guidelines from S1 llmResponse (optional, new field).
+ * Returns [] for old encounters without guidelines.
+ */
+export function getSocietyGuidelines(llmResponse: unknown): SocietyGuideline[] {
+  if (llmResponse && typeof llmResponse === 'object' && 'societyGuidelines' in llmResponse) {
+    const wrapped = llmResponse as { societyGuidelines?: unknown }
+    if (Array.isArray(wrapped.societyGuidelines))
+      return wrapped.societyGuidelines as SocietyGuideline[]
   }
   return []
 }
