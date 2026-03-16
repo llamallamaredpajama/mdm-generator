@@ -12,6 +12,7 @@ import DetailPanel from './DetailPanel'
 import SaveDraftPopup from './SaveDraftPopup'
 import './EncounterBoard.css'
 
+const ACTIVE_ID_KEY = 'encounter-board-active-id'
 const ROWS: DisplayColumn[] = ['COMPLETE', 'COMPOSING']
 
 export default function EncounterBoard() {
@@ -23,8 +24,26 @@ export default function EncounterBoard() {
   const { canGenerate, tier } = useSubscription()
   const toast = useToast()
 
-  const [activeId, setActiveId] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem(ACTIVE_ID_KEY)
+    } catch {
+      return null
+    }
+  })
   const [showSaveDraft, setShowSaveDraft] = useState(false)
+  useEffect(() => {
+    try {
+      if (activeId) {
+        sessionStorage.setItem(ACTIVE_ID_KEY, activeId)
+      } else {
+        sessionStorage.removeItem(ACTIVE_ID_KEY)
+      }
+    } catch {
+      // sessionStorage unavailable (private browsing edge case)
+    }
+  }, [activeId])
+
   const creatingRef = useRef(false)
 
   const { encounters, loading, createEncounter, updateEncounterMeta, switchEncounterMode } =
@@ -70,6 +89,13 @@ export default function EncounterBoard() {
     rows.COMPLETE.sort(byNewest)
     return rows
   }, [encounters])
+
+  // Clear stale ID if encounter no longer exists (e.g. deleted while on another tab)
+  useEffect(() => {
+    if (!loading && activeId && !encounters.some((e) => e.id === activeId)) {
+      setActiveId(null)
+    }
+  }, [loading, activeId, encounters])
 
   const composingEmpty = grouped.COMPOSING.length === 0
   const completeEmpty = grouped.COMPLETE.length === 0
