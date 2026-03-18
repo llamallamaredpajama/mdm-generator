@@ -170,7 +170,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
     return () => {
       unsubscribe()
     }
-  }, [user, encounterId])
+  }, [user, encounterId, db])
 
   // Reset local content when encounter changes
   useEffect(() => {
@@ -351,6 +351,7 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
       trendEnabled,
       trendLocationValid,
       trendLocation,
+      db,
     ],
   )
 

@@ -83,6 +83,8 @@ function convertEncounterDoc(docId: string, data: DocumentData): EncounterDocume
     updatedAt: data.updatedAt,
     shiftStartedAt: data.shiftStartedAt,
     archivedAt: data.archivedAt,
+    encounterPhoto: data.encounterPhoto ?? undefined,
+    trendAnalysis: data.trendAnalysis ?? undefined,
   }
 }
 
@@ -146,6 +148,12 @@ export interface UseEncounterListReturn {
   clearAllEncounters: () => Promise<void>
   /** Switch an encounter between quick and build mode */
   switchEncounterMode: (encounterId: string, newMode: EncounterMode) => Promise<void>
+  /** Archive a single encounter (sets status to 'archived') */
+  archiveEncounter: (encounterId: string) => Promise<void>
+  /** Archive multiple encounters in a batch */
+  archiveEncounters: (encounterIds: string[]) => Promise<void>
+  /** Delete multiple encounters in a batch */
+  deleteEncounters: (encounterIds: string[]) => Promise<void>
 }
 
 /**
@@ -216,7 +224,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
     return () => {
       unsubscribe()
     }
-  }, [user])
+  }, [user, db])
 
   /**
    * Creates a new encounter with the given room number and chief complaint.
@@ -285,7 +293,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
       const docRef = await addDoc(encountersRef, newEncounter)
       return docRef.id
     },
-    [user, mode],
+    [user, mode, db],
   )
 
   /**
@@ -301,7 +309,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
       const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
       await deleteDoc(encounterRef)
     },
-    [user],
+    [user, db],
   )
 
   /**
@@ -323,7 +331,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
         updatedAt: serverTimestamp(),
       })
     },
-    [user],
+    [user, db],
   )
 
   /**
@@ -346,7 +354,7 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
     })
 
     await batch.commit()
-  }, [user, encounters])
+  }, [user, encounters, db])
 
   const switchEncounterMode = useCallback(
     async (encounterId: string, newMode: EncounterMode): Promise<void> => {
@@ -365,7 +373,47 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
         })
       }
     },
-    [user],
+    [user, db],
+  )
+
+  const archiveEncounter = useCallback(
+    async (encounterId: string): Promise<void> => {
+      if (!user) throw new Error('User must be authenticated to archive encounters')
+      const encounterRef = doc(db, 'customers', user.uid, 'encounters', encounterId)
+      await updateDoc(encounterRef, {
+        status: 'archived',
+        archivedAt: serverTimestamp(),
+      })
+    },
+    [user, db],
+  )
+
+  const archiveEncounters = useCallback(
+    async (encounterIds: string[]): Promise<void> => {
+      if (!user) throw new Error('User must be authenticated to archive encounters')
+      if (encounterIds.length === 0) return
+      const batch = writeBatch(db)
+      encounterIds.forEach((id) => {
+        const ref = doc(db, 'customers', user.uid, 'encounters', id)
+        batch.update(ref, { status: 'archived', archivedAt: serverTimestamp() })
+      })
+      await batch.commit()
+    },
+    [user, db],
+  )
+
+  const deleteEncounters = useCallback(
+    async (encounterIds: string[]): Promise<void> => {
+      if (!user) throw new Error('User must be authenticated to delete encounters')
+      if (encounterIds.length === 0) return
+      const batch = writeBatch(db)
+      encounterIds.forEach((id) => {
+        const ref = doc(db, 'customers', user.uid, 'encounters', id)
+        batch.delete(ref)
+      })
+      await batch.commit()
+    },
+    [user, db],
   )
 
   return {
@@ -377,5 +425,8 @@ export function useEncounterList(mode: EncounterMode = 'build'): UseEncounterLis
     deleteEncounter,
     clearAllEncounters,
     switchEncounterMode,
+    archiveEncounter,
+    archiveEncounters,
+    deleteEncounters,
   }
 }

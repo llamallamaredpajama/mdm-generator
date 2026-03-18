@@ -209,7 +209,7 @@ export function useQuickEncounter(encounterId: string | null): UseQuickEncounter
         }
       }, 500)
     },
-    [user, encounterId, encounter?.quickModeData?.status],
+    [user, encounterId, encounter?.quickModeData?.status, db],
   )
 
   /**
@@ -270,6 +270,7 @@ export function useQuickEncounter(encounterId: string | null): UseQuickEncounter
     trendEnabled,
     trendLocationValid,
     trendLocation,
+    db,
   ])
 
   return {

@@ -104,7 +104,7 @@ export function useCdrTracking(
         pendingTrackingRef.current = null
       }, 300)
     },
-    [user, encounterId],
+    [user, encounterId, db],
   )
 
   // Cleanup on unmount: flush pending write
@@ -118,7 +118,7 @@ export function useCdrTracking(
         )
       }
     }
-  }, [user, encounterId])
+  }, [user, encounterId, db])
 
   /**
    * Answer a component for a CDR.

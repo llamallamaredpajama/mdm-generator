@@ -178,7 +178,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         pendingTestsRef.current = null
       }, 300)
     },
-    [user, encounterId],
+    [db, user, encounterId],
   )
 
   // Flush pending write and cleanup on unmount
@@ -196,7 +196,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         )
       }
     }
-  }, [user, encounterId])
+  }, [db, user, encounterId])
 
   // Test results state (initialized from encounter, persisted to Firestore)
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
@@ -249,7 +249,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         pendingTestResultsRef.current = null
       }, 300)
     },
-    [user, encounterId],
+    [db, user, encounterId],
   )
 
   // Flush pending testResults write on unmount
@@ -267,7 +267,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         )
       }
     }
-  }, [user, encounterId])
+  }, [db, user, encounterId])
 
   // "+ Add Test" orderset manager toggle (shown inline in S2 custom content)
   const [showS2OrdersetManager, setShowS2OrdersetManager] = useState(false)
@@ -329,7 +329,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         pendingTestResultsRef.current = null
       }, 0)
     },
-    [user, encounterId],
+    [db, user, encounterId],
   )
 
   /**
@@ -572,6 +572,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
     encounter?.cdrTracking,
     testLibrary,
     cdrLibrary,
+    db,
     user,
     encounterId,
   ])
@@ -706,7 +707,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         console.error('Failed to persist working diagnosis:', err?.message || 'unknown error')
       })
     },
-    [user, encounterId],
+    [db, user, encounterId],
   )
 
   /**
@@ -739,7 +740,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         )
       }
     },
-    [user, encounterId, updateSectionContent],
+    [db, user, encounterId, updateSectionContent],
   )
 
   /**
@@ -755,7 +756,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         )
       }
     },
-    [user, encounterId],
+    [db, user, encounterId],
   )
 
   /**
@@ -771,7 +772,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         )
       }
     },
-    [user, encounterId],
+    [db, user, encounterId],
   )
 
   /**
@@ -792,7 +793,7 @@ export default function EncounterEditor({ encounterId, onBack }: EncounterEditor
         )
       }
     },
-    [user, encounterId],
+    [db, user, encounterId],
   )
 
   /**

@@ -224,7 +224,7 @@ export function useSubscription(): SubscriptionHookReturn {
     return () => {
       unsubscribe()
     }
-  }, [user])
+  }, [user, db])
 
   // Derived values
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing'
