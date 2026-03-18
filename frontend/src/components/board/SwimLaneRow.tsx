@@ -11,6 +11,8 @@ interface SwimLaneRowProps {
   onCardClick: (id: string) => void
   fill?: boolean
   isMobile: boolean
+  onClearSection?: () => void
+  onCardDelete?: (encounter: EncounterDocument) => void
 }
 
 const COLS = 5
@@ -40,6 +42,8 @@ export default function SwimLaneRow({
   onCardClick,
   fill = false,
   isMobile,
+  onClearSection,
+  onCardDelete,
 }: SwimLaneRowProps) {
   const count = encounters.length
   const showOverflow = !isMobile && count > COLS * MAX_ROWS
@@ -56,11 +60,16 @@ export default function SwimLaneRow({
     <div className={cls}>
       <div className="swim-lane-row__header">
         <span className="swim-lane-row__label">{status}</span>
-        <span
-          className={`swim-lane-row__count ${count > 0 ? 'swim-lane-row__count--active' : 'swim-lane-row__count--empty'}`}
-        >
-          {count}
-        </span>
+        {onClearSection && count > 0 && (
+          <button
+            type="button"
+            className="swim-lane-row__clear-btn"
+            onClick={onClearSection}
+            title={`Clear all ${status.toLowerCase()} encounters`}
+          >
+            {'\u{1F5D1}'}
+          </button>
+        )}
       </div>
 
       {count === 0 ? (
@@ -84,6 +93,14 @@ export default function SwimLaneRow({
                   encounter={encounter}
                   isActive={encounter.id === activeId}
                   onClick={() => onCardClick(encounter.id)}
+                  onDelete={
+                    onCardDelete
+                      ? (e) => {
+                          e.stopPropagation()
+                          onCardDelete(encounter)
+                        }
+                      : undefined
+                  }
                 />
               </motion.div>
             ))}

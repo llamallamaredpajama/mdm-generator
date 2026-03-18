@@ -105,13 +105,18 @@ export default function Onboarding() {
     setError(null)
 
     try {
-      const token = await user.getIdToken()
-      await completeOnboarding(token, {
-        displayName: data.displayName.trim(),
-        credentialType: data.credentialType,
-        surveillanceLocation: data.surveillanceLocation ?? undefined,
-        acknowledgedLimitations: true,
-      })
+      // In dev-auth mode, skip the backend call (mock token can't authenticate)
+      const isDevAuth =
+        import.meta.env.DEV && new URLSearchParams(window.location.search).has('dev-auth')
+      if (!isDevAuth) {
+        const token = await user.getIdToken()
+        await completeOnboarding(token, {
+          displayName: data.displayName.trim(),
+          credentialType: data.credentialType,
+          surveillanceLocation: data.surveillanceLocation ?? undefined,
+          acknowledgedLimitations: true,
+        })
+      }
 
       if (data.surveillanceLocation) {
         setLocation(data.surveillanceLocation)

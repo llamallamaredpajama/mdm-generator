@@ -30,18 +30,22 @@
   font-family: var(--font-family, 'Inter', sans-serif);
 }
 
-.swim-lane-row__count {
-  font-size: 12px;
-  font-weight: 700;
-  font-family: var(--font-mono, monospace);
+.swim-lane-row__clear-btn {
+  background: transparent;
+  border: 1px solid var(--color-border-primary, #222);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 6px;
+  color: var(--color-text-muted, #555);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+  line-height: 1;
 }
 
-.swim-lane-row__count--active {
-  color: var(--color-text-primary, #fff);
-}
-
-.swim-lane-row__count--empty {
-  color: var(--color-text-secondary, #999);
+.swim-lane-row__clear-btn:hover {
+  color: #dc2626;
+  border-color: #dc2626;
 }
 
 /* ── Normal mode: fixed 5-column grid ──

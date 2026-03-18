@@ -1,0 +1,75 @@
+/* ===========================================
+   ConfirmPopup — Destructive action confirmation
+   BEM naming: .confirm-popup__*
+   =========================================== */
+
+.confirm-popup__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-popup {
+  background: var(--color-bg-secondary, #0a0a0a);
+  border: 2px solid var(--color-border-primary, #222);
+  padding: 24px;
+  width: 360px;
+  max-width: 90vw;
+}
+
+.confirm-popup__title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-text-primary, #fff);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.confirm-popup__message {
+  font-size: 13px;
+  color: var(--color-text-secondary, #999);
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.confirm-popup__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.confirm-popup__btn {
+  padding: 8px 18px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: var(--font-family, 'Inter', sans-serif);
+  border: 2px solid var(--color-border-primary, #222);
+}
+
+.confirm-popup__btn--cancel {
+  background: transparent;
+  color: var(--color-text-secondary, #999);
+}
+
+.confirm-popup__btn--cancel:hover {
+  border-color: var(--color-text-secondary, #999);
+  color: var(--color-text-primary, #fff);
+}
+
+.confirm-popup__btn--confirm {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+
+.confirm-popup__btn--confirm:hover {
+  opacity: 0.9;
+}

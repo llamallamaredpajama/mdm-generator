@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useEncounter } from '../../hooks/useEncounter'
 import { useQuickEncounter } from '../../hooks/useQuickEncounter'
@@ -93,8 +93,6 @@ function BuildDetailContent({
   )
 
   const token = useAuthToken()
-  const [isDictating, setIsDictating] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const currentEncounter = encounter || initialEncounter
   const currentSection = currentEncounter.currentSection as SectionNumber
@@ -148,14 +146,6 @@ function BuildDetailContent({
     })
   }, [currentSection, submitSection])
 
-  const handleDictate = useCallback(() => {
-    setIsDictating((prev) => !prev)
-  }, [])
-
-  const handleType = useCallback(() => {
-    textareaRef.current?.focus()
-  }, [])
-
   const canSubmit = !isSubmitting && !sectionData.isLocked && sectionData.content.trim().length > 0
 
   const statusLabel = STATUS_LABELS[currentEncounter.status] || 'DRAFT'
@@ -175,12 +165,9 @@ function BuildDetailContent({
 
       {/* Narrative textarea */}
       <div
-        className={`detail-panel__narrative-wrap${isDictating ? ' detail-panel__narrative-wrap--dictating' : ''}${isSubmitting ? ' detail-panel__narrative-wrap--submitting' : ''}`}
+        className={`detail-panel__narrative-wrap${isSubmitting ? ' detail-panel__narrative-wrap--submitting' : ''}`}
       >
-        {isDictating && <div className="detail-panel__dictation-badge">● RECORDING</div>}
-
         <textarea
-          ref={textareaRef}
           className="detail-panel__textarea"
           value={sectionData.content}
           onChange={handleContentChange}
@@ -189,10 +176,7 @@ function BuildDetailContent({
         />
 
         <NarrativeToolbar
-          onDictate={handleDictate}
-          onType={handleType}
           onSubmit={handleSubmit}
-          isDictating={isDictating}
           isSubmitting={isSubmitting}
           canSubmit={canSubmit}
           submitLabel="PROCESS \u2192"
@@ -285,9 +269,6 @@ function QuickDetailContent({
   const { narrative, setNarrative, submitNarrative, isSubmitting, mdmOutput, quickStatus } =
     useQuickEncounter(initialEncounter.id)
 
-  const [isDictating, setIsDictating] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-
   const handleContentChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setNarrative(e.target.value)
@@ -300,14 +281,6 @@ function QuickDetailContent({
       // Error handled by hook
     })
   }, [submitNarrative])
-
-  const handleDictate = useCallback(() => {
-    setIsDictating((prev) => !prev)
-  }, [])
-
-  const handleType = useCallback(() => {
-    textareaRef.current?.focus()
-  }, [])
 
   const canSubmit = !isSubmitting && narrative.trim().length > 0 && quickStatus !== 'completed'
   const isComplete = quickStatus === 'completed'
@@ -324,12 +297,9 @@ function QuickDetailContent({
     >
       {/* Narrative textarea */}
       <div
-        className={`detail-panel__narrative-wrap${isDictating ? ' detail-panel__narrative-wrap--dictating' : ''}${isSubmitting ? ' detail-panel__narrative-wrap--submitting' : ''}`}
+        className={`detail-panel__narrative-wrap${isSubmitting ? ' detail-panel__narrative-wrap--submitting' : ''}`}
       >
-        {isDictating && <div className="detail-panel__dictation-badge">● RECORDING</div>}
-
         <textarea
-          ref={textareaRef}
           className="detail-panel__textarea"
           value={narrative}
           onChange={handleContentChange}
@@ -338,10 +308,7 @@ function QuickDetailContent({
         />
 
         <NarrativeToolbar
-          onDictate={handleDictate}
-          onType={handleType}
           onSubmit={handleSubmit}
-          isDictating={isDictating}
           isSubmitting={isSubmitting}
           canSubmit={canSubmit}
           submitLabel="SUBMIT"

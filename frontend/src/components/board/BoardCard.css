@@ -64,6 +64,35 @@
   letter-spacing: -0.02em;
 }
 
+/* ── Delete button ── */
+.board-card__delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: var(--color-text-secondary, #999);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  padding: 0;
+  line-height: 1;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.board-card__delete:hover {
+  color: #fff;
+  background: rgba(220, 38, 38, 0.8);
+}
+
 /* ── Single-line footer ── */
 .board-card__footer {
   display: flex;

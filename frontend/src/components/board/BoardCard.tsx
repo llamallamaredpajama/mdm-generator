@@ -9,6 +9,7 @@ interface BoardCardProps {
   encounter: EncounterDocument
   isActive: boolean
   onClick: () => void
+  onDelete?: (e: React.MouseEvent) => void
 }
 
 function getSectionComplete(encounter: EncounterDocument, section: 1 | 2 | 3): boolean {
@@ -16,7 +17,7 @@ function getSectionComplete(encounter: EncounterDocument, section: 1 | 2 | 3): b
   return !!encounter[sectionKey].llmResponse
 }
 
-export default function BoardCard({ encounter, isActive, onClick }: BoardCardProps) {
+export default function BoardCard({ encounter, isActive, onClick, onDelete }: BoardCardProps) {
   const mode = getEncounterMode(encounter)
   const photoUrls = usePhotoUrls()
   const photo = getEncounterPhoto(encounter.chiefComplaint, encounter.encounterPhoto, photoUrls)
@@ -43,6 +44,11 @@ export default function BoardCard({ encounter, isActive, onClick }: BoardCardPro
           loading="lazy"
         />
         {roomDisplay && <span className="board-card__room">{roomDisplay}</span>}
+        {onDelete && (
+          <button type="button" className="board-card__delete" onClick={onDelete} title="Remove">
+            {'\u2715'}
+          </button>
+        )}
       </div>
 
       <div className="board-card__footer">

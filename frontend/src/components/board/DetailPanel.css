@@ -170,33 +170,8 @@
   margin-bottom: 20px;
 }
 
-.detail-panel__narrative-wrap--dictating {
-  border-color: var(--color-accent, #e53e3e);
-}
-
 .detail-panel__narrative-wrap--submitting {
   border-color: var(--color-text-secondary, #999);
-}
-
-.detail-panel__dictation-badge {
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--color-border-primary, #222);
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--color-accent, #e53e3e);
-  letter-spacing: 0.12em;
-  font-family: var(--font-mono, monospace);
-  animation: detail-panel-blink 1.2s ease-in-out infinite;
-}
-
-@keyframes detail-panel-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.2;
-  }
 }
 
 .detail-panel__textarea {

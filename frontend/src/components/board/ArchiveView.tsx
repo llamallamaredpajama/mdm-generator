@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { useEncounterList } from '../../hooks/useEncounterList'
+import { useArchivedEncounters } from '../../hooks/useArchivedEncounters'
 import { getEncounterMode, formatRoomDisplay, formatPatientIdentifier } from '../../types/encounter'
 import type { EncounterDocument } from '../../types/encounter'
 import './ArchiveView.css'
@@ -12,16 +12,6 @@ function formatDateGroup(date: Date): string {
     day: 'numeric',
     year: 'numeric',
   })
-}
-
-/** Determine if an encounter qualifies as "archived" (finalized / completed) */
-function isArchivedEncounter(encounter: EncounterDocument): boolean {
-  const mode = getEncounterMode(encounter)
-  if (mode === 'build') {
-    return encounter.status === 'finalized'
-  }
-  // Quick mode
-  return encounter.quickModeData?.status === 'completed'
 }
 
 /** Get a display label for the encounter's mode */
@@ -57,17 +47,14 @@ const itemVariants = {
 }
 
 export default function ArchiveView() {
-  const { encounters, loading } = useEncounterList()
+  const { archivedEncounters, loading } = useArchivedEncounters()
 
-  /** Filter to finalized / completed encounters */
-  const archived = useMemo(() => encounters.filter(isArchivedEncounter), [encounters])
-
-  /** Group by date using shiftStartedAt (or createdAt fallback) */
+  /** Group by date using archivedAt (or createdAt fallback) */
   const grouped = useMemo(() => {
     const groups: Record<string, EncounterDocument[]> = {}
 
-    for (const enc of archived) {
-      const ts = enc.shiftStartedAt ?? enc.createdAt
+    for (const enc of archivedEncounters) {
+      const ts = enc.archivedAt ?? enc.createdAt
       const date = ts?.toDate ? ts.toDate() : new Date()
       const key = formatDateGroup(date)
       if (!groups[key]) groups[key] = []
@@ -80,7 +67,7 @@ export default function ArchiveView() {
     })
 
     return sorted
-  }, [archived])
+  }, [archivedEncounters])
 
   if (loading) {
     return (
@@ -102,22 +89,13 @@ export default function ArchiveView() {
           {grouped.map(([dateKey, encs]) => (
             <div key={dateKey} className="archive-view__group">
               <div className="archive-view__group-header">{dateKey}</div>
-              {encs.map((enc) => {
-                const mode = getEncounterMode(enc)
-                const isIncomplete = mode === 'build' && enc.status !== 'finalized'
-
-                return (
-                  <motion.div
-                    key={enc.id}
-                    variants={itemVariants}
-                    className={`archive-view__item${isIncomplete ? ' archive-view__item--incomplete' : ''}`}
-                  >
-                    <span className="archive-view__room">{formatRoomDisplay(enc.roomNumber)}</span>
-                    <span className="archive-view__complaint">{getComplaintDisplay(enc)}</span>
-                    <span className="archive-view__badge">{modeBadge(enc)}</span>
-                  </motion.div>
-                )
-              })}
+              {encs.map((enc) => (
+                <motion.div key={enc.id} variants={itemVariants} className="archive-view__item">
+                  <span className="archive-view__room">{formatRoomDisplay(enc.roomNumber)}</span>
+                  <span className="archive-view__complaint">{getComplaintDisplay(enc)}</span>
+                  <span className="archive-view__badge">{modeBadge(enc)}</span>
+                </motion.div>
+              ))}
             </div>
           ))}
         </motion.div>

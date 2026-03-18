@@ -125,7 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   const fetchOnboardingStatus = useCallback(async (u: User) => {
-    if (DEV_MOCK_USER) return // skip backend call with mock user
+    if (DEV_MOCK_USER) {
+      setOnboardingCompleted(true)
+      return
+    }
     try {
       const token = await u.getIdToken()
       const info = await whoAmI(token)

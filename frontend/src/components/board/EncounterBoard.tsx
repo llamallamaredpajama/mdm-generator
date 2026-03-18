@@ -10,6 +10,7 @@ import { useToast } from '../../contexts/ToastContext'
 import SwimLaneRow from './SwimLaneRow'
 import DetailPanel from './DetailPanel'
 import SaveDraftPopup from './SaveDraftPopup'
+import ConfirmPopup from './ConfirmPopup'
 import './EncounterBoard.css'
 
 const ACTIVE_ID_KEY = 'encounter-board-active-id'
@@ -32,6 +33,12 @@ export default function EncounterBoard() {
     }
   })
   const [showSaveDraft, setShowSaveDraft] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<{
+    title: string
+    message: string
+    confirmLabel: string
+    action: () => Promise<void>
+  } | null>(null)
   useEffect(() => {
     try {
       if (activeId) {
@@ -46,8 +53,17 @@ export default function EncounterBoard() {
 
   const creatingRef = useRef(false)
 
-  const { encounters, loading, createEncounter, updateEncounterMeta, switchEncounterMode } =
-    useEncounterList('build')
+  const {
+    encounters,
+    loading,
+    createEncounter,
+    updateEncounterMeta,
+    switchEncounterMode,
+    archiveEncounters,
+    archiveEncounter,
+    deleteEncounter,
+    deleteEncounters,
+  } = useEncounterList('build')
 
   // Handle + button: create empty encounter and open panel
   const handleNewEncounter = useCallback(async () => {
@@ -104,6 +120,60 @@ export default function EncounterBoard() {
   const handleCardClick = useCallback((id: string) => {
     setActiveId((prev) => (prev === id ? null : id))
   }, [])
+
+  // Section-level clear handlers
+  const handleClearComplete = useCallback(() => {
+    const ids = grouped.COMPLETE.map((e) => e.id)
+    setConfirmAction({
+      title: 'Archive Complete',
+      message: `Archive ${ids.length} completed encounter${ids.length === 1 ? '' : 's'}? They will remain in your archive for 30 days.`,
+      confirmLabel: 'Archive',
+      action: () => archiveEncounters(ids),
+    })
+  }, [grouped.COMPLETE, archiveEncounters])
+
+  const handleClearComposing = useCallback(() => {
+    const ids = grouped.COMPOSING.map((e) => e.id)
+    setConfirmAction({
+      title: 'Delete Composing',
+      message: `Permanently delete ${ids.length} in-progress encounter${ids.length === 1 ? '' : 's'}? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      action: () => deleteEncounters(ids),
+    })
+  }, [grouped.COMPOSING, deleteEncounters])
+
+  // Per-card delete/archive handler
+  const handleCardDelete = useCallback(
+    (encounter: EncounterDocument) => {
+      const column = getDisplayColumn(encounter)
+      if (column === 'COMPLETE') {
+        setConfirmAction({
+          title: 'Archive Encounter',
+          message: 'Archive this completed encounter? It will remain in your archive for 30 days.',
+          confirmLabel: 'Archive',
+          action: () => archiveEncounter(encounter.id),
+        })
+      } else {
+        setConfirmAction({
+          title: 'Delete Encounter',
+          message: 'Permanently delete this encounter? This cannot be undone.',
+          confirmLabel: 'Delete',
+          action: () => deleteEncounter(encounter.id),
+        })
+      }
+    },
+    [archiveEncounter, deleteEncounter],
+  )
+
+  const handleConfirmAction = useCallback(async () => {
+    if (!confirmAction) return
+    try {
+      await confirmAction.action()
+    } catch {
+      // Error handled by hook
+    }
+    setConfirmAction(null)
+  }, [confirmAction])
 
   // Close panel — show save draft popup if encounter has no room/CC
   const activeEncounter = activeId ? encounters.find((e) => e.id === activeId) : null
@@ -196,6 +266,8 @@ export default function EncounterBoard() {
               fill={
                 (row === 'COMPLETE' && composingEmpty) || (row === 'COMPOSING' && completeEmpty)
               }
+              onClearSection={row === 'COMPLETE' ? handleClearComplete : handleClearComposing}
+              onCardDelete={handleCardDelete}
             />
           ))}
         </div>
@@ -218,6 +290,17 @@ export default function EncounterBoard() {
       {/* Save draft popup */}
       {showSaveDraft && (
         <SaveDraftPopup onSkip={handleSaveDraftSkip} onSave={handleSaveDraftConfirm} />
+      )}
+
+      {/* Confirm delete/archive popup */}
+      {confirmAction && (
+        <ConfirmPopup
+          title={confirmAction.title}
+          message={confirmAction.message}
+          confirmLabel={confirmAction.confirmLabel}
+          onConfirm={handleConfirmAction}
+          onCancel={() => setConfirmAction(null)}
+        />
       )}
     </div>
   )

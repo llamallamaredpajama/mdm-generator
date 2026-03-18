@@ -83,8 +83,11 @@ service cloud.firestore {
           && request.resource.data.status == 'draft';
 
         // Users can update encounters unless finalized
+        // Exception: finalized → archived transition is allowed
         allow update: if isOwner(userId)
-          && resource.data.status != 'finalized';
+          && (resource.data.status != 'finalized'
+              || (request.resource.data.status == 'archived'
+                  && request.resource.data.archivedAt is timestamp));
 
         // Users can delete their own encounters (any status)
         allow delete: if isOwner(userId);
