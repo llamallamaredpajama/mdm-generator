@@ -358,21 +358,6 @@ function QuickDetailContent({
       )}
 
       {isComplete && !mdmOutput && <span className="detail-panel__complete-badge">✓ COMPLETE</span>}
-
-      {/* Intelligence panels */}
-      {mdmOutput && (
-        <div className="detail-panel__intel-section">
-          <RulesPanel
-            cdrTracking={initialEncounter.cdrTracking}
-            cdrAnalysis={initialEncounter.quickModeData?.cdrAnalysis}
-            delay={0.1}
-          />
-          <div className="detail-panel__intel-grid">
-            <GuidesPanel delay={0.2} />
-            <SurveillancePanel trendAnalysis={initialEncounter.trendAnalysis} delay={0.3} />
-          </div>
-        </div>
-      )}
     </DetailPanelShell>
   )
 }
