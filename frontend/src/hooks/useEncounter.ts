@@ -275,26 +275,12 @@ export function useEncounter(encounterId: string | null): UseEncounterReturn {
             const location =
               trendEnabled && trendLocationValid && trendLocation ? trendLocation : undefined
             const s1Response = await processSection1(encounterId, content, token, location)
-            // Update Firestore with response (include optional CDR analysis + workup recs)
-            await updateDoc(encounterRef, {
-              'section1.content': content,
-              'section1.submissionCount': s1Response.submissionCount,
-              'section1.isLocked': s1Response.isLocked,
-              'section1.status': 'completed',
-              'section1.llmResponse': {
-                differential: s1Response.differential,
-                ...(s1Response.cdrAnalysis && { cdrAnalysis: s1Response.cdrAnalysis }),
-                ...(s1Response.workupRecommendations && {
-                  workupRecommendations: s1Response.workupRecommendations,
-                }),
-                ...(s1Response.societyGuidelines && {
-                  societyGuidelines: s1Response.societyGuidelines,
-                }),
-                processedAt: serverTimestamp(),
-              },
-              status: 'section1_done',
-              updatedAt: serverTimestamp(),
-            })
+            // Backend already persists section1.llmResponse, section1.status, etc.
+            // to Firestore (encounterOrchestrator.updateSection1). onSnapshot will
+            // pick up the update automatically. No client-side write needed — the
+            // previous double-write caused a race condition where the client's
+            // serverTimestamp() sentinel temporarily set processedAt to null,
+            // triggering a redundant onSnapshot cycle.
             setQuotaRemaining(s1Response.quotaRemaining)
             break
           }
