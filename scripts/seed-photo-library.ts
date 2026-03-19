@@ -94,8 +94,8 @@ function buildDocId(category: string, subcategory: string): string {
 
 /**
  * Build the public-style Firebase Storage download URL.
- * No token is embedded — clients send their auth token as a header per
- * Storage security rules.
+ * No token is embedded — encounter-photos path allows public read
+ * (stock editorial images, zero PHI).
  */
 function buildDownloadUrl(bucketName: string, storagePath: string): string {
   return `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(storagePath)}?alt=media`

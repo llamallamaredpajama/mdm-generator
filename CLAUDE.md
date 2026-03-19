@@ -101,6 +101,7 @@ Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS
 ## Deployment
 - **Frontend**: Firebase Hosting → https://aimdm.app (custom domain), https://mdm-generator.web.app (default)
   - `firebase deploy --only hosting --project mdm-generator` (from project root, after building frontend)
+- **Storage Rules**: `firebase deploy --only storage --project mdm-generator` (encounter-photos must allow public read)
 - **Backend**: Cloud Run → `mdm-backend` (us-central1)
   - One command: `bash scripts/deploy-backend.sh` (or `cd backend && pnpm deploy`)
   - Runs pre-deploy gates (build + test), Cloud Build, and Cloud Run deploy
@@ -118,6 +119,8 @@ Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS
 **Photo catalog architecture**: Backend loads `photoLibrary` Firestore collection at startup via `initPhotoCatalog()` → in-memory cache → `buildPhotoCatalogPrompt()` / `validatePhoto()` remain synchronous. Hardcoded `PHOTO_CATALOG` serves as fallback if Firestore read fails.
 
 **Frontend photo URLs**: `PhotoLibraryProvider` (in `App.tsx`) fetches `photoLibrary` docs once, builds a `Map<string, string>` of `"category/subcategory"` → `downloadUrl`. `getEncounterPhoto()` checks this map before falling back to local `/encounter-photos/` paths.
+
+**Storage rules constraint**: `encounter-photos/` must have `allow read;` (no auth) in `storage.rules` — `<img>` tags cannot send Authorization headers. These are stock editorial photos with zero PHI. Deploy with `firebase deploy --only storage --project mdm-generator`.
 
 **Seed script**: `cd backend && NODE_PATH=./node_modules npx tsx ../scripts/seed-photo-library.ts` — uploads PNGs from `frontend/public/encounter-photos/` to Storage, writes metadata + download URLs to `photoLibrary` collection.
 
