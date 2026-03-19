@@ -42,6 +42,9 @@ export default function BoardCard({ encounter, isActive, onClick, onDelete }: Bo
           src={photo}
           alt={encounter.chiefComplaint || 'Encounter'}
           loading="lazy"
+          onError={(e) => {
+            ;(e.target as HTMLImageElement).style.display = 'none'
+          }}
         />
         {roomDisplay && <span className="board-card__room">{roomDisplay}</span>}
         {onDelete && (

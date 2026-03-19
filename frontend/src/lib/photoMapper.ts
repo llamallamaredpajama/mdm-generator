@@ -153,9 +153,13 @@ export function getEncounterPhoto(
     return `/encounter-photos/${category}/${subcategory}.png`
   }
 
-  // 1. LLM-assigned photo (highest priority)
+  // 1. LLM-assigned photo (highest priority) — only if resolvable via photoUrlMap
   if (encounterPhoto) {
-    return resolveUrl(encounterPhoto.category, encounterPhoto.subcategory)
+    const key = `${encounterPhoto.category}/${encounterPhoto.subcategory}`
+    if (photoUrlMap?.has(key)) {
+      return photoUrlMap.get(key)!
+    }
+    // LLM photo not in photoUrlMap — fall through to keyword matching
   }
 
   // 2. Keyword fallback
