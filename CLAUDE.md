@@ -46,6 +46,8 @@ Centralized config, logging, errors, and middleware added in `2931353`. All rout
 
 **Firebase Admin init priority**: `GOOGLE_APPLICATION_CREDENTIALS_JSON` (parsed JSON) → `GOOGLE_APPLICATION_CREDENTIALS` (file path) → default credentials (Cloud Run SA).
 
+**Firestore init**: Uses `persistentLocalCache()` for offline support and instant re-renders. Initialized via `initializeFirestore()` in `frontend/src/lib/firebase.tsx`.
+
 ### Backend Modular Architecture
 
 Post-refactoring, route handlers live in domain modules under `backend/src/modules/`:
@@ -105,6 +107,7 @@ Regional trend analysis from 3 CDC data sources (respiratory hospital data, NWSS
 - **Backend**: Cloud Run → `mdm-backend` (us-central1)
   - One command: `bash scripts/deploy-backend.sh` (or `cd backend && pnpm deploy`)
   - Runs pre-deploy gates (build + test), Cloud Build, and Cloud Run deploy
+  - Cloud Run config: 1Gi memory, cpu-boost enabled, concurrency 80
   - Build config: `cloudbuild.yaml` (version-controlled)
 - **IMPORTANT**: Backend changes in `backend/src/` are NOT live until the Cloud Run container is rebuilt and deployed. `pnpm build` only compiles locally.
 - **Cloud Build context**: `.gcloudignore` excludes `frontend/`, `docs/`, `scripts/`, etc. — only `backend/` is uploaded (~5-10 MB). Prompt guides live in `backend/prompts/` (inside the Docker context).
@@ -321,6 +324,10 @@ PostToolUse hooks in `.claude/hooks/` surface reminders to run these agents when
 - **New fields must be optional**: Add `?` in interface + `?? defaultValue` in `useEncounter.ts` onSnapshot handler.
 - **`workingDiagnosis` is a union**: `string | WorkingDiagnosis` (legacy string vs structured object).
 
+### Library Hook Caching
+- `useCdrLibrary` and `useTestLibrary` use **module-level token-keyed caches** — data is fetched once per token, shared across all component instances
+- Tests must call `clearCdrCache()` / `clearTestCache()` in `beforeEach` to prevent cross-test leakage
+
 ### Build Mode Auth Quirk
 Build Mode endpoints pass `userIdToken` **in the request body**, not as a Bearer header. User profile CRUD endpoints use Bearer header.
 
@@ -333,6 +340,7 @@ Build Mode endpoints pass `userIdToken` **in the request body**, not as a Bearer
 | No deleting deprecated components | Mark `@deprecated`, keep file. Delete in cleanup pass only |
 | No client writes for S3 finalize | Backend owns finalize write. Client blocked by rules after `status: 'finalized'` |
 | Always handle both `llmResponse` shapes | Flat array (old) + wrapped object (new). Use `getDifferential()` |
+| Always use `jsonMode: true` for structured LLM output | S1, CDR, diagnosis, and results calls all require it — prevents markdown-wrapped JSON responses |
 
 ## Environment Variables
 
