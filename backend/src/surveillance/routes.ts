@@ -18,7 +18,7 @@ import { mapToSyndromes } from './syndromeMapper.js'
 import { RegionResolver } from './regionResolver.js'
 import { AdapterRegistry } from './adapters/adapterRegistry.js'
 import { computeCorrelations, detectAlerts } from './correlationEngine.js'
-import { generateTrendReport } from './pdfGenerator.js'
+// pdfGenerator is dynamically imported at runtime to reduce cold starts
 import type { SurveillanceDeps } from '../dependencies.js'
 import type { TrendAnalysisResult, ClinicalCorrelation, TrendAlert, SurveillanceDataPoint, DataSourceSummary, DataSourceError } from './types.js'
 
@@ -243,6 +243,7 @@ export function createSurveillanceRoutes(deps: SurveillanceDeps): Router {
         return res.status(403).json({ error: 'Unauthorized' })
       }
 
+      const { generateTrendReport } = await import('./pdfGenerator.js')
       const pdfBuffer = await generateTrendReport(analysisData)
 
       req.log!.info({

@@ -13,6 +13,8 @@ export interface LlmPrompt {
 export interface LlmOptions {
   /** Force JSON output mode */
   jsonMode?: boolean
+  /** Provide a structured JSON schema for output validation */
+  responseSchema?: Record<string, unknown>
   /** Request timeout in milliseconds */
   timeoutMs?: number
 }

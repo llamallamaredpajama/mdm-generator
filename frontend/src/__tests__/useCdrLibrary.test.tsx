@@ -5,7 +5,7 @@
 /// <reference types="vitest/globals" />
 import { renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useCdrLibrary } from '../hooks/useCdrLibrary'
+import { useCdrLibrary, clearCdrCache } from '../hooks/useCdrLibrary'
 import type { CdrDefinition } from '../types/libraries'
 
 // Mock useAuthToken
@@ -36,7 +36,10 @@ const mockCdrs: CdrDefinition[] = [
       { id: 'history', label: 'History', type: 'select', source: 'section1' },
       { id: 'troponin', label: 'Troponin', type: 'select', source: 'section2' },
     ],
-    scoring: { method: 'sum', ranges: [{ min: 0, max: 3, risk: 'low', interpretation: 'Low risk' }] },
+    scoring: {
+      method: 'sum',
+      ranges: [{ min: 0, max: 3, risk: 'low', interpretation: 'Low risk' }],
+    },
   },
   {
     id: 'wells_pe',
@@ -46,13 +49,17 @@ const mockCdrs: CdrDefinition[] = [
     components: [
       { id: 'dvt_signs', label: 'DVT Signs', type: 'boolean', source: 'section1', value: 3 },
     ],
-    scoring: { method: 'sum', ranges: [{ min: 0, max: 1, risk: 'low', interpretation: 'PE unlikely' }] },
+    scoring: {
+      method: 'sum',
+      ranges: [{ min: 0, max: 1, risk: 'low', interpretation: 'PE unlikely' }],
+    },
   },
 ]
 
 describe('useCdrLibrary', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    clearCdrCache()
     mockToken.mockReturnValue('mock-token-123')
   })
 

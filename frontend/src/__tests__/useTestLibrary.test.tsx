@@ -5,7 +5,7 @@
 /// <reference types="vitest/globals" />
 import { renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useTestLibrary } from '../hooks/useTestLibrary'
+import { useTestLibrary, clearTestCache } from '../hooks/useTestLibrary'
 import type { TestDefinition, TestCategory } from '../types/libraries'
 
 // Mock useAuthToken
@@ -56,6 +56,7 @@ const mockCategories: TestCategory[] = ['labs', 'imaging', 'procedures_poc']
 describe('useTestLibrary', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    clearTestCache()
     mockToken.mockReturnValue('mock-token-123')
   })
 
@@ -106,7 +107,11 @@ describe('useTestLibrary', () => {
 
   it('sets loading true while fetching', () => {
     let resolve: (v?: unknown) => void = () => {}
-    mockFetchTestLibrary.mockReturnValueOnce(new Promise(r => { resolve = r }))
+    mockFetchTestLibrary.mockReturnValueOnce(
+      new Promise((r) => {
+        resolve = r
+      }),
+    )
 
     const { result, unmount } = renderHook(() => useTestLibrary())
 

@@ -304,7 +304,7 @@ export class EncounterOrchestrator {
     let encounterPhoto: { category: string; subcategory: string } | undefined
 
     try {
-      const result = await this.llmClient.generate(prompt, { timeoutMs: config.llm.heavyTimeoutMs })
+      const result = await this.llmClient.generate(prompt, { jsonMode: true, timeoutMs: config.llm.heavyTimeoutMs })
       const parsed = this.responseParser.parseSection1(result.text)
 
       differential = parsed.data.differential
@@ -617,7 +617,7 @@ export class EncounterOrchestrator {
         const prompt = buildCdrAutoPopulatePrompt(s1Content, matchedCdrs)
 
         if (prompt.system) {
-          const result = await this.llmClient.generate(prompt)
+          const result = await this.llmClient.generate(prompt, { jsonMode: true })
           autoPopulated = this.responseParser.parseCdrAutoPopulate(result.text)
         }
       } catch (autoPopError) {
@@ -684,7 +684,7 @@ export class EncounterOrchestrator {
 
     let suggestions: string[]
     try {
-      const result = await this.llmClient.generate(prompt)
+      const result = await this.llmClient.generate(prompt, { jsonMode: true })
       const parsed = this.responseParser.parseSuggestDiagnosis(result.text, differential)
       suggestions = parsed.data
     } catch (modelError) {
@@ -737,7 +737,7 @@ export class EncounterOrchestrator {
 
     let result
     try {
-      result = await this.llmClient.generate(prompt)
+      result = await this.llmClient.generate(prompt, { jsonMode: true })
     } catch (modelError) {
       log.error({ action: 'parse-results-model-error', uid, encounterId, error: String(modelError) })
       throw new LlmError('Failed to parse results')

@@ -57,6 +57,9 @@ export class VertexLlmClient implements ILlmClient {
     }
     if (options?.jsonMode) {
       generationConfig.responseMimeType = 'application/json'
+      if (options.responseSchema) {
+        generationConfig.responseSchema = options.responseSchema as any
+      }
     }
 
     const model = this.vertex.getGenerativeModel({

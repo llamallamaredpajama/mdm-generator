@@ -8,7 +8,7 @@ import {
   signOut,
   type User,
 } from 'firebase/auth'
-import { type Firestore, getFirestore } from 'firebase/firestore'
+import { type Firestore, initializeFirestore, persistentLocalCache } from 'firebase/firestore'
 import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react'
 import { whoAmI } from './api'
 
@@ -40,7 +40,11 @@ function getAppAuth() {
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function getAppDb() {
-  if (!_db) _db = getFirestore(getApp())
+  if (!_db) {
+    _db = initializeFirestore(getApp(), {
+      localCache: persistentLocalCache()
+    })
+  }
   return _db
 }
 

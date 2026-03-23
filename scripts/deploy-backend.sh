@@ -14,6 +14,9 @@ echo "=== Deploying to Cloud Run ==="
 gcloud run deploy mdm-backend \
   --image gcr.io/mdm-generator/mdm-backend:latest \
   --project mdm-generator \
-  --region us-central1
+  --region us-central1 \
+  --memory 1Gi \
+  --cpu-boost \
+  --concurrency 80
 
 echo "=== Backend deployment complete ==="
